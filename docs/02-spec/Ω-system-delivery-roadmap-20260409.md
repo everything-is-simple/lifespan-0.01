@@ -18,7 +18,7 @@
 当前整体判断：
 
 - 系统阶段位于 `P0 已完成，P1/P2 已有边界，P4-position bounded runner 已建立，P3/P5/P6 仍待正式桥接`
-- 当前主线已经从“position 正式 runner 待接”切换到“position 消费侧已成立，上游 alpha formal signal 正式出口仍待落库”
+- 当前主线已经从“alpha -> position 官方桥接待收口”切换到“alpha -> position 已成立，剩余阻塞转向 structure/filter 正式上游”
 
 ## 老仓来源分层
 
@@ -147,7 +147,11 @@
 
 当前下一锤建议固定为：
 
-### `待开新卡`
+### `11-structure-filter-formal-contract-and-minimal-snapshot-card-20260409.md`
+
+当前补充：
+1. `10` 已经完成，`alpha -> position` 官方桥接已成立。
+2. 接下来的真实缺口是 `structure / filter` 官方 snapshot 仍未落库。
 
 说明：
 1. `10` 已经完成，下面这段记录的是上一锤为何要做 `alpha formal signal` 官方 producer，以及它本轮已经落下的产物。
@@ -173,7 +177,7 @@
 
 ## 阻塞项
 
-### `阻塞 1：alpha 正式出口尚未在新仓落库`
+### `阻塞 1：structure / filter 官方上游仍未在新仓落库`
 
 影响：
 

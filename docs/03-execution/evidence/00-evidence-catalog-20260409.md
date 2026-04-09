@@ -15,3 +15,4 @@
 8. `08-position-ledger-table-family-bootstrap-evidence-20260409.md`
 9. `09-position-formal-signal-runner-and-bounded-validation-evidence-20260409.md`
 10. `10-alpha-formal-signal-contract-and-producer-evidence-20260409.md`
+11. `11-structure-filter-formal-contract-and-minimal-snapshot-evidence-20260409.md`

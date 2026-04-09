@@ -3,8 +3,8 @@
 日期：`2026-04-09`
 状态：`生效中`
 
-1. 当前下一锤：`10-alpha-formal-signal-contract-and-producer-card-20260409.md`
-2. 正式主线剩余卡：`0`
+1. 当前下一锤：`11-structure-filter-formal-contract-and-minimal-snapshot-card-20260409.md`
+2. 正式主线剩余卡：`1`
 3. 可选 Sidecar 剩余卡：`0`
 4. 后置修复剩余卡：`0`
 

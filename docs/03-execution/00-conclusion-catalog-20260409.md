@@ -17,6 +17,7 @@
 8. `08-position-ledger-table-family-bootstrap-conclusion-20260409.md`
 9. `09-position-formal-signal-runner-and-bounded-validation-conclusion-20260409.md`
 10. `10-alpha-formal-signal-contract-and-producer-conclusion-20260409.md`
+11. `11-structure-filter-formal-contract-and-minimal-snapshot-conclusion-20260409.md`
 
 ## 已冻结基础口径
 
