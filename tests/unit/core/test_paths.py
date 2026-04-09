@@ -1,10 +1,20 @@
 """覆盖五根目录解析与环境变量覆盖口径。"""
 
+import os
 from pathlib import Path
 
 import pytest
 
 from mlq.core.paths import FORMAL_MODULES, default_settings
+
+
+def _normalized_path_string(path: Path) -> str:
+    """统一 Windows 路径比较口径，避免 `\\?\` 前缀干扰断言。"""
+
+    text = str(path.resolve())
+    if text.startswith("\\\\?\\"):
+        text = text[4:]
+    return os.path.normcase(os.path.normpath(text))
 
 
 def test_default_settings_use_expected_sibling_roots(
@@ -26,11 +36,11 @@ def test_default_settings_use_expected_sibling_roots(
 
     settings = default_settings(repo_root=repo_root)
 
-    assert settings.repo_root == repo_root.resolve()
-    assert settings.data_root == (tmp_path / "Lifespan-data").resolve()
-    assert settings.temp_root == (tmp_path / "Lifespan-temp").resolve()
-    assert settings.report_root == (tmp_path / "Lifespan-report").resolve()
-    assert settings.validated_root == (tmp_path / "Lifespan-Validated").resolve()
+    assert _normalized_path_string(settings.repo_root) == _normalized_path_string(repo_root)
+    assert _normalized_path_string(settings.data_root) == _normalized_path_string(tmp_path / "Lifespan-data")
+    assert _normalized_path_string(settings.temp_root) == _normalized_path_string(tmp_path / "Lifespan-temp")
+    assert _normalized_path_string(settings.report_root) == _normalized_path_string(tmp_path / "Lifespan-report")
+    assert _normalized_path_string(settings.validated_root) == _normalized_path_string(tmp_path / "Lifespan-Validated")
     assert set(settings.databases.as_dict()) == {
         "raw_market",
         "market_base",
@@ -85,10 +95,10 @@ def test_env_vars_can_override_workspace_roots(tmp_path: Path, monkeypatch: pyte
 
     settings = default_settings(repo_root=repo_root)
 
-    assert settings.data_root == (tmp_path / "custom-data").resolve()
-    assert settings.temp_root == (tmp_path / "custom-temp").resolve()
-    assert settings.report_root == (tmp_path / "custom-report").resolve()
-    assert settings.validated_root == (tmp_path / "custom-validated").resolve()
+    assert _normalized_path_string(settings.data_root) == _normalized_path_string(tmp_path / "custom-data")
+    assert _normalized_path_string(settings.temp_root) == _normalized_path_string(tmp_path / "custom-temp")
+    assert _normalized_path_string(settings.report_root) == _normalized_path_string(tmp_path / "custom-report")
+    assert _normalized_path_string(settings.validated_root) == _normalized_path_string(tmp_path / "custom-validated")
 
 
 def test_explicit_repo_root_wins_over_repo_root_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -100,4 +110,4 @@ def test_explicit_repo_root_wins_over_repo_root_env(tmp_path: Path, monkeypatch:
 
     settings = default_settings(repo_root=repo_root)
 
-    assert settings.repo_root == repo_root.resolve()
+    assert _normalized_path_string(settings.repo_root) == _normalized_path_string(repo_root)

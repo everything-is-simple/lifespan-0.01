@@ -25,5 +25,5 @@ packages = ["src/mlq"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
-addopts = "--basetemp=../Lifespan-temp/pytest-tmp"
-cache_dir = "../Lifespan-temp/pytest-cache"
+addopts = "--basetemp=H:/Lifespan-temp/pytest-tmp"
+cache_dir = "H:/Lifespan-temp/pytest-cache"

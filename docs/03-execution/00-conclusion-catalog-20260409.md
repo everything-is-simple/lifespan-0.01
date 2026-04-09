@@ -8,6 +8,7 @@
 ## 当前正式结论
 
 1. `01-governance-tooling-and-environment-bootstrap-conclusion-20260409.md`
+2. `02-shared-ledger-contract-and-pytest-path-fix-conclusion-20260409.md`
 
 ## 已冻结基础口径
 

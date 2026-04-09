@@ -15,9 +15,11 @@
 
 1. `docs/01-design/00-system-charter-20260409.md`
 2. `docs/01-design/01-doc-first-development-governance-20260409.md`
-3. `docs/02-spec/00-repo-layout-and-docflow-spec-20260409.md`
-4. `docs/02-spec/01-doc-first-task-gating-spec-20260409.md`
-5. `docs/03-execution/README.md`
+3. `docs/01-design/03-historical-ledger-shared-contract-charter-20260409.md`
+4. `docs/02-spec/00-repo-layout-and-docflow-spec-20260409.md`
+5. `docs/02-spec/01-doc-first-task-gating-spec-20260409.md`
+6. `docs/02-spec/03-historical-ledger-shared-contract-spec-20260409.md`
+7. `docs/03-execution/README.md`
 
 ## 目录职责
 
@@ -69,4 +71,3 @@
 3. 任务分解
 
 只有满足这些前置文档后，任务才可以进入 `03-execution` 并产出代码。
-

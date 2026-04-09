@@ -3,13 +3,13 @@
 日期：`2026-04-09`
 状态：`生效中`
 
-1. 当前下一锤：`01-governance-tooling-and-environment-bootstrap-card-20260409.md`
+1. 当前下一锤：`02-shared-ledger-contract-and-pytest-path-fix-card-20260409.md`
 2. 正式主线剩余卡：`0`
 3. 可选 Sidecar 剩余卡：`0`
 4. 后置修复剩余卡：`0`
 
 ## 本轮主线
 
-1. 迁移治理工具
-2. 重建环境脚手架
-3. 跑通最小治理检查
+1. 修复 `pytest` 临时目录路径
+2. 冻结历史账本共享契约
+3. 继续向 `doc-first gating` 和 `position` 正式卡推进
