@@ -5,7 +5,7 @@
 
 1. 当前下一锤：`12-alpha-trigger-ledger-and-five-table-family-minimal-materialization-card-20260409.md`
 2. 当前待施工卡：`12-alpha-trigger-ledger-and-five-table-family-minimal-materialization-card-20260409.md`
-3. 正式主线剩余卡：`1`
+3. 正式主线剩余卡：`0`
 4. 可选 Sidecar 剩余卡：`0`
 5. 后置修复剩余卡：`0`
 

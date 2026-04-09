@@ -6,7 +6,7 @@ from pathlib import Path
 
 import duckdb
 
-from mlq.alpha import alpha_ledger_path, run_alpha_formal_signal_build
+from mlq.alpha import alpha_ledger_path, run_alpha_formal_signal_build, run_alpha_trigger_build
 from mlq.core.paths import default_settings
 from mlq.filter import run_filter_snapshot_build
 from mlq.position import position_ledger_path, run_position_formal_signal_materialization
@@ -37,8 +37,7 @@ def _seed_trigger_source(alpha_path: Path, rows: list[tuple[object, ...]]) -> No
     try:
         conn.execute(
             """
-            CREATE TABLE alpha_trigger_event (
-                source_trigger_event_nk TEXT NOT NULL,
+            CREATE TABLE alpha_trigger_candidate (
                 instrument TEXT NOT NULL,
                 signal_date DATE NOT NULL,
                 asof_date DATE NOT NULL,
@@ -49,7 +48,7 @@ def _seed_trigger_source(alpha_path: Path, rows: list[tuple[object, ...]]) -> No
             """
         )
         for row in rows:
-            conn.execute("INSERT INTO alpha_trigger_event VALUES (?, ?, ?, ?, ?, ?, ?)", row)
+            conn.execute("INSERT INTO alpha_trigger_candidate VALUES (?, ?, ?, ?, ?, ?)", row)
     finally:
         conn.close()
 
@@ -145,6 +144,152 @@ def _materialize_official_upstream(settings, *, suffix: str) -> None:
     )
 
 
+def _materialize_official_trigger(settings, *, suffix: str) -> None:
+    run_alpha_trigger_build(
+        settings=settings,
+        signal_start_date="2026-04-08",
+        signal_end_date="2026-04-08",
+        run_id=f"alpha-trigger-upstream-test-{suffix}",
+    )
+
+
+def test_run_alpha_trigger_build_materializes_run_event_and_official_context(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+
+    _seed_trigger_source(
+        settings.databases.alpha,
+        [
+            ("000001.SZ", "2026-04-08", "2026-04-08", "PAS", "bof", "BOF"),
+            ("000002.SZ", "2026-04-08", "2026-04-08", "PAS", "pb", "PB"),
+        ],
+    )
+    _seed_malf_sources(
+        settings.databases.malf,
+        context_rows=[
+            ("000001.SZ", "2026-04-08", "2026-04-08", "ctx-010", "BULL_MAINSTREAM", 1, 4, "2026-04-08"),
+            ("000002.SZ", "2026-04-08", "2026-04-08", "ctx-020", "BEAR_MAINSTREAM", 0, 4, "2026-04-08"),
+        ],
+        structure_rows=[
+            ("000001.SZ", "2026-04-08", "2026-04-08", 2, 0, 0.7, 0.6, False, None),
+            ("000002.SZ", "2026-04-08", "2026-04-08", 0, 1, 0.0, 0.0, True, "failed_extreme"),
+        ],
+    )
+    _materialize_official_upstream(settings, suffix="trigger-001")
+
+    summary = run_alpha_trigger_build(
+        settings=settings,
+        signal_start_date="2026-04-08",
+        signal_end_date="2026-04-08",
+        limit=10,
+        batch_size=1,
+        run_id="alpha-trigger-test-001",
+    )
+
+    assert summary.candidate_trigger_count == 2
+    assert summary.materialized_trigger_count == 2
+    assert summary.inserted_count == 2
+
+    conn = duckdb.connect(str(alpha_ledger_path(settings)), read_only=True)
+    try:
+        run_row = conn.execute(
+            """
+            SELECT run_status, bounded_instrument_count, candidate_trigger_count
+            FROM alpha_trigger_run
+            WHERE run_id = 'alpha-trigger-test-001'
+            """
+        ).fetchone()
+        event_rows = conn.execute(
+            """
+            SELECT instrument, trigger_type, source_filter_snapshot_nk, source_structure_snapshot_nk
+            FROM alpha_trigger_event
+            ORDER BY instrument
+            """
+        ).fetchall()
+    finally:
+        conn.close()
+
+    assert run_row == ("completed", 2, 2)
+    assert event_rows[0][0:2] == ("000001.SZ", "bof")
+    assert event_rows[1][0:2] == ("000002.SZ", "pb")
+    assert all(row[2] and row[3] for row in event_rows)
+
+
+def test_run_alpha_trigger_build_marks_reused_and_rematerialized_when_upstream_changes(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+
+    _seed_trigger_source(
+        settings.databases.alpha,
+        [
+            ("000001.SZ", "2026-04-08", "2026-04-08", "PAS", "bof", "BOF"),
+        ],
+    )
+    _seed_malf_sources(
+        settings.databases.malf,
+        context_rows=[
+            ("000001.SZ", "2026-04-08", "2026-04-08", "ctx-110", "BULL_MAINSTREAM", 1, 4, "2026-04-08"),
+        ],
+        structure_rows=[
+            ("000001.SZ", "2026-04-08", "2026-04-08", 2, 0, 0.8, 0.7, False, None),
+        ],
+    )
+    _materialize_official_upstream(settings, suffix="trigger-002a")
+
+    first_summary = run_alpha_trigger_build(
+        settings=settings,
+        signal_start_date="2026-04-08",
+        signal_end_date="2026-04-08",
+        run_id="alpha-trigger-test-002a",
+    )
+    second_summary = run_alpha_trigger_build(
+        settings=settings,
+        signal_start_date="2026-04-08",
+        signal_end_date="2026-04-08",
+        run_id="alpha-trigger-test-002b",
+    )
+
+    assert first_summary.inserted_count == 1
+    assert second_summary.reused_count == 1
+
+    _replace_structure_source(
+        settings.databases.malf,
+        [("000001.SZ", "2026-04-08", "2026-04-08", 0, 1, 0.0, 0.0, True, "failed_extreme")],
+    )
+    _materialize_official_upstream(settings, suffix="trigger-002c")
+    third_summary = run_alpha_trigger_build(
+        settings=settings,
+        signal_start_date="2026-04-08",
+        signal_end_date="2026-04-08",
+        run_id="alpha-trigger-test-002c",
+    )
+
+    assert third_summary.rematerialized_count == 1
+
+    conn = duckdb.connect(str(alpha_ledger_path(settings)), read_only=True)
+    try:
+        event_row = conn.execute(
+            """
+            SELECT last_materialized_run_id, upstream_context_fingerprint
+            FROM alpha_trigger_event
+            WHERE instrument = '000001.SZ'
+            """
+        ).fetchone()
+    finally:
+        conn.close()
+
+    assert event_row[0] == "alpha-trigger-test-002c"
+    assert "failed_extreme" in event_row[1]
+
+
 def test_run_alpha_formal_signal_build_materializes_run_event_and_run_bridge(
     tmp_path: Path,
     monkeypatch,
@@ -156,8 +301,8 @@ def test_run_alpha_formal_signal_build_materializes_run_event_and_run_bridge(
     _seed_trigger_source(
         settings.databases.alpha,
         [
-            ("evt-001", "000001.SZ", "2026-04-08", "2026-04-08", "PAS", "bof", "BOF"),
-            ("evt-002", "000002.SZ", "2026-04-08", "2026-04-08", "PAS", "pb", "PB"),
+            ("000001.SZ", "2026-04-08", "2026-04-08", "PAS", "bof", "BOF"),
+            ("000002.SZ", "2026-04-08", "2026-04-08", "PAS", "pb", "PB"),
         ],
     )
     _seed_malf_sources(
@@ -172,6 +317,7 @@ def test_run_alpha_formal_signal_build_materializes_run_event_and_run_bridge(
         ],
     )
     _materialize_official_upstream(settings, suffix="001")
+    _materialize_official_trigger(settings, suffix="001")
 
     summary = run_alpha_formal_signal_build(
         settings=settings,
@@ -225,7 +371,7 @@ def test_run_alpha_formal_signal_build_marks_rematerialized_when_official_upstre
     _seed_trigger_source(
         settings.databases.alpha,
         [
-            ("evt-101", "000001.SZ", "2026-04-08", "2026-04-08", "PAS", "bof", "BOF"),
+            ("000001.SZ", "2026-04-08", "2026-04-08", "PAS", "bof", "BOF"),
         ],
     )
     _seed_malf_sources(
@@ -238,6 +384,7 @@ def test_run_alpha_formal_signal_build_marks_rematerialized_when_official_upstre
         ],
     )
     _materialize_official_upstream(settings, suffix="002a")
+    _materialize_official_trigger(settings, suffix="002a")
 
     first_summary = run_alpha_formal_signal_build(
         settings=settings,
@@ -252,6 +399,7 @@ def test_run_alpha_formal_signal_build_marks_rematerialized_when_official_upstre
         [("000001.SZ", "2026-04-08", "2026-04-08", 0, 1, 0.0, 0.0, True, "failed_extreme")],
     )
     _materialize_official_upstream(settings, suffix="002b")
+    _materialize_official_trigger(settings, suffix="002b")
     second_summary = run_alpha_formal_signal_build(
         settings=settings,
         signal_start_date="2026-04-08",
@@ -288,7 +436,7 @@ def test_run_alpha_formal_signal_build_outputs_event_consumable_by_position_runn
     _seed_trigger_source(
         settings.databases.alpha,
         [
-            ("evt-201", "000001.SZ", "2026-04-08", "2026-04-08", "PAS", "bof", "BOF"),
+            ("000001.SZ", "2026-04-08", "2026-04-08", "PAS", "bof", "BOF"),
         ],
     )
     _seed_malf_sources(
@@ -305,6 +453,7 @@ def test_run_alpha_formal_signal_build_outputs_event_consumable_by_position_runn
         [("000001.SZ", "2026-04-09", "backward", 10.5)],
     )
     _materialize_official_upstream(settings, suffix="003")
+    _materialize_official_trigger(settings, suffix="003")
 
     alpha_summary = run_alpha_formal_signal_build(
         settings=settings,

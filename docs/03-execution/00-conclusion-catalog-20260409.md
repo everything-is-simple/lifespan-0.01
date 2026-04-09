@@ -18,6 +18,7 @@
 9. `09-position-formal-signal-runner-and-bounded-validation-conclusion-20260409.md`
 10. `10-alpha-formal-signal-contract-and-producer-conclusion-20260409.md`
 11. `11-structure-filter-formal-contract-and-minimal-snapshot-conclusion-20260409.md`
+12. `12-alpha-trigger-ledger-and-five-table-family-minimal-materialization-conclusion-20260409.md`
 
 ## 已冻结基础口径
 
@@ -28,3 +29,4 @@
 5. 新仓已有正式的系统级总路线图与进度跟踪器。
 6. 系统级路线图已补齐老仓来源、继承方式、置信度与未定项口径。
 7. 新仓已补齐最小 `structure / filter` 官方 snapshot 合同，并让 `alpha` 默认改读官方上游。
+8. 新仓 `alpha` 已补齐最小 `trigger ledger` 三表、bounded runner 与正式 pilot，`trigger ledger -> formal signal` 官方上游关系成立。

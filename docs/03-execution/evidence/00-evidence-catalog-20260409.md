@@ -16,3 +16,4 @@
 9. `09-position-formal-signal-runner-and-bounded-validation-evidence-20260409.md`
 10. `10-alpha-formal-signal-contract-and-producer-evidence-20260409.md`
 11. `11-structure-filter-formal-contract-and-minimal-snapshot-evidence-20260409.md`
+12. `12-alpha-trigger-ledger-and-five-table-family-minimal-materialization-evidence-20260409.md`

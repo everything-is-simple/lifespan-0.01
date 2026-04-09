@@ -82,6 +82,7 @@
 3. `filter` 负责 pre-trigger 准入。
    - 当前 `filter` 的正式 bounded runner 入口为 `scripts/filter/run_filter_snapshot_build.py`，只允许消费官方 `structure snapshot` 与最小执行上下文物化 `filter_run / snapshot / run_snapshot`，不允许硬拦截研究观察或夹带 `alpha detector / position / trade` 逻辑。
 4. `alpha` 负责对下游冻结正式 `formal signal` 事实。
+   - 当前 `alpha` 的正式 bounded trigger ledger 入口为 `scripts/alpha/run_alpha_trigger_ledger_build.py`，只允许从 bounded detector 输入与官方 `filter / structure snapshot` 上游物化 `alpha_trigger_run / event / run_event`，不允许夹带 `position / trade / system` 逻辑。
    - 当前 `alpha` 的正式 bounded producer 入口为 `scripts/alpha/run_alpha_formal_signal_build.py`，只允许从官方触发事实与官方 `filter / structure snapshot` 上游物化 `alpha_formal_signal_run / event / run_event`，不允许夹带 `position` sizing 或 `trade / system` 逻辑。
 5. `position` 负责单标的仓位计划与资金管理。
    - 当前 `position` 的正式 bounded runner 入口为 `scripts/position/run_position_formal_signal_materialization.py`，只允许消费官方 `alpha formal signal` 与 `market_base` 参考价，不允许回读 `alpha` 内部临时过程。

@@ -42,6 +42,7 @@ system_tracker_files = [
     "docs/02-spec/Ω-system-delivery-roadmap-20260409.md",
 ]
 formal_runner_scripts = [
+    "scripts/alpha/run_alpha_trigger_ledger_build.py",
     "scripts/structure/run_structure_snapshot_build.py",
     "scripts/filter/run_filter_snapshot_build.py",
     "scripts/alpha/run_alpha_formal_signal_build.py",

@@ -63,8 +63,13 @@
 
 ## alpha
 
-1. `python scripts/alpha/run_alpha_formal_signal_build.py --signal-start-date 2026-04-08 --signal-end-date 2026-04-08 --limit 10 --batch-size 10`
-   - 从官方 `alpha trigger` 与 `filter / structure snapshot` 上游做 bounded 读取
+1. `python scripts/alpha/run_alpha_trigger_ledger_build.py --signal-start-date 2026-04-08 --signal-end-date 2026-04-08 --limit 10 --batch-size 10`
+   - 从 bounded detector 输入与官方 `filter / structure snapshot` 上游做 bounded 读取
+   - 物化 `alpha_trigger_run / alpha_trigger_event / alpha_trigger_run_event`
+   - 产出可被 `alpha formal signal` 稳定引用的官方 `alpha trigger ledger`
+
+2. `python scripts/alpha/run_alpha_formal_signal_build.py --signal-start-date 2026-04-08 --signal-end-date 2026-04-08 --limit 10 --batch-size 10`
+   - 从官方 `alpha trigger ledger` 与 `filter / structure snapshot` 上游做 bounded 读取
    - 物化 `alpha_formal_signal_run / alpha_formal_signal_event / alpha_formal_signal_run_event`
    - 输出可被 `position` 直接消费的官方 `alpha formal signal`
 

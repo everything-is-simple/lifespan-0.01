@@ -147,13 +147,12 @@
 
 当前下一锤：
 
-### `12-alpha-trigger-ledger-and-five-table-family-minimal-materialization`
+### `待定（12 已完成，等待下一张正式主线卡）`
 
 当前补充：
-1. `11` 已经完成，`structure / filter` 最小 snapshot 与 `alpha` 默认上游切换已收口。
-2. `12` 应优先冻结 `alpha` 内部最小正式中间账本，把 `trigger ledger` 与五家族共享最小 contract 推进到正式历史账本层。
-3. 本轮关键不是继续停留在 `smoke / temp`，而是做一次真实写入 `H:\Lifespan-data` 的 bounded pilot，并验证 `inserted / reused / rematerialized`。
-4. 本轮明确不回头扩 `position`，也不直接跳 `trade / system`。
+1. `12` 已经完成，`alpha` 最小 `trigger ledger` 三表、bounded runner 与正式 pilot 已收口。
+2. 新仓主链现在已经具备 `structure / filter / alpha trigger ledger / alpha formal signal / position` 的连续正式账本层。
+3. 下一张卡应继续围绕 `alpha` 五家族细化、`portfolio_plan`，或更下游模块正式开工重新裁切，而不是回头再补 `position`。
 
 ## 阻塞项
 

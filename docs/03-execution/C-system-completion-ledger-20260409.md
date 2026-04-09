@@ -4,7 +4,7 @@
 状态：`生效中`
 
 1. 当前下一锤：`12-alpha-trigger-ledger-and-five-table-family-minimal-materialization-card-20260409.md`
-2. 正式主线剩余卡：`1`
+2. 正式主线剩余卡：`0`
 3. 可选 Sidecar 剩余卡：`0`
 4. 后置修复剩余卡：`0`
 
@@ -21,3 +21,4 @@
 9. 建立 `position` 正式 bounded runner，连通 `alpha formal signal` 读取、`market_base` 参考价 enrichment 与 bounded validation
 10. 建立 `alpha` 官方 formal signal producer、冻结三表正式出口，并完成 `position` 对新仓官方上游的真实对接
 11. 建立 `structure` 与 `filter` 的最小 snapshot 三表、bounded runner，并让 `alpha` 默认消费官方上游
+12. 建立 `alpha trigger ledger` 最小三表、bounded runner 与正式 pilot，并让 `alpha formal signal` 稳定引用官方 trigger 事实

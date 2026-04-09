@@ -106,9 +106,13 @@
   - 物化 `filter_run / filter_snapshot / filter_run_snapshot`
   - 产出可被 `alpha` 优先消费的官方 pre-trigger 准入层
 - `scripts/alpha/run_alpha_formal_signal_build.py`
-  - 从官方 `alpha trigger` 与 `filter / structure snapshot` 做 bounded 读取
+  - 从官方 `alpha trigger ledger` 与 `filter / structure snapshot` 做 bounded 读取
   - 物化 `alpha_formal_signal_run / event / run_event`
   - 产出可被 `position` 直接消费的官方 `alpha formal signal`
+- `scripts/alpha/run_alpha_trigger_ledger_build.py`
+  - 从 bounded detector 输入与官方 `filter / structure snapshot` 做 bounded 读取
+  - 物化 `alpha_trigger_run / alpha_trigger_event / alpha_trigger_run_event`
+  - 产出可被 `alpha formal signal` 稳定引用的官方 `alpha trigger ledger`
 - `scripts/position/run_position_formal_signal_materialization.py`
   - 从官方 `alpha formal signal` 做 bounded 读取
   - 用 `market_base.stock_daily_adjusted` 补 `reference_trade_date / reference_price`
