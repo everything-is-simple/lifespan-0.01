@@ -1,0 +1,2 @@
+"""Market condition filter module."""
+

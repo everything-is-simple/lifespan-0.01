@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling>=1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lifespan-0.01"
+version = "0.1.0"
+description = "Refactored local-first A-share research system."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "duckdb>=1.2.0",
+    "pandas>=2.2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mlq"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "--basetemp=.tmp-pytest"
