@@ -17,8 +17,8 @@
 
 当前整体判断：
 
-- 系统阶段位于 `P0 已完成，P1/P2 已有边界，P4-position 最小 bootstrap 已建立，P3/P5/P6 仍待正式桥接`
-- 当前主线已经从“position 表族待落库”切换到“position 正式 runner 与 bounded validation 待接”
+- 系统阶段位于 `P0 已完成，P1/P2 已有边界，P4-position bounded runner 已建立，P3/P5/P6 仍待正式桥接`
+- 当前主线已经从“position 正式 runner 待接”切换到“position 消费侧已成立，上游 alpha formal signal 正式出口仍待落库”
 
 ## 老仓来源分层
 
@@ -138,7 +138,7 @@
 | `structure` | `设计中` | `G:\Lifespan-Quant\docs\01-design\modules\structure\` + 旧 `malf 29/30/31` 分层材料 | `全新设计` | `低` | 冻结 `structure_event / structure_snapshot` |
 | `filter` | `设计中` | `G:\Lifespan-Quant\docs\01-design\modules\filter\` + 旧 `malf 29/31/32` 分层材料 | `全新设计` | `低` | 冻结最小硬门与 observation 分层 |
 | `alpha` | `设计中` | `G:\EmotionQuant-gamma\normandy\` + `G:\MarketLifespan-Quant\docs\01-design\modules\alpha\` + `02-spec\modules\alpha\` | `沿袭后改写` | `高` | PAS 五表族、trigger ledger 与 formal signal 分层 |
-| `position` | `bootstrap 已建立` | `G:\EmotionQuant-gamma\positioning\` + `G:\MarketLifespan-Quant\docs\01-design\modules\position\` + `02-spec\modules\position\` | `沿袭后改写` | `高` | 正式 runner、bounded validation 与 `alpha` 官方入口桥接 |
+| `position` | `bounded runner 已建立` | `G:\EmotionQuant-gamma\positioning\` + `G:\MarketLifespan-Quant\docs\01-design\modules\position\` + `02-spec\modules\position\` | `沿袭后改写` | `高` | 回到上游 `alpha` 正式出口，完成 consumer 真正对接 |
 | `portfolio_plan` | `设计中` | 旧 `position / system` 桥接经验与组合验收材料 | `全新设计` | `低` | 组合容量、配额、blocked/admitted 合同 |
 | `trade` | `未开始` | `G:\MarketLifespan-Quant\docs\01-design\modules\trade\` + `02-spec\modules\trade\` + 桥接结论 | `只吸收经验` | `低` | entry / carry / exit / replay 账本 |
 | `system` | `未开始` | `G:\MarketLifespan-Quant\docs\01-design\modules\system\` + `02-spec\modules\system\` + bounded acceptance 结论 | `只吸收经验` | `中` | 系统级 readout / reuse / audit |
@@ -147,36 +147,34 @@
 
 当前下一锤建议固定为：
 
-### `09-position-formal-signal-runner-and-bounded-validation-card-20260409.md`
+### `10-alpha-formal-signal-contract-and-producer-card-20260409.md`
 
 原因：
 
-1. 08 已经把 `position` 最小表族、默认 policy seed 和 in-process 消费入口建立起来，当前真正缺的是官方 runner。
-2. 如果不尽快从官方 `alpha formal signal` 入口接入，08 的成果仍然停留在 helper 级别，难以成为正式执行线入口。
-3. bounded validation 能尽早验证 `alpha -> position` 的真实桥接成本，避免后面把问题推迟到 `trade / system` 再暴露。
-4. `position` 仍然是当前最适合继续向业务实现推进的一层。
+1. 09 已经把 `position` 消费侧的正式 runner、reference price enrichment 和 bounded validation 证据补完。
+2. 当前最真实的缺口不在 `position` 内部，而在上游 `alpha formal signal` 正式出口还没有新仓实现。
+3. 在上游未正式落库前，再继续堆 `position` 内部表或下游桥接，会把真实缺口向后推迟。
 
 下一锤产物：
 
-1. `position` 最小正式 runner
-2. 官方 `alpha formal signal` bounded 读取
-3. `market_base` 参考价补齐与 bounded validation
+1. `docs/01-design/modules/alpha/01-alpha-formal-signal-output-charter-20260409.md`
+2. `docs/02-spec/modules/alpha/01-alpha-formal-signal-output-and-producer-spec-20260409.md`
+3. `docs/03-execution/10-alpha-formal-signal-contract-and-producer-card-20260409.md`
 
 优先内容：
 
-1. 官方 `alpha formal signal` 最小读取
-2. `market_base` 参考价 enrichment
-3. 复用现有 `materialize_position_from_formal_signals(...)`
-4. bounded validation 落表摘要
+1. 冻结 `alpha formal signal` 在新仓的正式事实层
+2. 冻结 run / run-event 审计层
+3. 再让 `position` runner 对接新仓真正上游
 
 ## 阻塞项
 
-### `阻塞 1：position 尚无正式 runner`
+### `阻塞 1：alpha 正式出口尚未在新仓落库`
 
 影响：
 
-- `position` 当前仍无法从官方 `alpha` 入口直接执行 bounded 样本
-- `trade` 与 `system` 还看不到正式 runner 产出的最小主线证据
+- `position` 当前虽已具备 consumer runner，但只能对接合同形态的官方表，不能对接新仓内真实上游 producer
+- `trade` 与 `system` 仍看不到完整新仓主线上游到下游的正式串接
 
 ### `阻塞 2：alpha 五表族尚未正式落库`
 

@@ -13,3 +13,5 @@
 6. `06-roadmap-legacy-module-absorption-evidence-20260409.md`
 7. `07-position-funding-management-and-exit-contract-evidence-20260409.md`
 8. `08-position-ledger-table-family-bootstrap-evidence-20260409.md`
+9. `09-position-formal-signal-runner-and-bounded-validation-evidence-20260409.md`
+10. `10-alpha-formal-signal-contract-and-producer-evidence-20260409.md`

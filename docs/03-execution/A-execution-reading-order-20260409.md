@@ -8,12 +8,11 @@
 1. 先读 `00-conclusion-catalog-20260409.md`
 2. 再读 `B-card-catalog-20260409.md`
 3. 再读 `C-system-completion-ledger-20260409.md`
-4. 打开当前活动执行卡 `09-position-formal-signal-runner-and-bounded-validation-card-20260409.md`
-5. 确认卡片已链接需求、设计和任务分解
-6. 之后才开始正式实现
+4. 先看最新已生效结论 `09-position-formal-signal-runner-and-bounded-validation-conclusion-20260409.md`
+5. 如果要继续施工，优先回看当前待施工卡 `10-alpha-formal-signal-contract-and-producer-card-20260409.md`
+6. 再回 `Ω-system-delivery-roadmap-20260409.md` 看系统里程碑与后续锤点
 
 当前活动主线：
 
-1. 在 08 已建立的最小 bootstrap 与最小消费入口基础上，接出正式 runner
-2. 从官方 `alpha formal signal` bounded 读取样本，并补齐 `market_base` 参考价
-3. 留下 bounded validation 证据，为后续 `trade / system` 消费准备正式入口
+1. `position` 消费侧 bounded runner 已成立，最新生效真相先看 `09` 结论。
+2. 当前活动卡已经切到 `10`，主线任务是补 `alpha formal signal` 正式出口合同与最小 producer。

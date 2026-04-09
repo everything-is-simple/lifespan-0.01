@@ -3,9 +3,9 @@
 日期：`2026-04-09`
 状态：`生效中`
 
-本文件记录当前仓库已经正式成立的结论入口。
+本文记录当前执行区已经建立的结论入口。
 
-## 当前正式结论
+## 当前结论文件
 
 1. `01-governance-tooling-and-environment-bootstrap-conclusion-20260409.md`
 2. `02-shared-ledger-contract-and-pytest-path-fix-conclusion-20260409.md`
@@ -15,6 +15,8 @@
 6. `06-roadmap-legacy-module-absorption-conclusion-20260409.md`
 7. `07-position-funding-management-and-exit-contract-conclusion-20260409.md`
 8. `08-position-ledger-table-family-bootstrap-conclusion-20260409.md`
+9. `09-position-formal-signal-runner-and-bounded-validation-conclusion-20260409.md`
+10. `10-alpha-formal-signal-contract-and-producer-conclusion-20260409.md`
 
 ## 已冻结基础口径
 
