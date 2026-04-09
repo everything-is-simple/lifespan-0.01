@@ -3,9 +3,9 @@
 日期：`2026-04-09`
 状态：`生效中`
 
-1. 当前下一锤：`13-alpha-five-table-family-shared-contract-and-family-ledger-bootstrap-card-20260409.md`
-2. 当前待施工卡：`13-alpha-five-table-family-shared-contract-and-family-ledger-bootstrap-card-20260409.md`
-3. 正式主线剩余卡：`0`
+1. 当前下一锤：`14-portfolio-plan-minimal-ledger-and-position-bridge-card-20260409.md`
+2. 当前待施工卡：`14-portfolio-plan-minimal-ledger-and-position-bridge-card-20260409.md`
+3. 正式主线剩余卡：`1`
 4. 可选 Sidecar 剩余卡：`0`
 5. 后置修复剩余卡：`0`
 
@@ -24,3 +24,4 @@
 11. `11-structure-filter-formal-contract-and-minimal-snapshot-card-20260409.md`
 12. `12-alpha-trigger-ledger-and-five-table-family-minimal-materialization-card-20260409.md`
 13. `13-alpha-five-table-family-shared-contract-and-family-ledger-bootstrap-card-20260409.md`
+14. `14-portfolio-plan-minimal-ledger-and-position-bridge-card-20260409.md`

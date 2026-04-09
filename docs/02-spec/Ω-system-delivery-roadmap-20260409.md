@@ -147,12 +147,12 @@
 
 当前下一锤：
 
-### `待下一轮正式规划`
+### `14-portfolio-plan-minimal-ledger-and-position-bridge`
 
 当前补充：
 1. `13` 已经完成，`alpha` 五表族共享 contract 与 family ledger bootstrap 已在 `bof / pb` 两个核心 family 上完成正式 pilot。
 2. 新仓主链当前已经具备 `structure / filter / alpha trigger ledger / alpha family ledger / alpha formal signal / position` 的连续正式账本层。
-3. 当前正式主线卡已清零；下一轮需在 `portfolio_plan / trade / system` 与 `alpha` 进一步细化之间重新排期，而不是继续停留在 temp-only 或回头补 `position`。
+3. `14` 正式切到 `portfolio_plan`，先建立最小组合层账本与 `position -> portfolio_plan` 官方桥接，不提前开 `trade / system`。
 
 ## 阻塞项
 
