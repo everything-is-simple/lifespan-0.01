@@ -2,7 +2,7 @@
 
 卡片编号：`09`
 日期：`2026-04-09`
-状态：`草稿`
+状态：`已完成`
 
 ## 需求
 
@@ -18,6 +18,7 @@
 - 设计文档：`docs/01-design/modules/position/01-position-funding-management-and-exit-charter-20260409.md`
 - 规格文档：`docs/02-spec/modules/position/01-position-funding-management-and-exit-spec-20260409.md`
 - 桥接合同：`docs/02-spec/modules/position/02-alpha-to-position-formal-signal-bridge-spec-20260409.md`
+- runner 规格：`docs/02-spec/modules/position/03-position-formal-signal-runner-spec-20260409.md`
 - 上轮结论：`docs/03-execution/08-position-ledger-table-family-bootstrap-conclusion-20260409.md`
 
 ## 任务分解

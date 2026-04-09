@@ -95,6 +95,13 @@
 - `trade_runtime`
 - `system`
 
+## 当前正式 runner 入口
+
+- `scripts/position/run_position_formal_signal_materialization.py`
+  - 从官方 `alpha formal signal` 做 bounded 读取
+  - 用 `market_base.stock_daily_adjusted` 补 `reference_trade_date / reference_price`
+  - 复用 `materialize_position_from_formal_signals(...)` 落 `position` 正式账本
+
 ## 文档治理
 
 新仓继承老系统对以下内容的重视：

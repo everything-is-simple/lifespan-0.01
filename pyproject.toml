@@ -41,3 +41,6 @@ system_tracker_files = [
     "docs/02-spec/β-system-roadmap-and-progress-tracker-spec-20260409.md",
     "docs/02-spec/Ω-system-delivery-roadmap-20260409.md",
 ]
+formal_runner_scripts = [
+    "scripts/position/run_position_formal_signal_materialization.py",
+]

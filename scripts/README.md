@@ -1,10 +1,11 @@
 # scripts
 
 这里放新仓当前阶段允许保留的正式脚本入口。
-本轮只迁移两类脚本：
+本轮允许保留三类脚本：
 
 1. 治理脚本
 2. 环境脚本
+3. 已冻结合同后的模块 bounded runner
 
 禁止把旧系统的大量业务 runner 整包复制进来。
 
@@ -43,3 +44,10 @@
    - 预览生成执行四件套
 2. `python .codex/skills/lifespan-execution-discipline/scripts/check_execution_indexes.py --include-untracked`
    - 在本地重构阶段检查执行索引、卡目录和完工账本
+
+## position
+
+1. `python scripts/position/run_position_formal_signal_materialization.py --policy-id fixed_notional_full_exit_v1 --capital-base-value 1000000 --signal-start-date 2026-04-08 --signal-end-date 2026-04-08 --limit 10`
+   - 从官方 `alpha formal signal` bounded 读取样本
+   - 用 `market_base.stock_daily_adjusted.close` 补参考成交日与参考价
+   - 复用 `position` 既有 materialization helper 落表

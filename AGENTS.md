@@ -78,6 +78,7 @@
 
 1. `PAS` 是 `alpha` 内部能力，不再是顶层模块。
 2. `position` 负责单标的仓位计划与资金管理。
+   - 当前 `position` 的正式 bounded runner 入口为 `scripts/position/run_position_formal_signal_materialization.py`，只允许消费官方 `alpha formal signal` 与 `market_base` 参考价，不允许回读 `alpha` 内部临时过程。
 3. `portfolio_plan` 负责组合层计划、组合回测、容量协调。
 4. `trade` 负责执行与成交账本，不承担组合研究职责。
 5. `system` 负责编排、治理、审计、冻结，不保存策略事实主数据。
