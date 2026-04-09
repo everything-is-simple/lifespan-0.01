@@ -17,8 +17,8 @@
 
 当前整体判断：
 
-- 系统阶段位于 `P0 已完成，P1/P2 已有边界，P4-position bounded runner 已建立，P3/P5/P6 仍待正式桥接`
-- 当前主线已经从“structure/filter 官方 snapshot 已成立，alpha 默认上游已切到新仓正式 snapshot”推进到“alpha 的 trigger ledger / family ledger / formal signal 三级正式分层已成立”
+- 系统阶段位于 `P0 已完成，P1/P2 已有边界，P3/P4 已建立最小官方桥接，P5/P6 仍待正式桥接`
+- 当前主线已经从“structure/filter 官方 snapshot 已成立，alpha 默认上游已切到新仓正式 snapshot”推进到“alpha -> position -> portfolio_plan 的最小正式账本主线已成立”
 
 ## 老仓来源分层
 
@@ -100,7 +100,7 @@
 
 ### `P4 仓位与组合层`
 
-状态：`设计中`
+状态：`position 已对接，portfolio_plan 最小账本已成立`
 
 范围：
 
@@ -139,7 +139,7 @@
 | `filter` | `最小官方 snapshot 已成立` | `G:\Lifespan-Quant\docs\01-design\modules\filter\` + 旧 `malf 29/31/32` 分层材料 | `全新设计` | `中` | 继续补 observation 与更细的 admission 分层，但保持少拦截 |
 | `alpha` | `trigger ledger / family ledger / formal signal 三级正式账本已成立` | `G:\EmotionQuant-gamma\normandy\` + `G:\MarketLifespan-Quant\docs\01-design\modules\alpha\` + `02-spec\modules\alpha\` | `沿袭后改写` | `高` | 继续补 PAS 五表族更细 payload、trace 与专表，但不绕过 formal signal |
 | `position` | `已对接 alpha 官方 formal signal` | `G:\EmotionQuant-gamma\positioning\` + `G:\MarketLifespan-Quant\docs\01-design\modules\position\` + `02-spec\modules\position\` | `沿袭后改写` | `高` | 维持单标的正式账本边界，等待 `portfolio_plan / trade` 下游开工 |
-| `portfolio_plan` | `设计中` | 旧 `position / system` 桥接经验与组合验收材料 | `全新设计` | `低` | 组合容量、配额、blocked/admitted 合同 |
+| `portfolio_plan` | `最小官方账本已成立` | 旧 `position / system` 桥接经验与组合验收材料 | `全新设计` | `中` | 向 `trade` 输出官方组合裁决桥接，继续扩展容量与回测层 |
 | `trade` | `未开始` | `G:\MarketLifespan-Quant\docs\01-design\modules\trade\` + `02-spec\modules\trade\` + 桥接结论 | `只吸收经验` | `低` | entry / carry / exit / replay 账本 |
 | `system` | `未开始` | `G:\MarketLifespan-Quant\docs\01-design\modules\system\` + `02-spec\modules\system\` + bounded acceptance 结论 | `只吸收经验` | `中` | 系统级 readout / reuse / audit |
 
@@ -150,9 +150,9 @@
 ### `14-portfolio-plan-minimal-ledger-and-position-bridge`
 
 当前补充：
-1. `13` 已经完成，`alpha` 五表族共享 contract 与 family ledger bootstrap 已在 `bof / pb` 两个核心 family 上完成正式 pilot。
-2. 新仓主链当前已经具备 `structure / filter / alpha trigger ledger / alpha family ledger / alpha formal signal / position` 的连续正式账本层。
-3. `14` 正式切到 `portfolio_plan`，先建立最小组合层账本与 `position -> portfolio_plan` 官方桥接，不提前开 `trade / system`。
+1. `14` 已经完成，`portfolio_plan` 最小三表、`position -> portfolio_plan` 官方桥接、bounded pilot 与 rerun 审计已成立。
+2. 新仓主链当前已经具备 `structure / filter / alpha trigger ledger / alpha family ledger / alpha formal signal / position / portfolio_plan` 的连续正式账本层。
+3. 下一张主线卡待重排；优先候选方向是 `trade` 的最小执行账本与 `portfolio_plan -> trade` 官方桥接。
 
 ## 阻塞项
 

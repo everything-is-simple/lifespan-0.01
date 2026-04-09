@@ -88,6 +88,7 @@
 5. `position` 负责单标的仓位计划与资金管理。
    - 当前 `position` 的正式 bounded runner 入口为 `scripts/position/run_position_formal_signal_materialization.py`，只允许消费官方 `alpha formal signal` 与 `market_base` 参考价，不允许回读 `alpha` 内部临时过程。
 6. `portfolio_plan` 负责组合层计划、组合回测、容量协调。
+   - 当前 `portfolio_plan` 的正式 bounded runner 入口为 `scripts/portfolio_plan/run_portfolio_plan_build.py`，只允许消费官方 `position_candidate_audit / position_capacity_snapshot / position_sizing_snapshot`，物化 `portfolio_plan_run / snapshot / run_snapshot`，不允许回读 `alpha` 内部过程，也不允许顺手夹带 `trade / system` 逻辑。
 7. `trade` 负责执行与成交账本，不承担组合研究职责。
 8. `system` 负责编排、治理、审计、冻结，不保存策略事实主数据。
 

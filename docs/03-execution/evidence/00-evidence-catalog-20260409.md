@@ -18,3 +18,4 @@
 11. `11-structure-filter-formal-contract-and-minimal-snapshot-evidence-20260409.md`
 12. `12-alpha-trigger-ledger-and-five-table-family-minimal-materialization-evidence-20260409.md`
 13. `13-alpha-five-table-family-shared-contract-and-family-ledger-bootstrap-evidence-20260409.md`
+14. `14-portfolio-plan-minimal-ledger-and-position-bridge-evidence-20260409.md`

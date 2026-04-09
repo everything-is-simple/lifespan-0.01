@@ -4,7 +4,7 @@
 状态：`生效中`
 
 1. 当前下一锤：`14-portfolio-plan-minimal-ledger-and-position-bridge-card-20260409.md`
-2. 正式主线剩余卡：`1`
+2. 正式主线剩余卡：`0`
 3. 可选 Sidecar 剩余卡：`0`
 4. 后置修复剩余卡：`0`
 
@@ -24,3 +24,7 @@
 12. 建立 `alpha trigger ledger` 最小三表、bounded runner 与正式 pilot，并让 `alpha formal signal` 稳定引用官方 trigger 事实
 13. 冻结 `alpha` 五表族共享 contract 与 family ledger bootstrap，先在一到两个核心 family 上证明正式账本层、bounded pilot 与 rerun 审计成立
 14. 冻结 `portfolio_plan` 最小共享 contract 与 `position -> portfolio_plan` 官方桥接，建立组合层最小三表、bounded pilot 与 rerun 审计
+
+当前口径：
+- `14` 已完成；主线现已推进到 `portfolio_plan` 最小正式账本层。
+- 下一张主线卡待回到路线图重排，优先候选方向为 `trade` 最小执行账本与 `portfolio_plan -> trade` 官方桥接。

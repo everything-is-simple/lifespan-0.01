@@ -20,6 +20,7 @@
 11. `11-structure-filter-formal-contract-and-minimal-snapshot-conclusion-20260409.md`
 12. `12-alpha-trigger-ledger-and-five-table-family-minimal-materialization-conclusion-20260409.md`
 13. `13-alpha-five-table-family-shared-contract-and-family-ledger-bootstrap-conclusion-20260409.md`
+14. `14-portfolio-plan-minimal-ledger-and-position-bridge-conclusion-20260409.md`
 
 ## 已冻结基础口径
 
@@ -32,3 +33,4 @@
 7. 新仓已补齐最小 `structure / filter` 官方 snapshot 合同，并让 `alpha` 默认改读官方上游。
 8. 新仓 `alpha` 已补齐最小 `trigger ledger` 三表、bounded runner 与正式 pilot，`trigger ledger -> formal signal` 官方上游关系成立。
 9. 新仓 `alpha` 已补齐最小 `family ledger` 三表、bounded runner 与正式 pilot，`trigger ledger -> family ledger -> formal signal` 三级正式分层成立。
+10. 新仓 `portfolio_plan` 已补齐最小三表、`position -> portfolio_plan` 官方桥接、bounded pilot 与 `inserted / reused / rematerialized` 组合层审计。

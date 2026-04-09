@@ -5,7 +5,7 @@
 
 1. 当前下一锤：`14-portfolio-plan-minimal-ledger-and-position-bridge-card-20260409.md`
 2. 当前待施工卡：`14-portfolio-plan-minimal-ledger-and-position-bridge-card-20260409.md`
-3. 正式主线剩余卡：`1`
+3. 正式主线剩余卡：`0`
 4. 可选 Sidecar 剩余卡：`0`
 5. 后置修复剩余卡：`0`
 
@@ -25,3 +25,7 @@
 12. `12-alpha-trigger-ledger-and-five-table-family-minimal-materialization-card-20260409.md`
 13. `13-alpha-five-table-family-shared-contract-and-family-ledger-bootstrap-card-20260409.md`
 14. `14-portfolio-plan-minimal-ledger-and-position-bridge-card-20260409.md`
+
+当前口径：
+- `14` 已完成实现、证据、记录与结论收口。
+- 下一锤待在 `Ω-system-delivery-roadmap-20260409.md` 中重排并开新卡；在此之前，索引仍暂时指向最近一张主线卡 `14`。

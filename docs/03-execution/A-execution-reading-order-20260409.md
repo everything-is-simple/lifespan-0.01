@@ -7,11 +7,11 @@
 1. 先读 `00-conclusion-catalog-20260409.md`
 2. 再读 `B-card-catalog-20260409.md`
 3. 再读 `C-system-completion-ledger-20260409.md`
-4. 先看最新已生效结论 `13-alpha-five-table-family-shared-contract-and-family-ledger-bootstrap-conclusion-20260409.md`
-5. 如果要继续正式施工，优先回看当前待施工卡 `14-portfolio-plan-minimal-ledger-and-position-bridge-card-20260409.md`
-6. 再回 `Ω-system-delivery-roadmap-20260409.md` 看主线剩余阻塞与下一轮卡方向
+4. 先看最新已生效结论 `14-portfolio-plan-minimal-ledger-and-position-bridge-conclusion-20260409.md`
+5. 如果要复盘当前收口，回看 `14-portfolio-plan-minimal-ledger-and-position-bridge-card-20260409.md`
+6. 如果要继续正式施工，先回 `Ω-system-delivery-roadmap-20260409.md` 重新规划下一锤与新卡
 
 当前活动主线：
 1. `alpha` 已新增最小官方 `trigger ledger` 三表，并完成真实 bounded pilot。
 2. `alpha` 已新增最小官方 `family ledger` 三表，并完成 `bof / pb` bounded pilot 与 rerun 审计。
-3. 当前最新已完成主线卡已经推进到 `13`；当前待施工主线卡已切到 `14`。
+3. 当前最新已完成主线卡已经推进到 `14`；下一张主线卡待路线图重排。

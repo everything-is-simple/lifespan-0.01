@@ -48,4 +48,5 @@ formal_runner_scripts = [
     "scripts/filter/run_filter_snapshot_build.py",
     "scripts/alpha/run_alpha_formal_signal_build.py",
     "scripts/position/run_position_formal_signal_materialization.py",
+    "scripts/portfolio_plan/run_portfolio_plan_build.py",
 ]

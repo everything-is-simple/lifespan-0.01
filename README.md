@@ -121,6 +121,10 @@
   - 从官方 `alpha formal signal` 做 bounded 读取
   - 用 `market_base.stock_daily_adjusted` 补 `reference_trade_date / reference_price`
   - 复用 `materialize_position_from_formal_signals(...)` 落 `position` 正式账本
+- `scripts/portfolio_plan/run_portfolio_plan_build.py`
+  - 从官方 `position_candidate_audit / position_capacity_snapshot / position_sizing_snapshot` 做 bounded 读取
+  - 物化 `portfolio_plan_run / portfolio_plan_snapshot / portfolio_plan_run_snapshot`
+  - 产出可被后续 `trade / system` 消费的最小组合裁决账本
 
 ## 文档治理
 
