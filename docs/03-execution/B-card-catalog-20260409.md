@@ -3,9 +3,9 @@
 日期：`2026-04-09`
 状态：`生效中`
 
-1. 当前下一锤：`11-structure-filter-formal-contract-and-minimal-snapshot-card-20260409.md`
-2. 当前待施工卡：`11-structure-filter-formal-contract-and-minimal-snapshot-card-20260409.md`
-3. 正式主线剩余卡：`0`
+1. 当前下一锤：`12-alpha-trigger-ledger-and-five-table-family-minimal-materialization-card-20260409.md`
+2. 当前待施工卡：`12-alpha-trigger-ledger-and-five-table-family-minimal-materialization-card-20260409.md`
+3. 正式主线剩余卡：`1`
 4. 可选 Sidecar 剩余卡：`0`
 5. 后置修复剩余卡：`0`
 
@@ -22,3 +22,4 @@
 9. `09-position-formal-signal-runner-and-bounded-validation-card-20260409.md`
 10. `10-alpha-formal-signal-contract-and-producer-card-20260409.md`
 11. `11-structure-filter-formal-contract-and-minimal-snapshot-card-20260409.md`
+12. `12-alpha-trigger-ledger-and-five-table-family-minimal-materialization-card-20260409.md`
