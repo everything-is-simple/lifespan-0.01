@@ -1,2 +1,1 @@
-"""Data ingestion and canonicalization module."""
-
+"""`data` 模块负责原始市场数据与基础市场账本。"""

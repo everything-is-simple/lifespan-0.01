@@ -1,2 +1,1 @@
-"""Trade execution module."""
-
+"""`trade` 模块负责执行、成交与账户运行账本。"""

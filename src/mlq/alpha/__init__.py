@@ -1,2 +1,1 @@
-"""Alpha research module."""
-
+"""`alpha` 模块负责正式信号账本与策略触发能力。"""

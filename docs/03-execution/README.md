@@ -1,8 +1,7 @@
 # 执行入口
 
-`docs/03-execution/` 是正式执行闭环区域。
-
-它不是随手记笔记的地方，而是正式实现任务的收口区。
+`docs/03-execution/` 是正式执行闭环区。
+这里继承老系统“保留证据、保留记录、保留结论”的纪律，并补上索引账本与当前施工卡。
 
 ## 执行闭环
 
@@ -15,21 +14,24 @@
 第一次进入本目录时，默认按下面顺序阅读：
 
 1. `00-conclusion-catalog-20260409.md`
-2. `00-card-execution-discipline-20260409.md`
-3. `00-execution-reading-order-20260409.md`
+2. `22-card-catalog-20260409.md`
+3. `77-system-completion-ledger-20260409.md`
+4. `00-card-execution-discipline-20260409.md`
+5. `00-execution-reading-order-20260409.md`
 
 ## 默认动作
 
 如果你只是想知道“现在正式成立了什么”，先看：
 
 1. `00-conclusion-catalog-20260409.md`
-2. 对应结论文件
+2. 对应结论文档
 
 如果你想继续正式实现，先看：
 
-1. 当前活动执行卡
+1. `22-card-catalog-20260409.md` 里的“当前待施工卡”
 2. 卡片链接的需求、设计、任务分解
-3. 再开始实现
+3. `77-system-completion-ledger-20260409.md`
+4. 再开始实现
 
 ## 硬规则
 
@@ -42,9 +44,9 @@
 ## 目录职责
 
 - 根目录
-  - 放卡片、结论、索引、模板
+  - 放卡片、结论、索引、模板、当前主线账本
 - `evidence/`
-  - 放测试证据、命令证据、运行证据
+  - 放测试证据、命令证据、运行证据、证据目录
 - `records/`
   - 放执行记录、实现轨迹、收口说明
 
@@ -56,4 +58,3 @@
 2. `evidence`
 3. `record`
 4. `conclusion`
-

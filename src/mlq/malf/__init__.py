@@ -1,2 +1,1 @@
-"""Market Average Lifespan Framework module."""
-
+"""`malf` 模块负责市场生命周期事实层账本。"""

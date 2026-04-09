@@ -1,2 +1,1 @@
-"""System orchestration module."""
-
+"""`system` 模块负责编排、治理、审计与冻结元数据。"""

@@ -1,8 +1,9 @@
-.pytest_cache/
 .venv/
 __pycache__/
 *.py[cod]
 *.duckdb
 *.sqlite
-.tmp-pytest/
-
+.mypy_cache/
+.ruff_cache/
+*.log
+*.parquet

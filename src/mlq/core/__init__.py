@@ -1,2 +1,1 @@
-"""Core contracts and shared utilities."""
-
+"""`core` 模块提供跨模块共享的基础契约与工具。"""

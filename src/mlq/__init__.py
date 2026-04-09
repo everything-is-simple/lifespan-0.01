@@ -1,2 +1,1 @@
-"""Top-level package for lifespan-0.01."""
-
+"""`mlq` 是新仓当前保留的 Python 顶层命名空间。"""

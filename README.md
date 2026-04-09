@@ -1,8 +1,7 @@
 # lifespan-0.01
 
-`lifespan-0.01` 是本次重构的新主仓。
-
-它不是一个追求“代码越少越漂亮”的实验仓，而是一个必须在个人 PC 上长期运行的本地历史账本系统。
+`lifespan-0.01` 是这次重构的新主仓。
+它不是追求“代码越少越漂亮”的实验仓，而是一个必须在个人 PC 上长期运行的本地历史账本系统。
 
 ## 系统定位
 
@@ -13,13 +12,13 @@
 - 很多计算不能反复全量重跑
 - 中间结果必须长期沉淀，才能支撑后续增量更新、断点续跑和正式复盘
 
-因此，本系统的核心目标不是“临时跑通一次”，而是：
+因此，本系统的核心目标不是临时跑通一次，而是：
 
 1. 采集数据
-2. 存储数据
+2. 储存数据
 3. 加工数据
-4. 再次存储加工后的事实
-5. 让这些事实逐步沉淀为可以复查、可续跑、可审计的历史账本
+4. 再次储存加工后的事实
+5. 让这些事实逐步沉淀为可复查、可续跑、可审计的历史账本
 
 ## 当前正式模块
 
@@ -34,7 +33,7 @@
 - `trade`
 - `system`
 
-当前主链路冻结为：
+当前主链冻结为：
 
 `data -> malf -> structure -> filter -> alpha -> position -> portfolio_plan -> trade -> system`
 
@@ -62,11 +61,11 @@
    - 跨版本、跨模块的正式验证资产快照
 
 禁止把临时工作库、缓存、benchmark 产物长期堆在仓库内部。
+`pytest` 的 cache 与 basetemp 也属于临时产物，必须写到 `H:\Lifespan-temp`。
 
 ## 历史账本原则
 
-本系统中的数据库不是“一次运行产物”，而是“历史账本”。
-
+本系统中的数据库不是一次运行产物，而是历史账本。
 正式数据库应优先满足：
 
 - 自然键累积
@@ -115,17 +114,24 @@
 
 再进入正式执行闭环。
 
+## 入口文件
+
+下面三个文件是新仓入口，不允许长期滞后于当前治理口径：
+
+1. `AGENTS.md`
+2. `README.md`
+3. `pyproject.toml`
+
+只要治理规则、环境脚手架、路径契约、测试入口发生变化，就必须同步刷新这三个入口文件。
+
 ## 文档入口
 
 建议按以下顺序进入仓库：
 
-1. `docs/README.md`
-2. `docs/01-design/00-system-charter-20260409.md`
-3. `docs/01-design/01-doc-first-development-governance-20260409.md`
-4. `docs/02-spec/00-repo-layout-and-docflow-spec-20260409.md`
-5. `docs/02-spec/01-doc-first-task-gating-spec-20260409.md`
-6. `docs/03-execution/README.md`
-
-如果只是追当前正式口径，先读 `conclusion`；
-如果要继续正式实现，再回到对应 `card / evidence / record`。
-
+1. `AGENTS.md`
+2. `docs/README.md`
+3. `docs/01-design/00-system-charter-20260409.md`
+4. `docs/01-design/01-doc-first-development-governance-20260409.md`
+5. `docs/02-spec/00-repo-layout-and-docflow-spec-20260409.md`
+6. `docs/02-spec/01-doc-first-task-gating-spec-20260409.md`
+7. `docs/03-execution/README.md`

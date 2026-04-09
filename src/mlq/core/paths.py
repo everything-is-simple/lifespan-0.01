@@ -1,4 +1,4 @@
-"""Workspace and formal database path contracts for lifespan-0.01."""
+"""定义新仓五根目录与正式账本路径契约。"""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ FORMAL_MODULES = (
 
 
 def discover_repo_root(start: Path | None = None) -> Path:
-    """Find the repository root by walking upward to `pyproject.toml`."""
+    """向上查找带 `pyproject.toml` 的仓库根目录。"""
     current = (start or Path(__file__)).resolve()
     for candidate in (current, *current.parents):
         if (candidate / "pyproject.toml").exists():
@@ -37,7 +37,7 @@ def discover_repo_root(start: Path | None = None) -> Path:
 
 @dataclass(frozen=True)
 class DatabasePaths:
-    """Formal historical-ledger databases for the current refactor baseline."""
+    """当前重构基线下的正式历史账本数据库路径。"""
 
     raw_market: Path
     market_base: Path
@@ -67,7 +67,7 @@ class DatabasePaths:
 
 @dataclass(frozen=True)
 class WorkspaceRoots:
-    """Top-level local workspace roots shared across modules."""
+    """跨模块共享的五根目录路径集合。"""
 
     repo_root: Path
     data_root: Path
@@ -91,22 +91,22 @@ class WorkspaceRoots:
         )
 
     def module_temp_root(self, module_name: str) -> Path:
-        """Return the temp workspace reserved for a formal module."""
+        """返回正式模块对应的临时工作目录。"""
         _validate_module_name(module_name)
         return self.temp_root / module_name
 
     def module_report_root(self, module_name: str) -> Path:
-        """Return the report workspace reserved for a formal module."""
+        """返回正式模块对应的报告目录。"""
         _validate_module_name(module_name)
         return self.report_root / module_name
 
     def module_validated_root(self, module_name: str) -> Path:
-        """Return the validated workspace reserved for a formal module."""
+        """返回正式模块对应的验证快照目录。"""
         _validate_module_name(module_name)
         return self.validated_root / module_name
 
     def ensure_directories(self) -> None:
-        """Create declared workspace roots and parent directories for formal outputs."""
+        """创建五根目录、账本父目录和模块级产物目录。"""
         for root in (
             self.repo_root,
             self.data_root,
@@ -133,10 +133,16 @@ def _validate_module_name(module_name: str) -> None:
 
 
 def default_settings(repo_root: Path | None = None) -> WorkspaceRoots:
-    """Resolve workspace roots and allow environment variables to override defaults."""
-    resolved_repo_root = Path(
-        os.getenv("LIFESPAN_REPO_ROOT", repo_root or discover_repo_root())
-    ).resolve()
+    """解析当前仓库五根目录设置。
+
+    当显式传入 `repo_root` 时，应以该值为准，不允许再被环境变量里的
+    `LIFESPAN_REPO_ROOT` 抢走；否则测试和子工作区会被外层 shell 污染。
+    """
+
+    if repo_root is not None:
+        resolved_repo_root = Path(repo_root).resolve()
+    else:
+        resolved_repo_root = Path(os.getenv("LIFESPAN_REPO_ROOT", discover_repo_root())).resolve()
     data_root = Path(
         os.getenv("LIFESPAN_DATA_ROOT", _default_external_root(resolved_repo_root, _DATA_DIRNAME))
     ).resolve()

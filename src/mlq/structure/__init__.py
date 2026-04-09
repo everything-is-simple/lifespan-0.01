@@ -1,2 +1,1 @@
-"""Structure semantics module."""
-
+"""`structure` 模块负责结构事实层账本。"""

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Lifespan 执行纪律"
+  short_description: "在新仓执行任务时，强制遵守文档先行、卡片闭环、证据回填与索引账本治理。"
+  default_prompt: "使用 $lifespan-execution-discipline 在本仓库执行任务，并按读结论、读卡目录、开卡、留证据、写记录、收结论、回填索引的正式闭环推进。"

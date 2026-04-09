@@ -1,2 +1,1 @@
-"""Position planning and risk module."""
-
+"""`position` 模块负责单标的仓位计划与资金管理账本。"""

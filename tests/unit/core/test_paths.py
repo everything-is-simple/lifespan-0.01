@@ -1,3 +1,5 @@
+"""覆盖五根目录解析与环境变量覆盖口径。"""
+
 from pathlib import Path
 
 import pytest
@@ -5,7 +7,19 @@ import pytest
 from mlq.core.paths import FORMAL_MODULES, default_settings
 
 
-def test_default_settings_use_expected_sibling_roots(tmp_path: Path) -> None:
+def test_default_settings_use_expected_sibling_roots(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for env_name in (
+        "LIFESPAN_REPO_ROOT",
+        "LIFESPAN_DATA_ROOT",
+        "LIFESPAN_TEMP_ROOT",
+        "LIFESPAN_REPORT_ROOT",
+        "LIFESPAN_VALIDATED_ROOT",
+    ):
+        monkeypatch.delenv(env_name, raising=False)
+
     repo_root = tmp_path / "lifespan-0.01"
     repo_root.mkdir()
     (repo_root / "pyproject.toml").write_text("[project]\nname='lifespan-0.01'\n", encoding="utf-8")
@@ -31,7 +45,19 @@ def test_default_settings_use_expected_sibling_roots(tmp_path: Path) -> None:
     }
 
 
-def test_ensure_directories_builds_formal_module_workspaces(tmp_path: Path) -> None:
+def test_ensure_directories_builds_formal_module_workspaces(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for env_name in (
+        "LIFESPAN_REPO_ROOT",
+        "LIFESPAN_DATA_ROOT",
+        "LIFESPAN_TEMP_ROOT",
+        "LIFESPAN_REPORT_ROOT",
+        "LIFESPAN_VALIDATED_ROOT",
+    ):
+        monkeypatch.delenv(env_name, raising=False)
+
     repo_root = tmp_path / "lifespan-0.01"
     repo_root.mkdir()
     (repo_root / "pyproject.toml").write_text("[project]\nname='lifespan-0.01'\n", encoding="utf-8")
@@ -63,3 +89,15 @@ def test_env_vars_can_override_workspace_roots(tmp_path: Path, monkeypatch: pyte
     assert settings.temp_root == (tmp_path / "custom-temp").resolve()
     assert settings.report_root == (tmp_path / "custom-report").resolve()
     assert settings.validated_root == (tmp_path / "custom-validated").resolve()
+
+
+def test_explicit_repo_root_wins_over_repo_root_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    repo_root = tmp_path / "explicit-repo"
+    repo_root.mkdir()
+    (repo_root / "pyproject.toml").write_text("[project]\nname='lifespan-0.01'\n", encoding="utf-8")
+
+    monkeypatch.setenv("LIFESPAN_REPO_ROOT", str(tmp_path / "wrong-repo"))
+
+    settings = default_settings(repo_root=repo_root)
+
+    assert settings.repo_root == repo_root.resolve()

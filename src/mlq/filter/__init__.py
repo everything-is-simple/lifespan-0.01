@@ -1,2 +1,1 @@
-"""Market condition filter module."""
-
+"""`filter` 模块负责正式过滤层账本与下游准入结果。"""

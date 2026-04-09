@@ -5,31 +5,30 @@
 ## 1. 仓库定位
 
 `lifespan-0.01` 是一个面向个人 PC 的、本地优先的历史账本系统。
+系统第一目标不是短期跑通，而是长期可运行、可续跑、可复算、可审计。
 
-系统的第一目标不是抽象优雅，而是长期可运行、可续跑、可复算、可审计。
-
-因此一切实现都必须服从以下现实约束：
+必须始终服从这些现实约束：
 
 - 数据量大
 - 本地 `cpu / memory / io` 受限
 - 很多计算不能反复全量重跑
-- 中间事实必须被持续沉淀
+- 中间事实必须长期沉淀
 
 ## 2. 权威入口与阅读顺序
 
 进入仓库后，不要直接改代码。
+默认先读：
 
-先读：
+1. `README.md`
+2. `docs/README.md`
+3. `docs/01-design/00-system-charter-20260409.md`
+4. `docs/01-design/01-doc-first-development-governance-20260409.md`
+5. `docs/02-spec/00-repo-layout-and-docflow-spec-20260409.md`
+6. `docs/02-spec/01-doc-first-task-gating-spec-20260409.md`
+7. `docs/03-execution/README.md`
 
-1. `docs/README.md`
-2. `docs/01-design/00-system-charter-20260409.md`
-3. `docs/01-design/01-doc-first-development-governance-20260409.md`
-4. `docs/02-spec/00-repo-layout-and-docflow-spec-20260409.md`
-5. `docs/02-spec/01-doc-first-task-gating-spec-20260409.md`
-6. `docs/03-execution/README.md`
-
-如果只是追当前正式口径，优先看 `conclusion`；
-如果要继续某一项正式实现，再回到对应 `card / evidence / record`。
+如果只是追当前正式口径，优先看 `conclusion`。
+如果要继续正式实现，再回到对应 `card / evidence / record`。
 
 ## 3. 五根目录纪律
 
@@ -47,10 +46,11 @@
    - 正式验证资产快照
 
 禁止把临时工作库、缓存、benchmark 产物长期堆在仓库内部。
+`pytest` cache、`pytest` basetemp、smoke 临时产物、环境重建过程中的临时文件，都必须进入 `H:\Lifespan-temp`。
 
 ## 4. 正式模块边界
 
-`src/mlq` 下的正式模块为：
+`src/mlq` 下的正式模块是：
 
 - `core`
 - `data`
@@ -63,7 +63,7 @@
 - `trade`
 - `system`
 
-当前主链路冻结为：
+当前主链冻结为：
 
 `data -> malf -> structure -> filter -> alpha -> position -> portfolio_plan -> trade -> system`
 
@@ -77,9 +77,8 @@
 
 ## 5. 历史账本原则
 
-本系统中的数据库不是“一次运行产物”，而是“历史账本”。
-
-正式数据库必须尽量满足：
+本系统中的数据库不是一次运行产物，而是历史账本。
+正式数据库应优先满足：
 
 1. 自然键累积
 2. 增量更新
@@ -98,34 +97,40 @@
 硬规则：
 
 1. 先有 `design / spec`，再开 `card`，再实现。
-2. 任何正式代码生成、Schema 变更、Pipeline 新增、行为改写，都必须先具备：
-   - 需求
-   - 设计
-   - 任务分解
+2. 任何正式代码生成、Schema 变更、Pipeline 新增、行为改写，都必须先具备需求、设计、任务分解。
 3. 缺少上述前置文档，不允许进入正式实现。
 4. 缺少 `card / evidence / record / conclusion` 任意一件，不算正式完成。
 
-## 7. 文档规则
+## 7. 入口文件规则
 
-正式文档默认使用中文。
+下面三个文件是仓库入口，不允许长期滞后于当前治理口径：
 
+1. `AGENTS.md`
+2. `README.md`
+3. `pyproject.toml`
+
+只要治理规则、环境脚手架、路径契约、测试入口、执行入口发生变化，就必须同步刷新这三个入口文件。
+
+## 8. 文档规则
+
+正式文档默认中文。
 新增文档时：
 
 1. 不要直接复制旧系统过时口径。
-2. 参考资料只能放在 `docs/04-reference/`。
+2. 参考资料只放在 `docs/04-reference/`。
 3. 当前正式事实必须写在 `design / spec / execution conclusion` 中。
 4. 执行区默认先读 `conclusion`，不要把历史 `card` 当成当前真相。
 
-## 8. 代码规则
+## 9. 代码规则
 
 1. 复杂实现必须写必要的中文注释，重点解释边界、契约、增量逻辑、断点续跑和反直觉规则。
-2. 不要为了一次性运行方便，破坏历史账本结构。
+2. 不要为了单次运行方便，破坏历史账本结构。
 3. 不要把临时脚本逻辑直接混进正式运行时模块。
 4. 模块之间只通过正式契约和正式输出对接，不直接依赖彼此内部实现细节。
 
-## 9. 测试与验证
+## 10. 测试与验证
 
-修改正式逻辑后，至少要补以下其中之一，并最好同时具备：
+修改正式逻辑后，至少要补下面之一，最好同时具备：
 
 1. 单元测试
 2. 可复现命令
@@ -134,21 +139,14 @@
 
 证据必须可追溯，不能只写“已验证”。
 
-## 10. 提交与推送
+## 11. 提交与推送
 
 提交前应确认：
 
-1. 改动边界清楚
+1. 改动边界清晰
 2. 文档闭环已补齐
 3. 测试或证据已具备
 
 提交信息建议使用：
 
 `<area>: <summary>`
-
-例如：
-
-- `docs: 初始化文档治理骨架`
-- `core: 固化路径契约`
-- `position: 新增资金管理账本设计`
-
