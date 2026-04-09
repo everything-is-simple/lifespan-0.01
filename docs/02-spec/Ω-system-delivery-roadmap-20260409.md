@@ -147,12 +147,13 @@
 
 当前下一锤：
 
-### `待定（12 已完成，等待下一张正式主线卡）`
+### `13-alpha-five-table-family-shared-contract-and-family-ledger-bootstrap`
 
 当前补充：
 1. `12` 已经完成，`alpha` 最小 `trigger ledger` 三表、bounded runner 与正式 pilot 已收口。
 2. 新仓主链现在已经具备 `structure / filter / alpha trigger ledger / alpha formal signal / position` 的连续正式账本层。
-3. 下一张卡应继续围绕 `alpha` 五家族细化、`portfolio_plan`，或更下游模块正式开工重新裁切，而不是回头再补 `position`。
+3. `13` 正式转向 `alpha` 五表族共享合同与 family ledger bootstrap，先补厚 `alpha` 自己内部的 family-specific 正式解释层。
+4. 本轮仍不回头再补 `position`，也不提前跳到 `portfolio_plan / trade / system`。
 
 ## 阻塞项
 

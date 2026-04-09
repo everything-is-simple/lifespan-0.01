@@ -3,8 +3,8 @@
 日期：`2026-04-09`
 状态：`生效中`
 
-1. 当前下一锤：`待定（12 已完成，等待下一张正式主线卡）`
-2. 正式主线剩余卡：`0`
+1. 当前下一锤：`13-alpha-five-table-family-shared-contract-and-family-ledger-bootstrap-card-20260409.md`
+2. 正式主线剩余卡：`1`
 3. 可选 Sidecar 剩余卡：`0`
 4. 后置修复剩余卡：`0`
 
@@ -22,3 +22,4 @@
 10. 建立 `alpha` 官方 formal signal producer、冻结三表正式出口，并完成 `position` 对新仓官方上游的真实对接
 11. 建立 `structure` 与 `filter` 的最小 snapshot 三表、bounded runner，并让 `alpha` 默认消费官方上游
 12. 建立 `alpha trigger ledger` 最小三表、bounded runner 与正式 pilot，并让 `alpha formal signal` 稳定引用官方 trigger 事实
+13. 冻结 `alpha` 五表族共享 contract 与 family ledger bootstrap，先在一到两个核心 family 上证明正式账本层、bounded pilot 与 rerun 审计成立
