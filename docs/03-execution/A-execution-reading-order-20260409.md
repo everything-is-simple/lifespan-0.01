@@ -8,12 +8,12 @@
 1. 先读 `00-conclusion-catalog-20260409.md`
 2. 再读 `B-card-catalog-20260409.md`
 3. 再读 `C-system-completion-ledger-20260409.md`
-4. 打开当前活动执行卡 `06-roadmap-legacy-module-absorption-card-20260409.md`
+4. 打开当前活动执行卡 `08-position-ledger-table-family-bootstrap-card-20260409.md`
 5. 确认卡片已链接需求、设计和任务分解
 6. 之后才开始正式实现
 
 当前活动主线：
 
-1. 吸收老仓模块来源，补齐系统总控板的来源依据
-2. 加厚 `α / β / Ω`，让路线图包含继承方式、置信度与未定项
-3. 为下一张 `position` 正式卡提供更稳的系统级裁决底座
+1. 按 07 已冻结的 `position` 合同，把最小公共账本层与方法分表落成正式 schema/bootstrap
+2. 优先打通 `FIXED_NOTIONAL_CONTROL / SINGLE_LOT_CONTROL` 与退出计划/退出腿的最小落库
+3. 为后续 `alpha -> position` 正式桥接准备稳定的账本出口

@@ -5,7 +5,7 @@
 
 ## 当前进度
 
-当前新仓已经完成的是地基阶段，正准备进入第一个真正的业务层施工阶段。
+当前新仓已经完成的是地基阶段，并已经把第一个业务层模块 `position` 的正式合同冻结下来。
 
 截至今天，已正式成立的部分是：
 
@@ -17,8 +17,8 @@
 
 当前整体判断：
 
-- 系统阶段位于 `P0 已完成，P1/P2 已有边界，P3-P6 尚未正式展开`
-- 当前最接近真正进入业务施工的是 `position`
+- 系统阶段位于 `P0 已完成，P1/P2 已有边界，P4-position 合同已冻结，P3/P5/P6 仍待正式桥接`
+- 当前主线已经从“position 合同待定”切换到“position 表族待落库”
 
 ## 老仓来源分层
 
@@ -138,7 +138,7 @@
 | `structure` | `设计中` | `G:\Lifespan-Quant\docs\01-design\modules\structure\` + 旧 `malf 29/30/31` 分层材料 | `全新设计` | `低` | 冻结 `structure_event / structure_snapshot` |
 | `filter` | `设计中` | `G:\Lifespan-Quant\docs\01-design\modules\filter\` + 旧 `malf 29/31/32` 分层材料 | `全新设计` | `低` | 冻结最小硬门与 observation 分层 |
 | `alpha` | `设计中` | `G:\EmotionQuant-gamma\normandy\` + `G:\MarketLifespan-Quant\docs\01-design\modules\alpha\` + `02-spec\modules\alpha\` | `沿袭后改写` | `高` | PAS 五表族、trigger ledger 与 formal signal 分层 |
-| `position` | `设计中` | `G:\EmotionQuant-gamma\positioning\` + `G:\MarketLifespan-Quant\docs\01-design\modules\position\` + `02-spec\modules\position\` | `沿袭后改写` | `高` | 资金管理分表与单标的仓位账本 |
+| `position` | `合同已冻结` | `G:\EmotionQuant-gamma\positioning\` + `G:\MarketLifespan-Quant\docs\01-design\modules\position\` + `02-spec\modules\position\` | `沿袭后改写` | `高` | 表族落库、bootstrap 与 `alpha` 正式桥接 |
 | `portfolio_plan` | `设计中` | 旧 `position / system` 桥接经验与组合验收材料 | `全新设计` | `低` | 组合容量、配额、blocked/admitted 合同 |
 | `trade` | `未开始` | `G:\MarketLifespan-Quant\docs\01-design\modules\trade\` + `02-spec\modules\trade\` + 桥接结论 | `只吸收经验` | `低` | entry / carry / exit / replay 账本 |
 | `system` | `未开始` | `G:\MarketLifespan-Quant\docs\01-design\modules\system\` + `02-spec\modules\system\` + bounded acceptance 结论 | `只吸收经验` | `中` | 系统级 readout / reuse / audit |
@@ -147,37 +147,36 @@
 
 当前下一锤建议固定为：
 
-### `position 资金管理账本分表设计`
+### `08-position-ledger-table-family-bootstrap-card-20260409.md`
 
 原因：
 
-1. `position` 是当前距离正式业务实现最近的一层。
-2. 你已经明确要把资金管理方式拆表，而不是继续混在一张大表里。
-3. 如果 `position` 不先冻结，`portfolio_plan / trade / system` 都会缺少稳定上游。
-4. `position` 是当前老仓来源最扎实、最适合首先迁入新系统正式账本的一层。
+1. 07 已经把 `position` 的资金管理分表、自然键和动作角色正式写死，当前真正缺的是落库与 bootstrap。
+2. 如果不马上把正式表族落下来，`position` 会停留在“合同成立但没有正式物理落点”的中间态。
+3. `portfolio_plan / trade / system` 后续需要消费的，不只是 design/spec 文本，而是可复验的正式账本出口。
+4. `position` 仍然是当前老仓来源最扎实、最适合继续向实现推进的一层。
 
 下一锤产物：
 
-1. `position` 正式设计文档
-2. `position` 正式规格文档
-3. `position` 第一张执行卡
+1. `position` 最小公共账本层 schema/bootstrap
+2. 激活方法分表落库
+3. 08 的最小测试、命令证据与落表核查
 
 优先内容：
 
-1. 资金管理方式表族
-2. 自然键
-3. 增量更新策略
-4. audit candidate / blocked candidate 保留规则
-5. 立花义正“测试仓 + 加码”正式方案位置
+1. `position_run / position_policy_registry / position_candidate_audit / position_capacity_snapshot / position_sizing_snapshot / position_exit_plan / position_exit_leg`
+2. `position_funding_fixed_notional_snapshot / position_funding_single_lot_snapshot`
+3. bootstrap 入口
+4. 最小落表核查
 
 ## 阻塞项
 
-### `阻塞 1：position 表族尚未冻结`
+### `阻塞 1：position 表族尚未落库`
 
 影响：
 
-- `portfolio_plan` 无法定义组合层如何消费 `position`
-- `trade` 无法稳定消费允许仓位合同
+- `portfolio_plan` 无法稳定消费真实的 `position` 账本出口
+- `trade` 无法稳定消费允许仓位合同与退出腿身份
 
 ### `阻塞 2：alpha 五表族尚未正式落库`
 
@@ -193,8 +192,8 @@
 
 ## 当前不敢写死的点
 
-1. `position` 资金管理表族的最终拆分与自然键仍未冻结，尤其是立花义正“测试仓 + 加码”应落在哪一层还需要正式设计。
-2. `alpha` 的 `bof / tst / pb / cpb / bpb` 五表族虽然方向明确，但正式桥接到 `position` 的字段合同还未写死。
+1. `alpha` 的 `bof / tst / pb / cpb / bpb` 五表族虽然方向明确，但正式桥接到 `position` 的字段合同还未写死。
+2. `probe_entry / confirm_add` 虽然已有正式语义落点，但在 `trade carry` 与多腿开仓桥接冻结前仍不能默认打开。
 3. `malf` 在新系统中已经拆成 `malf -> structure -> filter` 主链，但这三层的正式表合同仍未共同冻结。
 4. `trade` 的 `entry / carry / exit / replay` 账本边界只停留在经验层，尚未成为可施工的正式设计。
 5. `portfolio_plan` 当前主要来自旧 `position / system` 桥接经验外推，仍不是可直接沿袭的现成模块。
@@ -220,7 +219,7 @@
 2. 资金管理表族冻结
 3. 自然键与 audit 规则冻结
 
-当前状态：`未完成`
+当前状态：`已完成`
 
 ### `M2 alpha-position 正式桥接成立`
 

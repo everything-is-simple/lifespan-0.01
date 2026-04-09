@@ -11,3 +11,4 @@
 4. `04-module-lessons-and-execution-index-rename-evidence-20260409.md`
 5. `05-system-roadmap-and-progress-tracker-evidence-20260409.md`
 6. `06-roadmap-legacy-module-absorption-evidence-20260409.md`
+7. `07-position-funding-management-and-exit-contract-evidence-20260409.md`
