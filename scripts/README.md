@@ -47,8 +47,24 @@
 
 ## alpha
 
+## structure
+
+1. `python scripts/structure/run_structure_snapshot_build.py --signal-start-date 2026-04-08 --signal-end-date 2026-04-08 --limit 10 --batch-size 10`
+   - 从官方 `malf` 结构候选事实与执行上下文做 bounded 读取
+   - 物化 `structure_run / structure_snapshot / structure_run_snapshot`
+   - 输出可被 `filter / alpha` 稳定消费的官方结构事实层
+
+## filter
+
+1. `python scripts/filter/run_filter_snapshot_build.py --signal-start-date 2026-04-08 --signal-end-date 2026-04-08 --limit 10 --batch-size 10`
+   - 从官方 `structure snapshot` 与最小 `execution_context` 做 bounded 读取
+   - 物化 `filter_run / filter_snapshot / filter_run_snapshot`
+   - 输出可被 `alpha` 优先消费的官方 pre-trigger 准入层
+
+## alpha
+
 1. `python scripts/alpha/run_alpha_formal_signal_build.py --signal-start-date 2026-04-08 --signal-end-date 2026-04-08 --limit 10 --batch-size 10`
-   - 从官方 `alpha trigger` 与 `malf` 准入事实上游做 bounded 读取
+   - 从官方 `alpha trigger` 与 `filter / structure snapshot` 上游做 bounded 读取
    - 物化 `alpha_formal_signal_run / alpha_formal_signal_event / alpha_formal_signal_run_event`
    - 输出可被 `position` 直接消费的官方 `alpha formal signal`
 

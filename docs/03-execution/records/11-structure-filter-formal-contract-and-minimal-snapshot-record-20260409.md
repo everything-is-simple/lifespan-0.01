@@ -5,16 +5,30 @@
 
 ## 做了什么
 
-1. 在 `10` 完成后，回看系统路线图、`alpha` 结论和老仓 `malf / filter` 边界结论，确认下一张卡的真实缺口是 `structure / filter` 官方出口不存在。
-2. 为 `structure` 新增最小正式 design/spec，冻结了 `structure_run / structure_snapshot / structure_run_snapshot`、结构事实字段组、自然键与最小 runner 合同。
-3. 为 `filter` 新增最小正式 design/spec，冻结了 `filter_run / filter_snapshot / filter_run_snapshot`、pre-trigger 最小准入字段组与最小 runner 合同。
-4. 新开 `11` 号卡，并把执行索引切换到 `structure/filter 正式分层与最小 snapshot`。
+1. 在 `src/mlq/structure/bootstrap.py` 与 `src/mlq/structure/runner.py` 落下 `structure_run / structure_snapshot / structure_run_snapshot` 三表和最小 producer，支持：
+   - bounded 窗口读取
+   - 自然键累积
+   - `inserted / reused / rematerialized` 审计
+   - `advancing / stalled / failed / unknown` 最小结构状态归类
+2. 在 `src/mlq/filter/bootstrap.py` 与 `src/mlq/filter/runner.py` 落下 `filter_run / filter_snapshot / filter_run_snapshot` 三表和最小 producer，支持：
+   - 官方 `structure_snapshot` 消费
+   - `failed_extreme / structure_failed` 最小硬门
+   - 非阻断结构状态保守放行
+3. 新增正式脚本入口：
+   - `scripts/structure/run_structure_snapshot_build.py`
+   - `scripts/filter/run_filter_snapshot_build.py`
+4. 调整 `src/mlq/alpha/runner.py` 和 `scripts/alpha/run_alpha_formal_signal_build.py`，让 `alpha` 默认优先消费 `filter_snapshot + structure_snapshot`，仅保留旧 `pas_context_snapshot` 作为兼容兜底。
+5. 新增并回跑：
+   - `tests/unit/structure/test_runner.py`
+   - `tests/unit/filter/test_runner.py`
+   - 重写后的 `tests/unit/alpha/test_runner.py`
+6. 按入口文件规则同步刷新 `AGENTS.md`、`README.md`、`scripts/README.md`、`pyproject.toml`，并回填本卡 `evidence / record / conclusion` 及执行索引。
 
 ## 偏离项
 
-- `new_execution_bundle.py` 在回填结论目录时依赖了旧分栏标题，本轮自动注册中断；已手动修复索引，不影响 11 号卡生效为当前待施工卡。
+- `alpha_formal_signal_run` 现有 schema 仍保留 `source_context_table` 列名；本轮把它用于记录默认 `filter` 上游表名，结构上游表与 fallback 表则补记进 summary，而没有在 11 号卡里额外扩张 `alpha` run 表 schema。
 
 ## 备注
 
-- 本轮只完成 doc-first 开卡与正式前置冻结，没有开始实现 `structure / filter` 代码。
-- 下一轮若直接继续施工，应围绕最小 snapshot 三表与 runner 展开，而不是回头扩 `position` 或直接跳去 `trade / system`。
+- 当前 `filter` 有意保持“少拦截”的正式口径：`stalled / unknown` 只写 note，不直接 block。
+- 本轮已经把真实上游补到 `alpha` 前，不再需要回头扩 `position` 来掩盖上游缺口。

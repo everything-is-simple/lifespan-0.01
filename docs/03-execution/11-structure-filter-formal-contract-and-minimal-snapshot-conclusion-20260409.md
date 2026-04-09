@@ -2,20 +2,27 @@
 
 结论编号：`11`
 日期：`2026-04-09`
-状态：`草稿`
+状态：`生效中`
 
 ## 裁决
 
-- 接受：当前下一张正式主线卡应先回到 `malf -> structure -> filter` 的正式分层，而不是继续深挖 `position` 或直接开 `trade / system`。
-- 接受：本页当前只作为 `11` 号卡的草稿结论位，待正式实现、evidence、record 完成后再转为生效结论。
-- 拒绝：把本页草稿结论表述成“`structure / filter` 已经正式落地”。
+- 接受：新仓已具备最小正式 `structure` 三表、`filter` 三表，以及对应 bounded runner 脚本入口。
+- 接受：`filter` 当前最小正式硬门只阻断 `failed_extreme / structure_failed`，对 `stalled / unknown` 保持保守放行，不把研究观察误升为硬拦截。
+- 接受：`alpha` 官方 producer 默认上游已切到 `alpha trigger + filter_snapshot + structure_snapshot`，不再默认回读旧 `malf` 兼容准入字段。
+- 接受：`position` 仍直接消费 `alpha_formal_signal_event`，本轮没有回头扩 `position` 内部表族。
+- 拒绝：把本轮结果表述成“`structure / filter / alpha` 全量历史家族已经完成”或“`trade / system` 已打通主线”。
 
 ## 原因
 
-- `10` 已经收口 `alpha -> position` 官方桥接，当前真实剩余阻塞转移到了更上游正式结构与准入层。
-- 老仓结论已经明确：`structure` 负责结构事实，`filter` 负责 pre-trigger admission，二者都不应继续寄生在 `alpha` 或旧 `malf` 兼容字段里。
+1. `10` 已经收口 `alpha -> position` 官方桥接，真实剩余阻塞确实在 `malf -> structure -> filter -> alpha` 这段正式上游。
+2. bounded 单元测试证明：
+   - `structure` 能稳定写入 `run / snapshot / run_snapshot`
+   - `filter` 能以最小硬门生成官方准入快照
+   - `alpha` 能直接消费新的官方 snapshot 上游并继续被 `position` 正常消费
+3. 当前最小 filter 规则只阻断明确失败结构，符合“别把机会硬挡掉太多”的正式方向。
 
 ## 影响
 
-- 当前待施工卡应切换到 `11-structure-filter-formal-contract-and-minimal-snapshot-card-20260409.md`。
-- 下一轮正式实现将围绕 `structure_snapshot / filter_snapshot` 及其最小 runner 展开。
+1. 新仓主线第一次具备 `malf -> structure -> filter -> alpha -> position` 的官方最小连续链。
+2. 后续继续补 `alpha` 内部五表族时，应优先对接 `filter_snapshot / structure_snapshot`，而不是重新把语义塞回旧兼容字段。
+3. 执行入口文件已同步补到 `structure/filter` runner 口径。

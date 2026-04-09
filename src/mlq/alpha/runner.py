@@ -21,7 +21,9 @@ from mlq.core.paths import WorkspaceRoots, default_settings
 
 
 DEFAULT_ALPHA_FORMAL_SIGNAL_TRIGGER_TABLE: Final[str] = "alpha_trigger_event"
-DEFAULT_ALPHA_FORMAL_SIGNAL_CONTEXT_TABLE: Final[str] = "pas_context_snapshot"
+DEFAULT_ALPHA_FORMAL_SIGNAL_FILTER_TABLE: Final[str] = "filter_snapshot"
+DEFAULT_ALPHA_FORMAL_SIGNAL_STRUCTURE_TABLE: Final[str] = "structure_snapshot"
+DEFAULT_ALPHA_FORMAL_SIGNAL_FALLBACK_CONTEXT_TABLE: Final[str] = "pas_context_snapshot"
 DEFAULT_ALPHA_FORMAL_SIGNAL_CONTRACT_VERSION: Final[str] = "alpha-formal-signal-v1"
 
 
@@ -46,9 +48,13 @@ class AlphaFormalSignalBuildSummary:
     blocked_count: int
     deferred_count: int
     alpha_ledger_path: str
-    malf_ledger_path: str
+    filter_ledger_path: str
+    structure_ledger_path: str
+    legacy_context_path: str | None
     source_trigger_table: str
-    source_context_table: str
+    source_filter_table: str
+    source_structure_table: str
+    fallback_context_table: str | None
 
     def as_dict(self) -> dict[str, object]:
         """返回适合写入 summary JSON 的稳定字典。"""
@@ -71,6 +77,7 @@ class _TriggerRow:
 class _ContextRow:
     instrument: str
     signal_date: date
+    asof_date: date
     formal_signal_status: str
     trigger_admissible: bool
     malf_context_4: str
@@ -102,6 +109,8 @@ def run_alpha_formal_signal_build(
     *,
     settings: WorkspaceRoots | None = None,
     alpha_path: Path | None = None,
+    filter_path: Path | None = None,
+    structure_path: Path | None = None,
     malf_path: Path | None = None,
     signal_start_date: str | date | None = None,
     signal_end_date: str | date | None = None,
@@ -110,18 +119,22 @@ def run_alpha_formal_signal_build(
     batch_size: int = 100,
     run_id: str | None = None,
     source_trigger_table: str = DEFAULT_ALPHA_FORMAL_SIGNAL_TRIGGER_TABLE,
-    source_context_table: str = DEFAULT_ALPHA_FORMAL_SIGNAL_CONTEXT_TABLE,
+    source_filter_table: str = DEFAULT_ALPHA_FORMAL_SIGNAL_FILTER_TABLE,
+    source_structure_table: str = DEFAULT_ALPHA_FORMAL_SIGNAL_STRUCTURE_TABLE,
+    source_context_table: str | None = DEFAULT_ALPHA_FORMAL_SIGNAL_FALLBACK_CONTEXT_TABLE,
     signal_contract_version: str = DEFAULT_ALPHA_FORMAL_SIGNAL_CONTRACT_VERSION,
     producer_name: str = "alpha_formal_signal_producer",
     producer_version: str = "v1",
     summary_path: Path | None = None,
 ) -> AlphaFormalSignalBuildSummary:
-    """从官方上游触发事实和 MALF 准入事实物化 `alpha formal signal`。"""
+    """从官方触发事实和 `filter/structure snapshot` 物化 `alpha formal signal`。"""
 
     workspace = settings or default_settings()
     workspace.ensure_directories()
 
     resolved_alpha_path = Path(alpha_path or alpha_ledger_path(workspace))
+    resolved_filter_path = Path(filter_path or workspace.databases.filter)
+    resolved_structure_path = Path(structure_path or workspace.databases.structure)
     resolved_malf_path = Path(malf_path or workspace.databases.malf)
     normalized_start_date = _coerce_date(signal_start_date)
     normalized_end_date = _coerce_date(signal_end_date)
@@ -130,7 +143,8 @@ def run_alpha_formal_signal_build(
     normalized_batch_size = max(int(batch_size), 1)
     materialization_run_id = run_id or _build_alpha_formal_signal_run_id()
 
-    _ensure_database_exists(resolved_malf_path, label="malf")
+    _ensure_database_exists(resolved_filter_path, label="filter")
+    _ensure_database_exists(resolved_structure_path, label="structure")
     alpha_connection = duckdb.connect(str(resolved_alpha_path))
     try:
         bootstrap_alpha_formal_signal_ledger(workspace, connection=alpha_connection)
@@ -142,15 +156,19 @@ def run_alpha_formal_signal_build(
             instruments=normalized_instruments,
             limit=normalized_limit,
         )
-        context_rows = _load_context_rows(
-            malf_path=resolved_malf_path,
-            table_name=source_context_table,
+        context_rows = _load_official_context_rows(
+            filter_path=resolved_filter_path,
+            structure_path=resolved_structure_path,
+            filter_table_name=source_filter_table,
+            structure_table_name=source_structure_table,
             signal_start_date=normalized_start_date,
             signal_end_date=normalized_end_date,
             instruments=tuple(sorted({row.instrument for row in trigger_rows})),
+            legacy_context_path=resolved_malf_path,
+            legacy_context_table=source_context_table,
         )
         context_map = {
-            (row.instrument, row.signal_date): row
+            (row.instrument, row.signal_date, row.asof_date): row
             for row in context_rows
         }
 
@@ -164,7 +182,7 @@ def run_alpha_formal_signal_build(
             signal_end_date=normalized_end_date,
             bounded_instrument_count=bounded_instrument_count,
             source_trigger_table=source_trigger_table,
-            source_context_table=source_context_table,
+            source_context_table=source_filter_table,
             signal_contract_version=signal_contract_version,
         )
 
@@ -179,9 +197,13 @@ def run_alpha_formal_signal_build(
             signal_start_date=normalized_start_date,
             signal_end_date=normalized_end_date,
             alpha_path=resolved_alpha_path,
-            malf_path=resolved_malf_path,
+            filter_path=resolved_filter_path,
+            structure_path=resolved_structure_path,
+            legacy_context_path=resolved_malf_path if source_context_table else None,
             source_trigger_table=source_trigger_table,
-            source_context_table=source_context_table,
+            source_filter_table=source_filter_table,
+            source_structure_table=source_structure_table,
+            fallback_context_table=source_context_table,
             batch_size=normalized_batch_size,
         )
         _mark_run_completed(
@@ -326,6 +348,93 @@ def _build_trigger_select_sql(*, table_name: str, available_columns: set[str]) -
     """
 
 
+def _load_official_context_rows(
+    *,
+    filter_path: Path,
+    structure_path: Path,
+    filter_table_name: str,
+    structure_table_name: str,
+    signal_start_date: date | None,
+    signal_end_date: date | None,
+    instruments: tuple[str, ...],
+    legacy_context_path: Path | None,
+    legacy_context_table: str | None,
+) -> list[_ContextRow]:
+    if not instruments:
+        return []
+    connection = duckdb.connect(str(filter_path), read_only=False)
+    try:
+        structure_path_sql = str(structure_path).replace("\\", "/").replace("'", "''")
+        connection.execute(f"ATTACH '{structure_path_sql}' AS structure_db")
+        placeholders = ", ".join("?" for _ in instruments)
+        parameters: list[object] = [*instruments]
+        where_clauses = [f"instrument IN ({placeholders})"]
+        if signal_start_date is not None:
+            where_clauses.append("signal_date >= ?")
+            parameters.append(signal_start_date)
+        if signal_end_date is not None:
+            where_clauses.append("signal_date <= ?")
+            parameters.append(signal_end_date)
+        rows = connection.execute(
+            f"""
+            WITH ranked_filter AS (
+                SELECT
+                    instrument,
+                    signal_date,
+                    asof_date,
+                    structure_snapshot_nk,
+                    trigger_admissible,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY instrument, signal_date, asof_date
+                        ORDER BY last_materialized_run_id DESC
+                    ) AS row_rank
+                FROM {filter_table_name}
+                WHERE {' AND '.join(where_clauses)}
+            )
+            SELECT
+                rf.instrument,
+                rf.signal_date,
+                rf.asof_date,
+                CASE WHEN rf.trigger_admissible THEN 'admitted' ELSE 'blocked' END AS formal_signal_status,
+                rf.trigger_admissible,
+                s.malf_context_4,
+                s.lifecycle_rank_high,
+                s.lifecycle_rank_total
+            FROM ranked_filter AS rf
+            INNER JOIN structure_db.main.{structure_table_name} AS s
+                ON s.structure_snapshot_nk = rf.structure_snapshot_nk
+            WHERE rf.row_rank = 1
+            """,
+            parameters,
+        ).fetchall()
+        if rows:
+            return [
+                _ContextRow(
+                    instrument=str(row[0]),
+                    signal_date=_normalize_date_value(row[1], field_name="signal_date"),
+                    asof_date=_normalize_date_value(row[2], field_name="asof_date"),
+                    formal_signal_status=_normalize_formal_signal_status(row[3]),
+                    trigger_admissible=bool(row[4]),
+                    malf_context_4=_normalize_optional_str(row[5], default="UNKNOWN"),
+                    lifecycle_rank_high=_normalize_optional_int(row[6]),
+                    lifecycle_rank_total=_normalize_optional_int(row[7]),
+                )
+                for row in rows
+            ]
+    except duckdb.Error:
+        if legacy_context_table is None or legacy_context_path is None or not legacy_context_path.exists():
+            raise
+    finally:
+        connection.close()
+    return _load_context_rows(
+        malf_path=legacy_context_path,
+        table_name=legacy_context_table,
+        signal_start_date=signal_start_date,
+        signal_end_date=signal_end_date,
+        instruments=instruments,
+    )
+
+
 def _load_context_rows(
     *,
     malf_path: Path,
@@ -375,11 +484,12 @@ def _load_context_rows(
             _ContextRow(
                 instrument=str(row[0]),
                 signal_date=_normalize_date_value(row[1], field_name="signal_date"),
-                formal_signal_status=_normalize_formal_signal_status(row[2]),
-                trigger_admissible=bool(row[3]),
-                malf_context_4=_normalize_optional_str(row[4], default="UNKNOWN"),
-                lifecycle_rank_high=_normalize_optional_int(row[5]),
-                lifecycle_rank_total=_normalize_optional_int(row[6]),
+                asof_date=_normalize_date_value(row[2], field_name="asof_date"),
+                formal_signal_status=_normalize_formal_signal_status(row[3]),
+                trigger_admissible=bool(row[4]),
+                malf_context_4=_normalize_optional_str(row[5], default="UNKNOWN"),
+                lifecycle_rank_high=_normalize_optional_int(row[6]),
+                lifecycle_rank_total=_normalize_optional_int(row[7]),
             )
             for row in rows
         ]
@@ -416,6 +526,7 @@ def _build_context_select_sql(
         if column_name is not None
     ]
     order_sql = ", ".join(f"{column_name} DESC" for column_name in order_columns) or "1"
+    asof_date_column = _resolve_optional_column(available_columns, ("asof_date", "calc_date")) or signal_date_column
     status_sql = (
         f"{formal_signal_status_column} AS formal_signal_status"
         if formal_signal_status_column is not None
@@ -450,13 +561,14 @@ def _build_context_select_sql(
             SELECT
                 {instrument_column} AS instrument,
                 {signal_date_column} AS signal_date,
+                {asof_date_column} AS asof_date,
                 {status_sql},
                 {admissible_sql},
                 {malf_context_sql},
                 {lifecycle_high_sql},
                 {lifecycle_total_sql},
                 ROW_NUMBER() OVER (
-                    PARTITION BY {instrument_column}, {signal_date_column}
+                    PARTITION BY {instrument_column}, {signal_date_column}, {asof_date_column}
                     ORDER BY {order_sql}
                 ) AS row_rank
             FROM {table_name}
@@ -465,6 +577,7 @@ def _build_context_select_sql(
         SELECT
             instrument,
             signal_date,
+            asof_date,
             formal_signal_status,
             trigger_admissible,
             malf_context_4,
@@ -480,16 +593,20 @@ def _materialize_formal_signal_rows(
     connection: duckdb.DuckDBPyConnection,
     run_id: str,
     trigger_rows: list[_TriggerRow],
-    context_map: dict[tuple[str, date], _ContextRow],
+    context_map: dict[tuple[str, date, date], _ContextRow],
     signal_contract_version: str,
     producer_name: str,
     producer_version: str,
     signal_start_date: date | None,
     signal_end_date: date | None,
     alpha_path: Path,
-    malf_path: Path,
+    filter_path: Path,
+    structure_path: Path,
+    legacy_context_path: Path | None,
     source_trigger_table: str,
-    source_context_table: str,
+    source_filter_table: str,
+    source_structure_table: str,
+    fallback_context_table: str | None,
     batch_size: int,
 ) -> AlphaFormalSignalBuildSummary:
     inserted_count = 0
@@ -502,7 +619,7 @@ def _materialize_formal_signal_rows(
 
     for trigger_batch in _bounded_by_instrument_batches(trigger_rows, batch_size=batch_size):
         for trigger_row in trigger_batch:
-            context_row = context_map.get((trigger_row.instrument, trigger_row.signal_date))
+            context_row = context_map.get((trigger_row.instrument, trigger_row.signal_date, trigger_row.asof_date))
             if context_row is None:
                 missing_context_count += 1
                 continue
@@ -568,9 +685,13 @@ def _materialize_formal_signal_rows(
         blocked_count=blocked_count,
         deferred_count=deferred_count,
         alpha_ledger_path=str(alpha_path),
-        malf_ledger_path=str(malf_path),
+        filter_ledger_path=str(filter_path),
+        structure_ledger_path=str(structure_path),
+        legacy_context_path=None if legacy_context_path is None else str(legacy_context_path),
         source_trigger_table=source_trigger_table,
-        source_context_table=source_context_table,
+        source_filter_table=source_filter_table,
+        source_structure_table=source_structure_table,
+        fallback_context_table=fallback_context_table,
     )
 
 

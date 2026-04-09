@@ -77,13 +77,17 @@
 补充规则：
 
 1. `PAS` 是 `alpha` 内部能力，不再是顶层模块。
-2. `alpha` 负责对下游冻结正式 `formal signal` 事实。
-   - 当前 `alpha` 的正式 bounded producer 入口为 `scripts/alpha/run_alpha_formal_signal_build.py`，只允许从官方触发事实与官方准入事实上游物化 `alpha_formal_signal_run / event / run_event`，不允许夹带 `position` sizing 或 `trade / system` 逻辑。
-3. `position` 负责单标的仓位计划与资金管理。
+2. `structure` 负责把 `malf` 结构语义沉淀为官方结构事实层。
+   - 当前 `structure` 的正式 bounded runner 入口为 `scripts/structure/run_structure_snapshot_build.py`，只允许从官方 `malf` 结构候选事实与官方执行上下文物化 `structure_run / snapshot / run_snapshot`，不允许夹带 `filter / alpha / position` 判定逻辑。
+3. `filter` 负责 pre-trigger 准入。
+   - 当前 `filter` 的正式 bounded runner 入口为 `scripts/filter/run_filter_snapshot_build.py`，只允许消费官方 `structure snapshot` 与最小执行上下文物化 `filter_run / snapshot / run_snapshot`，不允许硬拦截研究观察或夹带 `alpha detector / position / trade` 逻辑。
+4. `alpha` 负责对下游冻结正式 `formal signal` 事实。
+   - 当前 `alpha` 的正式 bounded producer 入口为 `scripts/alpha/run_alpha_formal_signal_build.py`，只允许从官方触发事实与官方 `filter / structure snapshot` 上游物化 `alpha_formal_signal_run / event / run_event`，不允许夹带 `position` sizing 或 `trade / system` 逻辑。
+5. `position` 负责单标的仓位计划与资金管理。
    - 当前 `position` 的正式 bounded runner 入口为 `scripts/position/run_position_formal_signal_materialization.py`，只允许消费官方 `alpha formal signal` 与 `market_base` 参考价，不允许回读 `alpha` 内部临时过程。
-4. `portfolio_plan` 负责组合层计划、组合回测、容量协调。
-5. `trade` 负责执行与成交账本，不承担组合研究职责。
-6. `system` 负责编排、治理、审计、冻结，不保存策略事实主数据。
+6. `portfolio_plan` 负责组合层计划、组合回测、容量协调。
+7. `trade` 负责执行与成交账本，不承担组合研究职责。
+8. `system` 负责编排、治理、审计、冻结，不保存策略事实主数据。
 
 ## 5. 历史账本原则
 

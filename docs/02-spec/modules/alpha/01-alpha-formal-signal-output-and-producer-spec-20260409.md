@@ -16,13 +16,15 @@
 
 ## 正式输入
 
-`alpha formal signal producer` 当前正式输入固定为三类：
+`alpha formal signal producer` 当前正式输入固定为四类：
 
 1. `alpha` 官方上游触发事实
    - 至少提供 `source_trigger_event_nk / instrument / signal_date / asof_date / trigger_family / trigger_type / pattern_code`
-2. 官方上下文与准入事实
-   - 至少提供 `trigger_admissible / formal_signal_status / malf_context_4 / lifecycle_rank_high / lifecycle_rank_total`
-3. producer 自身的 run 元数据
+2. 官方 `filter_snapshot`
+   - 至少提供 `instrument / signal_date / asof_date / trigger_admissible / structure_snapshot_nk`
+3. 官方 `structure_snapshot`
+   - 至少提供 `structure_snapshot_nk / malf_context_4 / lifecycle_rank_high / lifecycle_rank_total`
+4. producer 自身的 run 元数据
    - 包括 `run_id / source_contract_version / source table identity / bounded window`
 
 硬约束：
@@ -196,12 +198,14 @@
 5. `limit`
 6. `batch_size`
 7. `source_trigger_table`
-8. `source_context_table`
-9. `summary_path`
+8. `source_filter_table`
+9. `source_structure_table`
+10. `fallback_context_table`
+11. `summary_path`
 
 ### 最小职责
 
-1. 从官方上游读取 bounded 样本
+1. 从官方 `alpha trigger + filter_snapshot + structure_snapshot` 读取 bounded 样本
 2. 产出 `alpha_formal_signal_event`
 3. 写入 `alpha_formal_signal_run`
 4. 写入 `alpha_formal_signal_run_event`
@@ -211,8 +215,9 @@
 
 1. 自动调用 `position` runner
 2. 自动写 `trade / system`
-3. 直接消费 research 表替代正式上游
-4. 在 producer 内部夹带 `position` sizing 逻辑
+3. 默认回退到旧 `malf` 兼容准入字段当长期上游
+4. 直接消费 research 表替代正式上游
+5. 在 producer 内部夹带 `position` sizing 逻辑
 
 ## Bounded Evidence 要求
 

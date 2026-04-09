@@ -106,7 +106,15 @@
 2. 审计按 `run_id` 追溯
 3. 同一事实允许被后续 run 复物化，但不得把 run 语义反向顶替事实语义
 
-## 裁决五：最小 producer runner 只解决“正式落库”，不顺手吞并下游桥接
+## 裁决五：`alpha` 默认优先消费官方 `filter / structure snapshot`
+
+`11` 已经冻结 `structure_snapshot / filter_snapshot` 的最小官方合同，因此当前正式口径进一步固定为：
+
+1. `alpha` 默认从官方 `alpha trigger + filter_snapshot + structure_snapshot` 做 bounded 读取。
+2. `filter` 负责 pre-trigger 准入，`structure` 负责结构事实，`alpha` 不再默认回读旧 `malf` 兼容准入字段。
+3. 旧 `pas_context_snapshot` 一类输入只保留短期兜底，不再是长期默认上游。
+
+## 裁决六：最小 producer runner 只解决“正式落库”，不顺手吞并下游桥接
 
 本轮 producer runner 的职责固定为：
 

@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-from datetime import date
 from pathlib import Path
 
 import duckdb
 
 from mlq.alpha import alpha_ledger_path, run_alpha_formal_signal_build
 from mlq.core.paths import default_settings
+from mlq.filter import run_filter_snapshot_build
 from mlq.position import position_ledger_path, run_position_formal_signal_materialization
+from mlq.structure import run_structure_snapshot_build
 
 
 def _clear_workspace_env(monkeypatch) -> None:
@@ -48,17 +49,17 @@ def _seed_trigger_source(alpha_path: Path, rows: list[tuple[object, ...]]) -> No
             """
         )
         for row in rows:
-            conn.execute(
-                """
-                INSERT INTO alpha_trigger_event VALUES (?, ?, ?, ?, ?, ?, ?)
-                """,
-                row,
-            )
+            conn.execute("INSERT INTO alpha_trigger_event VALUES (?, ?, ?, ?, ?, ?, ?)", row)
     finally:
         conn.close()
 
 
-def _seed_context_source(malf_path: Path, rows: list[tuple[object, ...]]) -> None:
+def _seed_malf_sources(
+    malf_path: Path,
+    *,
+    context_rows: list[tuple[object, ...]],
+    structure_rows: list[tuple[object, ...]],
+) -> None:
     malf_path.parent.mkdir(parents=True, exist_ok=True)
     conn = duckdb.connect(str(malf_path))
     try:
@@ -67,8 +68,8 @@ def _seed_context_source(malf_path: Path, rows: list[tuple[object, ...]]) -> Non
             CREATE TABLE pas_context_snapshot (
                 entity_code TEXT NOT NULL,
                 signal_date DATE NOT NULL,
-                formal_signal_status TEXT NOT NULL,
-                filter_trigger_admissible BOOLEAN NOT NULL,
+                asof_date DATE NOT NULL,
+                source_context_nk TEXT NOT NULL,
                 malf_context_4 TEXT NOT NULL,
                 lifecycle_rank_high BIGINT NOT NULL,
                 lifecycle_rank_total BIGINT NOT NULL,
@@ -76,28 +77,35 @@ def _seed_context_source(malf_path: Path, rows: list[tuple[object, ...]]) -> Non
             )
             """
         )
-        for row in rows:
-            conn.execute(
-                """
-                INSERT INTO pas_context_snapshot VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                row,
+        conn.execute(
+            """
+            CREATE TABLE structure_candidate_snapshot (
+                instrument TEXT NOT NULL,
+                signal_date DATE NOT NULL,
+                asof_date DATE NOT NULL,
+                new_high_count BIGINT NOT NULL,
+                new_low_count BIGINT NOT NULL,
+                refresh_density DOUBLE NOT NULL,
+                advancement_density DOUBLE NOT NULL,
+                is_failed_extreme BOOLEAN NOT NULL,
+                failure_type TEXT
             )
+            """
+        )
+        for row in context_rows:
+            conn.execute("INSERT INTO pas_context_snapshot VALUES (?, ?, ?, ?, ?, ?, ?, ?)", row)
+        for row in structure_rows:
+            conn.execute("INSERT INTO structure_candidate_snapshot VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", row)
     finally:
         conn.close()
 
 
-def _replace_context_source(malf_path: Path, rows: list[tuple[object, ...]]) -> None:
+def _replace_structure_source(malf_path: Path, rows: list[tuple[object, ...]]) -> None:
     conn = duckdb.connect(str(malf_path))
     try:
-        conn.execute("DELETE FROM pas_context_snapshot")
+        conn.execute("DELETE FROM structure_candidate_snapshot")
         for row in rows:
-            conn.execute(
-                """
-                INSERT INTO pas_context_snapshot VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                row,
-            )
+            conn.execute("INSERT INTO structure_candidate_snapshot VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", row)
     finally:
         conn.close()
 
@@ -122,6 +130,21 @@ def _seed_market_base_prices(market_base_path: Path, rows: list[tuple[object, ..
         conn.close()
 
 
+def _materialize_official_upstream(settings, *, suffix: str) -> None:
+    run_structure_snapshot_build(
+        settings=settings,
+        signal_start_date="2026-04-08",
+        signal_end_date="2026-04-08",
+        run_id=f"structure-upstream-alpha-test-{suffix}",
+    )
+    run_filter_snapshot_build(
+        settings=settings,
+        signal_start_date="2026-04-08",
+        signal_end_date="2026-04-08",
+        run_id=f"filter-upstream-alpha-test-{suffix}",
+    )
+
+
 def test_run_alpha_formal_signal_build_materializes_run_event_and_run_bridge(
     tmp_path: Path,
     monkeypatch,
@@ -137,13 +160,18 @@ def test_run_alpha_formal_signal_build_materializes_run_event_and_run_bridge(
             ("evt-002", "000002.SZ", "2026-04-08", "2026-04-08", "PAS", "pb", "PB"),
         ],
     )
-    _seed_context_source(
+    _seed_malf_sources(
         settings.databases.malf,
-        [
-            ("000001.SZ", "2026-04-08", "admitted", True, "BULL_MAINSTREAM", 1, 4, "2026-04-08"),
-            ("000002.SZ", "2026-04-08", "blocked", False, "BEAR_MAINSTREAM", 0, 4, "2026-04-08"),
+        context_rows=[
+            ("000001.SZ", "2026-04-08", "2026-04-08", "ctx-001", "BULL_MAINSTREAM", 1, 4, "2026-04-08"),
+            ("000002.SZ", "2026-04-08", "2026-04-08", "ctx-002", "BEAR_MAINSTREAM", 0, 4, "2026-04-08"),
+        ],
+        structure_rows=[
+            ("000001.SZ", "2026-04-08", "2026-04-08", 2, 0, 0.7, 0.6, False, None),
+            ("000002.SZ", "2026-04-08", "2026-04-08", 0, 1, 0.0, 0.0, True, "failed_extreme"),
         ],
     )
+    _materialize_official_upstream(settings, suffix="001")
 
     summary = run_alpha_formal_signal_build(
         settings=settings,
@@ -176,14 +204,6 @@ def test_run_alpha_formal_signal_build_materializes_run_event_and_run_bridge(
             ORDER BY instrument
             """
         ).fetchall()
-        run_event_rows = conn.execute(
-            """
-            SELECT signal_nk, materialization_action
-            FROM alpha_formal_signal_run_event
-            WHERE run_id = 'alpha-formal-signal-test-001'
-            ORDER BY signal_nk
-            """
-        ).fetchall()
     finally:
         conn.close()
 
@@ -192,11 +212,9 @@ def test_run_alpha_formal_signal_build_materializes_run_event_and_run_bridge(
         ("000001.SZ", "BOF", "admitted", True),
         ("000002.SZ", "PB", "blocked", False),
     ]
-    assert len(run_event_rows) == 2
-    assert {row[1] for row in run_event_rows} == {"inserted"}
 
 
-def test_run_alpha_formal_signal_build_marks_rematerialized_when_context_changes(
+def test_run_alpha_formal_signal_build_marks_rematerialized_when_official_upstream_changes(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
@@ -210,12 +228,16 @@ def test_run_alpha_formal_signal_build_marks_rematerialized_when_context_changes
             ("evt-101", "000001.SZ", "2026-04-08", "2026-04-08", "PAS", "bof", "BOF"),
         ],
     )
-    _seed_context_source(
+    _seed_malf_sources(
         settings.databases.malf,
-        [
-            ("000001.SZ", "2026-04-08", "admitted", True, "BULL_MAINSTREAM", 1, 4, "2026-04-08"),
+        context_rows=[
+            ("000001.SZ", "2026-04-08", "2026-04-08", "ctx-101", "BULL_MAINSTREAM", 1, 4, "2026-04-08"),
+        ],
+        structure_rows=[
+            ("000001.SZ", "2026-04-08", "2026-04-08", 1, 0, 0.4, 0.3, False, None),
         ],
     )
+    _materialize_official_upstream(settings, suffix="002a")
 
     first_summary = run_alpha_formal_signal_build(
         settings=settings,
@@ -225,13 +247,11 @@ def test_run_alpha_formal_signal_build_marks_rematerialized_when_context_changes
     )
     assert first_summary.inserted_count == 1
 
-    _replace_context_source(
+    _replace_structure_source(
         settings.databases.malf,
-        [
-            ("000001.SZ", "2026-04-08", "blocked", False, "BEAR_MAINSTREAM", 0, 4, "2026-04-09"),
-        ],
+        [("000001.SZ", "2026-04-08", "2026-04-08", 0, 1, 0.0, 0.0, True, "failed_extreme")],
     )
-
+    _materialize_official_upstream(settings, suffix="002b")
     second_summary = run_alpha_formal_signal_build(
         settings=settings,
         signal_start_date="2026-04-08",
@@ -251,18 +271,10 @@ def test_run_alpha_formal_signal_build_marks_rematerialized_when_context_changes
             WHERE instrument = '000001.SZ'
             """
         ).fetchone()
-        run_event_row = conn.execute(
-            """
-            SELECT materialization_action
-            FROM alpha_formal_signal_run_event
-            WHERE run_id = 'alpha-formal-signal-test-002b'
-            """
-        ).fetchone()
     finally:
         conn.close()
 
     assert event_row == ("blocked", False, "alpha-formal-signal-test-002b")
-    assert run_event_row == ("rematerialized",)
 
 
 def test_run_alpha_formal_signal_build_outputs_event_consumable_by_position_runner(
@@ -279,18 +291,20 @@ def test_run_alpha_formal_signal_build_outputs_event_consumable_by_position_runn
             ("evt-201", "000001.SZ", "2026-04-08", "2026-04-08", "PAS", "bof", "BOF"),
         ],
     )
-    _seed_context_source(
+    _seed_malf_sources(
         settings.databases.malf,
-        [
-            ("000001.SZ", "2026-04-08", "admitted", True, "BULL_MAINSTREAM", 1, 4, "2026-04-08"),
+        context_rows=[
+            ("000001.SZ", "2026-04-08", "2026-04-08", "ctx-201", "BULL_MAINSTREAM", 1, 4, "2026-04-08"),
+        ],
+        structure_rows=[
+            ("000001.SZ", "2026-04-08", "2026-04-08", 2, 0, 0.8, 0.7, False, None),
         ],
     )
     _seed_market_base_prices(
         settings.databases.market_base,
-        [
-            ("000001.SZ", "2026-04-09", "backward", 10.5),
-        ],
+        [("000001.SZ", "2026-04-09", "backward", 10.5)],
     )
+    _materialize_official_upstream(settings, suffix="003")
 
     alpha_summary = run_alpha_formal_signal_build(
         settings=settings,

@@ -97,8 +97,16 @@
 
 ## 当前正式 runner 入口
 
+- `scripts/structure/run_structure_snapshot_build.py`
+  - 从官方 `malf` 上游的结构候选事实与执行上下文做 bounded 读取
+  - 物化 `structure_run / structure_snapshot / structure_run_snapshot`
+  - 产出可被 `filter / alpha` 稳定消费的官方结构事实层
+- `scripts/filter/run_filter_snapshot_build.py`
+  - 从官方 `structure snapshot` 与最小 `execution_context` 做 bounded 读取
+  - 物化 `filter_run / filter_snapshot / filter_run_snapshot`
+  - 产出可被 `alpha` 优先消费的官方 pre-trigger 准入层
 - `scripts/alpha/run_alpha_formal_signal_build.py`
-  - 从官方 `alpha trigger` 与 `malf` 准入事实做 bounded 读取
+  - 从官方 `alpha trigger` 与 `filter / structure snapshot` 做 bounded 读取
   - 物化 `alpha_formal_signal_run / event / run_event`
   - 产出可被 `position` 直接消费的官方 `alpha formal signal`
 - `scripts/position/run_position_formal_signal_materialization.py`

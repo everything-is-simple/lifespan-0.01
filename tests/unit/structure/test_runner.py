@@ -1,0 +1,215 @@
+"""覆盖 `structure snapshot` 官方 producer。"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import duckdb
+
+from mlq.core.paths import default_settings
+from mlq.structure import run_structure_snapshot_build, structure_ledger_path
+
+
+def _clear_workspace_env(monkeypatch) -> None:
+    for env_name in (
+        "LIFESPAN_REPO_ROOT",
+        "LIFESPAN_DATA_ROOT",
+        "LIFESPAN_TEMP_ROOT",
+        "LIFESPAN_REPORT_ROOT",
+        "LIFESPAN_VALIDATED_ROOT",
+    ):
+        monkeypatch.delenv(env_name, raising=False)
+
+
+def _bootstrap_repo_root(tmp_path: Path) -> Path:
+    repo_root = tmp_path / "lifespan-0.01"
+    repo_root.mkdir()
+    (repo_root / "pyproject.toml").write_text("[project]\nname='lifespan-0.01'\n", encoding="utf-8")
+    return repo_root
+
+
+def _seed_malf_inputs(
+    malf_path: Path,
+    *,
+    context_rows: list[tuple[object, ...]],
+    structure_rows: list[tuple[object, ...]],
+) -> None:
+    malf_path.parent.mkdir(parents=True, exist_ok=True)
+    conn = duckdb.connect(str(malf_path))
+    try:
+        conn.execute(
+            """
+            CREATE TABLE pas_context_snapshot (
+                entity_code TEXT NOT NULL,
+                signal_date DATE NOT NULL,
+                asof_date DATE NOT NULL,
+                source_context_nk TEXT NOT NULL,
+                malf_context_4 TEXT NOT NULL,
+                lifecycle_rank_high BIGINT NOT NULL,
+                lifecycle_rank_total BIGINT NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE structure_candidate_snapshot (
+                instrument TEXT NOT NULL,
+                signal_date DATE NOT NULL,
+                asof_date DATE NOT NULL,
+                new_high_count BIGINT NOT NULL,
+                new_low_count BIGINT NOT NULL,
+                refresh_density DOUBLE NOT NULL,
+                advancement_density DOUBLE NOT NULL,
+                is_failed_extreme BOOLEAN NOT NULL,
+                failure_type TEXT
+            )
+            """
+        )
+        for row in context_rows:
+            conn.execute("INSERT INTO pas_context_snapshot VALUES (?, ?, ?, ?, ?, ?, ?)", row)
+        for row in structure_rows:
+            conn.execute("INSERT INTO structure_candidate_snapshot VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", row)
+    finally:
+        conn.close()
+
+
+def _replace_structure_inputs(malf_path: Path, rows: list[tuple[object, ...]]) -> None:
+    conn = duckdb.connect(str(malf_path))
+    try:
+        conn.execute("DELETE FROM structure_candidate_snapshot")
+        for row in rows:
+            conn.execute("INSERT INTO structure_candidate_snapshot VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", row)
+    finally:
+        conn.close()
+
+
+def test_run_structure_snapshot_build_materializes_run_snapshot_and_bridge(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+    _seed_malf_inputs(
+        settings.databases.malf,
+        context_rows=[
+            ("000001.SZ", "2026-04-08", "2026-04-08", "ctx-001", "BULL_MAINSTREAM", 1, 4),
+            ("000002.SZ", "2026-04-08", "2026-04-08", "ctx-002", "BEAR_MAINSTREAM", 0, 4),
+        ],
+        structure_rows=[
+            ("000001.SZ", "2026-04-08", "2026-04-08", 2, 0, 0.7, 0.6, False, None),
+            ("000002.SZ", "2026-04-08", "2026-04-08", 0, 1, 0.0, 0.0, True, "failed_extreme"),
+        ],
+    )
+
+    summary = run_structure_snapshot_build(
+        settings=settings,
+        signal_start_date="2026-04-08",
+        signal_end_date="2026-04-08",
+        limit=10,
+        batch_size=1,
+        run_id="structure-snapshot-test-001",
+    )
+
+    assert summary.candidate_input_count == 2
+    assert summary.materialized_snapshot_count == 2
+    assert summary.inserted_count == 2
+    assert summary.advancing_count == 1
+    assert summary.failed_count == 1
+
+    conn = duckdb.connect(str(structure_ledger_path(settings)), read_only=True)
+    try:
+        run_row = conn.execute(
+            """
+            SELECT run_status, bounded_instrument_count
+            FROM structure_run
+            WHERE run_id = 'structure-snapshot-test-001'
+            """
+        ).fetchone()
+        snapshot_rows = conn.execute(
+            """
+            SELECT instrument, structure_progress_state, source_context_nk
+            FROM structure_snapshot
+            ORDER BY instrument
+            """
+        ).fetchall()
+        bridge_rows = conn.execute(
+            """
+            SELECT structure_snapshot_nk, materialization_action
+            FROM structure_run_snapshot
+            WHERE run_id = 'structure-snapshot-test-001'
+            ORDER BY structure_snapshot_nk
+            """
+        ).fetchall()
+    finally:
+        conn.close()
+
+    assert run_row == ("completed", 2)
+    assert snapshot_rows == [
+        ("000001.SZ", "advancing", "ctx-001"),
+        ("000002.SZ", "failed", "ctx-002"),
+    ]
+    assert len(bridge_rows) == 2
+    assert {row[1] for row in bridge_rows} == {"inserted"}
+
+
+def test_run_structure_snapshot_build_marks_rematerialized_when_structure_changes(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+    _seed_malf_inputs(
+        settings.databases.malf,
+        context_rows=[
+            ("000001.SZ", "2026-04-08", "2026-04-08", "ctx-101", "BULL_MAINSTREAM", 1, 4),
+        ],
+        structure_rows=[
+            ("000001.SZ", "2026-04-08", "2026-04-08", 1, 0, 0.4, 0.3, False, None),
+        ],
+    )
+
+    first_summary = run_structure_snapshot_build(
+        settings=settings,
+        signal_start_date="2026-04-08",
+        signal_end_date="2026-04-08",
+        run_id="structure-snapshot-test-002a",
+    )
+    assert first_summary.inserted_count == 1
+
+    _replace_structure_inputs(
+        settings.databases.malf,
+        [("000001.SZ", "2026-04-08", "2026-04-08", 0, 1, 0.0, 0.0, True, "failed_extreme")],
+    )
+    second_summary = run_structure_snapshot_build(
+        settings=settings,
+        signal_start_date="2026-04-08",
+        signal_end_date="2026-04-08",
+        run_id="structure-snapshot-test-002b",
+    )
+
+    assert second_summary.rematerialized_count == 1
+    assert second_summary.failed_count == 1
+
+    conn = duckdb.connect(str(structure_ledger_path(settings)), read_only=True)
+    try:
+        snapshot_row = conn.execute(
+            """
+            SELECT structure_progress_state, failure_type, last_materialized_run_id
+            FROM structure_snapshot
+            WHERE instrument = '000001.SZ'
+            """
+        ).fetchone()
+        bridge_row = conn.execute(
+            """
+            SELECT materialization_action
+            FROM structure_run_snapshot
+            WHERE run_id = 'structure-snapshot-test-002b'
+            """
+        ).fetchone()
+    finally:
+        conn.close()
+
+    assert snapshot_row == ("failed", "failed_extreme", "structure-snapshot-test-002b")
+    assert bridge_row == ("rematerialized",)
