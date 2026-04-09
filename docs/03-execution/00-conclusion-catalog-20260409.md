@@ -14,6 +14,7 @@
 5. `05-system-roadmap-and-progress-tracker-conclusion-20260409.md`
 6. `06-roadmap-legacy-module-absorption-conclusion-20260409.md`
 7. `07-position-funding-management-and-exit-contract-conclusion-20260409.md`
+8. `08-position-ledger-table-family-bootstrap-conclusion-20260409.md`
 
 ## 已冻结基础口径
 

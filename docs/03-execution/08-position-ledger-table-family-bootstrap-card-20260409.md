@@ -2,14 +2,14 @@
 
 卡片编号：`08`
 日期：`2026-04-09`
-状态：`执行中`
+状态：`已完成`
 
 ## 需求
 
 - 问题：
   `position` 的正式 design/spec 已经冻结，但新仓还没有把这些表族真正落到 `position` 模块历史账本里，当前仍只有模块 lessons 与执行卡，没有正式 schema/bootstrap 入口。
 - 目标结果：
-  为 `position` 建立最小正式表族与 bootstrap 入口，至少覆盖公共账本层、`FIXED_NOTIONAL_CONTROL`、`SINGLE_LOT_CONTROL` 与退出计划/退出腿的最小落库。
+  为 `position` 建立最小正式表族与 bootstrap 入口，至少覆盖公共账本层、`FIXED_NOTIONAL_CONTROL`、`SINGLE_LOT_CONTROL` 与退出计划/退出腿的最小落库，并接通 `alpha formal signal -> candidate/capacity/sizing` 的最小消费入口。
 - 为什么现在做：
   07 已经把表族边界、自然键和“测试仓/主仓”的正式语义写死；如果不立刻进入 08，路线图就会停留在“合同已经成立，但仓库里还没有正式落点”的空档期。
 
@@ -23,13 +23,15 @@
 
 1. 建立 `position` 公共账本层 schema/bootstrap，包括 `position_run / position_policy_registry / position_candidate_audit / position_capacity_snapshot / position_sizing_snapshot / position_exit_plan / position_exit_leg`。
 2. 建立 `position_funding_fixed_notional_snapshot / position_funding_single_lot_snapshot` 最小分表，并把 policy registry 接通。
-3. 补最小测试、命令证据和落表核查，确认 08 的 schema/bootstrap 已满足文档先行门禁。
+3. 实现 `alpha formal signal -> position_candidate_audit / position_capacity_snapshot / position_sizing_snapshot` 的最小 in-process 消费入口，并让当前激活 policy 能写入对应 family snapshot。
+4. 补最小测试、命令证据和落表核查，确认 08 的 schema/bootstrap 与最小消费入口已满足文档先行门禁。
 
 ## 实现边界
 
 - 范围内：
   - `position` 模块最小 schema/bootstrap
   - 激活方法的分表落库
+  - `alpha formal signal` 的最小 in-process 消费入口
   - 最小验证与执行闭环回填
 - 范围外：
   - `probe_entry / confirm_add` 连续加码主线
@@ -40,7 +42,8 @@
 
 1. `position` 最小公共账本层已落库
 2. 激活方法分表已落库
-3. 最小测试或落表核查已具备
-4. 证据写完
-5. 记录写完
-6. 结论写完
+3. `alpha formal signal -> candidate/capacity/sizing` 最小消费入口已具备
+4. 最小测试或落表核查已具备
+5. 证据写完
+6. 记录写完
+7. 结论写完
