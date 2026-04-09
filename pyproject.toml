@@ -35,3 +35,8 @@ execution_index_files = [
     "docs/03-execution/B-card-catalog-20260409.md",
     "docs/03-execution/C-system-completion-ledger-20260409.md",
 ]
+system_tracker_files = [
+    "docs/01-design/α-system-roadmap-and-progress-tracker-charter-20260409.md",
+    "docs/02-spec/β-system-roadmap-and-progress-tracker-spec-20260409.md",
+    "docs/02-spec/Ω-system-delivery-roadmap-20260409.md",
+]

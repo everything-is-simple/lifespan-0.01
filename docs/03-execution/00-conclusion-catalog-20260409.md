@@ -11,6 +11,7 @@
 2. `02-shared-ledger-contract-and-pytest-path-fix-conclusion-20260409.md`
 3. `03-doc-first-gating-checker-conclusion-20260409.md`
 4. `04-module-lessons-and-execution-index-rename-conclusion-20260409.md`
+5. `05-system-roadmap-and-progress-tracker-conclusion-20260409.md`
 
 ## 已冻结基础口径
 
@@ -18,3 +19,4 @@
 2. 文档先行治理已经生效。
 3. 正式代码生成已受 `doc-first gating` 硬门禁约束。
 4. 各正式模块已有新仓内的经验冻结入口，执行区三大索引采用字母命名。
+5. 新仓已有正式的系统级总路线图与进度跟踪器。

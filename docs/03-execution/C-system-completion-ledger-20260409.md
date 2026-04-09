@@ -3,7 +3,7 @@
 日期：`2026-04-09`
 状态：`生效中`
 
-1. 当前下一锤：`04-module-lessons-and-execution-index-rename-card-20260409.md`
+1. 当前下一锤：`05-system-roadmap-and-progress-tracker-card-20260409.md`
 2. 正式主线剩余卡：`0`
 3. 可选 Sidecar 剩余卡：`0`
 4. 后置修复剩余卡：`0`
@@ -14,3 +14,4 @@
 2. 冻结历史账本共享契约
 3. 建立 `doc-first gating` 硬门禁
 4. 提炼老系统模块经验并整理执行入口命名
+5. 建立系统级路线图与进度跟踪器

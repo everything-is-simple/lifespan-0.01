@@ -23,10 +23,12 @@
 2. `docs/README.md`
 3. `docs/01-design/00-system-charter-20260409.md`
 4. `docs/01-design/01-doc-first-development-governance-20260409.md`
-5. `docs/01-design/modules/README.md`
-6. `docs/02-spec/00-repo-layout-and-docflow-spec-20260409.md`
-7. `docs/02-spec/01-doc-first-task-gating-spec-20260409.md`
-8. `docs/03-execution/README.md`
+5. `docs/01-design/α-system-roadmap-and-progress-tracker-charter-20260409.md`
+6. `docs/01-design/modules/README.md`
+7. `docs/02-spec/00-repo-layout-and-docflow-spec-20260409.md`
+8. `docs/02-spec/01-doc-first-task-gating-spec-20260409.md`
+9. `docs/02-spec/Ω-system-delivery-roadmap-20260409.md`
+10. `docs/03-execution/README.md`
 
 如果只是追当前正式口径，优先看 `conclusion`。
 如果要继续正式实现，再回到对应 `card / evidence / record`。
