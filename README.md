@@ -145,3 +145,7 @@
 13. `docs/02-spec/β-system-roadmap-and-progress-tracker-spec-20260409.md`
 14. `docs/02-spec/Ω-system-delivery-roadmap-20260409.md`
 15. `docs/03-execution/README.md`
+
+其中：
+
+- `α / β / Ω` 现在不只负责阶段看板，也负责说明各模块主要吸收自哪些老仓来源、当前继承方式是什么、哪些地方仍未冻结。

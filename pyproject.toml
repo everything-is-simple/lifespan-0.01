@@ -35,6 +35,7 @@ execution_index_files = [
     "docs/03-execution/B-card-catalog-20260409.md",
     "docs/03-execution/C-system-completion-ledger-20260409.md",
 ]
+# 系统路线图文件不仅追踪阶段进度，也承担老仓来源分层、模块继承方式与置信度口径。
 system_tracker_files = [
     "docs/01-design/α-system-roadmap-and-progress-tracker-charter-20260409.md",
     "docs/02-spec/β-system-roadmap-and-progress-tracker-spec-20260409.md",

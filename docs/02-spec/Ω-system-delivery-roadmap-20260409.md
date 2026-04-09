@@ -20,6 +20,40 @@
 - 系统阶段位于 `P0 已完成，P1/P2 已有边界，P3-P6 尚未正式展开`
 - 当前最接近真正进入业务施工的是 `position`
 
+## 老仓来源分层
+
+当前路线图背后的老仓来源，正式按下面四层理解：
+
+### `L1 核心已验证模块`
+
+1. `position`
+2. `alpha`
+3. `malf`
+
+这些模块在老仓里同时具备较扎实的设计、规格、执行卡与结论，是新系统最值得吸收的核心资产。
+
+### `L2 支持性较强模块`
+
+1. `data`
+2. `system`
+
+这两层有大量主线桥接、验收、修复与 readout 经验，可以直接影响新系统推进顺序，但不能简单照搬旧命名和旧表结构。
+
+### `L3 研究偏少模块`
+
+1. `trade`
+2. `core`
+
+这两层已有部分正式经验，但更多仍停留在桥接合同、治理抽象或局部结论，正式账本沉淀还不够厚。
+
+### `L4 新系统正式新建边界`
+
+1. `structure`
+2. `filter`
+3. `portfolio_plan`
+
+这三层当前更多是“吸收旧边界想法后在新系统正式建立”，而不是已有整套可直接沿袭的老仓成品。
+
 ## 系统阶段
 
 ### `P0 治理地基`
@@ -96,18 +130,18 @@
 
 ## 各模块状态
 
-| 模块 | 当前状态 | 当前位置 | 下一步重点 |
-| --- | --- | --- | --- |
-| `core` | `主线待接` | 地基已成，继续服务全系统 | ownership / checkpoint / version registry |
-| `data` | `局部可验` | 行情依据层方向明确 | readiness / freshness / repair 口径继续稳 |
-| `malf` | `设计中` | 语义层边界已写清 | 语义表族与正式账本进一步冻结 |
-| `structure` | `设计中` | 正式模块边界已恢复 | 冻结 `structure_event / structure_snapshot` |
-| `filter` | `设计中` | 正式模块边界已恢复 | 冻结最小硬门与 observation 分层 |
-| `alpha` | `设计中` | trigger 方向明确 | PAS 五表族与 natural key |
-| `position` | `设计中` | 最接近正式开工 | 资金管理分表与单标的仓位账本 |
-| `portfolio_plan` | `设计中` | 边界已裁决 | 组合容量、配额、组合 blocked/admitted |
-| `trade` | `未开始` | 只冻结了边界经验 | entry / carry / exit / replay 账本 |
-| `system` | `未开始` | 只冻结了汇总边界 | 系统级 readout / reuse / audit |
+| 模块 | 当前状态 | 主要来源 | 继承方式 | 置信度 | 下一步重点 |
+| --- | --- | --- | --- | --- | --- |
+| `core` | `主线待接` | `G:\MarketLifespan-Quant\docs\01-design\modules\core\` 与 `02-spec\modules\core\` | `只吸收经验` | `中` | ownership / checkpoint / version registry |
+| `data` | `局部可验` | `G:\MarketLifespan-Quant\docs\01-design\modules\data\`、`02-spec\modules\data\`、`03-execution\` | `沿袭为主` | `高` | readiness / freshness / targeted repair |
+| `malf` | `设计中` | `G:\EmotionQuant-gamma\gene\` + `G:\MarketLifespan-Quant\docs\01-design\modules\malf\` + `02-spec\modules\malf\` | `沿袭后改写` | `高` | 语义表族与 `structure/filter` 新边界一起冻结 |
+| `structure` | `设计中` | `G:\Lifespan-Quant\docs\01-design\modules\structure\` + 旧 `malf 29/30/31` 分层材料 | `全新设计` | `低` | 冻结 `structure_event / structure_snapshot` |
+| `filter` | `设计中` | `G:\Lifespan-Quant\docs\01-design\modules\filter\` + 旧 `malf 29/31/32` 分层材料 | `全新设计` | `低` | 冻结最小硬门与 observation 分层 |
+| `alpha` | `设计中` | `G:\EmotionQuant-gamma\normandy\` + `G:\MarketLifespan-Quant\docs\01-design\modules\alpha\` + `02-spec\modules\alpha\` | `沿袭后改写` | `高` | PAS 五表族、trigger ledger 与 formal signal 分层 |
+| `position` | `设计中` | `G:\EmotionQuant-gamma\positioning\` + `G:\MarketLifespan-Quant\docs\01-design\modules\position\` + `02-spec\modules\position\` | `沿袭后改写` | `高` | 资金管理分表与单标的仓位账本 |
+| `portfolio_plan` | `设计中` | 旧 `position / system` 桥接经验与组合验收材料 | `全新设计` | `低` | 组合容量、配额、blocked/admitted 合同 |
+| `trade` | `未开始` | `G:\MarketLifespan-Quant\docs\01-design\modules\trade\` + `02-spec\modules\trade\` + 桥接结论 | `只吸收经验` | `低` | entry / carry / exit / replay 账本 |
+| `system` | `未开始` | `G:\MarketLifespan-Quant\docs\01-design\modules\system\` + `02-spec\modules\system\` + bounded acceptance 结论 | `只吸收经验` | `中` | 系统级 readout / reuse / audit |
 
 ## 下一锤
 
@@ -120,6 +154,7 @@
 1. `position` 是当前距离正式业务实现最近的一层。
 2. 你已经明确要把资金管理方式拆表，而不是继续混在一张大表里。
 3. 如果 `position` 不先冻结，`portfolio_plan / trade / system` 都会缺少稳定上游。
+4. `position` 是当前老仓来源最扎实、最适合首先迁入新系统正式账本的一层。
 
 下一锤产物：
 
@@ -155,6 +190,14 @@
 影响：
 
 - `alpha` 的结构语义与准入层还缺正式可消费出口
+
+## 当前不敢写死的点
+
+1. `position` 资金管理表族的最终拆分与自然键仍未冻结，尤其是立花义正“测试仓 + 加码”应落在哪一层还需要正式设计。
+2. `alpha` 的 `bof / tst / pb / cpb / bpb` 五表族虽然方向明确，但正式桥接到 `position` 的字段合同还未写死。
+3. `malf` 在新系统中已经拆成 `malf -> structure -> filter` 主链，但这三层的正式表合同仍未共同冻结。
+4. `trade` 的 `entry / carry / exit / replay` 账本边界只停留在经验层，尚未成为可施工的正式设计。
+5. `portfolio_plan` 当前主要来自旧 `position / system` 桥接经验外推，仍不是可直接沿袭的现成模块。
 
 ## 里程碑定义
 
@@ -216,6 +259,7 @@
 如果你想继续正式施工，再按下面顺序下钻：
 
 1. 看当前“下一锤”
-2. 打开对应模块设计文档
-3. 打开当前待施工卡
-4. 再进入具体实现
+2. 看对应模块在本页的“主要来源 / 继承方式 / 置信度”
+3. 打开对应模块设计文档
+4. 打开当前待施工卡
+5. 再进入具体实现

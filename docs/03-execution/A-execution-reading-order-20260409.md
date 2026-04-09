@@ -8,12 +8,12 @@
 1. 先读 `00-conclusion-catalog-20260409.md`
 2. 再读 `B-card-catalog-20260409.md`
 3. 再读 `C-system-completion-ledger-20260409.md`
-4. 打开当前活动执行卡 `05-system-roadmap-and-progress-tracker-card-20260409.md`
+4. 打开当前活动执行卡 `06-roadmap-legacy-module-absorption-card-20260409.md`
 5. 确认卡片已链接需求、设计和任务分解
 6. 之后才开始正式实现
 
 当前活动主线：
 
-1. 建立系统级路线图设计与跟踪规格
-2. 冻结当前系统级总路线图
-3. 为下一张 `position` 正式卡提供全局进度视图
+1. 吸收老仓模块来源，补齐系统总控板的来源依据
+2. 加厚 `α / β / Ω`，让路线图包含继承方式、置信度与未定项
+3. 为下一张 `position` 正式卡提供更稳的系统级裁决底座

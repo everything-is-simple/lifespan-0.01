@@ -19,3 +19,4 @@
 当前与仓库治理直接相关的参考复核文档：
 
 1. `legacy-review-opinion-reconciliation-20260409.md`
+2. `Γ-legacy-module-source-grounding-map-20260409.md`

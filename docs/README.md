@@ -68,6 +68,10 @@
 
 这里的内容只是输入，不直接覆盖正式系统契约。
 
+当前与路线图直接相关的参考输入，优先看：
+
+1. `docs/04-reference/Γ-legacy-module-source-grounding-map-20260409.md`
+
 ## 硬规则
 
 任何正式代码生成、代码改写、Schema 创建或 Pipeline 新增，都必须先具备：
