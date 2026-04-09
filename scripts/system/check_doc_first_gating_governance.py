@@ -8,7 +8,7 @@ import re
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-CARD_CATALOG_PATH = REPO_ROOT / "docs" / "03-execution" / "22-card-catalog-20260409.md"
+CARD_CATALOG_PATH = REPO_ROOT / "docs" / "03-execution" / "B-card-catalog-20260409.md"
 CURRENT_CARD_PATTERN = re.compile(r"当前待施工卡：`([^`]+)`")
 TRIGGER_PREFIXES = ("src/", "scripts/", ".codex/")
 PLACEHOLDER_TOKENS = ("<", "切片 1", "切片 2", "切片 3", "问题：", "目标结果：", "为什么现在做：")
@@ -167,7 +167,7 @@ def run_check(repo_root: Path, paths: list[str] | None = None) -> tuple[list[str
     lines = ["[doc-first-gating]"]
     card_path = _current_card_path(repo_root)
     if card_path is None:
-        lines.append("  - 无法从 `22-card-catalog-20260409.md` 解析当前待施工卡。")
+        lines.append("  - 无法从 `B-card-catalog-20260409.md` 解析当前待施工卡。")
         return lines, False
 
     if not paths:

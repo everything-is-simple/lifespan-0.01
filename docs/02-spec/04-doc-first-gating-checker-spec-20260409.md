@@ -15,7 +15,7 @@
 
 当前待施工卡来源为：
 
-- `docs/03-execution/22-card-catalog-20260409.md`
+- `docs/03-execution/B-card-catalog-20260409.md`
 
 ## 触发范围
 

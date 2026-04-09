@@ -13,9 +13,9 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 EXECUTION_ROOT = REPO_ROOT / "docs" / "03-execution"
 EVIDENCE_ROOT = EXECUTION_ROOT / "evidence"
 RECORD_ROOT = EXECUTION_ROOT / "records"
-READING_ORDER_PATH = EXECUTION_ROOT / "00-execution-reading-order-20260409.md"
-CARD_CATALOG_PATH = EXECUTION_ROOT / "22-card-catalog-20260409.md"
-COMPLETION_LEDGER_PATH = EXECUTION_ROOT / "77-system-completion-ledger-20260409.md"
+READING_ORDER_PATH = EXECUTION_ROOT / "A-execution-reading-order-20260409.md"
+CARD_CATALOG_PATH = EXECUTION_ROOT / "B-card-catalog-20260409.md"
+COMPLETION_LEDGER_PATH = EXECUTION_ROOT / "C-system-completion-ledger-20260409.md"
 
 CATALOG_CONFIG = {
     "conclusion": {

@@ -17,10 +17,10 @@
 继续正式执行时，默认按下面顺序进入：
 
 1. `docs/03-execution/00-conclusion-catalog-20260409.md`
-2. `docs/03-execution/22-card-catalog-20260409.md`
-3. `docs/03-execution/77-system-completion-ledger-20260409.md`
+2. `docs/03-execution/B-card-catalog-20260409.md`
+3. `docs/03-execution/C-system-completion-ledger-20260409.md`
 4. `docs/03-execution/00-card-execution-discipline-20260409.md`
-5. `docs/03-execution/00-execution-reading-order-20260409.md`
+5. `docs/03-execution/A-execution-reading-order-20260409.md`
 
 ## 继续现有执行线时
 

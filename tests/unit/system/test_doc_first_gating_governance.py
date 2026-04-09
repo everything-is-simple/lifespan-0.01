@@ -25,7 +25,7 @@ def _bootstrap_repo(tmp_path: Path, *, valid_card: bool) -> Path:
 
     repo_root = tmp_path / "repo"
     _write(
-        repo_root / "docs" / "03-execution" / "22-card-catalog-20260409.md",
+        repo_root / "docs" / "03-execution" / "B-card-catalog-20260409.md",
         "# 卡片目录\n\n2. 当前待施工卡：`03-doc-first-gating-checker-card-20260409.md`\n",
     )
 

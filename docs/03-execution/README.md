@@ -14,10 +14,10 @@
 第一次进入本目录时，默认按下面顺序阅读：
 
 1. `00-conclusion-catalog-20260409.md`
-2. `22-card-catalog-20260409.md`
-3. `77-system-completion-ledger-20260409.md`
+2. `B-card-catalog-20260409.md`
+3. `C-system-completion-ledger-20260409.md`
 4. `00-card-execution-discipline-20260409.md`
-5. `00-execution-reading-order-20260409.md`
+5. `A-execution-reading-order-20260409.md`
 
 ## 默认动作
 
@@ -28,9 +28,9 @@
 
 如果你想继续正式实现，先看：
 
-1. `22-card-catalog-20260409.md` 里的“当前待施工卡”
+1. `B-card-catalog-20260409.md` 里的“当前待施工卡”
 2. 卡片链接的需求、设计、任务分解
-3. `77-system-completion-ledger-20260409.md`
+3. `C-system-completion-ledger-20260409.md`
 4. 再开始实现
 
 ## 硬规则

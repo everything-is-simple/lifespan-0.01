@@ -28,3 +28,10 @@ pythonpath = ["src"]
 testpaths = ["tests"]
 addopts = "--basetemp=H:/Lifespan-temp/pytest-tmp"
 cache_dir = "H:/Lifespan-temp/pytest-cache"
+
+[tool.mlq.governance]
+execution_index_files = [
+    "docs/03-execution/A-execution-reading-order-20260409.md",
+    "docs/03-execution/B-card-catalog-20260409.md",
+    "docs/03-execution/C-system-completion-ledger-20260409.md",
+]
