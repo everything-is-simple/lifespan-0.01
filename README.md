@@ -113,7 +113,7 @@
 2. 设计
 3. 任务分解
 
-再进入正式执行闭环。
+在此基础上，当前待施工卡还必须通过 `python scripts/system/check_doc_first_gating_governance.py` 的硬门禁检查，才允许进入 `src/`、`scripts/`、`.codex/` 下的正式实现。
 
 ## 入口文件
 
@@ -123,7 +123,8 @@
 2. `README.md`
 3. `pyproject.toml`
 
-只要治理规则、环境脚手架、路径契约、测试入口发生变化，就必须同步刷新这三个入口文件。
+只要治理规则、环境脚手架、路径契约、测试入口、执行入口发生变化，就必须同步刷新这三个入口文件。
+`docs/01-design/`、`docs/02-spec/` 和 `src/mlq/core/paths.py` 的正式口径变化，也视为入口变化。
 
 ## 文档入口
 
@@ -133,6 +134,10 @@
 2. `docs/README.md`
 3. `docs/01-design/00-system-charter-20260409.md`
 4. `docs/01-design/01-doc-first-development-governance-20260409.md`
-5. `docs/02-spec/00-repo-layout-and-docflow-spec-20260409.md`
-6. `docs/02-spec/01-doc-first-task-gating-spec-20260409.md`
-7. `docs/03-execution/README.md`
+5. `docs/01-design/03-historical-ledger-shared-contract-charter-20260409.md`
+6. `docs/01-design/04-doc-first-gating-checker-charter-20260409.md`
+7. `docs/02-spec/00-repo-layout-and-docflow-spec-20260409.md`
+8. `docs/02-spec/01-doc-first-task-gating-spec-20260409.md`
+9. `docs/02-spec/03-historical-ledger-shared-contract-spec-20260409.md`
+10. `docs/02-spec/04-doc-first-gating-checker-spec-20260409.md`
+11. `docs/03-execution/README.md`

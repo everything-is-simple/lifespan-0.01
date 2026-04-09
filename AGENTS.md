@@ -101,6 +101,7 @@
 2. 任何正式代码生成、Schema 变更、Pipeline 新增、行为改写，都必须先具备需求、设计、任务分解。
 3. 缺少上述前置文档，不允许进入正式实现。
 4. 缺少 `card / evidence / record / conclusion` 任意一件，不算正式完成。
+5. 进入 `src/`、`scripts/`、`.codex/` 下的正式实现前，当前待施工卡必须已经通过 `doc-first gating` 检查。
 
 ## 7. 入口文件规则
 
@@ -111,6 +112,7 @@
 3. `pyproject.toml`
 
 只要治理规则、环境脚手架、路径契约、测试入口、执行入口发生变化，就必须同步刷新这三个入口文件。
+其中 `docs/01-design/`、`docs/02-spec/` 与 `src/mlq/core/paths.py` 的正式口径变化，也视为入口变化。
 
 ## 8. 文档规则
 

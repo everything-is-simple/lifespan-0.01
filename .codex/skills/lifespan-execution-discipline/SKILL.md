@@ -22,6 +22,7 @@ description: "固化 lifespan-0.01 仓库的正式执行纪律。适用于本仓
 5. 缺少任意一件 `card / evidence / record / conclusion`，都不算正式收口。
 6. `pytest` cache、`pytest` basetemp、smoke 临时产物必须进入 `H:\Lifespan-temp`。
 7. 只要治理规则、环境脚手架、路径契约、测试入口、执行入口发生变化，就必须同步刷新 `AGENTS.md`、`README.md`、`pyproject.toml`。
+8. 一旦要改 `src/`、`scripts/`、`.codex/` 下的正式实现，当前待施工卡必须已经具备需求、设计、规格和任务分解，并通过 `python scripts/system/check_doc_first_gating_governance.py`。
 
 ## 默认执行顺序
 
@@ -46,6 +47,7 @@ description: "固化 lifespan-0.01 仓库的正式执行纪律。适用于本仓
 4. 新增治理脚本或环境脚手架
 5. 新开一条执行线
 6. 调整仓库入口文件治理口径
+7. 进入任何正式代码生成或正式脚本改写
 
 ## 脚本入口
 
@@ -54,3 +56,4 @@ description: "固化 lifespan-0.01 仓库的正式执行纪律。适用于本仓
 1. `python .codex/skills/lifespan-execution-discipline/scripts/new_execution_bundle.py --number 2 --slug example-task --title 示例任务 --register --set-current-card --dry-run`
 2. `python .codex/skills/lifespan-execution-discipline/scripts/check_execution_indexes.py --include-untracked`
 3. `python scripts/system/check_development_governance.py`
+4. `python scripts/system/check_doc_first_gating_governance.py`

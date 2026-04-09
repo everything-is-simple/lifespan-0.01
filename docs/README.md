@@ -16,10 +16,12 @@
 1. `docs/01-design/00-system-charter-20260409.md`
 2. `docs/01-design/01-doc-first-development-governance-20260409.md`
 3. `docs/01-design/03-historical-ledger-shared-contract-charter-20260409.md`
-4. `docs/02-spec/00-repo-layout-and-docflow-spec-20260409.md`
-5. `docs/02-spec/01-doc-first-task-gating-spec-20260409.md`
-6. `docs/02-spec/03-historical-ledger-shared-contract-spec-20260409.md`
-7. `docs/03-execution/README.md`
+4. `docs/01-design/04-doc-first-gating-checker-charter-20260409.md`
+5. `docs/02-spec/00-repo-layout-and-docflow-spec-20260409.md`
+6. `docs/02-spec/01-doc-first-task-gating-spec-20260409.md`
+7. `docs/02-spec/03-historical-ledger-shared-contract-spec-20260409.md`
+8. `docs/02-spec/04-doc-first-gating-checker-spec-20260409.md`
+9. `docs/03-execution/README.md`
 
 ## 目录职责
 

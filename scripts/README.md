@@ -11,7 +11,7 @@
 脚本治理还承担两条仓库纪律：
 
 1. 临时产物必须进入 `H:\Lifespan-temp`，不允许落回仓库根目录。
-2. 只要 `scripts/` 或 `.codex/` 下的治理入口发生变化，就必须同步刷新 `AGENTS.md`、`README.md`、`pyproject.toml`。
+2. 只要 `scripts/`、`.codex/`、`docs/01-design/`、`docs/02-spec/` 或 `src/mlq/core/paths.py` 发生正式口径变化，就必须同步刷新 `AGENTS.md`、`README.md`、`pyproject.toml`。
 
 ## setup
 
@@ -32,7 +32,9 @@
    - 检查仓库内是否混入缓存、数据库或中间产物
 4. `python scripts/system/check_entry_freshness_governance.py`
    - 检查治理入口改动时是否同步刷新 `AGENTS.md`、`README.md`、`pyproject.toml`
-5. `python scripts/system/check_development_governance.py`
+5. `python scripts/system/check_doc_first_gating_governance.py`
+   - 检查当前待施工卡是否已经具备需求、设计、规格和任务分解
+6. `python scripts/system/check_development_governance.py`
    - 串联开发治理检查
 
 ## execution

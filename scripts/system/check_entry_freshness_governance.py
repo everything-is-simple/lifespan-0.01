@@ -8,7 +8,8 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ENTRY_FILES = ("AGENTS.md", "README.md", "pyproject.toml")
-GOVERNANCE_PREFIXES = (".codex/", "scripts/")
+GOVERNANCE_PREFIXES = (".codex/", "scripts/", "docs/01-design/", "docs/02-spec/")
+GOVERNANCE_FILES = ("src/mlq/core/paths.py",)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -25,10 +26,11 @@ def _normalize_path(repo_root: Path, raw_path: str) -> str | None:
     """把输入路径转换成仓库相对路径。"""
 
     path = Path(raw_path)
-    resolved = path.resolve() if path.is_absolute() else (repo_root / path).resolve()
-    if not resolved.exists():
+    resolved = path.resolve(strict=False) if path.is_absolute() else (repo_root / path).resolve(strict=False)
+    try:
+        return resolved.relative_to(repo_root).as_posix()
+    except ValueError:
         return None
-    return resolved.relative_to(repo_root).as_posix()
 
 
 def run_check(repo_root: Path, paths: list[str] | None = None) -> tuple[list[str], bool]:
@@ -47,7 +49,9 @@ def run_check(repo_root: Path, paths: list[str] | None = None) -> tuple[list[str
         return lines, True
 
     normalized_paths = {rel for raw in paths if (rel := _normalize_path(repo_root, raw))}
-    triggered = any(rel.startswith(prefix) for rel in normalized_paths for prefix in GOVERNANCE_PREFIXES)
+    triggered = any(rel.startswith(prefix) for rel in normalized_paths for prefix in GOVERNANCE_PREFIXES) or any(
+        rel in GOVERNANCE_FILES for rel in normalized_paths
+    )
     if not triggered:
         lines.append("  - 本次改动未触发治理入口联动检查。")
         return lines, True

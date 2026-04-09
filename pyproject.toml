@@ -23,6 +23,7 @@ dev = [
 packages = ["src/mlq"]
 
 [tool.pytest.ini_options]
+# pytest 临时产物固定外置到 H:\Lifespan-temp；正式实现前仍需通过文档先行硬门禁。
 pythonpath = ["src"]
 testpaths = ["tests"]
 addopts = "--basetemp=H:/Lifespan-temp/pytest-tmp"

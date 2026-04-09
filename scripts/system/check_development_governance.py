@@ -1,4 +1,4 @@
-"""串联文件长度、中文化、仓库卫生三类治理检查。"""
+"""串联文件长度、中文化、仓库卫生、入口新鲜度与文档先行门禁检查。"""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import argparse
 from pathlib import Path
 
 from check_chinese_governance import run_check as run_chinese_check
+from check_doc_first_gating_governance import run_check as run_doc_first_gating_check
 from check_entry_freshness_governance import run_check as run_entry_freshness_check
 from check_file_length_governance import run_check as run_file_length_check
 from check_repo_hygiene_governance import run_check as run_repo_hygiene_check
@@ -17,7 +18,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 def build_parser() -> argparse.ArgumentParser:
     """构造命令行参数。"""
 
-    parser = argparse.ArgumentParser(description="串联文件长度、中文化、仓库卫生三类治理检查。")
+    parser = argparse.ArgumentParser(description="串联文件长度、中文化、仓库卫生、入口新鲜度与文档先行门禁检查。")
     parser.add_argument("--repo-root", default=str(REPO_ROOT), help="仓库根目录。")
     parser.add_argument("--report-path", help="可选，把检查结果写入 Markdown 报告。")
     parser.add_argument("paths", nargs="*", help="可选，只检查本次新增或改动文件。")
@@ -36,6 +37,7 @@ def main() -> int:
         run_chinese_check(repo_root, paths=args.paths),
         run_repo_hygiene_check(repo_root, paths=args.paths),
         run_entry_freshness_check(repo_root, paths=args.paths),
+        run_doc_first_gating_check(repo_root, paths=args.paths),
     ]
 
     lines: list[str] = []
