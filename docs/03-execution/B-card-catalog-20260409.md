@@ -5,7 +5,7 @@
 
 1. 当前下一锤：`13-alpha-five-table-family-shared-contract-and-family-ledger-bootstrap-card-20260409.md`
 2. 当前待施工卡：`13-alpha-five-table-family-shared-contract-and-family-ledger-bootstrap-card-20260409.md`
-3. 正式主线剩余卡：`1`
+3. 正式主线剩余卡：`0`
 4. 可选 Sidecar 剩余卡：`0`
 5. 后置修复剩余卡：`0`
 

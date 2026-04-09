@@ -5,7 +5,7 @@
 
 ## 当前进度
 
-当前新仓已经完成地基阶段，并把 `malf -> structure -> filter -> alpha -> position` 的最小官方主线补到了可复验状态。
+当前新仓已经完成地基阶段，并把 `malf -> structure -> filter -> alpha -> position` 的最小官方主线补到了可复验状态；`alpha` 也已经补出共享 `trigger ledger / family ledger / formal signal` 三级正式账本层。
 
 截至今天，已正式成立的部分是：
 
@@ -18,7 +18,7 @@
 当前整体判断：
 
 - 系统阶段位于 `P0 已完成，P1/P2 已有边界，P4-position bounded runner 已建立，P3/P5/P6 仍待正式桥接`
-- 当前主线已经从“alpha -> position 官方桥接待收口”推进到“structure/filter 官方 snapshot 已成立，alpha 默认上游已切到新仓正式 snapshot”
+- 当前主线已经从“structure/filter 官方 snapshot 已成立，alpha 默认上游已切到新仓正式 snapshot”推进到“alpha 的 trigger ledger / family ledger / formal signal 三级正式分层已成立”
 
 ## 老仓来源分层
 
@@ -90,7 +90,7 @@
 
 ### `P3 alpha 触发层`
 
-状态：`设计中`
+状态：`共享 contract 与 family ledger bootstrap 已成立`
 
 范围：
 
@@ -137,7 +137,7 @@
 | `malf` | `设计中` | `G:\EmotionQuant-gamma\gene\` + `G:\MarketLifespan-Quant\docs\01-design\modules\malf\` + `02-spec\modules\malf\` | `沿袭后改写` | `高` | 语义表族与 `structure/filter` 新边界一起冻结 |
 | `structure` | `最小官方 snapshot 已成立` | `G:\Lifespan-Quant\docs\01-design\modules\structure\` + 旧 `malf 29/30/31` 分层材料 | `全新设计` | `中` | 从最小 snapshot 扩到更细的 event / trace 家族 |
 | `filter` | `最小官方 snapshot 已成立` | `G:\Lifespan-Quant\docs\01-design\modules\filter\` + 旧 `malf 29/31/32` 分层材料 | `全新设计` | `中` | 继续补 observation 与更细的 admission 分层，但保持少拦截 |
-| `alpha` | `最小官方 producer 已成立，默认上游已切到 snapshot` | `G:\EmotionQuant-gamma\normandy\` + `G:\MarketLifespan-Quant\docs\01-design\modules\alpha\` + `02-spec\modules\alpha\` | `沿袭后改写` | `高` | 继续补 PAS 五表族、trigger ledger 与 formal signal 更完整分层 |
+| `alpha` | `trigger ledger / family ledger / formal signal 三级正式账本已成立` | `G:\EmotionQuant-gamma\normandy\` + `G:\MarketLifespan-Quant\docs\01-design\modules\alpha\` + `02-spec\modules\alpha\` | `沿袭后改写` | `高` | 继续补 PAS 五表族更细 payload、trace 与专表，但不绕过 formal signal |
 | `position` | `已对接 alpha 官方 formal signal` | `G:\EmotionQuant-gamma\positioning\` + `G:\MarketLifespan-Quant\docs\01-design\modules\position\` + `02-spec\modules\position\` | `沿袭后改写` | `高` | 维持单标的正式账本边界，等待 `portfolio_plan / trade` 下游开工 |
 | `portfolio_plan` | `设计中` | 旧 `position / system` 桥接经验与组合验收材料 | `全新设计` | `低` | 组合容量、配额、blocked/admitted 合同 |
 | `trade` | `未开始` | `G:\MarketLifespan-Quant\docs\01-design\modules\trade\` + `02-spec\modules\trade\` + 桥接结论 | `只吸收经验` | `低` | entry / carry / exit / replay 账本 |
@@ -147,22 +147,21 @@
 
 当前下一锤：
 
-### `13-alpha-five-table-family-shared-contract-and-family-ledger-bootstrap`
+### `待下一轮正式规划`
 
 当前补充：
-1. `12` 已经完成，`alpha` 最小 `trigger ledger` 三表、bounded runner 与正式 pilot 已收口。
-2. 新仓主链现在已经具备 `structure / filter / alpha trigger ledger / alpha formal signal / position` 的连续正式账本层。
-3. `13` 正式转向 `alpha` 五表族共享合同与 family ledger bootstrap，先补厚 `alpha` 自己内部的 family-specific 正式解释层。
-4. 本轮仍不回头再补 `position`，也不提前跳到 `portfolio_plan / trade / system`。
+1. `13` 已经完成，`alpha` 五表族共享 contract 与 family ledger bootstrap 已在 `bof / pb` 两个核心 family 上完成正式 pilot。
+2. 新仓主链当前已经具备 `structure / filter / alpha trigger ledger / alpha family ledger / alpha formal signal / position` 的连续正式账本层。
+3. 当前正式主线卡已清零；下一轮需在 `portfolio_plan / trade / system` 与 `alpha` 进一步细化之间重新排期，而不是继续停留在 temp-only 或回头补 `position`。
 
 ## 阻塞项
 
-### `阻塞 1：alpha 五表族尚未正式落库`
+### `阻塞 1：alpha 五表族尚未补齐更细专表与 payload 合同`
 
 影响：
 
-- `alpha` 当前虽已有最小 producer，但更细的 `bof / tst / pb / cpb / bpb` 家族还没正式账本化
-- `trade` 与 `system` 仍看不到更完整的 trigger 家族解释层
+- `alpha` 当前虽已具备最小 family ledger，但更细的 `bof / tst / pb / cpb / bpb` payload、trace 与专表仍未正式冻结
+- `trade` 与 `system` 仍看不到更完整的 family 侧解释层
 
 ### `阻塞 2：portfolio_plan / trade / system` 尚未正式开工
 

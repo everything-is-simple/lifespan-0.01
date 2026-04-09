@@ -43,6 +43,7 @@ system_tracker_files = [
 ]
 formal_runner_scripts = [
     "scripts/alpha/run_alpha_trigger_ledger_build.py",
+    "scripts/alpha/run_alpha_family_build.py",
     "scripts/structure/run_structure_snapshot_build.py",
     "scripts/filter/run_filter_snapshot_build.py",
     "scripts/alpha/run_alpha_formal_signal_build.py",

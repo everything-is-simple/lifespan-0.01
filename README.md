@@ -109,6 +109,10 @@
   - 从官方 `alpha trigger ledger` 与 `filter / structure snapshot` 做 bounded 读取
   - 物化 `alpha_formal_signal_run / event / run_event`
   - 产出可被 `position` 直接消费的官方 `alpha formal signal`
+- `scripts/alpha/run_alpha_family_build.py`
+  - 从官方 `alpha_trigger_event` 与 bounded family candidate 输入做 bounded 读取
+  - 物化 `alpha_family_run / alpha_family_event / alpha_family_run_event`
+  - 产出可被 `alpha formal signal` 与后续审计稳定引用的官方 `alpha family ledger`
 - `scripts/alpha/run_alpha_trigger_ledger_build.py`
   - 从 bounded detector 输入与官方 `filter / structure snapshot` 做 bounded 读取
   - 物化 `alpha_trigger_run / alpha_trigger_event / alpha_trigger_run_event`

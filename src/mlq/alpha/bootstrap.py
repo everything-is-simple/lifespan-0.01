@@ -17,6 +17,9 @@ ALPHA_TRIGGER_RUN_EVENT_TABLE: Final[str] = "alpha_trigger_run_event"
 ALPHA_FORMAL_SIGNAL_RUN_TABLE: Final[str] = "alpha_formal_signal_run"
 ALPHA_FORMAL_SIGNAL_EVENT_TABLE: Final[str] = "alpha_formal_signal_event"
 ALPHA_FORMAL_SIGNAL_RUN_EVENT_TABLE: Final[str] = "alpha_formal_signal_run_event"
+ALPHA_FAMILY_RUN_TABLE: Final[str] = "alpha_family_run"
+ALPHA_FAMILY_EVENT_TABLE: Final[str] = "alpha_family_event"
+ALPHA_FAMILY_RUN_EVENT_TABLE: Final[str] = "alpha_family_run_event"
 
 
 ALPHA_TRIGGER_LEDGER_TABLE_NAMES: Final[tuple[str, ...]] = (
@@ -33,9 +36,17 @@ ALPHA_FORMAL_SIGNAL_LEDGER_TABLE_NAMES: Final[tuple[str, ...]] = (
 )
 
 
+ALPHA_FAMILY_LEDGER_TABLE_NAMES: Final[tuple[str, ...]] = (
+    ALPHA_FAMILY_RUN_TABLE,
+    ALPHA_FAMILY_EVENT_TABLE,
+    ALPHA_FAMILY_RUN_EVENT_TABLE,
+)
+
+
 ALPHA_LEDGER_TABLE_NAMES: Final[tuple[str, ...]] = (
     *ALPHA_TRIGGER_LEDGER_TABLE_NAMES,
     *ALPHA_FORMAL_SIGNAL_LEDGER_TABLE_NAMES,
+    *ALPHA_FAMILY_LEDGER_TABLE_NAMES,
 )
 
 
@@ -140,6 +151,56 @@ ALPHA_LEDGER_DDL: Final[dict[str, str]] = {
             PRIMARY KEY (run_id, signal_nk)
         )
     """,
+    ALPHA_FAMILY_RUN_TABLE: """
+        CREATE TABLE IF NOT EXISTS alpha_family_run (
+            run_id TEXT PRIMARY KEY,
+            producer_name TEXT NOT NULL,
+            producer_version TEXT NOT NULL,
+            run_status TEXT NOT NULL,
+            family_scope TEXT NOT NULL,
+            signal_start_date DATE,
+            signal_end_date DATE,
+            bounded_instrument_count BIGINT NOT NULL DEFAULT 0,
+            materialized_family_event_count BIGINT NOT NULL DEFAULT 0,
+            source_trigger_table TEXT NOT NULL,
+            source_candidate_table TEXT NOT NULL,
+            family_contract_version TEXT NOT NULL,
+            started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            completed_at TIMESTAMP,
+            summary_json TEXT,
+            notes TEXT
+        )
+    """,
+    ALPHA_FAMILY_EVENT_TABLE: """
+        CREATE TABLE IF NOT EXISTS alpha_family_event (
+            family_event_nk TEXT PRIMARY KEY,
+            trigger_event_nk TEXT NOT NULL,
+            instrument TEXT NOT NULL,
+            signal_date DATE NOT NULL,
+            asof_date DATE NOT NULL,
+            trigger_family TEXT NOT NULL,
+            trigger_type TEXT NOT NULL,
+            pattern_code TEXT NOT NULL,
+            family_code TEXT NOT NULL,
+            family_contract_version TEXT NOT NULL,
+            payload_json TEXT NOT NULL,
+            first_seen_run_id TEXT NOT NULL,
+            last_materialized_run_id TEXT NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """,
+    ALPHA_FAMILY_RUN_EVENT_TABLE: """
+        CREATE TABLE IF NOT EXISTS alpha_family_run_event (
+            run_id TEXT NOT NULL,
+            family_event_nk TEXT NOT NULL,
+            trigger_event_nk TEXT NOT NULL,
+            materialization_action TEXT NOT NULL,
+            family_code TEXT NOT NULL,
+            recorded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (run_id, family_event_nk)
+        )
+    """,
 }
 
 
@@ -189,6 +250,25 @@ def bootstrap_alpha_formal_signal_ledger(
         for table_name in ALPHA_FORMAL_SIGNAL_LEDGER_TABLE_NAMES:
             conn.execute(ALPHA_LEDGER_DDL[table_name])
         return ALPHA_FORMAL_SIGNAL_LEDGER_TABLE_NAMES
+    finally:
+        if owns_connection:
+            conn.close()
+
+
+def bootstrap_alpha_family_ledger(
+    settings: WorkspaceRoots | None = None,
+    *,
+    connection: duckdb.DuckDBPyConnection | None = None,
+) -> tuple[str, ...]:
+    """创建 `alpha family ledger` 最小三表。"""
+
+    workspace = settings or default_settings()
+    owns_connection = connection is None
+    conn = connection or connect_alpha_ledger(workspace)
+    try:
+        for table_name in ALPHA_FAMILY_LEDGER_TABLE_NAMES:
+            conn.execute(ALPHA_LEDGER_DDL[table_name])
+        return ALPHA_FAMILY_LEDGER_TABLE_NAMES
     finally:
         if owns_connection:
             conn.close()

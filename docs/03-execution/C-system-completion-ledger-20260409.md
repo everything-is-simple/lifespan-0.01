@@ -4,7 +4,7 @@
 状态：`生效中`
 
 1. 当前下一锤：`13-alpha-five-table-family-shared-contract-and-family-ledger-bootstrap-card-20260409.md`
-2. 正式主线剩余卡：`1`
+2. 正式主线剩余卡：`0`
 3. 可选 Sidecar 剩余卡：`0`
 4. 后置修复剩余卡：`0`
 
