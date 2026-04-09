@@ -8,7 +8,7 @@
 2. 再读 `B-card-catalog-20260409.md`
 3. 再读 `C-system-completion-ledger-20260409.md`
 4. 先看最新已生效结论 `12-alpha-trigger-ledger-and-five-table-family-minimal-materialization-conclusion-20260409.md`
-5. 如果要继续施工，优先回看当前待施工卡 `12-alpha-trigger-ledger-and-five-table-family-minimal-materialization-card-20260409.md`
+5. 如果要继续施工，先回 `Ω-system-delivery-roadmap-20260409.md` 确认下一张正式主线卡是否已经开出；当前待施工卡为 `待定（12 已完成，等待下一张正式主线卡）`
 6. 再回 `Ω-system-delivery-roadmap-20260409.md` 看新的剩余阻塞与下一张卡方向
 
 当前活动主线：

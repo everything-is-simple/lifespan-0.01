@@ -3,8 +3,8 @@
 日期：`2026-04-09`
 状态：`生效中`
 
-1. 当前下一锤：`12-alpha-trigger-ledger-and-five-table-family-minimal-materialization-card-20260409.md`
-2. 当前待施工卡：`12-alpha-trigger-ledger-and-five-table-family-minimal-materialization-card-20260409.md`
+1. 当前下一锤：`待定（12 已完成，等待下一张正式主线卡）`
+2. 当前待施工卡：`待定（12 已完成，等待下一张正式主线卡）`
 3. 正式主线剩余卡：`0`
 4. 可选 Sidecar 剩余卡：`0`
 5. 后置修复剩余卡：`0`
