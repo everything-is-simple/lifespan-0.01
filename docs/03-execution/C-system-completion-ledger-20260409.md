@@ -4,7 +4,7 @@
 状态：`生效中`
 
 1. 当前下一锤：`10-alpha-formal-signal-contract-and-producer-card-20260409.md`
-2. 正式主线剩余卡：`1`
+2. 正式主线剩余卡：`0`
 3. 可选 Sidecar 剩余卡：`0`
 4. 后置修复剩余卡：`0`
 
@@ -19,4 +19,4 @@
 7. 冻结 `position` 资金管理与退出合同，并把下一锤切到表族落库与 bootstrap
 8. 建立 `position` 最小账本表族、默认 policy seed 与 `alpha formal signal` 最小消费入口
 9. 建立 `position` 正式 bounded runner，连通 `alpha formal signal` 读取、`market_base` 参考价 enrichment 与 bounded validation
-10. 先补 `alpha formal signal` 正式出口 design/spec/card，再建立上游 official producer 与 `position` 真实对接
+10. 建立 `alpha` 官方 formal signal producer、冻结三表正式出口，并完成 `position` 对新仓官方上游的真实对接

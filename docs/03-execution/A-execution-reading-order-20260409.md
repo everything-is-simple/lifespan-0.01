@@ -4,15 +4,13 @@
 状态：`生效中`
 
 当前默认顺序：
-
 1. 先读 `00-conclusion-catalog-20260409.md`
 2. 再读 `B-card-catalog-20260409.md`
 3. 再读 `C-system-completion-ledger-20260409.md`
-4. 先看最新已生效结论 `09-position-formal-signal-runner-and-bounded-validation-conclusion-20260409.md`
-5. 如果要继续施工，优先回看当前待施工卡 `10-alpha-formal-signal-contract-and-producer-card-20260409.md`
-6. 再回 `Ω-system-delivery-roadmap-20260409.md` 看系统里程碑与后续锤点
+4. 先看最新已生效结论 `10-alpha-formal-signal-contract-and-producer-conclusion-20260409.md`
+5. 如果要回看本轮实现与证据，优先读 `10-alpha-formal-signal-contract-and-producer-card-20260409.md`
+6. 再回 `Ω-system-delivery-roadmap-20260409.md` 看剩余阻塞与下一张卡方向
 
 当前活动主线：
-
-1. `position` 消费侧 bounded runner 已成立，最新生效真相先看 `09` 结论。
-2. 当前活动卡已经切到 `10`，主线任务是补 `alpha formal signal` 正式出口合同与最小 producer。
+1. `alpha` 官方 formal signal producer 已成立，`position` 已对接新仓官方上游。
+2. 当前 `10` 号卡已经完成，正式主线等待下一张卡开启。

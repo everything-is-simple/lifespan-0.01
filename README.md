@@ -97,6 +97,10 @@
 
 ## 当前正式 runner 入口
 
+- `scripts/alpha/run_alpha_formal_signal_build.py`
+  - 从官方 `alpha trigger` 与 `malf` 准入事实做 bounded 读取
+  - 物化 `alpha_formal_signal_run / event / run_event`
+  - 产出可被 `position` 直接消费的官方 `alpha formal signal`
 - `scripts/position/run_position_formal_signal_materialization.py`
   - 从官方 `alpha formal signal` 做 bounded 读取
   - 用 `market_base.stock_daily_adjusted` 补 `reference_trade_date / reference_price`

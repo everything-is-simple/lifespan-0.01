@@ -137,8 +137,8 @@
 | `malf` | `设计中` | `G:\EmotionQuant-gamma\gene\` + `G:\MarketLifespan-Quant\docs\01-design\modules\malf\` + `02-spec\modules\malf\` | `沿袭后改写` | `高` | 语义表族与 `structure/filter` 新边界一起冻结 |
 | `structure` | `设计中` | `G:\Lifespan-Quant\docs\01-design\modules\structure\` + 旧 `malf 29/30/31` 分层材料 | `全新设计` | `低` | 冻结 `structure_event / structure_snapshot` |
 | `filter` | `设计中` | `G:\Lifespan-Quant\docs\01-design\modules\filter\` + 旧 `malf 29/31/32` 分层材料 | `全新设计` | `低` | 冻结最小硬门与 observation 分层 |
-| `alpha` | `设计中` | `G:\EmotionQuant-gamma\normandy\` + `G:\MarketLifespan-Quant\docs\01-design\modules\alpha\` + `02-spec\modules\alpha\` | `沿袭后改写` | `高` | PAS 五表族、trigger ledger 与 formal signal 分层 |
-| `position` | `bounded runner 已建立` | `G:\EmotionQuant-gamma\positioning\` + `G:\MarketLifespan-Quant\docs\01-design\modules\position\` + `02-spec\modules\position\` | `沿袭后改写` | `高` | 回到上游 `alpha` 正式出口，完成 consumer 真正对接 |
+| `alpha` | `最小官方 producer 已成立` | `G:\EmotionQuant-gamma\normandy\` + `G:\MarketLifespan-Quant\docs\01-design\modules\alpha\` + `02-spec\modules\alpha\` | `沿袭后改写` | `高` | 继续补 PAS 五表族、trigger ledger 与 formal signal 更完整分层 |
+| `position` | `已对接 alpha 官方 formal signal` | `G:\EmotionQuant-gamma\positioning\` + `G:\MarketLifespan-Quant\docs\01-design\modules\position\` + `02-spec\modules\position\` | `沿袭后改写` | `高` | 维持单标的正式账本边界，等待 `portfolio_plan / trade` 下游开工 |
 | `portfolio_plan` | `设计中` | 旧 `position / system` 桥接经验与组合验收材料 | `全新设计` | `低` | 组合容量、配额、blocked/admitted 合同 |
 | `trade` | `未开始` | `G:\MarketLifespan-Quant\docs\01-design\modules\trade\` + `02-spec\modules\trade\` + 桥接结论 | `只吸收经验` | `低` | entry / carry / exit / replay 账本 |
 | `system` | `未开始` | `G:\MarketLifespan-Quant\docs\01-design\modules\system\` + `02-spec\modules\system\` + bounded acceptance 结论 | `只吸收经验` | `中` | 系统级 readout / reuse / audit |
@@ -147,7 +147,11 @@
 
 当前下一锤建议固定为：
 
-### `10-alpha-formal-signal-contract-and-producer-card-20260409.md`
+### `待开新卡`
+
+说明：
+1. `10` 已经完成，下面这段记录的是上一锤为何要做 `alpha formal signal` 官方 producer，以及它本轮已经落下的产物。
+2. 当前正式口径已经从“先补 alpha 官方 producer”切换到“等待下一张正式主线卡”。
 
 原因：
 
@@ -227,7 +231,7 @@
 2. `position` 能正式消费 `alpha`
 3. 有 bounded evidence
 
-当前状态：`未完成`
+当前状态：`已完成`
 
 ### `M3 position-portfolio-trade 桥接成立`
 

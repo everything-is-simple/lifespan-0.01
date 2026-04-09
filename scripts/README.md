@@ -45,6 +45,13 @@
 2. `python .codex/skills/lifespan-execution-discipline/scripts/check_execution_indexes.py --include-untracked`
    - 在本地重构阶段检查执行索引、卡目录和完工账本
 
+## alpha
+
+1. `python scripts/alpha/run_alpha_formal_signal_build.py --signal-start-date 2026-04-08 --signal-end-date 2026-04-08 --limit 10 --batch-size 10`
+   - 从官方 `alpha trigger` 与 `malf` 准入事实上游做 bounded 读取
+   - 物化 `alpha_formal_signal_run / alpha_formal_signal_event / alpha_formal_signal_run_event`
+   - 输出可被 `position` 直接消费的官方 `alpha formal signal`
+
 ## position
 
 1. `python scripts/position/run_position_formal_signal_materialization.py --policy-id fixed_notional_full_exit_v1 --capital-base-value 1000000 --signal-start-date 2026-04-08 --signal-end-date 2026-04-08 --limit 10`

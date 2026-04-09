@@ -5,24 +5,28 @@
 
 ## 做了什么
 
-1. 先按仓库执行纪律回读了 `09` 的结论、卡目录、completion ledger 与系统路线图，确认当前下一步应从 `position` 回到 `alpha`，而不是继续深挖 `position`。
-2. 对齐了新仓 `position` 消费侧已冻结合同与老仓 `310 PAS formal signal 回接 position bootstrap` 的正式经验，把本轮范围压缩为：
-   - `alpha_formal_signal_run`
-   - `alpha_formal_signal_event`
-   - `alpha_formal_signal_run_event`
-   - 最小 producer runner
-3. 新增 `alpha` 设计与规格文档，明确：
-   - `trigger ledger` 与 `formal signal` 必须分层
-   - `event` 是事实层，`run` 是审计层，`run_event` 是桥接层
-   - `position` 后续应直接消费 `alpha_formal_signal_event`
-4. 使用仓库自带脚本生成 `10` 号卡四件套，并把当前待施工卡切换为 `10-alpha-formal-signal-contract-and-producer-card-20260409.md`。
-5. 手工回校索引口径，避免把草稿 conclusion 错挂成“当前正式结论”。
+1. 以 `10` 号卡为边界，把实现范围压到 `alpha_formal_signal_run / alpha_formal_signal_event / alpha_formal_signal_run_event`、最小 producer runner、脚本入口和 bounded evidence。
+2. 参考 `G:\EmotionQuant-gamma\normandy\` 与 `G:\MarketLifespan-Quant` 老仓 `alpha` 结论，沿袭了“trigger ledger -> formal signal -> position”的分层、run/event/run_event 三表身份，以及 bounded 分批物化的审计方式。
+3. 在 `src/mlq/alpha/bootstrap.py` 冻结新仓 `alpha formal signal` 官方三表；在 `src/mlq/alpha/runner.py` 落下最小 producer，支持：
+   - bounded 日期窗口
+   - 按 instrument 分批
+   - 读取官方 trigger 表与官方 context 表
+   - 生成稳定 `signal_nk`
+   - 对 event 做 `inserted / reused / rematerialized` 判定
+   - 回写 run summary
+4. 新增 `scripts/alpha/run_alpha_formal_signal_build.py` 作为正式脚本入口，并把 `README.md`、`AGENTS.md`、`scripts/README.md`、`pyproject.toml` 同步到“alpha producer 已成立”的入口口径。
+5. 新增 `tests/unit/alpha/test_runner.py`，覆盖：
+   - 三表落库
+   - context 改变后的 rematerialized
+   - `position` 对新仓官方上游的真实消费
 
-## 偏离项
+## 实现取舍
 
-- 自动建卡脚本会把草稿 conclusion 预填进 conclusion catalog，但当前任务只是正式开卡而非完成收口，所以本轮已把该预填回退，避免正式结论口径失真。
+- 本轮没有把老仓 PAS 五表族整包迁入，而是只冻结当前下游真实在消费的 `formal signal` 官方出口。
+- producer 当前允许对 trigger/context 源表做最小列名兼容，但不允许反向读取 `alpha` 内部临时过程，也不自动串调 `position / trade / system`。
+- `position` runner 本轮没有改动消费主逻辑，只依赖它已支持的 `alpha_formal_signal_event` 合同与 `last_materialized_run_id -> source_signal_run_id` 回退口径。
 
 ## 备注
 
-- 本轮只做 doc-first 前置与执行卡切换，不宣称 `alpha` producer 已完成。
-- 下一轮正式实现应直接围绕 `alpha` 官方 `formal signal` producer 展开，而不是回到 `position` 新增更多内部 family 表。
+- 这张卡完成后，`M2 alpha-position 正式桥接成立` 可以正式标完成。
+- 下一张正式主线卡不应再回到 `position` 深挖 family 表，而应围绕 `structure / filter` 或更下游模块继续开卡。
