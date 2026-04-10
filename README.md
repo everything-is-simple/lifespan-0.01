@@ -103,6 +103,10 @@
   - 从 `H:\tdx_offline_Data` 按 `gbk` ingest 官方 TDX 股票日线到 `raw_market`
   - 记录 `stock_file_registry / stock_daily_bar`
   - 支持文件级跳过、断点续跑与 `inserted / reused / rematerialized`
+- `scripts/data/run_tdxquant_daily_raw_sync.py`
+  - 从 `TdxQuant(dividend_type='none')` 按 request/checkpoint 账本语义桥接官方日更原始事实到 `raw_market`
+  - 记录 `raw_tdxquant_run / raw_tdxquant_request / raw_tdxquant_instrument_checkpoint`
+  - 只写 `stock_daily_bar(adjust_method='none')`，并只标记 `base_dirty_instrument(adjust_method='none')`
 - `scripts/data/run_market_base_build.py`
   - 从官方 `raw_market` 物化 `market_base.stock_daily_adjusted`
   - 正式沉淀 `adjust_method in {none, backward, forward}` 三套价格

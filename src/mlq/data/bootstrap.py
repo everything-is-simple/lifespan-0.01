@@ -14,6 +14,9 @@ RAW_STOCK_FILE_REGISTRY_TABLE: Final[str] = "stock_file_registry"
 RAW_STOCK_DAILY_BAR_TABLE: Final[str] = "stock_daily_bar"
 RAW_INGEST_RUN_TABLE: Final[str] = "raw_ingest_run"
 RAW_INGEST_FILE_TABLE: Final[str] = "raw_ingest_file"
+RAW_TDXQUANT_RUN_TABLE: Final[str] = "raw_tdxquant_run"
+RAW_TDXQUANT_REQUEST_TABLE: Final[str] = "raw_tdxquant_request"
+RAW_TDXQUANT_INSTRUMENT_CHECKPOINT_TABLE: Final[str] = "raw_tdxquant_instrument_checkpoint"
 MARKET_BASE_STOCK_DAILY_TABLE: Final[str] = "stock_daily_adjusted"
 BASE_DIRTY_INSTRUMENT_TABLE: Final[str] = "base_dirty_instrument"
 BASE_BUILD_RUN_TABLE: Final[str] = "base_build_run"
@@ -95,6 +98,63 @@ RAW_MARKET_LEDGER_TABLES: Final[dict[str, str]] = {
             row_count BIGINT NOT NULL DEFAULT 0,
             error_message TEXT,
             recorded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """,
+    RAW_TDXQUANT_RUN_TABLE: """
+        CREATE TABLE IF NOT EXISTS raw_tdxquant_run (
+            run_id TEXT,
+            runner_name TEXT NOT NULL,
+            runner_version TEXT NOT NULL,
+            strategy_path TEXT NOT NULL,
+            scope_source TEXT NOT NULL,
+            requested_end_trade_date DATE NOT NULL,
+            requested_count BIGINT NOT NULL DEFAULT 0,
+            candidate_instrument_count BIGINT NOT NULL DEFAULT 0,
+            processed_instrument_count BIGINT NOT NULL DEFAULT 0,
+            successful_request_count BIGINT NOT NULL DEFAULT 0,
+            failed_request_count BIGINT NOT NULL DEFAULT 0,
+            inserted_bar_count BIGINT NOT NULL DEFAULT 0,
+            reused_bar_count BIGINT NOT NULL DEFAULT 0,
+            rematerialized_bar_count BIGINT NOT NULL DEFAULT 0,
+            dirty_mark_count BIGINT NOT NULL DEFAULT 0,
+            run_status TEXT NOT NULL,
+            started_at_utc TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            finished_at_utc TIMESTAMP,
+            summary_json TEXT
+        )
+    """,
+    RAW_TDXQUANT_REQUEST_TABLE: """
+        CREATE TABLE IF NOT EXISTS raw_tdxquant_request (
+            request_nk TEXT,
+            run_id TEXT NOT NULL,
+            asset_type TEXT NOT NULL,
+            code TEXT NOT NULL,
+            name TEXT NOT NULL,
+            requested_dividend_type TEXT NOT NULL,
+            requested_count BIGINT NOT NULL DEFAULT 0,
+            requested_end_time TEXT NOT NULL,
+            response_trade_date_min DATE,
+            response_trade_date_max DATE,
+            response_row_count BIGINT NOT NULL DEFAULT 0,
+            response_digest TEXT,
+            inserted_bar_count BIGINT NOT NULL DEFAULT 0,
+            reused_bar_count BIGINT NOT NULL DEFAULT 0,
+            rematerialized_bar_count BIGINT NOT NULL DEFAULT 0,
+            status TEXT NOT NULL,
+            error_message TEXT,
+            recorded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """,
+    RAW_TDXQUANT_INSTRUMENT_CHECKPOINT_TABLE: """
+        CREATE TABLE IF NOT EXISTS raw_tdxquant_instrument_checkpoint (
+            checkpoint_nk TEXT,
+            code TEXT NOT NULL,
+            asset_type TEXT NOT NULL,
+            last_success_trade_date DATE,
+            last_observed_trade_date DATE,
+            last_success_run_id TEXT,
+            last_response_digest TEXT,
+            updated_at_utc TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
     """,
 }
@@ -243,6 +303,57 @@ RAW_MARKET_REQUIRED_COLUMNS: Final[dict[str, dict[str, str]]] = {
         "error_message": "TEXT",
         "recorded_at": "TIMESTAMP",
     },
+    RAW_TDXQUANT_RUN_TABLE: {
+        "run_id": "TEXT",
+        "runner_name": "TEXT",
+        "runner_version": "TEXT",
+        "strategy_path": "TEXT",
+        "scope_source": "TEXT",
+        "requested_end_trade_date": "DATE",
+        "requested_count": "BIGINT",
+        "candidate_instrument_count": "BIGINT",
+        "processed_instrument_count": "BIGINT",
+        "successful_request_count": "BIGINT",
+        "failed_request_count": "BIGINT",
+        "inserted_bar_count": "BIGINT",
+        "reused_bar_count": "BIGINT",
+        "rematerialized_bar_count": "BIGINT",
+        "dirty_mark_count": "BIGINT",
+        "run_status": "TEXT",
+        "started_at_utc": "TIMESTAMP",
+        "finished_at_utc": "TIMESTAMP",
+        "summary_json": "TEXT",
+    },
+    RAW_TDXQUANT_REQUEST_TABLE: {
+        "request_nk": "TEXT",
+        "run_id": "TEXT",
+        "asset_type": "TEXT",
+        "code": "TEXT",
+        "name": "TEXT",
+        "requested_dividend_type": "TEXT",
+        "requested_count": "BIGINT",
+        "requested_end_time": "TEXT",
+        "response_trade_date_min": "DATE",
+        "response_trade_date_max": "DATE",
+        "response_row_count": "BIGINT",
+        "response_digest": "TEXT",
+        "inserted_bar_count": "BIGINT",
+        "reused_bar_count": "BIGINT",
+        "rematerialized_bar_count": "BIGINT",
+        "status": "TEXT",
+        "error_message": "TEXT",
+        "recorded_at": "TIMESTAMP",
+    },
+    RAW_TDXQUANT_INSTRUMENT_CHECKPOINT_TABLE: {
+        "checkpoint_nk": "TEXT",
+        "code": "TEXT",
+        "asset_type": "TEXT",
+        "last_success_trade_date": "DATE",
+        "last_observed_trade_date": "DATE",
+        "last_success_run_id": "TEXT",
+        "last_response_digest": "TEXT",
+        "updated_at_utc": "TIMESTAMP",
+    },
 }
 
 
@@ -341,6 +452,44 @@ RAW_MARKET_NOT_NULL_COLUMNS: Final[dict[str, tuple[str, ...]]] = {
         "created_at",
         "updated_at",
     ),
+    RAW_TDXQUANT_RUN_TABLE: (
+        "run_id",
+        "runner_name",
+        "runner_version",
+        "strategy_path",
+        "scope_source",
+        "requested_end_trade_date",
+        "requested_count",
+        "candidate_instrument_count",
+        "processed_instrument_count",
+        "successful_request_count",
+        "failed_request_count",
+        "inserted_bar_count",
+        "reused_bar_count",
+        "rematerialized_bar_count",
+        "dirty_mark_count",
+        "run_status",
+        "started_at_utc",
+    ),
+    RAW_TDXQUANT_REQUEST_TABLE: (
+        "request_nk",
+        "run_id",
+        "asset_type",
+        "code",
+        "name",
+        "requested_dividend_type",
+        "requested_count",
+        "requested_end_time",
+        "response_row_count",
+        "status",
+        "recorded_at",
+    ),
+    RAW_TDXQUANT_INSTRUMENT_CHECKPOINT_TABLE: (
+        "checkpoint_nk",
+        "code",
+        "asset_type",
+        "updated_at_utc",
+    ),
 }
 
 
@@ -368,6 +517,11 @@ MARKET_BASE_NOT_NULL_COLUMNS: Final[dict[str, tuple[str, ...]]] = {
 RAW_MARKET_UNIQUE_INDEXES: Final[dict[str, tuple[tuple[str, tuple[str, ...]], ...]]] = {
     RAW_STOCK_FILE_REGISTRY_TABLE: (("ux_stock_file_registry_file_nk", ("file_nk",)),),
     RAW_STOCK_DAILY_BAR_TABLE: (("ux_stock_daily_bar_bar_nk", ("bar_nk",)),),
+    RAW_TDXQUANT_RUN_TABLE: (("ux_raw_tdxquant_run_run_id", ("run_id",)),),
+    RAW_TDXQUANT_REQUEST_TABLE: (("ux_raw_tdxquant_request_request_nk", ("request_nk",)),),
+    RAW_TDXQUANT_INSTRUMENT_CHECKPOINT_TABLE: (
+        ("ux_raw_tdxquant_instrument_checkpoint_checkpoint_nk", ("checkpoint_nk",)),
+    ),
 }
 
 
@@ -511,6 +665,39 @@ def _cleanup_raw_market_ledger(connection: duckdb.DuckDBPyConnection) -> None:
         table_name=RAW_STOCK_DAILY_BAR_TABLE,
         key_columns=("bar_nk",),
         order_columns=("updated_at", "created_at"),
+    )
+    _delete_rows_with_nulls(
+        connection,
+        table_name=RAW_TDXQUANT_RUN_TABLE,
+        required_columns=RAW_MARKET_NOT_NULL_COLUMNS[RAW_TDXQUANT_RUN_TABLE],
+    )
+    _deduplicate_table(
+        connection,
+        table_name=RAW_TDXQUANT_RUN_TABLE,
+        key_columns=("run_id",),
+        order_columns=("finished_at_utc", "started_at_utc"),
+    )
+    _delete_rows_with_nulls(
+        connection,
+        table_name=RAW_TDXQUANT_REQUEST_TABLE,
+        required_columns=RAW_MARKET_NOT_NULL_COLUMNS[RAW_TDXQUANT_REQUEST_TABLE],
+    )
+    _deduplicate_table(
+        connection,
+        table_name=RAW_TDXQUANT_REQUEST_TABLE,
+        key_columns=("request_nk",),
+        order_columns=("recorded_at",),
+    )
+    _delete_rows_with_nulls(
+        connection,
+        table_name=RAW_TDXQUANT_INSTRUMENT_CHECKPOINT_TABLE,
+        required_columns=RAW_MARKET_NOT_NULL_COLUMNS[RAW_TDXQUANT_INSTRUMENT_CHECKPOINT_TABLE],
+    )
+    _deduplicate_table(
+        connection,
+        table_name=RAW_TDXQUANT_INSTRUMENT_CHECKPOINT_TABLE,
+        key_columns=("checkpoint_nk",),
+        order_columns=("updated_at_utc", "last_success_trade_date"),
     )
 
 

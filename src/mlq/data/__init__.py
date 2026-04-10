@@ -10,6 +10,9 @@ from mlq.data.bootstrap import (
     RAW_INGEST_RUN_TABLE,
     RAW_STOCK_DAILY_BAR_TABLE,
     RAW_STOCK_FILE_REGISTRY_TABLE,
+    RAW_TDXQUANT_INSTRUMENT_CHECKPOINT_TABLE,
+    RAW_TDXQUANT_REQUEST_TABLE,
+    RAW_TDXQUANT_RUN_TABLE,
     bootstrap_market_base_ledger,
     bootstrap_raw_market_ledger,
     market_base_ledger_path,
@@ -17,9 +20,11 @@ from mlq.data.bootstrap import (
 )
 from mlq.data.runner import (
     MarketBaseBuildSummary,
+    TdxQuantDailyRawSyncSummary,
     TdxStockRawIngestSummary,
     mark_base_instrument_dirty,
     run_market_base_build,
+    run_tdxquant_daily_raw_sync,
     run_tdx_stock_raw_ingest,
 )
 
@@ -33,7 +38,11 @@ __all__ = [
     "RAW_INGEST_RUN_TABLE",
     "RAW_STOCK_DAILY_BAR_TABLE",
     "RAW_STOCK_FILE_REGISTRY_TABLE",
+    "RAW_TDXQUANT_INSTRUMENT_CHECKPOINT_TABLE",
+    "RAW_TDXQUANT_REQUEST_TABLE",
+    "RAW_TDXQUANT_RUN_TABLE",
     "MarketBaseBuildSummary",
+    "TdxQuantDailyRawSyncSummary",
     "TdxStockRawIngestSummary",
     "bootstrap_market_base_ledger",
     "bootstrap_raw_market_ledger",
@@ -41,5 +50,6 @@ __all__ = [
     "market_base_ledger_path",
     "raw_market_ledger_path",
     "run_market_base_build",
+    "run_tdxquant_daily_raw_sync",
     "run_tdx_stock_raw_ingest",
 ]

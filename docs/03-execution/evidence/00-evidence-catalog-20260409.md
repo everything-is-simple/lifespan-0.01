@@ -23,3 +23,4 @@
 16. `16-data-malf-minimal-official-mainline-bridge-evidence-20260410.md`
 17. `17-raw-base-strong-checkpoint-and-dirty-materialization-evidence-20260410.md`
 18. `18-daily-raw-base-fq-incremental-update-source-selection-evidence-20260410.md`
+19. `19-tdxquant-daily-raw-source-ledger-bridge-evidence-20260410.md`

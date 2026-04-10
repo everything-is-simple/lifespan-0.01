@@ -17,8 +17,10 @@ from mlq.data import (
     mark_base_instrument_dirty,
     raw_market_ledger_path,
     run_market_base_build,
+    run_tdxquant_daily_raw_sync,
     run_tdx_stock_raw_ingest,
 )
+from mlq.data.tdxquant import TdxQuantDailyBar, TdxQuantInstrumentInfo
 
 
 def _clear_workspace_env(monkeypatch) -> None:
@@ -70,6 +72,43 @@ def _write_tdx_stock_file(
             )
         )
     path.write_text("\n".join(content_lines) + "\n", encoding="gbk")
+
+
+class FakeTdxQuantClient:
+    def __init__(
+        self,
+        *,
+        infos: dict[str, TdxQuantInstrumentInfo],
+        bars_by_code: dict[str, tuple[TdxQuantDailyBar, ...]],
+        failing_codes: set[str] | None = None,
+    ) -> None:
+        self._infos = infos
+        self._bars_by_code = bars_by_code
+        self._failing_codes = failing_codes or set()
+        self.closed = False
+
+    def get_instrument_info(self, code: str) -> TdxQuantInstrumentInfo:
+        if code in self._failing_codes:
+            raise ValueError(f"mock failure for {code}")
+        return self._infos[code]
+
+    def get_daily_bars(
+        self,
+        *,
+        code: str,
+        end_trade_date: date,
+        count: int,
+        dividend_type: str = "none",
+    ) -> tuple[TdxQuantDailyBar, ...]:
+        if code in self._failing_codes:
+            raise ValueError(f"mock failure for {code}")
+        assert dividend_type == "none"
+        assert count > 0
+        assert end_trade_date.isoformat() == "2026-04-10"
+        return self._bars_by_code[code]
+
+    def close(self) -> None:
+        self.closed = True
 
 
 def test_run_tdx_stock_raw_ingest_skips_unchanged_files_and_updates_changed_rows(tmp_path: Path, monkeypatch) -> None:
@@ -356,6 +395,211 @@ def test_run_tdx_stock_raw_ingest_force_hash_and_continue_from_last_run(tmp_path
         ("600000.SH", 10.8, "raw-test-001f"),
         ("600001.SH", 9.5, "raw-test-001h"),
     ]
+
+
+def test_run_tdxquant_daily_raw_sync_bridges_none_bars_and_checkpoint(tmp_path: Path, monkeypatch) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+    source_root = tmp_path / "tdx"
+    strategy_path = tmp_path / "card19_sync_001.py"
+    strategy_path.write_text("# fake tq strategy\n", encoding="utf-8")
+
+    _write_tdx_stock_file(
+        source_root,
+        folder_name="Backward-Adjusted",
+        code="600000",
+        exchange="SH",
+        name="浦发银行",
+        rows=[
+            ("2026/04/08", 10.0, 10.5, 9.9, 10.4, 1000, 10400),
+            ("2026/04/09", 10.4, 10.8, 10.2, 10.7, 1200, 12840),
+        ],
+    )
+    run_tdx_stock_raw_ingest(
+        settings=settings,
+        source_root=source_root,
+        adjust_method="backward",
+        run_id="raw-seed-001",
+    )
+
+    bars_by_code = {
+        "600000.SH": (
+            TdxQuantDailyBar("600000.SH", "浦发银行", "stock", date(2026, 4, 9), 9.4, 9.8, 9.3, 9.7, 1200, 11640),
+            TdxQuantDailyBar("600000.SH", "浦发银行", "stock", date(2026, 4, 10), 9.8, 10.0, 9.7, 9.9, 1300, 12870),
+        ),
+        "510300.SH": (
+            TdxQuantDailyBar("510300.SH", "沪深300ETF", "stock", date(2026, 4, 9), 4.0, 4.1, 3.9, 4.05, 5000, 20250),
+            TdxQuantDailyBar("510300.SH", "沪深300ETF", "stock", date(2026, 4, 10), 4.05, 4.2, 4.0, 4.18, 5200, 21736),
+        ),
+    }
+    infos = {
+        code: TdxQuantInstrumentInfo(code=code, name=rows[0].name, asset_type="stock")
+        for code, rows in bars_by_code.items()
+    }
+
+    first_client = FakeTdxQuantClient(infos=infos, bars_by_code=bars_by_code)
+    first_summary = run_tdxquant_daily_raw_sync(
+        settings=settings,
+        strategy_path=strategy_path,
+        onboarding_instruments=["510300.SH"],
+        end_trade_date="2026-04-10",
+        count=5,
+        run_id="tq-test-001a",
+        client_factory=lambda _: first_client,
+    )
+    second_client = FakeTdxQuantClient(infos=infos, bars_by_code=bars_by_code)
+    second_summary = run_tdxquant_daily_raw_sync(
+        settings=settings,
+        strategy_path=strategy_path,
+        onboarding_instruments=["510300.SH"],
+        end_trade_date="2026-04-10",
+        count=5,
+        run_id="tq-test-001b",
+        client_factory=lambda _: second_client,
+    )
+
+    assert first_client.closed is True
+    assert second_client.closed is True
+    assert first_summary.scope_source == "registry_onboarding_union"
+    assert first_summary.candidate_instrument_count == 2
+    assert first_summary.inserted_bar_count == 4
+    assert first_summary.dirty_mark_count == 2
+    assert second_summary.reused_bar_count == 4
+    assert second_summary.dirty_mark_count == 0
+
+    raw_conn = duckdb.connect(str(raw_market_ledger_path(settings)), read_only=True)
+    try:
+        run_rows = raw_conn.execute(
+            """
+            SELECT run_id, candidate_instrument_count, successful_request_count, failed_request_count, run_status
+            FROM raw_tdxquant_run
+            ORDER BY run_id
+            """
+        ).fetchall()
+        request_rows = raw_conn.execute(
+            """
+            SELECT run_id, code, status, inserted_bar_count, reused_bar_count, rematerialized_bar_count
+            FROM raw_tdxquant_request
+            ORDER BY run_id, code
+            """
+        ).fetchall()
+        checkpoint_rows = raw_conn.execute(
+            """
+            SELECT code, last_success_trade_date, last_success_run_id
+            FROM raw_tdxquant_instrument_checkpoint
+            ORDER BY code
+            """
+        ).fetchall()
+        raw_rows = raw_conn.execute(
+            """
+            SELECT code, trade_date, adjust_method, close, source_file_nk
+            FROM stock_daily_bar
+            WHERE adjust_method = 'none'
+            ORDER BY code, trade_date
+            """
+        ).fetchall()
+    finally:
+        raw_conn.close()
+
+    base_conn = duckdb.connect(str(market_base_ledger_path(settings)), read_only=True)
+    try:
+        dirty_rows = base_conn.execute(
+            """
+            SELECT code, adjust_method, dirty_reason, source_run_id
+            FROM base_dirty_instrument
+            WHERE adjust_method = 'none'
+            ORDER BY code
+            """
+        ).fetchall()
+    finally:
+        base_conn.close()
+
+    assert run_rows == [
+        ("tq-test-001a", 2, 2, 0, "completed"),
+        ("tq-test-001b", 2, 2, 0, "completed"),
+    ]
+    assert request_rows == [
+        ("tq-test-001a", "510300.SH", "completed", 2, 0, 0),
+        ("tq-test-001a", "600000.SH", "completed", 2, 0, 0),
+        ("tq-test-001b", "510300.SH", "skipped_unchanged", 0, 2, 0),
+        ("tq-test-001b", "600000.SH", "skipped_unchanged", 0, 2, 0),
+    ]
+    assert checkpoint_rows == [
+        ("510300.SH", date(2026, 4, 10), "tq-test-001b"),
+        ("600000.SH", date(2026, 4, 10), "tq-test-001b"),
+    ]
+    assert raw_rows == [
+        ("510300.SH", date(2026, 4, 9), "none", 4.05, "tq-test-001a|510300.SH|none|5|20260410150000"),
+        ("510300.SH", date(2026, 4, 10), "none", 4.18, "tq-test-001a|510300.SH|none|5|20260410150000"),
+        ("600000.SH", date(2026, 4, 9), "none", 9.7, "tq-test-001a|600000.SH|none|5|20260410150000"),
+        ("600000.SH", date(2026, 4, 10), "none", 9.9, "tq-test-001a|600000.SH|none|5|20260410150000"),
+    ]
+    assert dirty_rows == [
+        ("510300.SH", "none", "raw_tdxquant_changed", "tq-test-001a"),
+        ("600000.SH", "none", "raw_tdxquant_changed", "tq-test-001a"),
+    ]
+
+
+def test_run_tdxquant_daily_raw_sync_records_failed_request_and_run(tmp_path: Path, monkeypatch) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+    strategy_path = tmp_path / "card19_sync_fail.py"
+    strategy_path.write_text("# fake tq strategy\n", encoding="utf-8")
+
+    failing_client = FakeTdxQuantClient(
+        infos={"600000.SH": TdxQuantInstrumentInfo(code="600000.SH", name="浦发银行", asset_type="stock")},
+        bars_by_code={},
+        failing_codes={"600000.SH"},
+    )
+
+    with pytest.raises(ValueError, match="mock failure for 600000.SH"):
+        run_tdxquant_daily_raw_sync(
+            settings=settings,
+            strategy_path=strategy_path,
+            onboarding_instruments=["600000.SH"],
+            use_registry_scope=False,
+            end_trade_date="2026-04-10",
+            count=5,
+            run_id="tq-test-002a",
+            client_factory=lambda _: failing_client,
+        )
+
+    assert failing_client.closed is True
+
+    raw_conn = duckdb.connect(str(raw_market_ledger_path(settings)), read_only=True)
+    try:
+        run_row = raw_conn.execute(
+            """
+            SELECT candidate_instrument_count, processed_instrument_count, failed_request_count, run_status
+            FROM raw_tdxquant_run
+            WHERE run_id = 'tq-test-002a'
+            """
+        ).fetchone()
+        request_row = raw_conn.execute(
+            """
+            SELECT code, status, response_row_count, error_message
+            FROM raw_tdxquant_request
+            WHERE run_id = 'tq-test-002a'
+            """
+        ).fetchone()
+        none_count = raw_conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM stock_daily_bar
+            WHERE adjust_method = 'none'
+            """
+        ).fetchone()[0]
+    finally:
+        raw_conn.close()
+
+    assert run_row == (1, 1, 1, "failed")
+    assert request_row[0] == "600000.SH"
+    assert request_row[1] == "failed"
+    assert request_row[2] == 0
+    assert "mock failure for 600000.SH" in request_row[3]
+    assert none_count == 0
 
 
 def test_run_market_base_build_materializes_multiple_adjust_methods(tmp_path: Path, monkeypatch) -> None:

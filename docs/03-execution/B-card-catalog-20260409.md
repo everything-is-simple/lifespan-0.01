@@ -3,8 +3,8 @@
 日期：`2026-04-09`
 状态：`生效中`
 
-1. 当前下一锤：`18-daily-raw-base-fq-incremental-update-source-selection-card-20260410.md`
-2. 当前待施工卡：`18-daily-raw-base-fq-incremental-update-source-selection-card-20260410.md`
+1. 当前下一锤：`19-tdxquant-daily-raw-source-ledger-bridge-card-20260410.md`
+2. 当前待施工卡：`19-tdxquant-daily-raw-source-ledger-bridge-card-20260410.md`
 3. 正式主线剩余卡：`0`
 4. 可选 Sidecar 剩余卡：`0`
 5. 后置修复剩余卡：`1`
@@ -29,8 +29,9 @@
 16. `16-data-malf-minimal-official-mainline-bridge-card-20260410.md`
 17. `17-raw-base-strong-checkpoint-and-dirty-materialization-card-20260410.md`
 18. `18-daily-raw-base-fq-incremental-update-source-selection-card-20260410.md`
+19. `19-tdxquant-daily-raw-source-ledger-bridge-card-20260410.md`
 
 当前口径：
 - `17` 已完成，并已把 `raw/base` 升级为带强断点、dirty queue、run/file ledger 与库级约束的正式历史账本层。
-- 当前最新已生效结论锚点仍为 `17`，但当前待施工卡已切到 `18`，专门研究 `raw/base` 第二阶段每日复权增量更新源头选型。
-- 下一锤仍不等于 `system` 主线开工；整链 truthfulness 复核与 `system` 卡仍后置。
+- `18` 已把第二阶段源头选型收敛到“官方日更原始事实优先、复权留在仓内物化层”的阶段性方向。
+- 当前最新已生效结论锚点仍为 `17`，但当前待施工卡已切到 `19`，专门实现 `TdxQuant` 日更原始事实进入现有 `raw/base` 账本机制的桥接层。

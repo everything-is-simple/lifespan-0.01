@@ -26,6 +26,7 @@
 16. `16-data-malf-minimal-official-mainline-bridge-conclusion-20260410.md`
 17. `17-raw-base-strong-checkpoint-and-dirty-materialization-conclusion-20260410.md`
 18. `18-daily-raw-base-fq-incremental-update-source-selection-conclusion-20260410.md`
+19. `19-tdxquant-daily-raw-source-ledger-bridge-conclusion-20260410.md`
 
 ## 已冻结基础口径
 

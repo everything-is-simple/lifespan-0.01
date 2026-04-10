@@ -79,6 +79,7 @@
 1. `PAS` 是 `alpha` 内部能力，不再是顶层模块。
 2. `data` 负责把本地离线市场数据沉淀为官方 `raw_market / market_base` 历史账本。
    - 当前 `data` 的正式 bounded runner 入口为 `scripts/data/run_tdx_stock_raw_ingest.py`，只允许从本地官方离线目录把股票日线增量写入 `raw_market.stock_file_registry / stock_daily_bar`，不允许绕过历史账本直接给下游喂临时 DataFrame。
+   - 当前 `data` 的正式 bounded runner 入口为 `scripts/data/run_tdxquant_daily_raw_sync.py`，只允许把 `TdxQuant(dividend_type='none')` 代表的官方日更原始事实按 `run / request / instrument checkpoint` 账本语义桥接进 `raw_market.stock_daily_bar(adjust_method='none')`，并只标记 `base_dirty_instrument(adjust_method='none')`，不允许把 `front/back` 直接写成正式复权真值。
    - 当前 `data` 的正式 bounded runner 入口为 `scripts/data/run_market_base_build.py`，只允许从官方 `raw_market` 物化 `market_base.stock_daily_adjusted`，并正式沉淀 `adjust_method in {none, backward, forward}` 三套价格，不允许把执行口径和信号口径混写成一套。
 3. `malf` 负责把官方 `market_base` 价格事实沉淀为官方市场语义快照层。
    - 当前 `malf` 的正式 bounded runner 入口为 `scripts/malf/run_malf_snapshot_build.py`，只允许消费官方 `market_base.stock_daily_adjusted(adjust_method='backward')`，物化 `malf_run / pas_context_snapshot / structure_candidate_snapshot / malf_run_context_snapshot / malf_run_structure_snapshot`，不允许直接回读离线文本或 `raw_market`。
