@@ -797,6 +797,118 @@ def test_run_market_base_build_incremental_consumes_dirty_queue(tmp_path: Path, 
     assert dirty_row == ("consumed", "base-test-003b")
 
 
+def test_run_market_base_build_dirty_queue_ignores_global_stage_limit(tmp_path: Path, monkeypatch) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+    source_root = tmp_path / "tdx"
+
+    start_date = date(2023, 1, 1)
+    original_rows: list[tuple[str, float, float, float, float, float, float]] = []
+    for offset in range(1005):
+        trade_date = start_date.fromordinal(start_date.toordinal() + offset).strftime("%Y/%m/%d")
+        close_price = 10.0 + offset / 100.0
+        original_rows.append(
+            (
+                trade_date,
+                close_price - 0.1,
+                close_price + 0.1,
+                close_price - 0.2,
+                close_price,
+                1000 + offset,
+                (1000 + offset) * close_price,
+            )
+        )
+
+    _write_tdx_stock_file(
+        source_root,
+        folder_name="Backward-Adjusted",
+        code="600000",
+        exchange="SH",
+        name="浦发银行",
+        rows=original_rows,
+    )
+    run_tdx_stock_raw_ingest(
+        settings=settings,
+        source_root=source_root,
+        adjust_method="backward",
+        run_id="raw-test-004a",
+    )
+    run_market_base_build(
+        settings=settings,
+        adjust_method="backward",
+        build_mode="full",
+        run_id="base-test-004a",
+        limit=5000,
+    )
+
+    changed_rows = list(original_rows)
+    last_row = list(changed_rows[-1])
+    last_row[4] = float(last_row[4]) + 5.0
+    last_row[6] = float(last_row[6]) + 5000.0
+    changed_rows[-1] = tuple(last_row)  # type: ignore[assignment]
+    _write_tdx_stock_file(
+        source_root,
+        folder_name="Backward-Adjusted",
+        code="600000",
+        exchange="SH",
+        name="浦发银行",
+        rows=changed_rows,
+    )
+    changed_path = source_root / "stock" / "Backward-Adjusted" / "SH#600000.txt"
+    changed_stat = changed_path.stat()
+    os.utime(changed_path, (changed_stat.st_atime + 2, changed_stat.st_mtime + 2))
+    run_tdx_stock_raw_ingest(
+        settings=settings,
+        source_root=source_root,
+        adjust_method="backward",
+        run_id="raw-test-004b",
+    )
+    dirty_nk = mark_base_instrument_dirty(
+        settings=settings,
+        code="600000.SH",
+        adjust_method="backward",
+        dirty_reason="raw_changed",
+        source_run_id="raw-test-004b",
+    )
+
+    summary = run_market_base_build(
+        settings=settings,
+        adjust_method="backward",
+        build_mode="incremental",
+        run_id="base-test-004b",
+    )
+
+    assert summary.source_scope_kind == "dirty_queue"
+    assert summary.source_row_count == 1005
+    assert summary.rematerialized_count == 1
+    assert summary.consumed_dirty_count == 1
+
+    conn = duckdb.connect(str(market_base_ledger_path(settings)), read_only=True)
+    try:
+        latest_row = conn.execute(
+            """
+            SELECT close, last_materialized_run_id
+            FROM stock_daily_adjusted
+            WHERE code = '600000.SH' AND trade_date = ?
+            """,
+            [date.fromisoformat(changed_rows[-1][0].replace("/", "-"))],
+        ).fetchone()
+        dirty_row = conn.execute(
+            """
+            SELECT dirty_status, last_consumed_run_id
+            FROM base_dirty_instrument
+            WHERE dirty_nk = ?
+            """,
+            [dirty_nk],
+        ).fetchone()
+    finally:
+        conn.close()
+
+    assert latest_row == (float(last_row[4]), "base-test-004b")
+    assert dirty_row == ("consumed", "base-test-004b")
+
+
 def test_bootstrap_raw_and_market_base_cleanup_duplicates_and_enforce_constraints(tmp_path: Path, monkeypatch) -> None:
     _clear_workspace_env(monkeypatch)
     repo_root = _bootstrap_repo_root(tmp_path)

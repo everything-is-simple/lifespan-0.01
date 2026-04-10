@@ -746,6 +746,10 @@ def run_market_base_build(
             end_date=normalized_end_date,
             limit=normalized_limit,
         )
+        effective_stage_limit = _resolve_market_base_stage_limit(
+            source_scope_kind=scope_plan.source_scope_kind,
+            limit=normalized_limit,
+        )
         market_connection.execute("BEGIN TRANSACTION")
         _record_base_build_scopes(
             market_connection,
@@ -758,7 +762,7 @@ def run_market_base_build(
             instruments=scope_plan.instruments,
             start_date=normalized_start_date,
             end_date=normalized_end_date,
-            limit=normalized_limit,
+            limit=effective_stage_limit,
             force_empty_result=scope_plan.scope_is_empty,
         )
         source_row_count = int(
@@ -1810,6 +1814,13 @@ def _resolve_initial_scope_kind(
     if start_date is not None or end_date is not None:
         return "date_range"
     return "full"
+
+
+def _resolve_market_base_stage_limit(*, source_scope_kind: str, limit: int | None) -> int | None:
+    # dirty_queue 必须消费脏标的完整历史窗口，不能被全局 row limit 截断。
+    if source_scope_kind == "dirty_queue":
+        return None
+    return limit
 
 
 def _resolve_base_build_scope_plan(

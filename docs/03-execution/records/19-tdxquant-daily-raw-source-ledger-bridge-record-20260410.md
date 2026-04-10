@@ -30,13 +30,24 @@
    - `AGENTS.md`
    - `README.md`
    - `pyproject.toml`
+8. 已补真实 official pilot：
+   - 在本机正在运行的 `G:\new_tdx64\TdxW.exe` 环境下，使用唯一 strategy path 连续执行 `tq-official-card19-001 / 002`
+   - onboarding 标的范围固定为 `000001.SZ / 920021.BJ / 510300.SH`
+   - 首轮 run 已真实写入/重物化 `raw_market.stock_daily_bar(adjust_method='none')`
+   - 第二轮 replay 已真实命中 `request/checkpoint skipped_unchanged`
+9. 已补 `raw -> base` 联动验证：
+   - `base-card19-none-001` 真实消费了 3 个 `none` dirty 标的
+   - 同时发现旧版 `dirty_queue` stage 仍受全局 `limit=1000` 截断
+   - 已把该行为修正为“dirty_queue 不再受全局 row limit 截断”，并新增回归单测
 
 ## 偏离项
 
 - `new_execution_bundle.py` 在自动回填索引时，仍因旧目录标题不是“当前正式结论”而中断。
 - 四件套文件本体已正常生成；索引与 current card 指针改由手动回填。
-- 本轮只完成“最小桥接实现 + 单测验证”，还没有完成真实 `TdxQuant` official pilot。
-- 因此卡 `19` 当前仍不能宣称正式结论生效，后续还需补真实运行证据。
+- 卡 `19` 虽已补真实 bounded official pilot，但结论文件当前尚未改写为“生效”。
+- 本轮修复了一个执行侧边界问题：
+  - `run_market_base_build(adjust_method='none', build_mode='incremental')` 在 dirty queue 下若沿用默认 `limit=1000`，会截断脏标的完整历史窗口。
+  - 该问题已在代码与单测层修复，但还没有单独开新卡；当前先按卡 `19` 的联动边界处理。
 
 ## 备注
 
