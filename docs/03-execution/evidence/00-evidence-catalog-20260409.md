@@ -21,3 +21,4 @@
 14. `14-portfolio-plan-minimal-ledger-and-position-bridge-evidence-20260409.md`
 15. `15-trade-minimal-runtime-ledger-and-portfolio-plan-bridge-evidence-20260410.md`
 16. `16-data-malf-minimal-official-mainline-bridge-evidence-20260410.md`
+17. `17-raw-base-strong-checkpoint-and-dirty-materialization-evidence-20260410.md`

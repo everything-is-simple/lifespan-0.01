@@ -3,11 +3,11 @@
 日期：`2026-04-09`
 状态：`生效中`
 
-1. 当前下一锤：`16-data-malf-minimal-official-mainline-bridge-card-20260410.md`
-2. 当前待施工卡：`16-data-malf-minimal-official-mainline-bridge-card-20260410.md`
+1. 当前下一锤：`17-raw-base-strong-checkpoint-and-dirty-materialization-card-20260410.md`
+2. 当前待施工卡：`17-raw-base-strong-checkpoint-and-dirty-materialization-card-20260410.md`
 3. 正式主线剩余卡：`0`
 4. 可选 Sidecar 剩余卡：`0`
-5. 后置修复剩余卡：`0`
+5. 后置修复剩余卡：`1`
 
 ## 卡片总表
 
@@ -27,8 +27,9 @@
 14. `14-portfolio-plan-minimal-ledger-and-position-bridge-card-20260409.md`
 15. `15-trade-minimal-runtime-ledger-and-portfolio-plan-bridge-card-20260409.md`
 16. `16-data-malf-minimal-official-mainline-bridge-card-20260410.md`
+17. `17-raw-base-strong-checkpoint-and-dirty-materialization-card-20260410.md`
 
 当前口径：
 - `16` 已完成，并已把缺失的 `data -> malf` 最小官方主线补齐到 `structure`。
-- 当前不再允许把 `system` 直接设为下一锤；下一张主线卡必须先做整链 truthfulness 复核。
-- 在新的整链复核卡开出前，`16` 作为当前正式锚点保留在执行索引中。
+- 当前待施工卡切到 `17`，专门增强 `raw/base` 的强断点、运行账本与脏标的增量物化。
+- `17` 不等于 `system` 主线开工；`16` 仍是当前最新已生效结论锚点。

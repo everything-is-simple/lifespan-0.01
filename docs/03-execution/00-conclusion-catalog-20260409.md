@@ -23,6 +23,7 @@
 14. `14-portfolio-plan-minimal-ledger-and-position-bridge-conclusion-20260409.md`
 15. `15-trade-minimal-runtime-ledger-and-portfolio-plan-bridge-conclusion-20260410.md`
 16. `16-data-malf-minimal-official-mainline-bridge-conclusion-20260410.md`
+17. `17-raw-base-strong-checkpoint-and-dirty-materialization-conclusion-20260410.md`
 
 ## 已冻结基础口径
 

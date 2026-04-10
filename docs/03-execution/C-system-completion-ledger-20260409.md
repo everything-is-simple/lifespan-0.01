@@ -3,10 +3,10 @@
 日期：`2026-04-09`
 状态：`生效中`
 
-1. 当前下一锤：`16-data-malf-minimal-official-mainline-bridge-card-20260410.md`
+1. 当前下一锤：`17-raw-base-strong-checkpoint-and-dirty-materialization-card-20260410.md`
 2. 正式主线剩余卡：`0`
 3. 可选 Sidecar 剩余卡：`0`
-4. 后置修复剩余卡：`0`
+4. 后置修复剩余卡：`1`
 
 ## 本轮主线
 
@@ -29,5 +29,6 @@
 
 当前口径：
 - `16` 已完成，当前最重要的变化是前半段主线不再空缺。
-- 当前仍不能把 `system` 当作下一锤；下一张主线卡必须先复核 `data -> malf -> structure -> filter -> alpha -> position -> portfolio_plan -> trade` 是否整链真实对接。
+- 当前待施工卡已切到 `17`，先增强 `raw/base` 的强断点与增量更新能力。
+- 当前仍不能把 `system` 当作下一锤；整链 truthfulness 复核与 `system` 卡仍后置。
 - `system` 仍未开工，因此系统级总装结论仍不存在。
