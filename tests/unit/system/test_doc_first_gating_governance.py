@@ -1,4 +1,4 @@
-"""覆盖文档先行硬门禁检查器的最小行为。"""
+"""覆盖文档先行与历史账本约束门禁检查器。"""
 
 from __future__ import annotations
 
@@ -14,22 +14,28 @@ from check_doc_first_gating_governance import run_check  # noqa: E402
 
 
 def _write(path: Path, content: str) -> None:
-    """写入测试文件。"""
-
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
 
 
 def _bootstrap_repo(tmp_path: Path, *, valid_card: bool) -> Path:
-    """构造最小测试仓库。"""
-
     repo_root = tmp_path / "repo"
     _write(
         repo_root / "docs" / "03-execution" / "B-card-catalog-20260409.md",
-        "# 卡片目录\n\n2. 当前待施工卡：`03-doc-first-gating-checker-card-20260409.md`\n",
+        "\n".join(
+            [
+                "# 卡片目录",
+                "",
+                "1. 当前下一锤：`03-doc-first-gating-checker-card-20260409.md`",
+                "2. 当前待施工卡：`03-doc-first-gating-checker-card-20260409.md`",
+                "",
+            ]
+        ),
     )
 
     if valid_card:
+        _write(repo_root / "docs" / "01-design" / "04-doc-first-gating-checker-charter-20260409.md", "# charter\n")
+        _write(repo_root / "docs" / "02-spec" / "04-doc-first-gating-checker-spec-20260409.md", "# spec\n")
         _write(
             repo_root / "docs" / "03-execution" / "03-doc-first-gating-checker-card-20260409.md",
             "\n".join(
@@ -42,12 +48,9 @@ def _bootstrap_repo(tmp_path: Path, *, valid_card: bool) -> Path:
                     "",
                     "## 需求",
                     "",
-                    "- 问题：",
-                    "  仓库已经有文档先行原则，但还没有真正的硬门禁检查器。",
-                    "- 目标结果：",
-                    "  新增一个正式治理检查器，卡住正式代码生成前的文档前置条件。",
-                    "- 为什么现在做：",
-                    "  在开始 position 正式实现前，必须把仓库治理卡严。",
+                    "- 问题：仓库已经有文档先行原则，但还没有真正的硬门禁检查器。",
+                    "- 目标结果：新增正式治理检查器，在进入正式实现前卡住缺文档和缺账本约束声明的任务。",
+                    "- 为什么现在做：在继续正式实现前，必须先把治理门禁写实。",
                     "",
                     "## 设计输入",
                     "",
@@ -56,13 +59,21 @@ def _bootstrap_repo(tmp_path: Path, *, valid_card: bool) -> Path:
                     "",
                     "## 任务分解",
                     "",
-                    "1. 新增文档先行硬门禁检查器。",
-                    "2. 把它接入开发治理总入口。",
+                    "1. 新增文档先行检查器。",
+                    "2. 把它接入开发治理入口。",
+                    "",
+                    "## 历史账本约束",
+                    "",
+                    "- 实体锚点：标的默认按 `asset_type + code`，不让 `run_id` 或名称接管主语义。",
+                    "- 业务自然键：在实体锚点之上叠加 `trade_date`、状态键或窗口键。",
+                    "- 批量建仓：首次 full bootstrap 要有明确入口。",
+                    "- 增量更新：后续日更或批次增量要有明确判定逻辑。",
+                    "- 断点续跑：checkpoint 或等价续跑锚点必须落表。",
+                    "- 审计账本：run、时间戳、source、status/summary 必须保留。",
+                    "",
                 ]
             ),
         )
-        _write(repo_root / "docs" / "01-design" / "04-doc-first-gating-checker-charter-20260409.md", "# charter\n")
-        _write(repo_root / "docs" / "02-spec" / "04-doc-first-gating-checker-spec-20260409.md", "# spec\n")
     else:
         _write(
             repo_root / "docs" / "03-execution" / "03-doc-first-gating-checker-card-20260409.md",
@@ -83,8 +94,18 @@ def _bootstrap_repo(tmp_path: Path, *, valid_card: bool) -> Path:
                     "",
                     "## 任务分解",
                     "",
-                    "1. 切片 1",
-                    "2. 切片 2",
+                    "1. 切片 1：",
+                    "2. 切片 2：",
+                    "",
+                    "## 历史账本约束",
+                    "",
+                    "- 实体锚点：",
+                    "- 业务自然键：",
+                    "- 批量建仓：",
+                    "- 增量更新：",
+                    "- 断点续跑：",
+                    "- 审计账本：",
+                    "",
                 ]
             ),
         )

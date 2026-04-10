@@ -24,3 +24,5 @@
 17. `17-raw-base-strong-checkpoint-and-dirty-materialization-evidence-20260410.md`
 18. `18-daily-raw-base-fq-incremental-update-source-selection-evidence-20260410.md`
 19. `19-tdxquant-daily-raw-source-ledger-bridge-evidence-20260410.md`
+20. `20-index-block-raw-base-incremental-bridge-evidence-20260410.md`
+21. `21-system-ledger-incremental-governance-hardening-evidence-20260410.md`

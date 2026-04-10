@@ -11,22 +11,100 @@ from mlq.core.paths import WorkspaceRoots, default_settings
 
 
 RAW_STOCK_FILE_REGISTRY_TABLE: Final[str] = "stock_file_registry"
+RAW_INDEX_FILE_REGISTRY_TABLE: Final[str] = "index_file_registry"
+RAW_BLOCK_FILE_REGISTRY_TABLE: Final[str] = "block_file_registry"
 RAW_STOCK_DAILY_BAR_TABLE: Final[str] = "stock_daily_bar"
+RAW_INDEX_DAILY_BAR_TABLE: Final[str] = "index_daily_bar"
+RAW_BLOCK_DAILY_BAR_TABLE: Final[str] = "block_daily_bar"
 RAW_INGEST_RUN_TABLE: Final[str] = "raw_ingest_run"
 RAW_INGEST_FILE_TABLE: Final[str] = "raw_ingest_file"
 RAW_TDXQUANT_RUN_TABLE: Final[str] = "raw_tdxquant_run"
 RAW_TDXQUANT_REQUEST_TABLE: Final[str] = "raw_tdxquant_request"
 RAW_TDXQUANT_INSTRUMENT_CHECKPOINT_TABLE: Final[str] = "raw_tdxquant_instrument_checkpoint"
 MARKET_BASE_STOCK_DAILY_TABLE: Final[str] = "stock_daily_adjusted"
+MARKET_BASE_INDEX_DAILY_TABLE: Final[str] = "index_daily_adjusted"
+MARKET_BASE_BLOCK_DAILY_TABLE: Final[str] = "block_daily_adjusted"
 BASE_DIRTY_INSTRUMENT_TABLE: Final[str] = "base_dirty_instrument"
 BASE_BUILD_RUN_TABLE: Final[str] = "base_build_run"
 BASE_BUILD_SCOPE_TABLE: Final[str] = "base_build_scope"
 BASE_BUILD_ACTION_TABLE: Final[str] = "base_build_action"
 
+TDX_ASSET_TYPES: Final[tuple[str, ...]] = ("stock", "index", "block")
+RAW_FILE_REGISTRY_TABLE_BY_ASSET_TYPE: Final[dict[str, str]] = {
+    "stock": RAW_STOCK_FILE_REGISTRY_TABLE,
+    "index": RAW_INDEX_FILE_REGISTRY_TABLE,
+    "block": RAW_BLOCK_FILE_REGISTRY_TABLE,
+}
+RAW_DAILY_BAR_TABLE_BY_ASSET_TYPE: Final[dict[str, str]] = {
+    "stock": RAW_STOCK_DAILY_BAR_TABLE,
+    "index": RAW_INDEX_DAILY_BAR_TABLE,
+    "block": RAW_BLOCK_DAILY_BAR_TABLE,
+}
+MARKET_BASE_DAILY_TABLE_BY_ASSET_TYPE: Final[dict[str, str]] = {
+    "stock": MARKET_BASE_STOCK_DAILY_TABLE,
+    "index": MARKET_BASE_INDEX_DAILY_TABLE,
+    "block": MARKET_BASE_BLOCK_DAILY_TABLE,
+}
 
-RAW_MARKET_LEDGER_TABLES: Final[dict[str, str]] = {
-    RAW_STOCK_FILE_REGISTRY_TABLE: """
-        CREATE TABLE IF NOT EXISTS stock_file_registry (
+_RAW_FILE_REGISTRY_REQUIRED_COLUMNS: Final[dict[str, str]] = {
+    "file_nk": "TEXT",
+    "asset_type": "TEXT",
+    "adjust_method": "TEXT",
+    "code": "TEXT",
+    "name": "TEXT",
+    "source_path": "TEXT",
+    "source_size_bytes": "BIGINT",
+    "source_mtime_utc": "TIMESTAMP",
+    "source_line_count": "BIGINT",
+    "source_header": "TEXT",
+    "source_content_hash": "TEXT",
+    "last_ingested_run_id": "TEXT",
+    "last_ingested_at": "TIMESTAMP",
+}
+_RAW_DAILY_BAR_REQUIRED_COLUMNS: Final[dict[str, str]] = {
+    "bar_nk": "TEXT",
+    "source_file_nk": "TEXT",
+    "asset_type": "TEXT",
+    "code": "TEXT",
+    "name": "TEXT",
+    "trade_date": "DATE",
+    "adjust_method": "TEXT",
+    "open": "DOUBLE",
+    "high": "DOUBLE",
+    "low": "DOUBLE",
+    "close": "DOUBLE",
+    "volume": "DOUBLE",
+    "amount": "DOUBLE",
+    "source_path": "TEXT",
+    "source_mtime_utc": "TIMESTAMP",
+    "first_seen_run_id": "TEXT",
+    "last_ingested_run_id": "TEXT",
+    "created_at": "TIMESTAMP",
+    "updated_at": "TIMESTAMP",
+}
+_MARKET_BASE_DAILY_REQUIRED_COLUMNS: Final[dict[str, str]] = {
+    "daily_bar_nk": "TEXT",
+    "code": "TEXT",
+    "name": "TEXT",
+    "trade_date": "DATE",
+    "adjust_method": "TEXT",
+    "open": "DOUBLE",
+    "high": "DOUBLE",
+    "low": "DOUBLE",
+    "close": "DOUBLE",
+    "volume": "DOUBLE",
+    "amount": "DOUBLE",
+    "source_bar_nk": "TEXT",
+    "first_seen_run_id": "TEXT",
+    "last_materialized_run_id": "TEXT",
+    "created_at": "TIMESTAMP",
+    "updated_at": "TIMESTAMP",
+}
+
+
+def _build_raw_file_registry_ddl(table_name: str) -> str:
+    return f"""
+        CREATE TABLE IF NOT EXISTS {table_name} (
             file_nk TEXT,
             asset_type TEXT NOT NULL,
             adjust_method TEXT NOT NULL,
@@ -41,9 +119,12 @@ RAW_MARKET_LEDGER_TABLES: Final[dict[str, str]] = {
             last_ingested_run_id TEXT NOT NULL,
             last_ingested_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
-    """,
-    RAW_STOCK_DAILY_BAR_TABLE: """
-        CREATE TABLE IF NOT EXISTS stock_daily_bar (
+    """
+
+
+def _build_raw_daily_bar_ddl(table_name: str) -> str:
+    return f"""
+        CREATE TABLE IF NOT EXISTS {table_name} (
             bar_nk TEXT,
             source_file_nk TEXT NOT NULL,
             asset_type TEXT NOT NULL,
@@ -64,10 +145,45 @@ RAW_MARKET_LEDGER_TABLES: Final[dict[str, str]] = {
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
-    """,
+    """
+
+
+def _build_market_base_daily_ddl(table_name: str) -> str:
+    return f"""
+        CREATE TABLE IF NOT EXISTS {table_name} (
+            daily_bar_nk TEXT,
+            code TEXT NOT NULL,
+            name TEXT,
+            trade_date DATE NOT NULL,
+            adjust_method TEXT NOT NULL,
+            open DOUBLE,
+            high DOUBLE,
+            low DOUBLE,
+            close DOUBLE,
+            volume DOUBLE,
+            amount DOUBLE,
+            source_bar_nk TEXT,
+            first_seen_run_id TEXT,
+            last_materialized_run_id TEXT,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """
+
+
+RAW_MARKET_LEDGER_TABLES: Final[dict[str, str]] = {
+    **{
+        table_name: _build_raw_file_registry_ddl(table_name)
+        for table_name in RAW_FILE_REGISTRY_TABLE_BY_ASSET_TYPE.values()
+    },
+    **{
+        table_name: _build_raw_daily_bar_ddl(table_name)
+        for table_name in RAW_DAILY_BAR_TABLE_BY_ASSET_TYPE.values()
+    },
     RAW_INGEST_RUN_TABLE: """
         CREATE TABLE IF NOT EXISTS raw_ingest_run (
             run_id TEXT,
+            asset_type TEXT,
             runner_name TEXT NOT NULL,
             runner_version TEXT NOT NULL,
             adjust_method TEXT NOT NULL,
@@ -88,6 +204,7 @@ RAW_MARKET_LEDGER_TABLES: Final[dict[str, str]] = {
     RAW_INGEST_FILE_TABLE: """
         CREATE TABLE IF NOT EXISTS raw_ingest_file (
             run_id TEXT NOT NULL,
+            asset_type TEXT,
             file_nk TEXT NOT NULL,
             code TEXT NOT NULL,
             name TEXT NOT NULL,
@@ -161,29 +278,14 @@ RAW_MARKET_LEDGER_TABLES: Final[dict[str, str]] = {
 
 
 MARKET_BASE_LEDGER_TABLES: Final[dict[str, str]] = {
-    MARKET_BASE_STOCK_DAILY_TABLE: """
-        CREATE TABLE IF NOT EXISTS stock_daily_adjusted (
-            daily_bar_nk TEXT,
-            code TEXT NOT NULL,
-            name TEXT,
-            trade_date DATE NOT NULL,
-            adjust_method TEXT NOT NULL,
-            open DOUBLE,
-            high DOUBLE,
-            low DOUBLE,
-            close DOUBLE,
-            volume DOUBLE,
-            amount DOUBLE,
-            source_bar_nk TEXT,
-            first_seen_run_id TEXT,
-            last_materialized_run_id TEXT,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-        )
-    """,
+    **{
+        table_name: _build_market_base_daily_ddl(table_name)
+        for table_name in MARKET_BASE_DAILY_TABLE_BY_ASSET_TYPE.values()
+    },
     BASE_DIRTY_INSTRUMENT_TABLE: """
         CREATE TABLE IF NOT EXISTS base_dirty_instrument (
             dirty_nk TEXT,
+            asset_type TEXT,
             code TEXT NOT NULL,
             adjust_method TEXT NOT NULL,
             dirty_reason TEXT NOT NULL,
@@ -198,6 +300,7 @@ MARKET_BASE_LEDGER_TABLES: Final[dict[str, str]] = {
     BASE_BUILD_RUN_TABLE: """
         CREATE TABLE IF NOT EXISTS base_build_run (
             run_id TEXT,
+            asset_type TEXT,
             runner_name TEXT NOT NULL,
             runner_version TEXT NOT NULL,
             adjust_method TEXT NOT NULL,
@@ -217,6 +320,7 @@ MARKET_BASE_LEDGER_TABLES: Final[dict[str, str]] = {
     BASE_BUILD_SCOPE_TABLE: """
         CREATE TABLE IF NOT EXISTS base_build_scope (
             run_id TEXT NOT NULL,
+            asset_type TEXT,
             scope_type TEXT NOT NULL,
             scope_value TEXT NOT NULL,
             recorded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -225,55 +329,29 @@ MARKET_BASE_LEDGER_TABLES: Final[dict[str, str]] = {
     BASE_BUILD_ACTION_TABLE: """
         CREATE TABLE IF NOT EXISTS base_build_action (
             run_id TEXT NOT NULL,
+            asset_type TEXT,
             code TEXT NOT NULL,
             adjust_method TEXT NOT NULL,
             action TEXT NOT NULL,
             row_count BIGINT NOT NULL,
             recorded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
-    """
+    """,
 }
 
 
 RAW_MARKET_REQUIRED_COLUMNS: Final[dict[str, dict[str, str]]] = {
-    RAW_STOCK_FILE_REGISTRY_TABLE: {
-        "file_nk": "TEXT",
-        "asset_type": "TEXT",
-        "adjust_method": "TEXT",
-        "code": "TEXT",
-        "name": "TEXT",
-        "source_path": "TEXT",
-        "source_size_bytes": "BIGINT",
-        "source_mtime_utc": "TIMESTAMP",
-        "source_line_count": "BIGINT",
-        "source_header": "TEXT",
-        "source_content_hash": "TEXT",
-        "last_ingested_run_id": "TEXT",
-        "last_ingested_at": "TIMESTAMP",
+    **{
+        table_name: dict(_RAW_FILE_REGISTRY_REQUIRED_COLUMNS)
+        for table_name in RAW_FILE_REGISTRY_TABLE_BY_ASSET_TYPE.values()
     },
-    RAW_STOCK_DAILY_BAR_TABLE: {
-        "bar_nk": "TEXT",
-        "source_file_nk": "TEXT",
-        "asset_type": "TEXT",
-        "code": "TEXT",
-        "name": "TEXT",
-        "trade_date": "DATE",
-        "adjust_method": "TEXT",
-        "open": "DOUBLE",
-        "high": "DOUBLE",
-        "low": "DOUBLE",
-        "close": "DOUBLE",
-        "volume": "DOUBLE",
-        "amount": "DOUBLE",
-        "source_path": "TEXT",
-        "source_mtime_utc": "TIMESTAMP",
-        "first_seen_run_id": "TEXT",
-        "last_ingested_run_id": "TEXT",
-        "created_at": "TIMESTAMP",
-        "updated_at": "TIMESTAMP",
+    **{
+        table_name: dict(_RAW_DAILY_BAR_REQUIRED_COLUMNS)
+        for table_name in RAW_DAILY_BAR_TABLE_BY_ASSET_TYPE.values()
     },
     RAW_INGEST_RUN_TABLE: {
         "run_id": "TEXT",
+        "asset_type": "TEXT",
         "runner_name": "TEXT",
         "runner_version": "TEXT",
         "adjust_method": "TEXT",
@@ -292,6 +370,7 @@ RAW_MARKET_REQUIRED_COLUMNS: Final[dict[str, dict[str, str]]] = {
     },
     RAW_INGEST_FILE_TABLE: {
         "run_id": "TEXT",
+        "asset_type": "TEXT",
         "file_nk": "TEXT",
         "code": "TEXT",
         "name": "TEXT",
@@ -358,26 +437,13 @@ RAW_MARKET_REQUIRED_COLUMNS: Final[dict[str, dict[str, str]]] = {
 
 
 MARKET_BASE_REQUIRED_COLUMNS: Final[dict[str, dict[str, str]]] = {
-    MARKET_BASE_STOCK_DAILY_TABLE: {
-        "daily_bar_nk": "TEXT",
-        "code": "TEXT",
-        "name": "TEXT",
-        "trade_date": "DATE",
-        "adjust_method": "TEXT",
-        "open": "DOUBLE",
-        "high": "DOUBLE",
-        "low": "DOUBLE",
-        "close": "DOUBLE",
-        "volume": "DOUBLE",
-        "amount": "DOUBLE",
-        "source_bar_nk": "TEXT",
-        "first_seen_run_id": "TEXT",
-        "last_materialized_run_id": "TEXT",
-        "created_at": "TIMESTAMP",
-        "updated_at": "TIMESTAMP",
+    **{
+        table_name: dict(_MARKET_BASE_DAILY_REQUIRED_COLUMNS)
+        for table_name in MARKET_BASE_DAILY_TABLE_BY_ASSET_TYPE.values()
     },
     BASE_DIRTY_INSTRUMENT_TABLE: {
         "dirty_nk": "TEXT",
+        "asset_type": "TEXT",
         "code": "TEXT",
         "adjust_method": "TEXT",
         "dirty_reason": "TEXT",
@@ -390,6 +456,7 @@ MARKET_BASE_REQUIRED_COLUMNS: Final[dict[str, dict[str, str]]] = {
     },
     BASE_BUILD_RUN_TABLE: {
         "run_id": "TEXT",
+        "asset_type": "TEXT",
         "runner_name": "TEXT",
         "runner_version": "TEXT",
         "adjust_method": "TEXT",
@@ -407,51 +474,59 @@ MARKET_BASE_REQUIRED_COLUMNS: Final[dict[str, dict[str, str]]] = {
     },
     BASE_BUILD_SCOPE_TABLE: {
         "run_id": "TEXT",
+        "asset_type": "TEXT",
         "scope_type": "TEXT",
         "scope_value": "TEXT",
         "recorded_at": "TIMESTAMP",
     },
     BASE_BUILD_ACTION_TABLE: {
         "run_id": "TEXT",
+        "asset_type": "TEXT",
         "code": "TEXT",
         "adjust_method": "TEXT",
         "action": "TEXT",
         "row_count": "BIGINT",
         "recorded_at": "TIMESTAMP",
-    }
+    },
 }
 
 
 RAW_MARKET_NOT_NULL_COLUMNS: Final[dict[str, tuple[str, ...]]] = {
-    RAW_STOCK_FILE_REGISTRY_TABLE: (
-        "file_nk",
-        "asset_type",
-        "adjust_method",
-        "code",
-        "name",
-        "source_path",
-        "source_size_bytes",
-        "source_mtime_utc",
-        "source_line_count",
-        "source_header",
-        "last_ingested_run_id",
-        "last_ingested_at",
-    ),
-    RAW_STOCK_DAILY_BAR_TABLE: (
-        "bar_nk",
-        "source_file_nk",
-        "asset_type",
-        "code",
-        "name",
-        "trade_date",
-        "adjust_method",
-        "source_path",
-        "source_mtime_utc",
-        "first_seen_run_id",
-        "last_ingested_run_id",
-        "created_at",
-        "updated_at",
-    ),
+    **{
+        table_name: (
+            "file_nk",
+            "asset_type",
+            "adjust_method",
+            "code",
+            "name",
+            "source_path",
+            "source_size_bytes",
+            "source_mtime_utc",
+            "source_line_count",
+            "source_header",
+            "last_ingested_run_id",
+            "last_ingested_at",
+        )
+        for table_name in RAW_FILE_REGISTRY_TABLE_BY_ASSET_TYPE.values()
+    },
+    **{
+        table_name: (
+            "bar_nk",
+            "source_file_nk",
+            "asset_type",
+            "code",
+            "name",
+            "trade_date",
+            "adjust_method",
+            "source_path",
+            "source_mtime_utc",
+            "first_seen_run_id",
+            "last_ingested_run_id",
+            "created_at",
+            "updated_at",
+        )
+        for table_name in RAW_DAILY_BAR_TABLE_BY_ASSET_TYPE.values()
+    },
     RAW_TDXQUANT_RUN_TABLE: (
         "run_id",
         "runner_name",
@@ -494,14 +569,17 @@ RAW_MARKET_NOT_NULL_COLUMNS: Final[dict[str, tuple[str, ...]]] = {
 
 
 MARKET_BASE_NOT_NULL_COLUMNS: Final[dict[str, tuple[str, ...]]] = {
-    MARKET_BASE_STOCK_DAILY_TABLE: (
-        "daily_bar_nk",
-        "code",
-        "trade_date",
-        "adjust_method",
-        "created_at",
-        "updated_at",
-    ),
+    **{
+        table_name: (
+            "daily_bar_nk",
+            "code",
+            "trade_date",
+            "adjust_method",
+            "created_at",
+            "updated_at",
+        )
+        for table_name in MARKET_BASE_DAILY_TABLE_BY_ASSET_TYPE.values()
+    },
     BASE_DIRTY_INSTRUMENT_TABLE: (
         "dirty_nk",
         "code",
@@ -516,7 +594,11 @@ MARKET_BASE_NOT_NULL_COLUMNS: Final[dict[str, tuple[str, ...]]] = {
 
 RAW_MARKET_UNIQUE_INDEXES: Final[dict[str, tuple[tuple[str, tuple[str, ...]], ...]]] = {
     RAW_STOCK_FILE_REGISTRY_TABLE: (("ux_stock_file_registry_file_nk", ("file_nk",)),),
+    RAW_INDEX_FILE_REGISTRY_TABLE: (("ux_index_file_registry_file_nk", ("file_nk",)),),
+    RAW_BLOCK_FILE_REGISTRY_TABLE: (("ux_block_file_registry_file_nk", ("file_nk",)),),
     RAW_STOCK_DAILY_BAR_TABLE: (("ux_stock_daily_bar_bar_nk", ("bar_nk",)),),
+    RAW_INDEX_DAILY_BAR_TABLE: (("ux_index_daily_bar_bar_nk", ("bar_nk",)),),
+    RAW_BLOCK_DAILY_BAR_TABLE: (("ux_block_daily_bar_bar_nk", ("bar_nk",)),),
     RAW_TDXQUANT_RUN_TABLE: (("ux_raw_tdxquant_run_run_id", ("run_id",)),),
     RAW_TDXQUANT_REQUEST_TABLE: (("ux_raw_tdxquant_request_request_nk", ("request_nk",)),),
     RAW_TDXQUANT_INSTRUMENT_CHECKPOINT_TABLE: (
@@ -528,6 +610,12 @@ RAW_MARKET_UNIQUE_INDEXES: Final[dict[str, tuple[tuple[str, tuple[str, ...]], ..
 MARKET_BASE_UNIQUE_INDEXES: Final[dict[str, tuple[tuple[str, tuple[str, ...]], ...]]] = {
     MARKET_BASE_STOCK_DAILY_TABLE: (
         ("ux_stock_daily_adjusted_code_trade_date_adjust_method", ("code", "trade_date", "adjust_method")),
+    ),
+    MARKET_BASE_INDEX_DAILY_TABLE: (
+        ("ux_index_daily_adjusted_code_trade_date_adjust_method", ("code", "trade_date", "adjust_method")),
+    ),
+    MARKET_BASE_BLOCK_DAILY_TABLE: (
+        ("ux_block_daily_adjusted_code_trade_date_adjust_method", ("code", "trade_date", "adjust_method")),
     ),
     BASE_DIRTY_INSTRUMENT_TABLE: (("ux_base_dirty_instrument_dirty_nk", ("dirty_nk",)),),
 }
@@ -644,28 +732,30 @@ def _ensure_columns(
 
 
 def _cleanup_raw_market_ledger(connection: duckdb.DuckDBPyConnection) -> None:
-    _delete_rows_with_nulls(
-        connection,
-        table_name=RAW_STOCK_FILE_REGISTRY_TABLE,
-        required_columns=RAW_MARKET_NOT_NULL_COLUMNS[RAW_STOCK_FILE_REGISTRY_TABLE],
-    )
-    _deduplicate_table(
-        connection,
-        table_name=RAW_STOCK_FILE_REGISTRY_TABLE,
-        key_columns=("file_nk",),
-        order_columns=("last_ingested_at", "source_mtime_utc"),
-    )
-    _delete_rows_with_nulls(
-        connection,
-        table_name=RAW_STOCK_DAILY_BAR_TABLE,
-        required_columns=RAW_MARKET_NOT_NULL_COLUMNS[RAW_STOCK_DAILY_BAR_TABLE],
-    )
-    _deduplicate_table(
-        connection,
-        table_name=RAW_STOCK_DAILY_BAR_TABLE,
-        key_columns=("bar_nk",),
-        order_columns=("updated_at", "created_at"),
-    )
+    for table_name in RAW_FILE_REGISTRY_TABLE_BY_ASSET_TYPE.values():
+        _delete_rows_with_nulls(
+            connection,
+            table_name=table_name,
+            required_columns=RAW_MARKET_NOT_NULL_COLUMNS[table_name],
+        )
+        _deduplicate_table(
+            connection,
+            table_name=table_name,
+            key_columns=("file_nk",),
+            order_columns=("last_ingested_at", "source_mtime_utc"),
+        )
+    for table_name in RAW_DAILY_BAR_TABLE_BY_ASSET_TYPE.values():
+        _delete_rows_with_nulls(
+            connection,
+            table_name=table_name,
+            required_columns=RAW_MARKET_NOT_NULL_COLUMNS[table_name],
+        )
+        _deduplicate_table(
+            connection,
+            table_name=table_name,
+            key_columns=("bar_nk",),
+            order_columns=("updated_at", "created_at"),
+        )
     _delete_rows_with_nulls(
         connection,
         table_name=RAW_TDXQUANT_RUN_TABLE,
@@ -702,17 +792,18 @@ def _cleanup_raw_market_ledger(connection: duckdb.DuckDBPyConnection) -> None:
 
 
 def _cleanup_market_base_ledger(connection: duckdb.DuckDBPyConnection) -> None:
-    _delete_rows_with_nulls(
-        connection,
-        table_name=MARKET_BASE_STOCK_DAILY_TABLE,
-        required_columns=MARKET_BASE_NOT_NULL_COLUMNS[MARKET_BASE_STOCK_DAILY_TABLE],
-    )
-    _deduplicate_table(
-        connection,
-        table_name=MARKET_BASE_STOCK_DAILY_TABLE,
-        key_columns=("code", "trade_date", "adjust_method"),
-        order_columns=("updated_at", "created_at"),
-    )
+    for table_name in MARKET_BASE_DAILY_TABLE_BY_ASSET_TYPE.values():
+        _delete_rows_with_nulls(
+            connection,
+            table_name=table_name,
+            required_columns=MARKET_BASE_NOT_NULL_COLUMNS[table_name],
+        )
+        _deduplicate_table(
+            connection,
+            table_name=table_name,
+            key_columns=("code", "trade_date", "adjust_method"),
+            order_columns=("updated_at", "created_at"),
+        )
     _delete_rows_with_nulls(
         connection,
         table_name=BASE_DIRTY_INSTRUMENT_TABLE,

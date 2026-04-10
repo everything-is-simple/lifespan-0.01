@@ -3,11 +3,11 @@
 日期：`2026-04-09`
 状态：`生效中`
 
-1. 当前下一锤：`19-tdxquant-daily-raw-source-ledger-bridge-card-20260410.md`
-2. 当前待施工卡：`19-tdxquant-daily-raw-source-ledger-bridge-card-20260410.md`
+1. 当前下一锤：`21-system-ledger-incremental-governance-hardening-card-20260410.md`
+2. 当前待施工卡：`21-system-ledger-incremental-governance-hardening-card-20260410.md`
 3. 正式主线剩余卡：`0`
 4. 可选 Sidecar 剩余卡：`0`
-5. 后置修复剩余卡：`1`
+5. 后置修复剩余卡：`0`
 
 ## 卡片总表
 
@@ -30,10 +30,11 @@
 17. `17-raw-base-strong-checkpoint-and-dirty-materialization-card-20260410.md`
 18. `18-daily-raw-base-fq-incremental-update-source-selection-card-20260410.md`
 19. `19-tdxquant-daily-raw-source-ledger-bridge-card-20260410.md`
+20. `20-index-block-raw-base-incremental-bridge-card-20260410.md`
+21. `21-system-ledger-incremental-governance-hardening-card-20260410.md`
 
-当前口径：
-- `17` 已完成，并已把 `raw/base` 升级为带强断点、dirty queue、run/file ledger 与库级约束的正式历史账本层。
-- `18` 已把第二阶段源头选型收敛到“官方日更原始事实优先、复权留在仓内物化层”的阶段性方向。
-- `19` 已完成，并已把 `TdxQuant(none)` 正式桥接进现有 `raw/base` 账本机制。
-- 当前最新已生效结论锚点已推进到 `19`；主线卡当前已清零。
-- 在下一张卡正式生成前，当前待施工卡仍暂留 `19` 作为执行锚点；后续问题转入后置修复或下一轮新卡。
+## 当前口径
+
+1. `20` 已完成，`index/block txt -> raw_market -> market_base` 正式桥接已成立，正式库也已完成 full 初始化与 replay 验证。
+2. 最新生效结论锚点已经切到 `21`。
+3. 在下一张卡开出前，当前施工锚点仍保留 `21` 以满足治理检查。

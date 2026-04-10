@@ -3,10 +3,9 @@
 日期：`2026-04-09`
 状态：`生效中`
 
-本文记录当前执行区已经建立的结论入口。
-当前最新已生效结论锚点：`19-tdxquant-daily-raw-source-ledger-bridge-conclusion-20260410.md`
+本文记录当前执行区已经建立的结论入口。当前最新已生效结论锚点：`21-system-ledger-incremental-governance-hardening-conclusion-20260410.md`
 
-## 当前结论文件
+## 当前结论文档
 
 1. `01-governance-tooling-and-environment-bootstrap-conclusion-20260409.md`
 2. `02-shared-ledger-contract-and-pytest-path-fix-conclusion-20260409.md`
@@ -27,20 +26,14 @@
 17. `17-raw-base-strong-checkpoint-and-dirty-materialization-conclusion-20260410.md`
 18. `18-daily-raw-base-fq-incremental-update-source-selection-conclusion-20260410.md`
 19. `19-tdxquant-daily-raw-source-ledger-bridge-conclusion-20260410.md`
+20. `20-index-block-raw-base-incremental-bridge-conclusion-20260410.md`
+21. `21-system-ledger-incremental-governance-hardening-conclusion-20260410.md`
 
 ## 已冻结基础口径
 
-1. 仓库文档骨架已经建立。
-2. 文档先行治理已经生效。
-3. 正式代码生成已受 `doc-first gating` 硬门禁约束。
-4. 各正式模块已有新仓内的经验冻结入口，执行区三大索引采用字母命名。
-5. 新仓已有正式的系统级总路线图与进度跟踪器。
-6. 系统级路线图已补齐老仓来源、继承方式、置信度与未定项口径。
-7. 新仓已补齐最小 `structure / filter` 官方 snapshot 合同，并让 `alpha` 默认改读官方上游。
-8. 新仓 `alpha` 已补齐最小 `trigger ledger` 三表、bounded runner 与正式 pilot，`trigger ledger -> formal signal` 官方上游关系成立。
-9. 新仓 `alpha` 已补齐最小 `family ledger` 三表、bounded runner 与正式 pilot，`trigger ledger -> family ledger -> formal signal` 三级正式分层成立。
-10. 新仓 `portfolio_plan` 已补齐最小三表、`position -> portfolio_plan` 官方桥接、bounded pilot 与 `inserted / reused / rematerialized` 组合层审计。
-11. 新仓 `trade_runtime` 已补齐最小五表、`portfolio_plan -> trade` 官方桥接、carry 主语、bounded pilot 与 `inserted / reused / rematerialized` 执行层审计。
-12. 新仓已补齐缺失的 `data -> raw_market -> market_base -> malf -> structure` 最小官方前半段主线，并把 `market_base` 三套价格与“信号后复权 / 执行不复权”口径冻结到正式合同。
-13. 新仓已把 `raw/base` 升级为强断点与脏标的增量账本，补齐 `raw_ingest_run / raw_ingest_file / base_dirty_instrument / base_build_run / base_build_scope / base_build_action`、`force_hash / continue_from_last_run` 与库级唯一约束口径。
-14. 新仓已把 `TdxQuant(dividend_type='none')` 正式桥接进 `raw_market`，补齐 `raw_tdxquant_run / request / checkpoint`、真实 official pilot、checkpoint replay 与 `none dirty_queue -> market_base` 联动口径；`txt` 继续保留为正式 fallback。
+1. 文档先行治理已经生效，正式实现继续受 `doc-first gating` 约束。
+2. `position / portfolio_plan / trade` 最小正式账本与 bounded runner 已成立。
+3. `data -> raw_market -> market_base -> malf -> structure` 最小官方前半段主链已成立。
+4. `raw/base` 已升级为 run/file/request/checkpoint/dirty queue 齐备的正式历史账本。
+5. `TdxQuant(dividend_type='none')` 已正式桥接进入股票 `raw_market`，并联动 `market_base.none`。
+6. `txt -> raw_market -> market_base` 正式主链现已覆盖 `stock + index + block` 三类资产，并具备一次性建仓与每日断点续传增量更新能力。

@@ -6,11 +6,12 @@ import argparse
 import json
 from pathlib import Path
 
-from mlq.data import run_market_base_build
+from mlq.data import run_asset_market_base_build
 
 
 def build_argument_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Build market_base stock_daily_adjusted from raw_market.")
+    parser = argparse.ArgumentParser(description="Build market_base daily_adjusted from raw_market by asset type.")
+    parser.add_argument("--asset-type", choices=("stock", "index", "block"), default="stock")
     parser.add_argument("--adjust-method", default="backward")
     parser.add_argument("--instrument", dest="instruments", action="append", default=[])
     parser.add_argument("--start-date")
@@ -45,7 +46,8 @@ def build_argument_parser() -> argparse.ArgumentParser:
 def main() -> None:
     parser = build_argument_parser()
     args = parser.parse_args()
-    summary = run_market_base_build(
+    summary = run_asset_market_base_build(
+        asset_type=args.asset_type,
         adjust_method=args.adjust_method,
         instruments=args.instruments,
         start_date=args.start_date,

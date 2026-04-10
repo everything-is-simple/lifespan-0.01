@@ -42,6 +42,7 @@ system_tracker_files = [
     "docs/02-spec/Ω-system-delivery-roadmap-20260409.md",
 ]
 formal_runner_scripts = [
+    "scripts/data/run_tdx_asset_raw_ingest.py",
     "scripts/data/run_tdx_stock_raw_ingest.py",
     "scripts/data/run_tdxquant_daily_raw_sync.py",
     "scripts/data/run_market_base_build.py",
@@ -54,4 +55,17 @@ formal_runner_scripts = [
     "scripts/position/run_position_formal_signal_materialization.py",
     "scripts/portfolio_plan/run_portfolio_plan_build.py",
     "scripts/trade/run_trade_runtime_build.py",
+]
+
+[tool.mlq.ledger_governance]
+stable_entity_anchor = "asset_type+code"
+name_is_not_primary_key = true
+run_id_is_audit_only = true
+required_card_ledger_fields = [
+    "实体锚点",
+    "业务自然键",
+    "批量建仓",
+    "增量更新",
+    "断点续跑",
+    "审计账本",
 ]

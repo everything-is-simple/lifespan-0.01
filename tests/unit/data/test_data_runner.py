@@ -16,7 +16,9 @@ from mlq.data import (
     market_base_ledger_path,
     mark_base_instrument_dirty,
     raw_market_ledger_path,
+    run_asset_market_base_build,
     run_market_base_build,
+    run_tdx_asset_raw_ingest,
     run_tdxquant_daily_raw_sync,
     run_tdx_stock_raw_ingest,
 )
@@ -41,16 +43,17 @@ def _bootstrap_repo_root(tmp_path: Path) -> Path:
     return repo_root
 
 
-def _write_tdx_stock_file(
+def _write_tdx_asset_file(
     root: Path,
     *,
+    asset_type: str,
     folder_name: str,
     code: str,
     exchange: str,
     name: str,
     rows: list[tuple[str, float, float, float, float, float, float]],
 ) -> None:
-    folder = root / "stock" / folder_name
+    folder = root / asset_type / folder_name
     folder.mkdir(parents=True, exist_ok=True)
     path = folder / f"{exchange}#{code}.txt"
     content_lines = [
@@ -72,6 +75,26 @@ def _write_tdx_stock_file(
             )
         )
     path.write_text("\n".join(content_lines) + "\n", encoding="gbk")
+
+
+def _write_tdx_stock_file(
+    root: Path,
+    *,
+    folder_name: str,
+    code: str,
+    exchange: str,
+    name: str,
+    rows: list[tuple[str, float, float, float, float, float, float]],
+) -> None:
+    _write_tdx_asset_file(
+        root,
+        asset_type="stock",
+        folder_name=folder_name,
+        code=code,
+        exchange=exchange,
+        name=name,
+        rows=rows,
+    )
 
 
 class FakeTdxQuantClient:
@@ -1079,3 +1102,242 @@ def test_bootstrap_raw_and_market_base_cleanup_duplicates_and_enforce_constraint
     assert raw_bar_rows == [("600000.SH|2026-04-09|backward", 10.8, "r2")]
     assert base_daily_rows == [("600000.SH", 10.8, "r2")]
     assert dirty_rows == [("600000.SH|backward", "raw_rematerialized", "r2")]
+
+
+@pytest.mark.parametrize(
+    ("asset_type", "code", "name", "registry_table", "daily_table"),
+    [
+        ("index", "000300", "沪深300", "index_file_registry", "index_daily_bar"),
+        ("block", "881002", "煤炭开采", "block_file_registry", "block_daily_bar"),
+    ],
+)
+def test_run_tdx_asset_raw_ingest_supports_index_and_block_incremental(
+    tmp_path: Path,
+    monkeypatch,
+    asset_type: str,
+    code: str,
+    name: str,
+    registry_table: str,
+    daily_table: str,
+) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+    source_root = tmp_path / "tdx"
+
+    _write_tdx_asset_file(
+        source_root,
+        asset_type=asset_type,
+        folder_name="Backward-Adjusted",
+        code=code,
+        exchange="SH",
+        name=name,
+        rows=[
+            ("2026/04/08", 10.0, 10.5, 9.9, 10.4, 1000, 10400),
+            ("2026/04/09", 10.4, 10.8, 10.2, 10.7, 1200, 12840),
+        ],
+    )
+
+    first_summary = run_tdx_asset_raw_ingest(
+        settings=settings,
+        asset_type=asset_type,
+        source_root=source_root,
+        adjust_method="backward",
+        run_mode="full",
+        run_id=f"raw-{asset_type}-test-001a",
+    )
+    second_summary = run_tdx_asset_raw_ingest(
+        settings=settings,
+        asset_type=asset_type,
+        source_root=source_root,
+        adjust_method="backward",
+        run_mode="incremental",
+        run_id=f"raw-{asset_type}-test-001b",
+    )
+
+    assert first_summary.asset_type == asset_type
+    assert first_summary.bar_inserted_count == 2
+    assert second_summary.skipped_unchanged_file_count == 1
+
+    raw_conn = duckdb.connect(str(raw_market_ledger_path(settings)), read_only=True)
+    try:
+        registry_rows = raw_conn.execute(
+            f"SELECT asset_type, code, last_ingested_run_id FROM {registry_table}"
+        ).fetchall()
+        daily_rows = raw_conn.execute(
+            f"SELECT asset_type, code, trade_date, close FROM {daily_table} ORDER BY trade_date"
+        ).fetchall()
+        ingest_run_rows = raw_conn.execute(
+            """
+            SELECT asset_type, run_id, run_mode, run_status
+            FROM raw_ingest_run
+            WHERE run_id IN (?, ?)
+            ORDER BY run_id
+            """,
+            [f"raw-{asset_type}-test-001a", f"raw-{asset_type}-test-001b"],
+        ).fetchall()
+        ingest_file_rows = raw_conn.execute(
+            """
+            SELECT asset_type, run_id, action
+            FROM raw_ingest_file
+            WHERE run_id IN (?, ?)
+            ORDER BY run_id
+            """,
+            [f"raw-{asset_type}-test-001a", f"raw-{asset_type}-test-001b"],
+        ).fetchall()
+    finally:
+        raw_conn.close()
+
+    base_conn = duckdb.connect(str(market_base_ledger_path(settings)), read_only=True)
+    try:
+        dirty_rows = base_conn.execute(
+            """
+            SELECT dirty_nk, asset_type, code, adjust_method, dirty_status
+            FROM base_dirty_instrument
+            """
+        ).fetchall()
+    finally:
+        base_conn.close()
+
+    assert registry_rows == [(asset_type, f"{code}.SH", f"raw-{asset_type}-test-001a")]
+    assert daily_rows == [
+        (asset_type, f"{code}.SH", date(2026, 4, 8), 10.4),
+        (asset_type, f"{code}.SH", date(2026, 4, 9), 10.7),
+    ]
+    assert ingest_run_rows == [
+        (asset_type, f"raw-{asset_type}-test-001a", "full", "completed"),
+        (asset_type, f"raw-{asset_type}-test-001b", "incremental", "completed"),
+    ]
+    assert ingest_file_rows == [
+        (asset_type, f"raw-{asset_type}-test-001a", "inserted"),
+        (asset_type, f"raw-{asset_type}-test-001b", "skipped_unchanged"),
+    ]
+    assert dirty_rows == [(f"{asset_type}|{code}.SH|backward", asset_type, f"{code}.SH", "backward", "pending")]
+
+
+@pytest.mark.parametrize(
+    ("asset_type", "code", "name", "market_table"),
+    [
+        ("index", "000300", "沪深300", "index_daily_adjusted"),
+        ("block", "881002", "煤炭开采", "block_daily_adjusted"),
+    ],
+)
+def test_run_asset_market_base_build_materializes_index_and_block(
+    tmp_path: Path,
+    monkeypatch,
+    asset_type: str,
+    code: str,
+    name: str,
+    market_table: str,
+) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+    source_root = tmp_path / "tdx"
+
+    _write_tdx_asset_file(
+        source_root,
+        asset_type=asset_type,
+        folder_name="Backward-Adjusted",
+        code=code,
+        exchange="SH",
+        name=name,
+        rows=[
+            ("2026/04/08", 10.0, 10.5, 9.9, 10.4, 1000, 10400),
+            ("2026/04/09", 10.4, 10.8, 10.2, 10.7, 1200, 12840),
+        ],
+    )
+    run_tdx_asset_raw_ingest(
+        settings=settings,
+        asset_type=asset_type,
+        source_root=source_root,
+        adjust_method="backward",
+        run_id=f"raw-{asset_type}-test-002a",
+    )
+    first_summary = run_asset_market_base_build(
+        settings=settings,
+        asset_type=asset_type,
+        adjust_method="backward",
+        build_mode="full",
+        run_id=f"base-{asset_type}-test-002a",
+    )
+
+    _write_tdx_asset_file(
+        source_root,
+        asset_type=asset_type,
+        folder_name="Backward-Adjusted",
+        code=code,
+        exchange="SH",
+        name=name,
+        rows=[
+            ("2026/04/08", 10.0, 10.5, 9.9, 10.4, 1000, 10400),
+            ("2026/04/09", 10.4, 10.8, 10.2, 11.2, 1200, 13440),
+        ],
+    )
+    changed_path = source_root / asset_type / "Backward-Adjusted" / f"SH#{code}.txt"
+    changed_stat = changed_path.stat()
+    os.utime(changed_path, (changed_stat.st_atime + 2, changed_stat.st_mtime + 2))
+    run_tdx_asset_raw_ingest(
+        settings=settings,
+        asset_type=asset_type,
+        source_root=source_root,
+        adjust_method="backward",
+        run_id=f"raw-{asset_type}-test-002b",
+    )
+    second_summary = run_asset_market_base_build(
+        settings=settings,
+        asset_type=asset_type,
+        adjust_method="backward",
+        build_mode="incremental",
+        run_id=f"base-{asset_type}-test-002b",
+    )
+
+    assert first_summary.asset_type == asset_type
+    assert first_summary.inserted_count == 2
+    assert second_summary.source_scope_kind == "dirty_queue"
+    assert second_summary.rematerialized_count == 1
+    assert second_summary.consumed_dirty_count == 1
+
+    base_conn = duckdb.connect(str(market_base_ledger_path(settings)), read_only=True)
+    try:
+        market_rows = base_conn.execute(
+            f"SELECT code, trade_date, close, last_materialized_run_id FROM {market_table} ORDER BY trade_date"
+        ).fetchall()
+        build_run_rows = base_conn.execute(
+            """
+            SELECT asset_type, run_id, source_scope_kind, rematerialized_count, consumed_dirty_count, run_status
+            FROM base_build_run
+            WHERE run_id IN (?, ?)
+            ORDER BY run_id
+            """,
+            [f"base-{asset_type}-test-002a", f"base-{asset_type}-test-002b"],
+        ).fetchall()
+        build_action_rows = base_conn.execute(
+            """
+            SELECT asset_type, code, adjust_method, action, row_count
+            FROM base_build_action
+            WHERE run_id = ?
+            """,
+            [f"base-{asset_type}-test-002b"],
+        ).fetchall()
+        dirty_rows = base_conn.execute(
+            """
+            SELECT dirty_nk, asset_type, dirty_status, last_consumed_run_id
+            FROM base_dirty_instrument
+            WHERE asset_type = ?
+            """,
+            [asset_type],
+        ).fetchall()
+    finally:
+        base_conn.close()
+
+    assert market_rows == [
+        (f"{code}.SH", date(2026, 4, 8), 10.4, f"base-{asset_type}-test-002b"),
+        (f"{code}.SH", date(2026, 4, 9), 11.2, f"base-{asset_type}-test-002b"),
+    ]
+    assert build_run_rows == [
+        (asset_type, f"base-{asset_type}-test-002a", "full", 0, 1, "completed"),
+        (asset_type, f"base-{asset_type}-test-002b", "dirty_queue", 1, 1, "completed"),
+    ]
+    assert build_action_rows == [(asset_type, f"{code}.SH", "backward", "rematerialized", 2)]
+    assert dirty_rows == [(f"{asset_type}|{code}.SH|backward", asset_type, "consumed", f"base-{asset_type}-test-002b")]
