@@ -12,7 +12,13 @@ from mlq.core.paths import WorkspaceRoots, default_settings
 
 RAW_STOCK_FILE_REGISTRY_TABLE: Final[str] = "stock_file_registry"
 RAW_STOCK_DAILY_BAR_TABLE: Final[str] = "stock_daily_bar"
+RAW_INGEST_RUN_TABLE: Final[str] = "raw_ingest_run"
+RAW_INGEST_FILE_TABLE: Final[str] = "raw_ingest_file"
 MARKET_BASE_STOCK_DAILY_TABLE: Final[str] = "stock_daily_adjusted"
+BASE_DIRTY_INSTRUMENT_TABLE: Final[str] = "base_dirty_instrument"
+BASE_BUILD_RUN_TABLE: Final[str] = "base_build_run"
+BASE_BUILD_SCOPE_TABLE: Final[str] = "base_build_scope"
+BASE_BUILD_ACTION_TABLE: Final[str] = "base_build_action"
 
 
 RAW_MARKET_LEDGER_TABLES: Final[dict[str, str]] = {
@@ -28,6 +34,7 @@ RAW_MARKET_LEDGER_TABLES: Final[dict[str, str]] = {
             source_mtime_utc TIMESTAMP NOT NULL,
             source_line_count BIGINT NOT NULL,
             source_header TEXT NOT NULL,
+            source_content_hash TEXT,
             last_ingested_run_id TEXT NOT NULL,
             last_ingested_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
@@ -55,6 +62,41 @@ RAW_MARKET_LEDGER_TABLES: Final[dict[str, str]] = {
             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
     """,
+    RAW_INGEST_RUN_TABLE: """
+        CREATE TABLE IF NOT EXISTS raw_ingest_run (
+            run_id TEXT,
+            runner_name TEXT NOT NULL,
+            runner_version TEXT NOT NULL,
+            adjust_method TEXT NOT NULL,
+            run_mode TEXT NOT NULL,
+            source_root TEXT NOT NULL,
+            candidate_file_count BIGINT NOT NULL DEFAULT 0,
+            processed_file_count BIGINT NOT NULL DEFAULT 0,
+            skipped_file_count BIGINT NOT NULL DEFAULT 0,
+            inserted_bar_count BIGINT NOT NULL DEFAULT 0,
+            reused_bar_count BIGINT NOT NULL DEFAULT 0,
+            rematerialized_bar_count BIGINT NOT NULL DEFAULT 0,
+            run_status TEXT NOT NULL,
+            started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            completed_at TIMESTAMP,
+            summary_json TEXT
+        )
+    """,
+    RAW_INGEST_FILE_TABLE: """
+        CREATE TABLE IF NOT EXISTS raw_ingest_file (
+            run_id TEXT NOT NULL,
+            file_nk TEXT NOT NULL,
+            code TEXT NOT NULL,
+            name TEXT NOT NULL,
+            adjust_method TEXT NOT NULL,
+            source_path TEXT NOT NULL,
+            fingerprint_mode TEXT NOT NULL,
+            action TEXT NOT NULL,
+            row_count BIGINT NOT NULL DEFAULT 0,
+            error_message TEXT,
+            recorded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """,
 }
 
 
@@ -78,6 +120,57 @@ MARKET_BASE_LEDGER_TABLES: Final[dict[str, str]] = {
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
+    """,
+    BASE_DIRTY_INSTRUMENT_TABLE: """
+        CREATE TABLE IF NOT EXISTS base_dirty_instrument (
+            dirty_nk TEXT,
+            code TEXT NOT NULL,
+            adjust_method TEXT NOT NULL,
+            dirty_reason TEXT NOT NULL,
+            source_run_id TEXT,
+            source_file_nk TEXT,
+            dirty_status TEXT NOT NULL DEFAULT 'pending',
+            first_marked_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            last_marked_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            last_consumed_run_id TEXT
+        )
+    """,
+    BASE_BUILD_RUN_TABLE: """
+        CREATE TABLE IF NOT EXISTS base_build_run (
+            run_id TEXT,
+            runner_name TEXT NOT NULL,
+            runner_version TEXT NOT NULL,
+            adjust_method TEXT NOT NULL,
+            build_mode TEXT NOT NULL,
+            source_scope_kind TEXT NOT NULL,
+            source_row_count BIGINT NOT NULL DEFAULT 0,
+            inserted_count BIGINT NOT NULL DEFAULT 0,
+            reused_count BIGINT NOT NULL DEFAULT 0,
+            rematerialized_count BIGINT NOT NULL DEFAULT 0,
+            consumed_dirty_count BIGINT NOT NULL DEFAULT 0,
+            run_status TEXT NOT NULL,
+            started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            completed_at TIMESTAMP,
+            summary_json TEXT
+        )
+    """,
+    BASE_BUILD_SCOPE_TABLE: """
+        CREATE TABLE IF NOT EXISTS base_build_scope (
+            run_id TEXT NOT NULL,
+            scope_type TEXT NOT NULL,
+            scope_value TEXT NOT NULL,
+            recorded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """,
+    BASE_BUILD_ACTION_TABLE: """
+        CREATE TABLE IF NOT EXISTS base_build_action (
+            run_id TEXT NOT NULL,
+            code TEXT NOT NULL,
+            adjust_method TEXT NOT NULL,
+            action TEXT NOT NULL,
+            row_count BIGINT NOT NULL,
+            recorded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
     """
 }
 
@@ -94,6 +187,7 @@ RAW_MARKET_REQUIRED_COLUMNS: Final[dict[str, dict[str, str]]] = {
         "source_mtime_utc": "TIMESTAMP",
         "source_line_count": "BIGINT",
         "source_header": "TEXT",
+        "source_content_hash": "TEXT",
         "last_ingested_run_id": "TEXT",
         "last_ingested_at": "TIMESTAMP",
     },
@@ -118,6 +212,37 @@ RAW_MARKET_REQUIRED_COLUMNS: Final[dict[str, dict[str, str]]] = {
         "created_at": "TIMESTAMP",
         "updated_at": "TIMESTAMP",
     },
+    RAW_INGEST_RUN_TABLE: {
+        "run_id": "TEXT",
+        "runner_name": "TEXT",
+        "runner_version": "TEXT",
+        "adjust_method": "TEXT",
+        "run_mode": "TEXT",
+        "source_root": "TEXT",
+        "candidate_file_count": "BIGINT",
+        "processed_file_count": "BIGINT",
+        "skipped_file_count": "BIGINT",
+        "inserted_bar_count": "BIGINT",
+        "reused_bar_count": "BIGINT",
+        "rematerialized_bar_count": "BIGINT",
+        "run_status": "TEXT",
+        "started_at": "TIMESTAMP",
+        "completed_at": "TIMESTAMP",
+        "summary_json": "TEXT",
+    },
+    RAW_INGEST_FILE_TABLE: {
+        "run_id": "TEXT",
+        "file_nk": "TEXT",
+        "code": "TEXT",
+        "name": "TEXT",
+        "adjust_method": "TEXT",
+        "source_path": "TEXT",
+        "fingerprint_mode": "TEXT",
+        "action": "TEXT",
+        "row_count": "BIGINT",
+        "error_message": "TEXT",
+        "recorded_at": "TIMESTAMP",
+    },
 }
 
 
@@ -139,7 +264,118 @@ MARKET_BASE_REQUIRED_COLUMNS: Final[dict[str, dict[str, str]]] = {
         "last_materialized_run_id": "TEXT",
         "created_at": "TIMESTAMP",
         "updated_at": "TIMESTAMP",
+    },
+    BASE_DIRTY_INSTRUMENT_TABLE: {
+        "dirty_nk": "TEXT",
+        "code": "TEXT",
+        "adjust_method": "TEXT",
+        "dirty_reason": "TEXT",
+        "source_run_id": "TEXT",
+        "source_file_nk": "TEXT",
+        "dirty_status": "TEXT",
+        "first_marked_at": "TIMESTAMP",
+        "last_marked_at": "TIMESTAMP",
+        "last_consumed_run_id": "TEXT",
+    },
+    BASE_BUILD_RUN_TABLE: {
+        "run_id": "TEXT",
+        "runner_name": "TEXT",
+        "runner_version": "TEXT",
+        "adjust_method": "TEXT",
+        "build_mode": "TEXT",
+        "source_scope_kind": "TEXT",
+        "source_row_count": "BIGINT",
+        "inserted_count": "BIGINT",
+        "reused_count": "BIGINT",
+        "rematerialized_count": "BIGINT",
+        "consumed_dirty_count": "BIGINT",
+        "run_status": "TEXT",
+        "started_at": "TIMESTAMP",
+        "completed_at": "TIMESTAMP",
+        "summary_json": "TEXT",
+    },
+    BASE_BUILD_SCOPE_TABLE: {
+        "run_id": "TEXT",
+        "scope_type": "TEXT",
+        "scope_value": "TEXT",
+        "recorded_at": "TIMESTAMP",
+    },
+    BASE_BUILD_ACTION_TABLE: {
+        "run_id": "TEXT",
+        "code": "TEXT",
+        "adjust_method": "TEXT",
+        "action": "TEXT",
+        "row_count": "BIGINT",
+        "recorded_at": "TIMESTAMP",
     }
+}
+
+
+RAW_MARKET_NOT_NULL_COLUMNS: Final[dict[str, tuple[str, ...]]] = {
+    RAW_STOCK_FILE_REGISTRY_TABLE: (
+        "file_nk",
+        "asset_type",
+        "adjust_method",
+        "code",
+        "name",
+        "source_path",
+        "source_size_bytes",
+        "source_mtime_utc",
+        "source_line_count",
+        "source_header",
+        "last_ingested_run_id",
+        "last_ingested_at",
+    ),
+    RAW_STOCK_DAILY_BAR_TABLE: (
+        "bar_nk",
+        "source_file_nk",
+        "asset_type",
+        "code",
+        "name",
+        "trade_date",
+        "adjust_method",
+        "source_path",
+        "source_mtime_utc",
+        "first_seen_run_id",
+        "last_ingested_run_id",
+        "created_at",
+        "updated_at",
+    ),
+}
+
+
+MARKET_BASE_NOT_NULL_COLUMNS: Final[dict[str, tuple[str, ...]]] = {
+    MARKET_BASE_STOCK_DAILY_TABLE: (
+        "daily_bar_nk",
+        "code",
+        "trade_date",
+        "adjust_method",
+        "created_at",
+        "updated_at",
+    ),
+    BASE_DIRTY_INSTRUMENT_TABLE: (
+        "dirty_nk",
+        "code",
+        "adjust_method",
+        "dirty_reason",
+        "dirty_status",
+        "first_marked_at",
+        "last_marked_at",
+    ),
+}
+
+
+RAW_MARKET_UNIQUE_INDEXES: Final[dict[str, tuple[tuple[str, tuple[str, ...]], ...]]] = {
+    RAW_STOCK_FILE_REGISTRY_TABLE: (("ux_stock_file_registry_file_nk", ("file_nk",)),),
+    RAW_STOCK_DAILY_BAR_TABLE: (("ux_stock_daily_bar_bar_nk", ("bar_nk",)),),
+}
+
+
+MARKET_BASE_UNIQUE_INDEXES: Final[dict[str, tuple[tuple[str, tuple[str, ...]], ...]]] = {
+    MARKET_BASE_STOCK_DAILY_TABLE: (
+        ("ux_stock_daily_adjusted_code_trade_date_adjust_method", ("code", "trade_date", "adjust_method")),
+    ),
+    BASE_DIRTY_INSTRUMENT_TABLE: (("ux_base_dirty_instrument_dirty_nk", ("dirty_nk",)),),
 }
 
 
@@ -199,6 +435,12 @@ def bootstrap_raw_market_ledger(
             conn.execute(ddl)
         for table_name, required_columns in RAW_MARKET_REQUIRED_COLUMNS.items():
             _ensure_columns(conn, table_name=table_name, required_columns=required_columns)
+        _cleanup_raw_market_ledger(conn)
+        for table_name, columns in RAW_MARKET_NOT_NULL_COLUMNS.items():
+            _ensure_not_null_columns(conn, table_name=table_name, column_names=columns)
+        for table_name, index_specs in RAW_MARKET_UNIQUE_INDEXES.items():
+            for index_name, column_names in index_specs:
+                _ensure_unique_index(conn, table_name=table_name, index_name=index_name, column_names=column_names)
         return raw_market_ledger_path(workspace)
     finally:
         if owns_connection:
@@ -221,6 +463,12 @@ def bootstrap_market_base_ledger(
             conn.execute(ddl)
         for table_name, required_columns in MARKET_BASE_REQUIRED_COLUMNS.items():
             _ensure_columns(conn, table_name=table_name, required_columns=required_columns)
+        _cleanup_market_base_ledger(conn)
+        for table_name, columns in MARKET_BASE_NOT_NULL_COLUMNS.items():
+            _ensure_not_null_columns(conn, table_name=table_name, column_names=columns)
+        for table_name, index_specs in MARKET_BASE_UNIQUE_INDEXES.items():
+            for index_name, column_names in index_specs:
+                _ensure_unique_index(conn, table_name=table_name, index_name=index_name, column_names=column_names)
         return market_base_ledger_path(workspace)
     finally:
         if owns_connection:
@@ -239,3 +487,126 @@ def _ensure_columns(
         if column_name in existing_columns:
             continue
         connection.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}")
+
+
+def _cleanup_raw_market_ledger(connection: duckdb.DuckDBPyConnection) -> None:
+    _delete_rows_with_nulls(
+        connection,
+        table_name=RAW_STOCK_FILE_REGISTRY_TABLE,
+        required_columns=RAW_MARKET_NOT_NULL_COLUMNS[RAW_STOCK_FILE_REGISTRY_TABLE],
+    )
+    _deduplicate_table(
+        connection,
+        table_name=RAW_STOCK_FILE_REGISTRY_TABLE,
+        key_columns=("file_nk",),
+        order_columns=("last_ingested_at", "source_mtime_utc"),
+    )
+    _delete_rows_with_nulls(
+        connection,
+        table_name=RAW_STOCK_DAILY_BAR_TABLE,
+        required_columns=RAW_MARKET_NOT_NULL_COLUMNS[RAW_STOCK_DAILY_BAR_TABLE],
+    )
+    _deduplicate_table(
+        connection,
+        table_name=RAW_STOCK_DAILY_BAR_TABLE,
+        key_columns=("bar_nk",),
+        order_columns=("updated_at", "created_at"),
+    )
+
+
+def _cleanup_market_base_ledger(connection: duckdb.DuckDBPyConnection) -> None:
+    _delete_rows_with_nulls(
+        connection,
+        table_name=MARKET_BASE_STOCK_DAILY_TABLE,
+        required_columns=MARKET_BASE_NOT_NULL_COLUMNS[MARKET_BASE_STOCK_DAILY_TABLE],
+    )
+    _deduplicate_table(
+        connection,
+        table_name=MARKET_BASE_STOCK_DAILY_TABLE,
+        key_columns=("code", "trade_date", "adjust_method"),
+        order_columns=("updated_at", "created_at"),
+    )
+    _delete_rows_with_nulls(
+        connection,
+        table_name=BASE_DIRTY_INSTRUMENT_TABLE,
+        required_columns=MARKET_BASE_NOT_NULL_COLUMNS[BASE_DIRTY_INSTRUMENT_TABLE],
+    )
+    _deduplicate_table(
+        connection,
+        table_name=BASE_DIRTY_INSTRUMENT_TABLE,
+        key_columns=("dirty_nk",),
+        order_columns=("last_marked_at", "first_marked_at"),
+    )
+
+
+def _delete_rows_with_nulls(
+    connection: duckdb.DuckDBPyConnection,
+    *,
+    table_name: str,
+    required_columns: tuple[str, ...],
+) -> None:
+    if not required_columns:
+        return
+    predicate = " OR ".join(f"{column_name} IS NULL" for column_name in required_columns)
+    connection.execute(f"DELETE FROM {table_name} WHERE {predicate}")
+
+
+def _deduplicate_table(
+    connection: duckdb.DuckDBPyConnection,
+    *,
+    table_name: str,
+    key_columns: tuple[str, ...],
+    order_columns: tuple[str, ...],
+) -> None:
+    if not key_columns:
+        return
+    partition_sql = ", ".join(key_columns)
+    order_sql = ", ".join(f"{column_name} DESC NULLS LAST" for column_name in order_columns) or "1"
+    connection.execute(
+        f"""
+        DELETE FROM {table_name}
+        USING (
+            SELECT rowid
+            FROM (
+                SELECT
+                    rowid,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY {partition_sql}
+                        ORDER BY {order_sql}
+                    ) AS duplicate_rank
+                FROM {table_name}
+            )
+            WHERE duplicate_rank > 1
+        ) AS duplicated_rows
+        WHERE {table_name}.rowid = duplicated_rows.rowid
+        """
+    )
+
+
+def _ensure_not_null_columns(
+    connection: duckdb.DuckDBPyConnection,
+    *,
+    table_name: str,
+    column_names: tuple[str, ...],
+) -> None:
+    if not column_names:
+        return
+    existing_rows = connection.execute(f"PRAGMA table_info('{table_name}')").fetchall()
+    nullable_by_column = {str(row[1]): bool(row[3] == 0) for row in existing_rows}
+    for column_name in column_names:
+        if column_name not in nullable_by_column:
+            continue
+        if not nullable_by_column[column_name]:
+            continue
+        connection.execute(f"ALTER TABLE {table_name} ALTER COLUMN {column_name} SET NOT NULL")
+
+
+def _ensure_unique_index(
+    connection: duckdb.DuckDBPyConnection,
+    *,
+    table_name: str,
+    index_name: str,
+    column_names: tuple[str, ...],
+) -> None:
+    columns_sql = ", ".join(column_names)
+    connection.execute(f"CREATE UNIQUE INDEX IF NOT EXISTS {index_name} ON {table_name} ({columns_sql})")

@@ -3,7 +3,7 @@
 日期：`2026-04-09`
 状态：`生效中`
 
-1. 当前下一锤：`17-raw-base-strong-checkpoint-and-dirty-materialization-card-20260410.md`
+1. 当前下一锤：`18-daily-raw-base-fq-incremental-update-source-selection-card-20260410.md`
 2. 正式主线剩余卡：`0`
 3. 可选 Sidecar 剩余卡：`0`
 4. 后置修复剩余卡：`1`
@@ -26,9 +26,10 @@
 14. 冻结 `portfolio_plan` 最小共享 contract 与 `position -> portfolio_plan` 官方桥接，建立组合层最小三表、bounded pilot 与 rerun 审计
 15. 冻结 `trade_runtime` 最小共享 contract 与 `portfolio_plan -> trade` 官方桥接，建立执行层最小五表、carry 主语与 bounded pilot
 16. 补齐 `data -> raw_market -> market_base -> malf -> structure` 最小官方前半段主线，冻结三套价格与“信号后复权 / 执行不复权”口径，并完成 bounded pilot
+17. 补齐 `raw/base` 强断点、dirty queue、run/file ledger、`force_hash / continue_from_last_run` 与库级约束，并完成 bounded official pilot 与 controlled replay
 
 当前口径：
-- `16` 已完成，当前最重要的变化是前半段主线不再空缺。
-- 当前待施工卡已切到 `17`，先增强 `raw/base` 的强断点与增量更新能力。
+- `17` 已完成，当前最重要的变化是 `raw/base` 已不再是“能跑但不可审计”的临时桥接层。
+- 当前最新已生效结论锚点仍为 `17`，下一锤已切到 `18`，用于研究 `raw/base` 第二阶段每日复权增量更新源头选型。
 - 当前仍不能把 `system` 当作下一锤；整链 truthfulness 复核与 `system` 卡仍后置。
 - `system` 仍未开工，因此系统级总装结论仍不存在。

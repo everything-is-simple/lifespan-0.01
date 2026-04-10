@@ -4,6 +4,7 @@
 状态：`生效中`
 
 本文记录当前执行区已经建立的结论入口。
+当前最新已生效结论锚点：`17-raw-base-strong-checkpoint-and-dirty-materialization-conclusion-20260410.md`
 
 ## 当前结论文件
 
@@ -24,6 +25,7 @@
 15. `15-trade-minimal-runtime-ledger-and-portfolio-plan-bridge-conclusion-20260410.md`
 16. `16-data-malf-minimal-official-mainline-bridge-conclusion-20260410.md`
 17. `17-raw-base-strong-checkpoint-and-dirty-materialization-conclusion-20260410.md`
+18. `18-daily-raw-base-fq-incremental-update-source-selection-conclusion-20260410.md`
 
 ## 已冻结基础口径
 
@@ -39,3 +41,4 @@
 10. 新仓 `portfolio_plan` 已补齐最小三表、`position -> portfolio_plan` 官方桥接、bounded pilot 与 `inserted / reused / rematerialized` 组合层审计。
 11. 新仓 `trade_runtime` 已补齐最小五表、`portfolio_plan -> trade` 官方桥接、carry 主语、bounded pilot 与 `inserted / reused / rematerialized` 执行层审计。
 12. 新仓已补齐缺失的 `data -> raw_market -> market_base -> malf -> structure` 最小官方前半段主线，并把 `market_base` 三套价格与“信号后复权 / 执行不复权”口径冻结到正式合同。
+13. 新仓已把 `raw/base` 升级为强断点与脏标的增量账本，补齐 `raw_ingest_run / raw_ingest_file / base_dirty_instrument / base_build_run / base_build_scope / base_build_action`、`force_hash / continue_from_last_run` 与库级唯一约束口径。
