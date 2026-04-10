@@ -4,7 +4,7 @@
 状态：`生效中`
 
 本文记录当前执行区已经建立的结论入口。
-当前最新已生效结论锚点：`17-raw-base-strong-checkpoint-and-dirty-materialization-conclusion-20260410.md`
+当前最新已生效结论锚点：`19-tdxquant-daily-raw-source-ledger-bridge-conclusion-20260410.md`
 
 ## 当前结论文件
 
@@ -43,3 +43,4 @@
 11. 新仓 `trade_runtime` 已补齐最小五表、`portfolio_plan -> trade` 官方桥接、carry 主语、bounded pilot 与 `inserted / reused / rematerialized` 执行层审计。
 12. 新仓已补齐缺失的 `data -> raw_market -> market_base -> malf -> structure` 最小官方前半段主线，并把 `market_base` 三套价格与“信号后复权 / 执行不复权”口径冻结到正式合同。
 13. 新仓已把 `raw/base` 升级为强断点与脏标的增量账本，补齐 `raw_ingest_run / raw_ingest_file / base_dirty_instrument / base_build_run / base_build_scope / base_build_action`、`force_hash / continue_from_last_run` 与库级唯一约束口径。
+14. 新仓已把 `TdxQuant(dividend_type='none')` 正式桥接进 `raw_market`，补齐 `raw_tdxquant_run / request / checkpoint`、真实 official pilot、checkpoint replay 与 `none dirty_queue -> market_base` 联动口径；`txt` 继续保留为正式 fallback。

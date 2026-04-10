@@ -27,10 +27,13 @@
 15. 冻结 `trade_runtime` 最小共享 contract 与 `portfolio_plan -> trade` 官方桥接，建立执行层最小五表、carry 主语与 bounded pilot
 16. 补齐 `data -> raw_market -> market_base -> malf -> structure` 最小官方前半段主线，冻结三套价格与“信号后复权 / 执行不复权”口径，并完成 bounded pilot
 17. 补齐 `raw/base` 强断点、dirty queue、run/file ledger、`force_hash / continue_from_last_run` 与库级约束，并完成 bounded official pilot 与 controlled replay
+18. 完成第二阶段源头选型收敛，冻结“官方日更原始事实优先、复权留在仓内物化层、txt 继续保留 fallback”的阶段性方向
+19. 把 `TdxQuant(dividend_type='none')` 正式桥接进 `raw_market`，补齐 `raw_tdxquant_run / request / checkpoint`、真实 official pilot、checkpoint replay 与 `none dirty_queue -> market_base` 联动
 
 当前口径：
 - `17` 已完成，当前最重要的变化是 `raw/base` 已不再是“能跑但不可审计”的临时桥接层。
 - `18` 已完成方案选型研究，方向已收敛到“官方日更原始事实 + 仓内复权物化 + txt fallback”。
-- 当前最新已生效结论锚点仍为 `17`，下一锤已切到 `19`，用于把 `TdxQuant` 日更原始事实正式接进现有 `raw/base` 账本机制。
+- `19` 已完成，当前最新已生效结论锚点已推进到 `19`。
+- 在下一张卡正式生成前，当前下一锤仍暂留 `19` 作为执行锚点。
 - 当前仍不能把 `system` 当作下一锤；整链 truthfulness 复核与 `system` 卡仍后置。
 - `system` 仍未开工，因此系统级总装结论仍不存在。

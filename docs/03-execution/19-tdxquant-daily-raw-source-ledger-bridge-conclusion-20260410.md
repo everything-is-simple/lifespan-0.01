@@ -2,12 +2,13 @@
 
 结论编号：`19`
 日期：`2026-04-10`
-状态：`草稿`
+状态：`生效`
 
 ## 裁决
 
 - 接受：卡 `19` 的实现方向聚焦于“把 TdxQuant 日更原始事实正式接进 raw_market 账本”。
 - 接受：卡 `19` 当前只应把官方 `none` 路线视作原始事实桥接对象。
+- 接受：卡 `19` 已完成最小 official pilot，可把 `run_tdxquant_daily_raw_sync(...)` 视为 `data` 模块新的正式 bounded runner 入口之一。
 - 拒绝：在卡 `19` 里直接把 `TdxQuant(front/back)` 当作正式 `raw_forward / raw_backward` 或正式 `market_base`。
 
 ## 原因
@@ -25,13 +26,13 @@
 
 ## 影响
 
-- 当前待施工卡切到 `19`，后续 `data` 侧的正式推进应围绕 TQ raw 桥接层展开。
+- 卡 `19` 已完成，`data` 侧当前正式口径已新增 `TdxQuant(none) -> raw_market` 桥接入口。
 - 当前卡 `17` 的 `txt -> raw_market -> market_base` 入口继续保持生效。
 - 卡 `19` 的切片 2 已补齐最小代码骨架：
   - `raw_tdxquant_run / request / checkpoint` 三表已进入正式 bootstrap
   - `run_tdxquant_daily_raw_sync(...)` 已可桥接 `dividend_type='none'`
   - `request/checkpoint` skipped_unchanged 与 failed run 审计已有单测覆盖
   - 真实 official pilot 已写入正式 `raw_market`，并完成一次真实 `base_dirty_instrument -> run_market_base_build(adjust_method='none')` 联动
-- 后续若卡 `19` 实现成功，下一步最可能的新问题将转向：
+- 当前主线卡已清零；后续最可能的新问题将转向：
   - TQ raw 日更与 `txt` fallback 的并存治理
   - 仓内复权物化如何接管 `forward / backward`
