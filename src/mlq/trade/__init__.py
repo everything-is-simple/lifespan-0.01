@@ -1,1 +1,53 @@
-"""`trade` 模块负责执行、成交与账户运行账本。"""
+"""`trade` 模块负责执行层正式账本与持仓延续。"""
+
+from .bootstrap import (
+    TRADE_CARRY_SNAPSHOT_TABLE,
+    TRADE_EXECUTION_PLAN_TABLE,
+    TRADE_LEDGER_DDL,
+    TRADE_LEDGER_TABLE_NAMES,
+    TRADE_POSITION_LEG_TABLE,
+    TRADE_RUN_EXECUTION_PLAN_TABLE,
+    TRADE_RUN_TABLE,
+    bootstrap_trade_runtime_ledger,
+    connect_trade_runtime_ledger,
+    trade_runtime_ledger_path,
+)
+from .runner import (
+    DEFAULT_ENTRY_TIMING_POLICY,
+    DEFAULT_FAST_FAILURE_POLICY,
+    DEFAULT_MARKET_PRICE_ADJUST_METHOD,
+    DEFAULT_MARKET_PRICE_TABLE,
+    DEFAULT_RISK_UNIT_POLICY,
+    DEFAULT_SOURCE_PORTFOLIO_PLAN_TABLE,
+    DEFAULT_TAKE_PROFIT_POLICY,
+    DEFAULT_TIME_STOP_POLICY,
+    DEFAULT_TRADE_CONTRACT_VERSION,
+    DEFAULT_TRAILING_STOP_POLICY,
+    TradeRuntimeBuildSummary,
+    run_trade_runtime_build,
+)
+
+__all__ = [
+    "DEFAULT_ENTRY_TIMING_POLICY",
+    "DEFAULT_FAST_FAILURE_POLICY",
+    "DEFAULT_MARKET_PRICE_ADJUST_METHOD",
+    "DEFAULT_MARKET_PRICE_TABLE",
+    "DEFAULT_RISK_UNIT_POLICY",
+    "DEFAULT_SOURCE_PORTFOLIO_PLAN_TABLE",
+    "DEFAULT_TAKE_PROFIT_POLICY",
+    "DEFAULT_TIME_STOP_POLICY",
+    "DEFAULT_TRADE_CONTRACT_VERSION",
+    "DEFAULT_TRAILING_STOP_POLICY",
+    "TRADE_CARRY_SNAPSHOT_TABLE",
+    "TRADE_EXECUTION_PLAN_TABLE",
+    "TRADE_LEDGER_DDL",
+    "TRADE_LEDGER_TABLE_NAMES",
+    "TRADE_POSITION_LEG_TABLE",
+    "TRADE_RUN_EXECUTION_PLAN_TABLE",
+    "TRADE_RUN_TABLE",
+    "TradeRuntimeBuildSummary",
+    "bootstrap_trade_runtime_ledger",
+    "connect_trade_runtime_ledger",
+    "run_trade_runtime_build",
+    "trade_runtime_ledger_path",
+]

@@ -4,7 +4,7 @@
 状态：`生效中`
 
 1. 当前下一锤：`15-trade-minimal-runtime-ledger-and-portfolio-plan-bridge-card-20260409.md`
-2. 正式主线剩余卡：`1`
+2. 正式主线剩余卡：`0`
 3. 可选 Sidecar 剩余卡：`0`
 4. 后置修复剩余卡：`0`
 
@@ -27,5 +27,7 @@
 15. 冻结 `trade_runtime` 最小共享 contract 与 `portfolio_plan -> trade` 官方桥接，建立执行层最小五表、carry 主语与 bounded pilot
 
 当前口径：
-- `14` 已完成；主线现已推进到 `portfolio_plan` 最小正式账本层。
-- 当前下一锤已切到 `15`，开始为 `trade` 建立最小 runtime 账本、carry 主语与官方桥接。
+- `15` 已完成；主线现已推进到 `trade` 最小正式账本层。
+- `data -> malf -> structure -> filter -> alpha -> position -> portfolio_plan -> trade` 的最小官方主线已经建立。
+- `system` 仍未开工；如需继续主线，必须先新开执行卡，不得绕过闭环。
+- 在下一张卡开出前，执行区索引仍以 `15` 作为当前锚定卡。

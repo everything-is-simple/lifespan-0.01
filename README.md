@@ -125,6 +125,10 @@
   - 从官方 `position_candidate_audit / position_capacity_snapshot / position_sizing_snapshot` 做 bounded 读取
   - 物化 `portfolio_plan_run / portfolio_plan_snapshot / portfolio_plan_run_snapshot`
   - 产出可被后续 `trade / system` 消费的最小组合裁决账本
+- `scripts/trade/run_trade_runtime_build.py`
+  - 从官方 `portfolio_plan_snapshot`、`market_base.stock_daily_adjusted` 与上一轮 `trade_carry_snapshot` 做 bounded 读取
+  - 物化 `trade_run / trade_execution_plan / trade_position_leg / trade_carry_snapshot / trade_run_execution_plan`
+  - 冻结 `planned_entry / blocked_upstream / planned_carry` 最小执行事实与持仓延续
 
 ## 文档治理
 

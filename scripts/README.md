@@ -79,3 +79,10 @@
    - 从官方 `alpha formal signal` bounded 读取样本
    - 用 `market_base.stock_daily_adjusted.close` 补参考成交日与参考价
    - 复用 `position` 既有 materialization helper 落表
+
+## trade
+
+1. `python scripts/trade/run_trade_runtime_build.py --portfolio-id main_book --signal-start-date 2026-04-09 --signal-end-date 2026-04-09 --run-id trade-official-main-001 --summary-path H:/Lifespan-report/trade/card15/trade-official-main-001.json`
+   - 从官方 `portfolio_plan_snapshot`、`market_base.stock_daily_adjusted` 与上一轮 `trade_carry_snapshot` bounded 读取样本
+   - 物化 `trade_run / trade_execution_plan / trade_position_leg / trade_carry_snapshot / trade_run_execution_plan`
+   - 用 `summary_path` 固定留存 `inserted / reused / rematerialized` readout

@@ -5,7 +5,7 @@
 
 1. 当前下一锤：`15-trade-minimal-runtime-ledger-and-portfolio-plan-bridge-card-20260409.md`
 2. 当前待施工卡：`15-trade-minimal-runtime-ledger-and-portfolio-plan-bridge-card-20260409.md`
-3. 正式主线剩余卡：`1`
+3. 正式主线剩余卡：`0`
 4. 可选 Sidecar 剩余卡：`0`
 5. 后置修复剩余卡：`0`
 
@@ -28,5 +28,6 @@
 15. `15-trade-minimal-runtime-ledger-and-portfolio-plan-bridge-card-20260409.md`
 
 当前口径：
-- `14` 已完成实现、证据、记录与结论收口。
-- `15` 已完成 design / spec / card 开卡，当前待进入实现层。
+- `15` 已完成实现、证据、记录与结论收口。
+- 当前执行区正式主线剩余卡已清零，但在下一张卡开出前，执行区仍以 `15` 作为当前锚定卡。
+- 若继续进入 `system`，必须先新开卡，不得直接续改正式实现。
