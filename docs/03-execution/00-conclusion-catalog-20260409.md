@@ -3,7 +3,7 @@
 日期：`2026-04-09`
 状态：`生效中`
 
-本文记录当前执行区已经建立的结论入口。当前最新已生效结论锚点：`21-system-ledger-incremental-governance-hardening-conclusion-20260410.md`
+本文记录当前执行区已经建立的结论入口。当前最新已生效结论锚点：`22-data-daily-source-governance-sealing-conclusion-20260411.md`
 
 ## 当前结论文档
 
@@ -28,6 +28,7 @@
 19. `19-tdxquant-daily-raw-source-ledger-bridge-conclusion-20260410.md`
 20. `20-index-block-raw-base-incremental-bridge-conclusion-20260410.md`
 21. `21-system-ledger-incremental-governance-hardening-conclusion-20260410.md`
+22. `22-data-daily-source-governance-sealing-conclusion-20260411.md`
 
 ## 已冻结基础口径
 
@@ -37,3 +38,4 @@
 4. `raw/base` 已升级为 run/file/request/checkpoint/dirty queue 齐备的正式历史账本。
 5. `TdxQuant(dividend_type='none')` 已正式桥接进入股票 `raw_market`，并联动 `market_base.none`。
 6. `txt -> raw_market -> market_base` 正式主链现已覆盖 `stock + index + block` 三类资产，并具备一次性建仓与每日断点续传增量更新能力。
+7. `data` 模块当前日更源头治理已经封存：`stock` 以 `TdxQuant(none)` 为日更主路、`txt` 为 fallback；`index/block` 继续以 `H:\tdx_offline_Data` txt 为日更主路；未来若要统一 source adapter 必须另开新卡。

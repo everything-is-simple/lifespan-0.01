@@ -8,12 +8,13 @@
 1. 先读 `00-conclusion-catalog-20260409.md`
 2. 再读 `B-card-catalog-20260409.md`
 3. 再读 `C-system-completion-ledger-20260409.md`
-4. 先看最新已生效结论 `21-system-ledger-incremental-governance-hardening-conclusion-20260410.md`
-5. 如果需要理解 `index/block raw->base` 的已验证前置事实，再看 `20-index-block-raw-base-incremental-bridge-conclusion-20260410.md`
-6. 当前待施工卡锚点仍保留 `21-system-ledger-incremental-governance-hardening-card-20260410.md`
+4. 先看最新已生效结论 `22-data-daily-source-governance-sealing-conclusion-20260411.md`
+5. 如果需要理解 data 日更主路/fallback 与历史账本硬约束，再看 `21-system-ledger-incremental-governance-hardening-conclusion-20260410.md`
+6. 如果需要理解 `index/block raw->base` 的已验证前置事实，再看 `20-index-block-raw-base-incremental-bridge-conclusion-20260410.md`
+7. 当前待施工卡锚点仍保留 `22-data-daily-source-governance-sealing-card-20260411.md`
 
 ## 当前活动主线
 
 1. `data -> raw_market -> market_base -> malf -> structure` 最小官方前半段主线已经成立。
 2. `stock + index + block txt` 的 `raw/base` 主链已经正式成立，`TdxQuant(none)` 股票桥接也已经成立。
-3. 当前施工重点是把这套机制提升为全系统治理硬约束，避免后续模块重新回到“按 run_id 说话”的一次性流水线写法。
+3. 当前最新封存口径是：不再把 source adapter 统一视为当前主线，`stock` 与 `index/block` 保持阶段性分工，但共享同一套 `raw/base` 历史账本机制。
