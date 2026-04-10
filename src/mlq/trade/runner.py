@@ -25,7 +25,7 @@ from mlq.trade.bootstrap import (
 DEFAULT_TRADE_CONTRACT_VERSION: Final[str] = "trade-runtime-v1"
 DEFAULT_SOURCE_PORTFOLIO_PLAN_TABLE: Final[str] = "portfolio_plan_snapshot"
 DEFAULT_MARKET_PRICE_TABLE: Final[str] = "stock_daily_adjusted"
-DEFAULT_MARKET_PRICE_ADJUST_METHOD: Final[str] = "backward"
+DEFAULT_MARKET_PRICE_ADJUST_METHOD: Final[str] = "none"
 DEFAULT_ENTRY_TIMING_POLICY: Final[str] = "t_plus_1_open"
 DEFAULT_RISK_UNIT_POLICY: Final[str] = "entry_open_minus_signal_low"
 DEFAULT_TAKE_PROFIT_POLICY: Final[str] = "half_at_1r"

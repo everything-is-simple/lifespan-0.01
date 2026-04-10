@@ -39,11 +39,13 @@
 
 其中：
 
-- `PAS` 是 `alpha` 内部的一组正式能力，不再单独作为顶层模块存在
-- `position` 负责单标的仓位计划与资金管理
-- `portfolio_plan` 负责组合层计划、组合回测与容量协调
-- `trade` 负责执行与成交账本，不承担组合研究角色
-- `system` 负责编排、治理、审计和冻结，不保存策略事实主数据
+  - `PAS` 是 `alpha` 内部的一组正式能力，不再单独作为顶层模块存在
+  - `data` 负责把本地离线市场数据沉淀为官方 `raw_market / market_base` 历史账本
+  - `malf` 负责把官方 `market_base` 价格事实沉淀为官方市场语义快照
+  - `position` 负责单标的仓位计划与资金管理
+  - `portfolio_plan` 负责组合层计划、组合回测与容量协调
+  - `trade` 负责执行与成交账本，不承担组合研究角色
+  - `system` 负责编排、治理、审计和冻结，不保存策略事实主数据
 
 ## 五根目录契约
 
@@ -97,6 +99,17 @@
 
 ## 当前正式 runner 入口
 
+- `scripts/data/run_tdx_stock_raw_ingest.py`
+  - 从 `H:\tdx_offline_Data` 按 `gbk` ingest 官方 TDX 股票日线到 `raw_market`
+  - 记录 `stock_file_registry / stock_daily_bar`
+  - 支持文件级跳过、断点续跑与 `inserted / reused / rematerialized`
+- `scripts/data/run_market_base_build.py`
+  - 从官方 `raw_market` 物化 `market_base.stock_daily_adjusted`
+  - 正式沉淀 `adjust_method in {none, backward, forward}` 三套价格
+- `scripts/malf/run_malf_snapshot_build.py`
+  - 从官方 `market_base.stock_daily_adjusted` 做 bounded 读取
+  - 默认消费 `adjust_method='backward'`
+  - 物化 `malf_run / pas_context_snapshot / structure_candidate_snapshot`
 - `scripts/structure/run_structure_snapshot_build.py`
   - 从官方 `malf` 上游的结构候选事实与执行上下文做 bounded 读取
   - 物化 `structure_run / structure_snapshot / structure_run_snapshot`
@@ -119,16 +132,22 @@
   - 产出可被 `alpha formal signal` 稳定引用的官方 `alpha trigger ledger`
 - `scripts/position/run_position_formal_signal_materialization.py`
   - 从官方 `alpha formal signal` 做 bounded 读取
-  - 用 `market_base.stock_daily_adjusted` 补 `reference_trade_date / reference_price`
+  - 用 `market_base.stock_daily_adjusted(adjust_method='none')` 补 `reference_trade_date / reference_price`
   - 复用 `materialize_position_from_formal_signals(...)` 落 `position` 正式账本
 - `scripts/portfolio_plan/run_portfolio_plan_build.py`
   - 从官方 `position_candidate_audit / position_capacity_snapshot / position_sizing_snapshot` 做 bounded 读取
   - 物化 `portfolio_plan_run / portfolio_plan_snapshot / portfolio_plan_run_snapshot`
   - 产出可被后续 `trade / system` 消费的最小组合裁决账本
 - `scripts/trade/run_trade_runtime_build.py`
-  - 从官方 `portfolio_plan_snapshot`、`market_base.stock_daily_adjusted` 与上一轮 `trade_carry_snapshot` 做 bounded 读取
+  - 从官方 `portfolio_plan_snapshot`、`market_base.stock_daily_adjusted(adjust_method='none')` 与上一轮 `trade_carry_snapshot` 做 bounded 读取
   - 物化 `trade_run / trade_execution_plan / trade_position_leg / trade_carry_snapshot / trade_run_execution_plan`
   - 冻结 `planned_entry / blocked_upstream / planned_carry` 最小执行事实与持仓延续
+
+当前价格口径冻结为：
+
+- `malf -> structure -> filter -> alpha` 默认使用 `backward`
+- `position -> trade` 默认使用 `none`
+- `forward` 当前仅作为研究与展示保留
 
 ## 文档治理
 

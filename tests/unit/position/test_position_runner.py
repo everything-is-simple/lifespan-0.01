@@ -116,8 +116,8 @@ def test_run_position_formal_signal_materialization_reads_official_alpha_and_enr
     _seed_market_base_prices(
         settings.databases.market_base,
         [
-            ("000001.SZ", "2026-04-08", "backward", 10.1),
-            ("000001.SZ", "2026-04-09", "backward", 10.5),
+            ("000001.SZ", "2026-04-08", "none", 10.1),
+            ("000001.SZ", "2026-04-09", "none", 10.5),
         ],
     )
 
@@ -208,7 +208,7 @@ def test_run_position_formal_signal_materialization_skips_signals_without_refere
     _seed_market_base_prices(
         settings.databases.market_base,
         [
-            ("000001.SZ", "2026-04-09", "backward", 10.5),
+            ("000001.SZ", "2026-04-09", "none", 10.5),
         ],
     )
 
@@ -297,7 +297,7 @@ def test_run_position_formal_signal_materialization_accepts_legacy_alpha_column_
     _seed_market_base_prices(
         settings.databases.market_base,
         [
-            ("000003.SZ", "2026-04-09", "backward", 20.0),
+            ("000003.SZ", "2026-04-09", "none", 20.0),
         ],
     )
 

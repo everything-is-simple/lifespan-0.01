@@ -45,6 +45,7 @@
      - `low`
      - `close`
      - `adjust_method`
+   - 当前正式执行口径固定为：`adjust_method = 'none'`
 3. 上一轮官方 `trade_carry_snapshot`
    - 至少提供：
      - `instrument`

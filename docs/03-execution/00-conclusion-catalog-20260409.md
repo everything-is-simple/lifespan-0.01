@@ -22,6 +22,7 @@
 13. `13-alpha-five-table-family-shared-contract-and-family-ledger-bootstrap-conclusion-20260409.md`
 14. `14-portfolio-plan-minimal-ledger-and-position-bridge-conclusion-20260409.md`
 15. `15-trade-minimal-runtime-ledger-and-portfolio-plan-bridge-conclusion-20260410.md`
+16. `16-data-malf-minimal-official-mainline-bridge-conclusion-20260410.md`
 
 ## 已冻结基础口径
 
@@ -36,3 +37,4 @@
 9. 新仓 `alpha` 已补齐最小 `family ledger` 三表、bounded runner 与正式 pilot，`trigger ledger -> family ledger -> formal signal` 三级正式分层成立。
 10. 新仓 `portfolio_plan` 已补齐最小三表、`position -> portfolio_plan` 官方桥接、bounded pilot 与 `inserted / reused / rematerialized` 组合层审计。
 11. 新仓 `trade_runtime` 已补齐最小五表、`portfolio_plan -> trade` 官方桥接、carry 主语、bounded pilot 与 `inserted / reused / rematerialized` 执行层审计。
+12. 新仓已补齐缺失的 `data -> raw_market -> market_base -> malf -> structure` 最小官方前半段主线，并把 `market_base` 三套价格与“信号后复权 / 执行不复权”口径冻结到正式合同。

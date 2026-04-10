@@ -77,20 +77,32 @@
 补充规则：
 
 1. `PAS` 是 `alpha` 内部能力，不再是顶层模块。
-2. `structure` 负责把 `malf` 结构语义沉淀为官方结构事实层。
+2. `data` 负责把本地离线市场数据沉淀为官方 `raw_market / market_base` 历史账本。
+   - 当前 `data` 的正式 bounded runner 入口为 `scripts/data/run_tdx_stock_raw_ingest.py`，只允许从本地官方离线目录把股票日线增量写入 `raw_market.stock_file_registry / stock_daily_bar`，不允许绕过历史账本直接给下游喂临时 DataFrame。
+   - 当前 `data` 的正式 bounded runner 入口为 `scripts/data/run_market_base_build.py`，只允许从官方 `raw_market` 物化 `market_base.stock_daily_adjusted`，并正式沉淀 `adjust_method in {none, backward, forward}` 三套价格，不允许把执行口径和信号口径混写成一套。
+3. `malf` 负责把官方 `market_base` 价格事实沉淀为官方市场语义快照层。
+   - 当前 `malf` 的正式 bounded runner 入口为 `scripts/malf/run_malf_snapshot_build.py`，只允许消费官方 `market_base.stock_daily_adjusted(adjust_method='backward')`，物化 `malf_run / pas_context_snapshot / structure_candidate_snapshot / malf_run_context_snapshot / malf_run_structure_snapshot`，不允许直接回读离线文本或 `raw_market`。
+4. `structure` 负责把 `malf` 结构语义沉淀为官方结构事实层。
    - 当前 `structure` 的正式 bounded runner 入口为 `scripts/structure/run_structure_snapshot_build.py`，只允许从官方 `malf` 结构候选事实与官方执行上下文物化 `structure_run / snapshot / run_snapshot`，不允许夹带 `filter / alpha / position` 判定逻辑。
-3. `filter` 负责 pre-trigger 准入。
+5. `filter` 负责 pre-trigger 准入。
    - 当前 `filter` 的正式 bounded runner 入口为 `scripts/filter/run_filter_snapshot_build.py`，只允许消费官方 `structure snapshot` 与最小执行上下文物化 `filter_run / snapshot / run_snapshot`，不允许硬拦截研究观察或夹带 `alpha detector / position / trade` 逻辑。
-4. `alpha` 负责对下游冻结正式 `formal signal` 事实。
+6. `alpha` 负责对下游冻结正式 `formal signal` 事实。
    - 当前 `alpha` 的正式 bounded trigger ledger 入口为 `scripts/alpha/run_alpha_trigger_ledger_build.py`，只允许从 bounded detector 输入与官方 `filter / structure snapshot` 上游物化 `alpha_trigger_run / event / run_event`，不允许夹带 `position / trade / system` 逻辑。
    - 当前 `alpha` 的正式 bounded family ledger 入口为 `scripts/alpha/run_alpha_family_build.py`，只允许从官方 `alpha_trigger_event` 与 bounded family candidate 输入物化 `alpha_family_run / event / run_event`，不允许绕过共享 trigger 事实层，也不允许夹带 `position / trade / system` 逻辑。
    - 当前 `alpha` 的正式 bounded producer 入口为 `scripts/alpha/run_alpha_formal_signal_build.py`，只允许从官方触发事实与官方 `filter / structure snapshot` 上游物化 `alpha_formal_signal_run / event / run_event`，不允许夹带 `position` sizing 或 `trade / system` 逻辑。
-5. `position` 负责单标的仓位计划与资金管理。
-   - 当前 `position` 的正式 bounded runner 入口为 `scripts/position/run_position_formal_signal_materialization.py`，只允许消费官方 `alpha formal signal` 与 `market_base` 参考价，不允许回读 `alpha` 内部临时过程。
-6. `portfolio_plan` 负责组合层计划、组合回测、容量协调。
+7. `position` 负责单标的仓位计划与资金管理。
+   - 当前 `position` 的正式 bounded runner 入口为 `scripts/position/run_position_formal_signal_materialization.py`，只允许消费官方 `alpha formal signal` 与 `market_base.stock_daily_adjusted(adjust_method='none')` 参考价，不允许回读 `alpha` 内部临时过程。
+8. `portfolio_plan` 负责组合层计划、组合回测、容量协调。
    - 当前 `portfolio_plan` 的正式 bounded runner 入口为 `scripts/portfolio_plan/run_portfolio_plan_build.py`，只允许消费官方 `position_candidate_audit / position_capacity_snapshot / position_sizing_snapshot`，物化 `portfolio_plan_run / snapshot / run_snapshot`，不允许回读 `alpha` 内部过程，也不允许顺手夹带 `trade / system` 逻辑。
-7. `trade` 负责执行与成交账本，不承担组合研究职责。
-8. `system` 负责编排、治理、审计、冻结，不保存策略事实主数据。
+9. `trade` 负责执行与成交账本，不承担组合研究职责。
+   - 当前 `trade` 的正式 bounded runner 入口为 `scripts/trade/run_trade_runtime_build.py`，只允许消费官方 `portfolio_plan_snapshot`、上一轮 `trade_carry_snapshot` 与 `market_base.stock_daily_adjusted(adjust_method='none')`，不允许改回复权价计算成交股数。
+10. `system` 负责编排、治理、审计、冻结，不保存策略事实主数据。
+
+补充价格口径：
+
+1. `malf -> structure -> filter -> alpha` 默认使用 `adjust_method = backward`
+2. `position -> trade` 默认使用 `adjust_method = none`
+3. `adjust_method = forward` 当前只作为研究与展示保留，不作为正式执行口径
 
 ## 5. 历史账本原则
 

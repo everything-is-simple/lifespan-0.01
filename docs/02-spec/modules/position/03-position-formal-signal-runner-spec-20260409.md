@@ -50,7 +50,8 @@
 
 1. 表名：`stock_daily_adjusted`
 2. 价格列：`close`
-3. 默认复权口径：`adjust_method = 'backward'`
+3. 默认执行参考价口径：`adjust_method = 'none'`
+4. 原因：`position` 需要用真实未复权价格补齐参考成交日与参考价，避免复权价把股数与资金额度算偏
 
 ## enrichment 规则
 
@@ -110,4 +111,4 @@
 
 ## 一句话收口
 
-09 的正式合同是：`position` 只从官方 `alpha formal signal` 读 bounded 样本，用 `market_base` 补齐下一交易日参考价，再复用既有 materialization helper 落正式账本。
+09 的正式合同是：`position` 只从官方 `alpha formal signal` 读 bounded 样本，用 `market_base(adjust_method='none')` 补齐下一交易日参考价，再复用既有 materialization helper 落正式账本。

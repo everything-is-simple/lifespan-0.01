@@ -45,7 +45,22 @@
 2. `python .codex/skills/lifespan-execution-discipline/scripts/check_execution_indexes.py --include-untracked`
    - 在本地重构阶段检查执行索引、卡目录和完工账本
 
-## alpha
+## data
+
+1. `python scripts/data/run_tdx_stock_raw_ingest.py --source-root H:/tdx_offline_Data --adjust-method backward --instrument 600000.SH --limit 10 --run-id raw-official-001 --summary-path H:/Lifespan-report/data/card16/raw-official-001.json`
+   - 从本地 TDX 离线目录增量 ingest 股票日线到 `raw_market`
+   - 记录 `stock_file_registry / stock_daily_bar`
+   - 支持文件级跳过与 `inserted / reused / rematerialized` readout
+
+2. `python scripts/data/run_market_base_build.py --adjust-method backward --instrument 600000.SH --start-date 2026-04-01 --end-date 2026-04-10 --run-id market-base-official-001 --summary-path H:/Lifespan-report/data/card16/market-base-official-001.json`
+   - 从官方 `raw_market` 物化 `market_base.stock_daily_adjusted`
+   - 正式沉淀 `none / backward / forward` 三套价格
+
+## malf
+
+1. `python scripts/malf/run_malf_snapshot_build.py --signal-start-date 2026-04-08 --signal-end-date 2026-04-08 --limit 10 --batch-size 10 --run-id malf-official-001 --summary-path H:/Lifespan-report/data/card16/malf-official-001.json`
+   - 从官方 `market_base.stock_daily_adjusted(adjust_method='backward')` bounded 读取
+   - 物化 `malf_run / pas_context_snapshot / structure_candidate_snapshot`
 
 ## structure
 
@@ -77,12 +92,12 @@
 
 1. `python scripts/position/run_position_formal_signal_materialization.py --policy-id fixed_notional_full_exit_v1 --capital-base-value 1000000 --signal-start-date 2026-04-08 --signal-end-date 2026-04-08 --limit 10`
    - 从官方 `alpha formal signal` bounded 读取样本
-   - 用 `market_base.stock_daily_adjusted.close` 补参考成交日与参考价
+   - 用 `market_base.stock_daily_adjusted(adjust_method='none').close` 补参考成交日与参考价
    - 复用 `position` 既有 materialization helper 落表
 
 ## trade
 
 1. `python scripts/trade/run_trade_runtime_build.py --portfolio-id main_book --signal-start-date 2026-04-09 --signal-end-date 2026-04-09 --run-id trade-official-main-001 --summary-path H:/Lifespan-report/trade/card15/trade-official-main-001.json`
-   - 从官方 `portfolio_plan_snapshot`、`market_base.stock_daily_adjusted` 与上一轮 `trade_carry_snapshot` bounded 读取样本
+   - 从官方 `portfolio_plan_snapshot`、`market_base.stock_daily_adjusted(adjust_method='none')` 与上一轮 `trade_carry_snapshot` bounded 读取样本
    - 物化 `trade_run / trade_execution_plan / trade_position_leg / trade_carry_snapshot / trade_run_execution_plan`
    - 用 `summary_path` 固定留存 `inserted / reused / rematerialized` readout

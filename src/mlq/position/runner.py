@@ -21,7 +21,7 @@ from mlq.position.bootstrap import (
 
 DEFAULT_ALPHA_FORMAL_SIGNAL_TABLE: Final[str] = "alpha_formal_signal_event"
 DEFAULT_MARKET_BASE_PRICE_TABLE: Final[str] = "stock_daily_adjusted"
-DEFAULT_MARKET_BASE_ADJUST_METHOD: Final[str] = "backward"
+DEFAULT_MARKET_BASE_ADJUST_METHOD: Final[str] = "none"
 
 
 @dataclass(frozen=True)

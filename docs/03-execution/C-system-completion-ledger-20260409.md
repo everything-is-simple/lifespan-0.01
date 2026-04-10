@@ -3,7 +3,7 @@
 日期：`2026-04-09`
 状态：`生效中`
 
-1. 当前下一锤：`15-trade-minimal-runtime-ledger-and-portfolio-plan-bridge-card-20260409.md`
+1. 当前下一锤：`16-data-malf-minimal-official-mainline-bridge-card-20260410.md`
 2. 正式主线剩余卡：`0`
 3. 可选 Sidecar 剩余卡：`0`
 4. 后置修复剩余卡：`0`
@@ -25,9 +25,9 @@
 13. 冻结 `alpha` 五表族共享 contract 与 family ledger bootstrap，先在一到两个核心 family 上证明正式账本层、bounded pilot 与 rerun 审计成立
 14. 冻结 `portfolio_plan` 最小共享 contract 与 `position -> portfolio_plan` 官方桥接，建立组合层最小三表、bounded pilot 与 rerun 审计
 15. 冻结 `trade_runtime` 最小共享 contract 与 `portfolio_plan -> trade` 官方桥接，建立执行层最小五表、carry 主语与 bounded pilot
+16. 补齐 `data -> raw_market -> market_base -> malf -> structure` 最小官方前半段主线，冻结三套价格与“信号后复权 / 执行不复权”口径，并完成 bounded pilot
 
 当前口径：
-- `15` 已完成；主线现已推进到 `trade` 最小正式账本层。
-- `data -> malf -> structure -> filter -> alpha -> position -> portfolio_plan -> trade` 的最小官方主线已经建立。
-- `system` 仍未开工；如需继续主线，必须先新开执行卡，不得绕过闭环。
-- 在下一张卡开出前，执行区索引仍以 `15` 作为当前锚定卡。
+- `16` 已完成，当前最重要的变化是前半段主线不再空缺。
+- 当前仍不能把 `system` 当作下一锤；下一张主线卡必须先复核 `data -> malf -> structure -> filter -> alpha -> position -> portfolio_plan -> trade` 是否整链真实对接。
+- `system` 仍未开工，因此系统级总装结论仍不存在。

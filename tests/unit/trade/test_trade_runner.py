@@ -138,10 +138,10 @@ def test_run_trade_runtime_build_materializes_planned_entry_blocked_and_carry(
     _seed_market_base_prices(
         settings.databases.market_base,
         [
-            ("000001.SZ", "2026-04-10", "backward", 10.1, 10.8, 9.9, 10.5),
-            ("000002.SZ", "2026-04-10", "backward", 20.1, 20.9, 19.8, 20.4),
-            ("000003.SZ", "2026-04-09", "backward", 30.0, 30.9, 29.8, 30.5),
-            ("000003.SZ", "2026-04-10", "backward", 30.3, 31.0, 30.0, 30.8),
+            ("000001.SZ", "2026-04-10", "none", 10.1, 10.8, 9.9, 10.5),
+            ("000002.SZ", "2026-04-10", "none", 20.1, 20.9, 19.8, 20.4),
+            ("000003.SZ", "2026-04-09", "none", 30.0, 30.9, 29.8, 30.5),
+            ("000003.SZ", "2026-04-10", "none", 30.3, 31.0, 30.0, 30.8),
         ],
     )
 
@@ -328,7 +328,7 @@ def test_run_trade_runtime_build_marks_rematerialized_when_plan_weight_changes(
     _seed_market_base_prices(
         settings.databases.market_base,
         [
-            ("000101.SZ", "2026-04-10", "backward", 11.0, 11.5, 10.8, 11.2),
+            ("000101.SZ", "2026-04-10", "none", 11.0, 11.5, 10.8, 11.2),
         ],
     )
 
