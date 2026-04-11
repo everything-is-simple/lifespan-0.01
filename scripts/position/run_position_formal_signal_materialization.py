@@ -22,7 +22,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--run-id", type=str, default=None)
     parser.add_argument("--alpha-formal-signal-table", type=str, default="alpha_formal_signal_event")
     parser.add_argument("--market-price-table", type=str, default="stock_daily_adjusted")
-    parser.add_argument("--adjust-method", type=str, default="backward")
+    parser.add_argument("--adjust-method", type=str, default="none")
     parser.add_argument("--allow-same-day-price-fallback", action="store_true")
     parser.add_argument("--summary-path", type=Path, default=None)
     return parser.parse_args()

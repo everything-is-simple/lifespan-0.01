@@ -44,5 +44,5 @@
 2. `23` 已把 `malf` 正式核心收缩为按时间级别独立运行的纯语义走势账本，并明确 bridge v1 只是兼容层。
 3. `24` 已完成机制层边界冻结：`pivot-confirmed break` 与 `same-timeframe stats sidecar` 的正式边界已成立。
 4. `25` 已完成机制层实现卡：`pivot_confirmed_break_ledger / same_timeframe_stats_profile / same_timeframe_stats_snapshot`、bounded runner、checkpoint 与最小下游接入已经落地。
-5. `26` 已开主链 truthfulness 复核卡：先裁决 `23/24/25` 之后整链是否仍真实成立到 `trade`，再决定下一张是主线卡、修复卡还是 `system` 卡。
-6. 最新生效结论锚点仍是 `25`；当前治理锚点已切到 `26`。
+5. `26` 已完成主链 truthfulness 复核：`23/24/25` 之后整链仍真实成立到 `trade`，不需要另开后置修复卡。
+6. 最新生效结论锚点已切到 `26`；当前治理锚点暂保留在 `26`，直到下一张 `system` 主线卡正式打开。

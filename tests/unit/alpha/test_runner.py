@@ -450,7 +450,7 @@ def test_run_alpha_formal_signal_build_outputs_event_consumable_by_position_runn
     )
     _seed_market_base_prices(
         settings.databases.market_base,
-        [("000001.SZ", "2026-04-09", "backward", 10.5)],
+        [("000001.SZ", "2026-04-09", "none", 10.5)],
     )
     _materialize_official_upstream(settings, suffix="003")
     _materialize_official_trigger(settings, suffix="003")

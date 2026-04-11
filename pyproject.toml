@@ -42,6 +42,7 @@ system_tracker_files = [
     "docs/02-spec/β-system-roadmap-and-progress-tracker-spec-20260409.md",
     "docs/02-spec/Ω-system-delivery-roadmap-20260409.md",
 ]
+# 当前最新生效结论已推进到 26；`position / trade` 的正式执行口径固定为 `adjust_method='none'`。
 formal_runner_scripts = [
     "scripts/data/run_tdx_asset_raw_ingest.py",
     "scripts/data/run_tdx_stock_raw_ingest.py",

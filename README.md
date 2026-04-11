@@ -88,6 +88,7 @@
 - `scripts/alpha/run_alpha_family_build.py`
 - `scripts/alpha/run_alpha_formal_signal_build.py`
 - `scripts/position/run_position_formal_signal_materialization.py`
+  - 默认 `adjust_method='none'`
 - `scripts/portfolio_plan/run_portfolio_plan_build.py`
 - `scripts/trade/run_trade_runtime_build.py`
 
@@ -102,6 +103,7 @@
   - `malf -> structure -> filter -> alpha` 默认消费 `adjust_method='backward'`
   - `position -> trade` 默认消费 `adjust_method='none'`
   - `forward` 当前只作研究与展示保留
+- 当前最新生效结论锚点已推进到 `26-mainline-truthfulness-revalidation-after-malf-sidecar-bootstrap-conclusion-20260411.md`：整链 truthfulness 已复核通过，下一张应开 `system` 主线卡
 - `txt -> raw_market -> market_base` 继续保留为正式 fallback
 
 ## 当前 malf 正式口径

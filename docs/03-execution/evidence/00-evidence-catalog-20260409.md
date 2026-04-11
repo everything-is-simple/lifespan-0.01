@@ -30,3 +30,4 @@
 23. `23-malf-pure-semantic-ledger-boundary-freeze-evidence-20260411.md`
 24. `24-malf-mechanism-layer-break-confirmation-and-stats-sidecar-evidence-20260411.md`
 25. `25-malf-mechanism-ledger-bootstrap-and-downstream-sidecar-integration-evidence-20260411.md`
+26. `26-mainline-truthfulness-revalidation-after-malf-sidecar-bootstrap-evidence-20260411.md`
