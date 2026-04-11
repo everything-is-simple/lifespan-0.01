@@ -42,7 +42,7 @@ system_tracker_files = [
     "docs/02-spec/β-system-roadmap-and-progress-tracker-spec-20260409.md",
     "docs/02-spec/Ω-system-delivery-roadmap-20260409.md",
 ]
-# 当前最新生效结论已推进到 31；当前待施工卡已推进到 32；`structure / filter / alpha` 默认已改绑到 canonical `malf_state_snapshot(D)`，`position / trade` 的正式执行口径固定为 `adjust_method='none'`。
+# 当前最新生效结论已推进到 32；当前待施工卡已推进到 33；`structure / filter / alpha` 默认已改绑到 canonical `malf_state_snapshot(D)`，后续 `33-35` 负责让 `malf` 成为下游运转中心，`36` 负责寿命 sidecar，`position / trade` 的正式执行口径固定为 `adjust_method='none'`。
 formal_runner_scripts = [
     "scripts/data/run_tdx_asset_raw_ingest.py",
     "scripts/data/run_tdx_stock_raw_ingest.py",
@@ -61,6 +61,8 @@ formal_runner_scripts = [
     "scripts/trade/run_trade_runtime_build.py",
     "scripts/system/run_system_mainline_readout_build.py",
 ]
+document_diagram_required = true
+diagram_preferred_doc_types = ["design", "spec", "execution-card", "conclusion"]
 
 [tool.mlq.ledger_governance]
 stable_entity_anchor = "asset_type+code"

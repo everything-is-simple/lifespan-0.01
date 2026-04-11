@@ -114,7 +114,7 @@
 1. `malf -> structure -> filter -> alpha` 默认使用 `adjust_method = backward`
 2. `position -> trade` 默认使用 `adjust_method = none`
 3. `adjust_method = forward` 当前只作为研究与展示保留，不作为正式执行口径
-4. 当前最新生效结论锚点已推进到 `31-structure-filter-alpha-rebind-to-canonical-malf-conclusion-20260411.md`；它已裁决 `structure / filter / alpha` 默认改绑到 canonical `malf v2`。当前治理锚点仍是 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`，但当前具体待施工卡已推进到 `32-downstream-truthfulness-revalidation-after-malf-canonicalization-card-20260411.md`；自然数顺排后的后续卡依次是 `29 -> 30 -> 31 -> 32 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。其中 `29-32` 是 malf 优先卡组，`105-system-runtime-orchestration-bootstrap-card-20260411.md` 是最后一张后置卡，而不是当前施工卡。
+4. 当前最新生效结论锚点已推进到 `32-downstream-truthfulness-revalidation-after-malf-canonicalization-conclusion-20260411.md`；它已裁决 canonical `malf` 已完成下游真值复核。当前治理锚点仍是 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`，但当前具体待施工卡已推进到 `33-malf-downstream-canonical-contract-purge-card-20260411.md`；自然数顺排后的后续卡依次是 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。其中 `29-35` 是 `malf` 中心化卡组，`36` 是 `malf` 寿命 sidecar 卡，`100-105` 是其后的 trade/system 恢复卡组。
 
 ## 5. 历史账本原则
 
@@ -182,6 +182,7 @@
 2. 参考资料只放在 `docs/04-reference/`。
 3. 当前正式事实必须写在 `design / spec / execution conclusion` 中。
 4. 执行区默认先读 `conclusion`，不要把历史 `card` 当成当前真相。
+5. 正式文档、设计解释与执行卡在涉及模块边界、数据流、状态机、账本表族或施工顺序时，默认必须提供图示；优先使用 Mermaid，并保证图与正文口径一致。
 
 ## 9. 代码规则
 

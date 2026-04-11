@@ -107,7 +107,7 @@
   - `malf -> structure -> filter -> alpha` 默认消费 `adjust_method='backward'`
   - `position -> trade` 默认消费 `adjust_method='none'`
   - `forward` 当前只作研究与展示保留
-- 当前最新生效结论锚点已推进到 `31-structure-filter-alpha-rebind-to-canonical-malf-conclusion-20260411.md`：`structure / filter / alpha` 默认已改绑到 canonical `malf v2`；当前治理锚点仍是 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`，当前具体待施工卡已推进到 `32-downstream-truthfulness-revalidation-after-malf-canonicalization-card-20260411.md`，自然数顺排后的后续卡依次为 `29 -> 30 -> 31 -> 32 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`，其中 `29-32` 是 malf 优先卡组
+- 当前最新生效结论锚点已推进到 `32-downstream-truthfulness-revalidation-after-malf-canonicalization-conclusion-20260411.md`：canonical `malf` 已完成下游真值复核；当前治理锚点仍是 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`，当前具体待施工卡已推进到 `33-malf-downstream-canonical-contract-purge-card-20260411.md`，自然数顺排后的后续卡依次为 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`，其中 `29-35` 是让 `malf` 成为运转中心的卡组，`36` 是寿命 sidecar 卡
 - `txt -> raw_market -> market_base` 继续保留为正式 fallback
 
 ## 当前 malf 正式口径
@@ -153,6 +153,7 @@
 3. 缺少 `card / evidence / record / conclusion` 任意一件，不算正式完成
 4. 进入 `src/`、`scripts/`、`.codex/` 下的正式实现前，当前待施工卡必须通过 `python scripts/system/check_doc_first_gating_governance.py`
 5. 当前待施工卡必须显式填写 `历史账本约束` 六条声明：实体锚点、业务自然键、批量建仓、增量更新、断点续跑、审计账本
+6. 正式文档默认多用图：涉及模块边界、数据流、状态机、账本表族或施工顺序时，至少提供一张与正文一致的图，优先使用 Mermaid。
 
 ## 建议阅读顺序
 
