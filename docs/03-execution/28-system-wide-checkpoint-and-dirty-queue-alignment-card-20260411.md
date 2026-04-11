@@ -2,7 +2,7 @@
 
 卡片编号：`28`
 日期：`2026-04-11`
-状态：`待执行`
+状态：`已完成`
 
 ## 需求
 
@@ -34,7 +34,7 @@
 
 1. 盘点 `data / malf / structure / filter / alpha / position / portfolio_plan / trade / system` 当前的 queue、checkpoint、resume、dirty scope 与 replay 语义。
 2. 为所有未达标模块冻结 data-grade 契约：稳定实体锚点、dirty/work queue、checkpoint ledger、bounded replay 与 resume 规则。
-3. 明确 `28 -> 29 -> 30 -> 31 -> 32 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105` 的自然数施工顺序，并把 malf 卡组放在 trade/system 卡组之前。
+3. 明确 `28 -> 29 -> 30 -> 31 -> 32 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105` 的自然数施工顺序，并把 `29-32` 固化为 malf 优先卡组、`100-105` 固化为后置 trade/system 卡组。
 4. 回填 `28` 的 evidence / record / conclusion，并同步治理入口与执行索引。
 
 ## 实现边界
@@ -70,7 +70,7 @@
 ## 收口标准
 
 1. `28` 正式裁决“所有本地库都必须以 data-grade checkpoint + dirty queue 为标准”。
-2. 执行索引切换到自然数顺排，当前施工卡为 `28`，后续卡顺次为 `29-38`。
+2. 执行索引切换到自然数顺排，`28` 之后的后续卡顺次为 `29 -> 30 -> 31 -> 32 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。
 3. `29-32` 明确是 malf 优先卡组；`100-105` 必须排在其后。
 4. `105-system-runtime-orchestration-bootstrap` 明确变成最后一张后置卡，而不是当前卡。
 5. `28` 的 evidence / record / conclusion 与入口文件更新完整。

@@ -98,6 +98,11 @@ def test_run_malf_snapshot_build_outputs_rows_consumable_by_structure(tmp_path: 
         signal_start_date="2026-03-20",
         signal_end_date="2026-03-22",
         run_id="structure-test-001",
+        # bridge v1 兼容回退：此测试只 seed 了 pas_context_snapshot /
+        # structure_candidate_snapshot，没有 canonical malf 数据；
+        # 显式指定两个上游表以验证 bridge v1 路径仍可用。
+        source_context_table="pas_context_snapshot",
+        source_structure_input_table="structure_candidate_snapshot",
     )
     assert structure_summary.materialized_snapshot_count == 3
 

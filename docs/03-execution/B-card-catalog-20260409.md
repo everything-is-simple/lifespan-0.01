@@ -3,9 +3,9 @@
 日期：`2026-04-09`
 状态：`持续更新`
 
-1. 当前下一锤：`32-downstream-truthfulness-revalidation-after-malf-canonicalization-card-20260411.md`
-2. 当前待施工卡：`32-downstream-truthfulness-revalidation-after-malf-canonicalization-card-20260411.md`
-3. 当前正式主线剩余卡：`8`
+1. 当前下一锤：`100-trade-signal-anchor-contract-freeze-card-20260411.md`
+2. 当前待施工卡：`100-trade-signal-anchor-contract-freeze-card-20260411.md`
+3. 当前正式主线剩余卡：`6`
 4. 当前 sidecar 卡：`0`
 5. 当前修复卡：`0`
 
@@ -52,7 +52,6 @@
 
 ## 当前说明
 
-1. 最新生效结论锚点已推进到 `31-structure-filter-alpha-rebind-to-canonical-malf-conclusion-20260411.md`。
-2. 当前治理锚点仍是 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`，但当前具体待施工卡已推进到 `32-downstream-truthfulness-revalidation-after-malf-canonicalization-card-20260411.md`。
-3. `29-31` 已完成并生效；`32` 是当前 malf 后续卡组中剩余的主链复核卡。
-4. `100-105` 仍是 malf 收口后再恢复的 trade/system 卡组。
+1. 最新生效结论锚点已推进到 `32-downstream-truthfulness-revalidation-after-malf-canonicalization-conclusion-20260411.md`。
+2. 当前治理锚点仍是 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`，但当前具体待施工卡已推进到 `100-trade-signal-anchor-contract-freeze-card-20260411.md`。
+3. `29-32` 已完成并生效；`100-105` 仍是 malf 收口后再恢复的 trade/system 卡组。
