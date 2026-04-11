@@ -106,7 +106,7 @@
   - `malf -> structure -> filter -> alpha` 默认消费 `adjust_method='backward'`
   - `position -> trade` 默认消费 `adjust_method='none'`
   - `forward` 当前只作研究与展示保留
-- 当前最新生效结论锚点已推进到 `27-system-mainline-bounded-acceptance-readout-and-audit-bootstrap-conclusion-20260411.md`：`system` 最小官方 readout / audit bootstrap 已成立；当前治理锚点已切到 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`，自然数顺排后的后续卡依次为 `29 -> 30 -> 31 -> 32 -> 33 -> 34`
+- 当前最新生效结论锚点已推进到 `27-system-mainline-bounded-acceptance-readout-and-audit-bootstrap-conclusion-20260411.md`：`system` 最小官方 readout / audit bootstrap 已成立；当前治理锚点已切到 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`，自然数顺排后的后续卡依次为 `29 -> 30 -> 31 -> 32 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`，其中 `29-32` 是 malf 优先卡组
 - `txt -> raw_market -> market_base` 继续保留为正式 fallback
 
 ## 当前 malf 正式口径

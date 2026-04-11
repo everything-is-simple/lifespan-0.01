@@ -5,7 +5,7 @@
 
 1. 当前下一锤：`28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`
 2. 当前待施工卡：`28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`
-3. 当前正式主线剩余卡：`7`
+3. 当前正式主线剩余卡：`11`
 4. 当前 sidecar 卡：`0`
 5. 当前修复卡：`0`
 
@@ -39,16 +39,24 @@
 26. `26-mainline-truthfulness-revalidation-after-malf-sidecar-bootstrap-card-20260411.md`
 27. `27-system-mainline-bounded-acceptance-readout-and-audit-bootstrap-card-20260411.md`
 28. `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`
-29. `29-trade-signal-anchor-contract-freeze-card-20260411.md`
-30. `30-position-entry-t-plus-1-open-reference-price-correction-card-20260411.md`
-31. `31-trade-exit-pnl-ledger-bootstrap-card-20260411.md`
-32. `32-trade-backtest-progression-runner-card-20260411.md`
-33. `33-mainline-real-data-smoke-regression-card-20260411.md`
-34. `34-system-runtime-orchestration-bootstrap-card-20260411.md`
+29. `29-malf-semantic-canonical-contract-freeze-card-20260411.md`
+30. `30-malf-canonical-ledger-and-data-grade-runner-bootstrap-card-20260411.md`
+31. `31-structure-filter-alpha-rebind-to-canonical-malf-card-20260411.md`
+32. `32-downstream-truthfulness-revalidation-after-malf-canonicalization-card-20260411.md`
+100. `100-trade-signal-anchor-contract-freeze-card-20260411.md`
+101. `101-position-entry-t-plus-1-open-reference-price-correction-card-20260411.md`
+102. `102-trade-exit-pnl-ledger-bootstrap-card-20260411.md`
+103. `103-trade-backtest-progression-runner-card-20260411.md`
+104. `104-mainline-real-data-smoke-regression-card-20260411.md`
+105. `105-system-runtime-orchestration-bootstrap-card-20260411.md`
 
 ## 当前说明
 
 1. 最新生效结论锚点仍是 `27-system-mainline-bounded-acceptance-readout-and-audit-bootstrap-conclusion-20260411.md`。
-2. 当前治理锚点与当前施工卡已经切到 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`。
-3. 自然数顺排后的后续卡依次为 `29 -> 30 -> 31 -> 32 -> 33 -> 34`。
-4. `34-system-runtime-orchestration-bootstrap` 是后置卡，不再作为旧 `28` 的并行阻塞卡存在。
+2. 当前治理锚点与当前施工卡是 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`。
+3. `29-32` 是 malf 优先卡组：
+   - semantic canonical contract freeze
+   - canonical ledger + data-grade runner
+   - downstream rebind
+   - truthfulness revalidation
+4. `100-105` 是在 malf 收口后再恢复的 trade/system 卡组。

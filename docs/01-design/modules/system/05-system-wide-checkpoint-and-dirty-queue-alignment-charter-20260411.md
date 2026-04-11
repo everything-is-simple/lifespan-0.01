@@ -23,7 +23,7 @@
 
 1. 把 data-grade checkpoint / dirty queue 升格为全仓硬标准。
 2. 为所有正式模块冻结统一的 queue / checkpoint / replay / resume 语义。
-3. 明确 `34-system-runtime-orchestration-bootstrap` 必须排在本卡及其后续自然数卡之后。
+3. 明确 `105-system-runtime-orchestration-bootstrap` 必须排在本卡及其后续自然数卡之后。
 
 ## 核心裁决
 

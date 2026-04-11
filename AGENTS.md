@@ -111,7 +111,7 @@
 1. `malf -> structure -> filter -> alpha` 默认使用 `adjust_method = backward`
 2. `position -> trade` 默认使用 `adjust_method = none`
 3. `adjust_method = forward` 当前只作为研究与展示保留，不作为正式执行口径
-4. 当前最新生效结论锚点已推进到 `27-system-mainline-bounded-acceptance-readout-and-audit-bootstrap-conclusion-20260411.md`；它已裁决 `system` 最小官方 readout / audit bootstrap 通过。当前治理锚点已切到 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`；自然数顺排后的后续卡依次是 `29 -> 30 -> 31 -> 32 -> 33 -> 34`，其中 `34-system-runtime-orchestration-bootstrap-card-20260411.md` 是后置卡，而不是当前施工卡。
+4. 当前最新生效结论锚点已推进到 `27-system-mainline-bounded-acceptance-readout-and-audit-bootstrap-conclusion-20260411.md`；它已裁决 `system` 最小官方 readout / audit bootstrap 通过。当前治理锚点已切到 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`；自然数顺排后的后续卡依次是 `29 -> 30 -> 31 -> 32 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。其中 `29-32` 是 malf 优先卡组，`105-system-runtime-orchestration-bootstrap-card-20260411.md` 是最后一张后置卡，而不是当前施工卡。
 
 ## 5. 历史账本原则
 

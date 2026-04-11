@@ -35,15 +35,20 @@
 26. `26-mainline-truthfulness-revalidation-after-malf-sidecar-bootstrap-conclusion-20260411.md`
 27. `27-system-mainline-bounded-acceptance-readout-and-audit-bootstrap-conclusion-20260411.md`
 28. `28-system-wide-checkpoint-and-dirty-queue-alignment-conclusion-20260411.md`
-29. `29-trade-signal-anchor-contract-freeze-conclusion-20260411.md`
-30. `30-position-entry-t-plus-1-open-reference-price-correction-conclusion-20260411.md`
-31. `31-trade-exit-pnl-ledger-bootstrap-conclusion-20260411.md`
-32. `32-trade-backtest-progression-runner-conclusion-20260411.md`
-33. `33-mainline-real-data-smoke-regression-conclusion-20260411.md`
-34. `34-system-runtime-orchestration-bootstrap-conclusion-20260411.md`
+29. `29-malf-semantic-canonical-contract-freeze-conclusion-20260411.md`
+30. `30-malf-canonical-ledger-and-data-grade-runner-bootstrap-conclusion-20260411.md`
+31. `31-structure-filter-alpha-rebind-to-canonical-malf-conclusion-20260411.md`
+32. `32-downstream-truthfulness-revalidation-after-malf-canonicalization-conclusion-20260411.md`
+100. `100-trade-signal-anchor-contract-freeze-conclusion-20260411.md`
+101. `101-position-entry-t-plus-1-open-reference-price-correction-conclusion-20260411.md`
+102. `102-trade-exit-pnl-ledger-bootstrap-conclusion-20260411.md`
+103. `103-trade-backtest-progression-runner-conclusion-20260411.md`
+104. `104-mainline-real-data-smoke-regression-conclusion-20260411.md`
+105. `105-system-runtime-orchestration-bootstrap-conclusion-20260411.md`
 
 ## 当前说明
 
 1. `27` 仍是最新生效结论。
-2. `28` 是当前治理主卡，但尚未形成新生效结论。
-3. 自然数顺排后的后续卡为 `29-34`。
+2. `28` 是当前治理主卡。
+3. `29-32` 是 malf 优先卡组。
+4. `100-105` 是 malf 收口后的 trade/system 卡组。

@@ -15,11 +15,15 @@
 
 1. 最新生效结论锚点仍是 `27`。
 2. 当前治理锚点与当前待施工卡是 `28`。
-3. 自然数顺排后的后续卡依次为：
-   - `29-trade-signal-anchor-contract-freeze`
-   - `30-position-entry-t-plus-1-open-reference-price-correction`
-   - `31-trade-exit-pnl-ledger-bootstrap`
-   - `32-trade-backtest-progression-runner`
-   - `33-mainline-real-data-smoke-regression`
-   - `34-system-runtime-orchestration-bootstrap`
-4. `34` 不再是旧编号意义上的阻塞卡，而是自然数顺排下的最后一张后置卡。
+3. 当前自然数顺排后的 malf 优先卡组为：
+   - `29-malf-semantic-canonical-contract-freeze`
+   - `30-malf-canonical-ledger-and-data-grade-runner-bootstrap`
+   - `31-structure-filter-alpha-rebind-to-canonical-malf`
+   - `32-downstream-truthfulness-revalidation-after-malf-canonicalization`
+4. malf 卡组完成后，后续卡依次为：
+   - `100-trade-signal-anchor-contract-freeze`
+   - `101-position-entry-t-plus-1-open-reference-price-correction`
+   - `102-trade-exit-pnl-ledger-bootstrap`
+   - `103-trade-backtest-progression-runner`
+   - `104-mainline-real-data-smoke-regression`
+   - `105-system-runtime-orchestration-bootstrap`

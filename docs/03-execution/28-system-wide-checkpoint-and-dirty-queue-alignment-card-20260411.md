@@ -34,7 +34,7 @@
 
 1. 盘点 `data / malf / structure / filter / alpha / position / portfolio_plan / trade / system` 当前的 queue、checkpoint、resume、dirty scope 与 replay 语义。
 2. 为所有未达标模块冻结 data-grade 契约：稳定实体锚点、dirty/work queue、checkpoint ledger、bounded replay 与 resume 规则。
-3. 明确 `28 -> 29 -> 30 -> 31 -> 32 -> 33 -> 34` 的自然数施工顺序，并把 `34` 设为后置卡。
+3. 明确 `28 -> 29 -> 30 -> 31 -> 32 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105` 的自然数施工顺序，并把 malf 卡组放在 trade/system 卡组之前。
 4. 回填 `28` 的 evidence / record / conclusion，并同步治理入口与执行索引。
 
 ## 实现边界
@@ -47,7 +47,7 @@
   - `docs/03-execution/records/28-*`
   - 执行索引与入口文件
 - 范围外：
-  - 直接实现 `29-34` 的业务代码
+  - 直接实现 `29-38` 的业务代码
   - broker / account lifecycle
   - live orchestration / live runtime
   - 任何绕开正式账本的临时脚本补丁
@@ -70,6 +70,7 @@
 ## 收口标准
 
 1. `28` 正式裁决“所有本地库都必须以 data-grade checkpoint + dirty queue 为标准”。
-2. 执行索引切换到自然数顺排，当前施工卡为 `28`，后续卡顺次为 `29-34`。
-3. `34-system-runtime-orchestration-bootstrap` 明确变成后置卡，而不是当前卡。
-4. `28` 的 evidence / record / conclusion 与入口文件更新完整。
+2. 执行索引切换到自然数顺排，当前施工卡为 `28`，后续卡顺次为 `29-38`。
+3. `29-32` 明确是 malf 优先卡组；`100-105` 必须排在其后。
+4. `105-system-runtime-orchestration-bootstrap` 明确变成最后一张后置卡，而不是当前卡。
+5. `28` 的 evidence / record / conclusion 与入口文件更新完整。

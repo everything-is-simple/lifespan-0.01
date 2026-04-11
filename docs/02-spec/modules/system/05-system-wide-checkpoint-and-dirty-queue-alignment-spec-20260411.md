@@ -16,7 +16,7 @@
 3. 每个模块的 checkpoint ledger 长什么样。
 4. checkpoint 如何与 bounded replay / resume 对接。
 5. `run_id` 在该模块里只保留哪些审计职责。
-6. 为什么后续整改必须先于 `34-system-runtime-orchestration-bootstrap`。
+6. 为什么后续整改必须先于 `105-system-runtime-orchestration-bootstrap`。
 
 ## 范围
 
