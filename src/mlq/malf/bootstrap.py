@@ -15,6 +15,11 @@ PAS_CONTEXT_SNAPSHOT_TABLE: Final[str] = "pas_context_snapshot"
 STRUCTURE_CANDIDATE_SNAPSHOT_TABLE: Final[str] = "structure_candidate_snapshot"
 MALF_RUN_CONTEXT_SNAPSHOT_TABLE: Final[str] = "malf_run_context_snapshot"
 MALF_RUN_STRUCTURE_SNAPSHOT_TABLE: Final[str] = "malf_run_structure_snapshot"
+MALF_MECHANISM_RUN_TABLE: Final[str] = "malf_mechanism_run"
+MALF_MECHANISM_CHECKPOINT_TABLE: Final[str] = "malf_mechanism_checkpoint"
+PIVOT_CONFIRMED_BREAK_LEDGER_TABLE: Final[str] = "pivot_confirmed_break_ledger"
+SAME_TIMEFRAME_STATS_PROFILE_TABLE: Final[str] = "same_timeframe_stats_profile"
+SAME_TIMEFRAME_STATS_SNAPSHOT_TABLE: Final[str] = "same_timeframe_stats_snapshot"
 
 
 MALF_LEDGER_TABLES: Final[dict[str, str]] = {
@@ -90,6 +95,108 @@ MALF_LEDGER_TABLES: Final[dict[str, str]] = {
             recorded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
     """,
+    MALF_MECHANISM_RUN_TABLE: """
+        CREATE TABLE IF NOT EXISTS malf_mechanism_run (
+            run_id TEXT,
+            runner_name TEXT NOT NULL,
+            runner_version TEXT NOT NULL,
+            run_status TEXT NOT NULL,
+            signal_start_date DATE,
+            signal_end_date DATE,
+            bounded_instrument_count BIGINT NOT NULL DEFAULT 0,
+            source_context_table TEXT NOT NULL,
+            source_structure_input_table TEXT NOT NULL,
+            timeframe TEXT NOT NULL,
+            stats_sample_version TEXT NOT NULL,
+            mechanism_contract_version TEXT NOT NULL,
+            started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            completed_at TIMESTAMP,
+            summary_json TEXT
+        )
+    """,
+    MALF_MECHANISM_CHECKPOINT_TABLE: """
+        CREATE TABLE IF NOT EXISTS malf_mechanism_checkpoint (
+            instrument TEXT NOT NULL,
+            timeframe TEXT NOT NULL,
+            last_signal_date DATE,
+            last_asof_date DATE,
+            last_run_id TEXT,
+            source_context_nk TEXT,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (instrument, timeframe)
+        )
+    """,
+    PIVOT_CONFIRMED_BREAK_LEDGER_TABLE: """
+        CREATE TABLE IF NOT EXISTS pivot_confirmed_break_ledger (
+            break_event_nk TEXT,
+            instrument TEXT NOT NULL,
+            timeframe TEXT NOT NULL,
+            guard_pivot_id TEXT NOT NULL,
+            guard_pivot_role TEXT NOT NULL,
+            origin_context TEXT NOT NULL,
+            trigger_bar_dt DATE NOT NULL,
+            trigger_price_proxy DOUBLE,
+            break_direction TEXT NOT NULL,
+            confirmation_status TEXT NOT NULL,
+            confirmation_bar_dt DATE,
+            confirmation_pivot_id TEXT,
+            confirmation_pivot_role TEXT,
+            source_context_nk TEXT,
+            source_candidate_nk TEXT,
+            first_seen_run_id TEXT,
+            last_materialized_run_id TEXT,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """,
+    SAME_TIMEFRAME_STATS_PROFILE_TABLE: """
+        CREATE TABLE IF NOT EXISTS same_timeframe_stats_profile (
+            stats_profile_nk TEXT,
+            universe TEXT NOT NULL,
+            timeframe TEXT NOT NULL,
+            regime_family TEXT NOT NULL,
+            metric_name TEXT NOT NULL,
+            sample_version TEXT NOT NULL,
+            sample_size BIGINT NOT NULL,
+            p10 DOUBLE,
+            p25 DOUBLE,
+            p50 DOUBLE,
+            p75 DOUBLE,
+            p90 DOUBLE,
+            mean DOUBLE,
+            std DOUBLE,
+            bucket_definition_json TEXT NOT NULL,
+            first_seen_run_id TEXT,
+            last_materialized_run_id TEXT,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """,
+    SAME_TIMEFRAME_STATS_SNAPSHOT_TABLE: """
+        CREATE TABLE IF NOT EXISTS same_timeframe_stats_snapshot (
+            stats_snapshot_nk TEXT,
+            instrument TEXT NOT NULL,
+            timeframe TEXT NOT NULL,
+            signal_date DATE NOT NULL,
+            asof_bar_dt DATE NOT NULL,
+            regime_family TEXT NOT NULL,
+            sample_version TEXT NOT NULL,
+            stats_contract_version TEXT NOT NULL,
+            source_context_nk TEXT,
+            source_candidate_nk TEXT,
+            new_high_count_percentile DOUBLE,
+            new_low_count_percentile DOUBLE,
+            refresh_density_percentile DOUBLE,
+            advancement_density_percentile DOUBLE,
+            exhaustion_risk_bucket TEXT,
+            reversal_probability_bucket TEXT,
+            source_profile_refs_json TEXT NOT NULL,
+            first_seen_run_id TEXT,
+            last_materialized_run_id TEXT,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """,
 }
 
 
@@ -155,6 +262,97 @@ MALF_REQUIRED_COLUMNS: Final[dict[str, dict[str, str]]] = {
         "candidate_nk": "TEXT",
         "materialization_action": "TEXT",
         "recorded_at": "TIMESTAMP",
+    },
+    MALF_MECHANISM_RUN_TABLE: {
+        "run_id": "TEXT",
+        "runner_name": "TEXT",
+        "runner_version": "TEXT",
+        "run_status": "TEXT",
+        "signal_start_date": "DATE",
+        "signal_end_date": "DATE",
+        "bounded_instrument_count": "BIGINT",
+        "source_context_table": "TEXT",
+        "source_structure_input_table": "TEXT",
+        "timeframe": "TEXT",
+        "stats_sample_version": "TEXT",
+        "mechanism_contract_version": "TEXT",
+        "started_at": "TIMESTAMP",
+        "completed_at": "TIMESTAMP",
+        "summary_json": "TEXT",
+    },
+    MALF_MECHANISM_CHECKPOINT_TABLE: {
+        "instrument": "TEXT",
+        "timeframe": "TEXT",
+        "last_signal_date": "DATE",
+        "last_asof_date": "DATE",
+        "last_run_id": "TEXT",
+        "source_context_nk": "TEXT",
+        "updated_at": "TIMESTAMP",
+    },
+    PIVOT_CONFIRMED_BREAK_LEDGER_TABLE: {
+        "break_event_nk": "TEXT",
+        "instrument": "TEXT",
+        "timeframe": "TEXT",
+        "guard_pivot_id": "TEXT",
+        "guard_pivot_role": "TEXT",
+        "origin_context": "TEXT",
+        "trigger_bar_dt": "DATE",
+        "trigger_price_proxy": "DOUBLE",
+        "break_direction": "TEXT",
+        "confirmation_status": "TEXT",
+        "confirmation_bar_dt": "DATE",
+        "confirmation_pivot_id": "TEXT",
+        "confirmation_pivot_role": "TEXT",
+        "source_context_nk": "TEXT",
+        "source_candidate_nk": "TEXT",
+        "first_seen_run_id": "TEXT",
+        "last_materialized_run_id": "TEXT",
+        "created_at": "TIMESTAMP",
+        "updated_at": "TIMESTAMP",
+    },
+    SAME_TIMEFRAME_STATS_PROFILE_TABLE: {
+        "stats_profile_nk": "TEXT",
+        "universe": "TEXT",
+        "timeframe": "TEXT",
+        "regime_family": "TEXT",
+        "metric_name": "TEXT",
+        "sample_version": "TEXT",
+        "sample_size": "BIGINT",
+        "p10": "DOUBLE",
+        "p25": "DOUBLE",
+        "p50": "DOUBLE",
+        "p75": "DOUBLE",
+        "p90": "DOUBLE",
+        "mean": "DOUBLE",
+        "std": "DOUBLE",
+        "bucket_definition_json": "TEXT",
+        "first_seen_run_id": "TEXT",
+        "last_materialized_run_id": "TEXT",
+        "created_at": "TIMESTAMP",
+        "updated_at": "TIMESTAMP",
+    },
+    SAME_TIMEFRAME_STATS_SNAPSHOT_TABLE: {
+        "stats_snapshot_nk": "TEXT",
+        "instrument": "TEXT",
+        "timeframe": "TEXT",
+        "signal_date": "DATE",
+        "asof_bar_dt": "DATE",
+        "regime_family": "TEXT",
+        "sample_version": "TEXT",
+        "stats_contract_version": "TEXT",
+        "source_context_nk": "TEXT",
+        "source_candidate_nk": "TEXT",
+        "new_high_count_percentile": "DOUBLE",
+        "new_low_count_percentile": "DOUBLE",
+        "refresh_density_percentile": "DOUBLE",
+        "advancement_density_percentile": "DOUBLE",
+        "exhaustion_risk_bucket": "TEXT",
+        "reversal_probability_bucket": "TEXT",
+        "source_profile_refs_json": "TEXT",
+        "first_seen_run_id": "TEXT",
+        "last_materialized_run_id": "TEXT",
+        "created_at": "TIMESTAMP",
+        "updated_at": "TIMESTAMP",
     },
 }
 

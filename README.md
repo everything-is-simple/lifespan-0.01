@@ -81,6 +81,7 @@
 ### malf / structure / filter / alpha / position / portfolio_plan / trade
 
 - `scripts/malf/run_malf_snapshot_build.py`
+- `scripts/malf/run_malf_mechanism_build.py`
 - `scripts/structure/run_structure_snapshot_build.py`
 - `scripts/filter/run_filter_snapshot_build.py`
 - `scripts/alpha/run_alpha_trigger_ledger_build.py`
@@ -113,6 +114,10 @@
   - 消费 `market_base.stock_daily_adjusted(adjust_method='backward')`
   - 物化 `pas_context_snapshot / structure_candidate_snapshot`
   - 供现有 `structure` runner 过渡消费
+- 当前 `scripts/malf/run_malf_mechanism_build.py` 正式负责 bridge-era 机制层 sidecar 账本：
+  - 消费 `pas_context_snapshot / structure_candidate_snapshot`
+  - 物化 `pivot_confirmed_break_ledger / same_timeframe_stats_profile / same_timeframe_stats_snapshot`
+  - 维护 `malf_mechanism_checkpoint`，支持按 `instrument + timeframe` 增量续跑
 
 ## 文档治理
 

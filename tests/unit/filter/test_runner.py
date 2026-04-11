@@ -50,14 +50,19 @@ def _seed_structure_snapshots(settings) -> None:
                 is_failed_extreme,
                 failure_type,
                 structure_progress_state,
+                break_confirmation_status,
+                break_confirmation_ref,
+                stats_snapshot_nk,
+                exhaustion_risk_bucket,
+                reversal_probability_bucket,
                 source_context_nk,
                 structure_contract_version,
                 first_seen_run_id,
                 last_materialized_run_id
             )
             VALUES
-                ('ss-001', '000001.SZ', '2026-04-08', '2026-04-08', 'BULL_MAINSTREAM', 1, 4, 2, 0, 0.8, 0.7, FALSE, NULL, 'advancing', 'ctx-001', 'structure-snapshot-v1', 'run-a', 'run-a'),
-                ('ss-002', '000002.SZ', '2026-04-08', '2026-04-08', 'BEAR_MAINSTREAM', 0, 4, 0, 1, 0.0, 0.0, TRUE, 'failed_extreme', 'failed', 'ctx-002', 'structure-snapshot-v1', 'run-a', 'run-a')
+                ('ss-001', '000001.SZ', '2026-04-08', '2026-04-08', 'BULL_MAINSTREAM', 1, 4, 2, 0, 0.8, 0.7, FALSE, NULL, 'advancing', 'confirmed', 'break-001', 'stats-001', 'high', 'elevated', 'ctx-001', 'structure-snapshot-v1', 'run-a', 'run-a'),
+                ('ss-002', '000002.SZ', '2026-04-08', '2026-04-08', 'BEAR_MAINSTREAM', 0, 4, 0, 1, 0.0, 0.0, TRUE, 'failed_extreme', 'failed', NULL, NULL, NULL, NULL, NULL, 'ctx-002', 'structure-snapshot-v1', 'run-a', 'run-a')
             """
         )
     finally:
@@ -118,7 +123,7 @@ def test_run_filter_snapshot_build_materializes_minimal_admission_layer(
         ).fetchone()
         snapshot_rows = conn.execute(
             """
-            SELECT instrument, trigger_admissible, primary_blocking_condition
+            SELECT instrument, trigger_admissible, primary_blocking_condition, break_confirmation_status, exhaustion_risk_bucket
             FROM filter_snapshot
             ORDER BY instrument
             """
@@ -128,8 +133,8 @@ def test_run_filter_snapshot_build_materializes_minimal_admission_layer(
 
     assert run_row == ("completed", 2)
     assert snapshot_rows == [
-        ("000001.SZ", True, None),
-        ("000002.SZ", False, "failed_extreme"),
+        ("000001.SZ", True, None, "confirmed", "high"),
+        ("000002.SZ", False, "failed_extreme", None, None),
     ]
 
 

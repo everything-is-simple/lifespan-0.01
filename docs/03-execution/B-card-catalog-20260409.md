@@ -3,8 +3,8 @@
 日期：`2026-04-09`
 状态：`生效中`
 
-1. 当前下一锤：`24-malf-mechanism-layer-break-confirmation-and-stats-sidecar-card-20260411.md`
-2. 当前待施工卡：`24-malf-mechanism-layer-break-confirmation-and-stats-sidecar-card-20260411.md`
+1. 当前下一锤：`25-malf-mechanism-ledger-bootstrap-and-downstream-sidecar-integration-card-20260411.md`
+2. 当前待施工卡：`25-malf-mechanism-ledger-bootstrap-and-downstream-sidecar-integration-card-20260411.md`
 3. 正式主线剩余卡：`0`
 4. 可选 Sidecar 剩余卡：`0`
 5. 后置修复剩余卡：`0`
@@ -35,12 +35,13 @@
 22. `22-data-daily-source-governance-sealing-card-20260411.md`
 23. `23-malf-pure-semantic-ledger-boundary-freeze-card-20260411.md`
 24. `24-malf-mechanism-layer-break-confirmation-and-stats-sidecar-card-20260411.md`
+25. `25-malf-mechanism-ledger-bootstrap-and-downstream-sidecar-integration-card-20260411.md`
 
 ## 当前口径
 
 1. `22` 已把 data 日更源头治理封存为正式结论：`stock` 继续走 `TdxQuant(none)` 主路，`index/block` 继续走 `H:\tdx_offline_Data` txt 主路，不再把“统一 source adapter”视为当前已批准工作。
 2. `23` 已把 `malf` 正式核心收缩为按时间级别独立运行的纯语义走势账本，并明确 bridge v1 只是兼容层。
-3. `24` 已完成本卡目标：`pivot-confirmed break` 与 `same-timeframe stats sidecar` 的机制层正式边界已冻结。
-4. 最新生效结论锚点已经切到 `24`。
-5. 当前待施工锚点暂保留 `24` 以满足门禁检查；这不表示 `24` 仍未完成。
-6. 正式主线剩余卡已清零；后续若要实现机制层 runner 或新增表族，必须另开新卡。
+3. `24` 已完成机制层边界冻结：`pivot-confirmed break` 与 `same-timeframe stats sidecar` 的正式边界已成立。
+4. `25` 已完成机制层实现卡：`pivot_confirmed_break_ledger / same_timeframe_stats_profile / same_timeframe_stats_snapshot`、bounded runner、checkpoint 与最小下游接入已经落地。
+5. 最新生效结论锚点已经切到 `25`。
+6. 当前治理锚点保留 `25` 以满足门禁检查，这不代表 `25` 仍未完成。

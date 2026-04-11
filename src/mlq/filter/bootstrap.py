@@ -51,6 +51,11 @@ FILTER_LEDGER_DDL: Final[dict[str, str]] = {
             primary_blocking_condition TEXT,
             blocking_conditions_json TEXT NOT NULL,
             admission_notes TEXT,
+            break_confirmation_status TEXT,
+            break_confirmation_ref TEXT,
+            stats_snapshot_nk TEXT,
+            exhaustion_risk_bucket TEXT,
+            reversal_probability_bucket TEXT,
             source_context_nk TEXT NOT NULL,
             filter_contract_version TEXT NOT NULL,
             first_seen_run_id TEXT NOT NULL,
@@ -73,6 +78,55 @@ FILTER_LEDGER_DDL: Final[dict[str, str]] = {
 }
 
 
+FILTER_REQUIRED_COLUMNS: Final[dict[str, dict[str, str]]] = {
+    FILTER_RUN_TABLE: {
+        "run_id": "TEXT",
+        "runner_name": "TEXT",
+        "runner_version": "TEXT",
+        "run_status": "TEXT",
+        "signal_start_date": "DATE",
+        "signal_end_date": "DATE",
+        "bounded_instrument_count": "BIGINT",
+        "source_structure_table": "TEXT",
+        "source_context_table": "TEXT",
+        "filter_contract_version": "TEXT",
+        "started_at": "TIMESTAMP",
+        "completed_at": "TIMESTAMP",
+        "summary_json": "TEXT",
+    },
+    FILTER_SNAPSHOT_TABLE: {
+        "filter_snapshot_nk": "TEXT",
+        "structure_snapshot_nk": "TEXT",
+        "instrument": "TEXT",
+        "signal_date": "DATE",
+        "asof_date": "DATE",
+        "trigger_admissible": "BOOLEAN",
+        "primary_blocking_condition": "TEXT",
+        "blocking_conditions_json": "TEXT",
+        "admission_notes": "TEXT",
+        "break_confirmation_status": "TEXT",
+        "break_confirmation_ref": "TEXT",
+        "stats_snapshot_nk": "TEXT",
+        "exhaustion_risk_bucket": "TEXT",
+        "reversal_probability_bucket": "TEXT",
+        "source_context_nk": "TEXT",
+        "filter_contract_version": "TEXT",
+        "first_seen_run_id": "TEXT",
+        "last_materialized_run_id": "TEXT",
+        "created_at": "TIMESTAMP",
+        "updated_at": "TIMESTAMP",
+    },
+    FILTER_RUN_SNAPSHOT_TABLE: {
+        "run_id": "TEXT",
+        "filter_snapshot_nk": "TEXT",
+        "materialization_action": "TEXT",
+        "trigger_admissible": "BOOLEAN",
+        "primary_blocking_condition": "TEXT",
+        "recorded_at": "TIMESTAMP",
+    },
+}
+
+
 def connect_filter_ledger(
     settings: WorkspaceRoots | None = None,
     *,
@@ -91,7 +145,7 @@ def bootstrap_filter_snapshot_ledger(
     *,
     connection: duckdb.DuckDBPyConnection | None = None,
 ) -> tuple[str, ...]:
-    """创建 `filter snapshot` 最小三表。"""
+    """创建并迁移 `filter snapshot` 最小三表。"""
 
     workspace = settings or default_settings()
     owns_connection = connection is None
@@ -99,6 +153,8 @@ def bootstrap_filter_snapshot_ledger(
     try:
         for ddl in FILTER_LEDGER_DDL.values():
             conn.execute(ddl)
+        for table_name, column_map in FILTER_REQUIRED_COLUMNS.items():
+            _ensure_columns(conn, table_name=table_name, required_columns=column_map)
         return FILTER_LEDGER_TABLE_NAMES
     finally:
         if owns_connection:
@@ -110,3 +166,25 @@ def filter_ledger_path(settings: WorkspaceRoots | None = None) -> Path:
 
     workspace = settings or default_settings()
     return workspace.databases.filter
+
+
+def _ensure_columns(
+    connection: duckdb.DuckDBPyConnection,
+    *,
+    table_name: str,
+    required_columns: dict[str, str],
+) -> None:
+    existing_rows = connection.execute(
+        """
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_schema = 'main'
+          AND table_name = ?
+        """,
+        [table_name],
+    ).fetchall()
+    existing_columns = {str(row[0]) for row in existing_rows}
+    for column_name, column_type in required_columns.items():
+        if column_name in existing_columns:
+            continue
+        connection.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}")

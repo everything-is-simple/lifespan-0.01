@@ -88,10 +88,11 @@
    - 当前 `pivot-confirmed break` 只允许作为 `malf` 之外的只读机制层 break 确认事实存在，不新增 `malf core` 原语，也不替代新的 `HH / LL` 推进确认。
    - 当前 `same-timeframe stats sidecar` 只允许由同级别 `pivot / wave / state / progress` 派生，并以只读 sidecar 方式供 `structure / filter` 消费，不得反向参与 `state / wave / break / count` 计算。
    - 当前 `malf` 的正式 bounded runner 入口为 `scripts/malf/run_malf_snapshot_build.py`，只允许消费官方 `market_base.stock_daily_adjusted(adjust_method='backward')`，并暂时物化 `malf_run / pas_context_snapshot / structure_candidate_snapshot / malf_run_context_snapshot / malf_run_structure_snapshot` 作为 bridge v1 兼容输出，不允许直接回读离线文本或 `raw_market`。
+   - 当前 `malf` 的正式 bounded runner 入口为 `scripts/malf/run_malf_mechanism_build.py`，只允许消费官方 bridge v1 `pas_context_snapshot / structure_candidate_snapshot`，物化 `malf_mechanism_run / malf_mechanism_checkpoint / pivot_confirmed_break_ledger / same_timeframe_stats_profile / same_timeframe_stats_snapshot`，并按 `instrument + timeframe` checkpoint 续跑，不允许反写 `malf core`。
 4. `structure` 负责把 `malf` 结构语义沉淀为官方结构事实层。
-   - 当前 `structure` 的正式 bounded runner 入口为 `scripts/structure/run_structure_snapshot_build.py`，只允许从官方 `malf` 结构候选事实与官方执行上下文物化 `structure_run / snapshot / run_snapshot`，不允许夹带 `filter / alpha / position` 判定逻辑。
+   - 当前 `structure` 的正式 bounded runner 入口为 `scripts/structure/run_structure_snapshot_build.py`，只允许从官方 `malf` 结构候选事实与官方执行上下文物化 `structure_run / snapshot / run_snapshot`；如消费 `pivot_confirmed_break_ledger / same_timeframe_stats_snapshot`，也只允许按只读 sidecar 附加，不允许夹带 `filter / alpha / position` 判定逻辑。
 5. `filter` 负责 pre-trigger 准入。
-   - 当前 `filter` 的正式 bounded runner 入口为 `scripts/filter/run_filter_snapshot_build.py`，只允许消费官方 `structure snapshot` 与最小执行上下文物化 `filter_run / snapshot / run_snapshot`，不允许硬拦截研究观察或夹带 `alpha detector / position / trade` 逻辑。
+   - 当前 `filter` 的正式 bounded runner 入口为 `scripts/filter/run_filter_snapshot_build.py`，只允许消费官方 `structure snapshot` 与最小执行上下文物化 `filter_run / snapshot / run_snapshot`；如携带 `break / stats` sidecar 字段，也只允许只读透传和提示，不允许硬拦截研究观察或夹带 `alpha detector / position / trade` 逻辑。
 6. `alpha` 负责对下游冻结正式 `formal signal` 事实。
    - 当前 `alpha` 的正式 bounded trigger ledger 入口为 `scripts/alpha/run_alpha_trigger_ledger_build.py`，只允许从 bounded detector 输入与官方 `filter / structure snapshot` 上游物化 `alpha_trigger_run / event / run_event`，不允许夹带 `position / trade / system` 逻辑。
    - 当前 `alpha` 的正式 bounded family ledger 入口为 `scripts/alpha/run_alpha_family_build.py`，只允许从官方 `alpha_trigger_event` 与 bounded family candidate 输入物化 `alpha_family_run / event / run_event`，不允许绕过共享 trigger 事实层，也不允许夹带 `position / trade / system` 逻辑。

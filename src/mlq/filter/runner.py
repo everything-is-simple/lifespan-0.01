@@ -65,6 +65,11 @@ class _StructureSnapshotInputRow:
     structure_progress_state: str
     is_failed_extreme: bool
     failure_type: str | None
+    break_confirmation_status: str | None
+    break_confirmation_ref: str | None
+    stats_snapshot_nk: str | None
+    exhaustion_risk_bucket: str | None
+    reversal_probability_bucket: str | None
     source_context_nk: str
 
 
@@ -79,6 +84,11 @@ class _FilterSnapshotRow:
     primary_blocking_condition: str | None
     blocking_conditions_json: str
     admission_notes: str | None
+    break_confirmation_status: str | None
+    break_confirmation_ref: str | None
+    stats_snapshot_nk: str | None
+    exhaustion_risk_bucket: str | None
+    reversal_probability_bucket: str | None
     source_context_nk: str
     filter_contract_version: str
     first_seen_run_id: str
@@ -242,14 +252,19 @@ def _load_structure_snapshot_rows(
         rows = connection.execute(
             f"""
             SELECT
-                structure_snapshot_nk,
-                instrument,
-                signal_date,
-                asof_date,
-                structure_progress_state,
-                is_failed_extreme,
-                failure_type,
-                source_context_nk
+                {_resolve_existing_column(available_columns, ("structure_snapshot_nk",), field_name="structure_snapshot_nk", table_name=table_name)} AS structure_snapshot_nk,
+                {instrument_column} AS instrument,
+                {signal_date_column} AS signal_date,
+                {_resolve_optional_column(available_columns, ("asof_date",)) or signal_date_column} AS asof_date,
+                {_resolve_optional_column(available_columns, ("structure_progress_state",)) or "'unknown'"} AS structure_progress_state,
+                COALESCE({_resolve_optional_column(available_columns, ("is_failed_extreme",)) or "FALSE"}, FALSE) AS is_failed_extreme,
+                {_resolve_optional_column(available_columns, ("failure_type",)) or "NULL"} AS failure_type,
+                {_resolve_optional_column(available_columns, ("break_confirmation_status",)) or "NULL"} AS break_confirmation_status,
+                {_resolve_optional_column(available_columns, ("break_confirmation_ref",)) or "NULL"} AS break_confirmation_ref,
+                {_resolve_optional_column(available_columns, ("stats_snapshot_nk",)) or "NULL"} AS stats_snapshot_nk,
+                {_resolve_optional_column(available_columns, ("exhaustion_risk_bucket",)) or "NULL"} AS exhaustion_risk_bucket,
+                {_resolve_optional_column(available_columns, ("reversal_probability_bucket",)) or "NULL"} AS reversal_probability_bucket,
+                {_resolve_existing_column(available_columns, ("source_context_nk",), field_name="source_context_nk", table_name=table_name)} AS source_context_nk
             FROM {table_name}
             {where_sql}
             ORDER BY signal_date, instrument, structure_snapshot_nk
@@ -266,7 +281,12 @@ def _load_structure_snapshot_rows(
                 structure_progress_state=_normalize_progress_state(row[4]),
                 is_failed_extreme=bool(row[5]),
                 failure_type=_normalize_optional_nullable_str(row[6]),
-                source_context_nk=str(row[7]),
+                break_confirmation_status=_normalize_optional_nullable_str(row[7]),
+                break_confirmation_ref=_normalize_optional_nullable_str(row[8]),
+                stats_snapshot_nk=_normalize_optional_nullable_str(row[9]),
+                exhaustion_risk_bucket=_normalize_optional_nullable_str(row[10]),
+                reversal_probability_bucket=_normalize_optional_nullable_str(row[11]),
+                source_context_nk=str(row[12]),
             )
             for row in rows
         ]
@@ -508,6 +528,10 @@ def _build_filter_snapshot_row(
         admission_notes.append("缺少 execution_context，当前最小合同保持不阻断")
     if structure_row.failure_type is not None and blocking_conditions:
         admission_notes.append(f"failure_type={structure_row.failure_type}")
+    if structure_row.break_confirmation_status == "confirmed":
+        admission_notes.append("break_confirmation=confirmed 仅作 sidecar 提示")
+    if structure_row.exhaustion_risk_bucket in {"elevated", "high"}:
+        admission_notes.append(f"exhaustion_risk={structure_row.exhaustion_risk_bucket}")
 
     primary_blocking_condition = blocking_conditions[0] if blocking_conditions else None
     blocking_conditions_json = json.dumps(blocking_conditions, ensure_ascii=False, sort_keys=True)
@@ -526,6 +550,11 @@ def _build_filter_snapshot_row(
         primary_blocking_condition=primary_blocking_condition,
         blocking_conditions_json=blocking_conditions_json,
         admission_notes="; ".join(admission_notes) if admission_notes else None,
+        break_confirmation_status=structure_row.break_confirmation_status,
+        break_confirmation_ref=structure_row.break_confirmation_ref,
+        stats_snapshot_nk=structure_row.stats_snapshot_nk,
+        exhaustion_risk_bucket=structure_row.exhaustion_risk_bucket,
+        reversal_probability_bucket=structure_row.reversal_probability_bucket,
         source_context_nk=structure_row.source_context_nk,
         filter_contract_version=filter_contract_version,
         first_seen_run_id=run_id,
@@ -560,6 +589,11 @@ def _upsert_filter_snapshot(
             primary_blocking_condition,
             blocking_conditions_json,
             admission_notes,
+            break_confirmation_status,
+            break_confirmation_ref,
+            stats_snapshot_nk,
+            exhaustion_risk_bucket,
+            reversal_probability_bucket,
             first_seen_run_id
         FROM {FILTER_SNAPSHOT_TABLE}
         WHERE filter_snapshot_nk = ?
@@ -579,12 +613,17 @@ def _upsert_filter_snapshot(
                 primary_blocking_condition,
                 blocking_conditions_json,
                 admission_notes,
+                break_confirmation_status,
+                break_confirmation_ref,
+                stats_snapshot_nk,
+                exhaustion_risk_bucket,
+                reversal_probability_bucket,
                 source_context_nk,
                 filter_contract_version,
                 first_seen_run_id,
                 last_materialized_run_id
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 filter_row.filter_snapshot_nk,
@@ -596,6 +635,11 @@ def _upsert_filter_snapshot(
                 filter_row.primary_blocking_condition,
                 filter_row.blocking_conditions_json,
                 filter_row.admission_notes,
+                filter_row.break_confirmation_status,
+                filter_row.break_confirmation_ref,
+                filter_row.stats_snapshot_nk,
+                filter_row.exhaustion_risk_bucket,
+                filter_row.reversal_probability_bucket,
                 filter_row.source_context_nk,
                 filter_row.filter_contract_version,
                 filter_row.first_seen_run_id,
@@ -609,14 +653,24 @@ def _upsert_filter_snapshot(
         _normalize_optional_nullable_str(existing_row[1]),
         _normalize_optional_str(existing_row[2], default="[]"),
         _normalize_optional_nullable_str(existing_row[3]),
+        _normalize_optional_nullable_str(existing_row[4]),
+        _normalize_optional_nullable_str(existing_row[5]),
+        _normalize_optional_nullable_str(existing_row[6]),
+        _normalize_optional_nullable_str(existing_row[7]),
+        _normalize_optional_nullable_str(existing_row[8]),
     )
     new_fingerprint = (
         filter_row.trigger_admissible,
         filter_row.primary_blocking_condition,
         filter_row.blocking_conditions_json,
         filter_row.admission_notes,
+        filter_row.break_confirmation_status,
+        filter_row.break_confirmation_ref,
+        filter_row.stats_snapshot_nk,
+        filter_row.exhaustion_risk_bucket,
+        filter_row.reversal_probability_bucket,
     )
-    first_seen_run_id = str(existing_row[4]) if existing_row[4] is not None else filter_row.first_seen_run_id
+    first_seen_run_id = str(existing_row[9]) if existing_row[9] is not None else filter_row.first_seen_run_id
     connection.execute(
         f"""
         UPDATE {FILTER_SNAPSHOT_TABLE}
@@ -625,6 +679,11 @@ def _upsert_filter_snapshot(
             primary_blocking_condition = ?,
             blocking_conditions_json = ?,
             admission_notes = ?,
+            break_confirmation_status = ?,
+            break_confirmation_ref = ?,
+            stats_snapshot_nk = ?,
+            exhaustion_risk_bucket = ?,
+            reversal_probability_bucket = ?,
             first_seen_run_id = ?,
             last_materialized_run_id = ?,
             updated_at = CURRENT_TIMESTAMP
@@ -635,6 +694,11 @@ def _upsert_filter_snapshot(
             filter_row.primary_blocking_condition,
             filter_row.blocking_conditions_json,
             filter_row.admission_notes,
+            filter_row.break_confirmation_status,
+            filter_row.break_confirmation_ref,
+            filter_row.stats_snapshot_nk,
+            filter_row.exhaustion_risk_bucket,
+            filter_row.reversal_probability_bucket,
             first_seen_run_id,
             filter_row.last_materialized_run_id,
             filter_row.filter_snapshot_nk,
@@ -709,6 +773,13 @@ def _resolve_existing_column(
         if candidate in available_columns:
             return candidate
     raise ValueError(f"Missing required column `{field_name}` in table `{table_name}`.")
+
+
+def _resolve_optional_column(available_columns: set[str], candidates: tuple[str, ...]) -> str | None:
+    for candidate in candidates:
+        if candidate in available_columns:
+            return candidate
+    return None
 
 
 def _normalize_date_value(value: object, *, field_name: str) -> date:

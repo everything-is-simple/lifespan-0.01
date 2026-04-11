@@ -56,6 +56,11 @@ STRUCTURE_LEDGER_DDL: Final[dict[str, str]] = {
             is_failed_extreme BOOLEAN NOT NULL,
             failure_type TEXT,
             structure_progress_state TEXT NOT NULL,
+            break_confirmation_status TEXT,
+            break_confirmation_ref TEXT,
+            stats_snapshot_nk TEXT,
+            exhaustion_risk_bucket TEXT,
+            reversal_probability_bucket TEXT,
             source_context_nk TEXT NOT NULL,
             structure_contract_version TEXT NOT NULL,
             first_seen_run_id TEXT NOT NULL,
@@ -77,6 +82,59 @@ STRUCTURE_LEDGER_DDL: Final[dict[str, str]] = {
 }
 
 
+STRUCTURE_REQUIRED_COLUMNS: Final[dict[str, dict[str, str]]] = {
+    STRUCTURE_RUN_TABLE: {
+        "run_id": "TEXT",
+        "runner_name": "TEXT",
+        "runner_version": "TEXT",
+        "run_status": "TEXT",
+        "signal_start_date": "DATE",
+        "signal_end_date": "DATE",
+        "bounded_instrument_count": "BIGINT",
+        "source_context_table": "TEXT",
+        "source_structure_input_table": "TEXT",
+        "structure_contract_version": "TEXT",
+        "started_at": "TIMESTAMP",
+        "completed_at": "TIMESTAMP",
+        "summary_json": "TEXT",
+    },
+    STRUCTURE_SNAPSHOT_TABLE: {
+        "structure_snapshot_nk": "TEXT",
+        "instrument": "TEXT",
+        "signal_date": "DATE",
+        "asof_date": "DATE",
+        "malf_context_4": "TEXT",
+        "lifecycle_rank_high": "BIGINT",
+        "lifecycle_rank_total": "BIGINT",
+        "new_high_count": "BIGINT",
+        "new_low_count": "BIGINT",
+        "refresh_density": "DOUBLE",
+        "advancement_density": "DOUBLE",
+        "is_failed_extreme": "BOOLEAN",
+        "failure_type": "TEXT",
+        "structure_progress_state": "TEXT",
+        "break_confirmation_status": "TEXT",
+        "break_confirmation_ref": "TEXT",
+        "stats_snapshot_nk": "TEXT",
+        "exhaustion_risk_bucket": "TEXT",
+        "reversal_probability_bucket": "TEXT",
+        "source_context_nk": "TEXT",
+        "structure_contract_version": "TEXT",
+        "first_seen_run_id": "TEXT",
+        "last_materialized_run_id": "TEXT",
+        "created_at": "TIMESTAMP",
+        "updated_at": "TIMESTAMP",
+    },
+    STRUCTURE_RUN_SNAPSHOT_TABLE: {
+        "run_id": "TEXT",
+        "structure_snapshot_nk": "TEXT",
+        "materialization_action": "TEXT",
+        "structure_progress_state": "TEXT",
+        "recorded_at": "TIMESTAMP",
+    },
+}
+
+
 def connect_structure_ledger(
     settings: WorkspaceRoots | None = None,
     *,
@@ -95,7 +153,7 @@ def bootstrap_structure_snapshot_ledger(
     *,
     connection: duckdb.DuckDBPyConnection | None = None,
 ) -> tuple[str, ...]:
-    """创建 `structure snapshot` 最小三表。"""
+    """创建并迁移 `structure snapshot` 最小三表。"""
 
     workspace = settings or default_settings()
     owns_connection = connection is None
@@ -103,6 +161,8 @@ def bootstrap_structure_snapshot_ledger(
     try:
         for ddl in STRUCTURE_LEDGER_DDL.values():
             conn.execute(ddl)
+        for table_name, column_map in STRUCTURE_REQUIRED_COLUMNS.items():
+            _ensure_columns(conn, table_name=table_name, required_columns=column_map)
         return STRUCTURE_LEDGER_TABLE_NAMES
     finally:
         if owns_connection:
@@ -114,3 +174,25 @@ def structure_ledger_path(settings: WorkspaceRoots | None = None) -> Path:
 
     workspace = settings or default_settings()
     return workspace.databases.structure
+
+
+def _ensure_columns(
+    connection: duckdb.DuckDBPyConnection,
+    *,
+    table_name: str,
+    required_columns: dict[str, str],
+) -> None:
+    existing_rows = connection.execute(
+        """
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_schema = 'main'
+          AND table_name = ?
+        """,
+        [table_name],
+    ).fetchall()
+    existing_columns = {str(row[0]) for row in existing_rows}
+    for column_name, column_type in required_columns.items():
+        if column_name in existing_columns:
+            continue
+        connection.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}")

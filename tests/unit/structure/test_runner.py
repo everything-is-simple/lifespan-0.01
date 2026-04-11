@@ -83,6 +83,48 @@ def _replace_structure_inputs(malf_path: Path, rows: list[tuple[object, ...]]) -
         conn.close()
 
 
+def _seed_malf_sidecars(malf_path: Path) -> None:
+    conn = duckdb.connect(str(malf_path))
+    try:
+        conn.execute(
+            """
+            CREATE TABLE pivot_confirmed_break_ledger (
+                break_event_nk TEXT,
+                instrument TEXT,
+                timeframe TEXT,
+                trigger_bar_dt DATE,
+                confirmation_status TEXT
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE same_timeframe_stats_snapshot (
+                stats_snapshot_nk TEXT,
+                instrument TEXT,
+                signal_date DATE,
+                asof_bar_dt DATE,
+                exhaustion_risk_bucket TEXT,
+                reversal_probability_bucket TEXT
+            )
+            """
+        )
+        conn.execute(
+            """
+            INSERT INTO pivot_confirmed_break_ledger VALUES
+            ('break-001', '000001.SZ', 'D', '2026-04-08', 'confirmed')
+            """
+        )
+        conn.execute(
+            """
+            INSERT INTO same_timeframe_stats_snapshot VALUES
+            ('stats-001', '000001.SZ', '2026-04-08', '2026-04-08', 'high', 'elevated')
+            """
+        )
+    finally:
+        conn.close()
+
+
 def test_run_structure_snapshot_build_materializes_run_snapshot_and_bridge(
     tmp_path: Path,
     monkeypatch,
@@ -213,3 +255,51 @@ def test_run_structure_snapshot_build_marks_rematerialized_when_structure_change
 
     assert snapshot_row == ("failed", "failed_extreme", "structure-snapshot-test-002b")
     assert bridge_row == ("rematerialized",)
+
+
+def test_run_structure_snapshot_build_attaches_sidecar_fields_without_rewriting_progress(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+    _seed_malf_inputs(
+        settings.databases.malf,
+        context_rows=[
+            ("000001.SZ", "2026-04-08", "2026-04-08", "ctx-301", "BULL_MAINSTREAM", 1, 4),
+        ],
+        structure_rows=[
+            ("000001.SZ", "2026-04-08", "2026-04-08", 2, 0, 0.8, 0.7, False, None),
+        ],
+    )
+    _seed_malf_sidecars(settings.databases.malf)
+
+    summary = run_structure_snapshot_build(
+        settings=settings,
+        signal_start_date="2026-04-08",
+        signal_end_date="2026-04-08",
+        run_id="structure-snapshot-test-003",
+    )
+
+    assert summary.materialized_snapshot_count == 1
+
+    conn = duckdb.connect(str(structure_ledger_path(settings)), read_only=True)
+    try:
+        snapshot_row = conn.execute(
+            """
+            SELECT
+                structure_progress_state,
+                break_confirmation_status,
+                break_confirmation_ref,
+                stats_snapshot_nk,
+                exhaustion_risk_bucket,
+                reversal_probability_bucket
+            FROM structure_snapshot
+            WHERE instrument = '000001.SZ'
+            """
+        ).fetchone()
+    finally:
+        conn.close()
+
+    assert snapshot_row == ("advancing", "confirmed", "break-001", "stats-001", "high", "elevated")

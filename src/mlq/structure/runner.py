@@ -11,6 +11,10 @@ from typing import Final
 import duckdb
 
 from mlq.core.paths import WorkspaceRoots, default_settings
+from mlq.malf.bootstrap import (
+    PIVOT_CONFIRMED_BREAK_LEDGER_TABLE,
+    SAME_TIMEFRAME_STATS_SNAPSHOT_TABLE,
+)
 from mlq.structure.bootstrap import (
     STRUCTURE_RUN_SNAPSHOT_TABLE,
     STRUCTURE_RUN_TABLE,
@@ -22,6 +26,8 @@ from mlq.structure.bootstrap import (
 
 DEFAULT_STRUCTURE_CONTEXT_TABLE: Final[str] = "pas_context_snapshot"
 DEFAULT_STRUCTURE_INPUT_TABLE: Final[str] = "structure_candidate_snapshot"
+DEFAULT_STRUCTURE_BREAK_CONFIRMATION_TABLE: Final[str] = PIVOT_CONFIRMED_BREAK_LEDGER_TABLE
+DEFAULT_STRUCTURE_STATS_TABLE: Final[str] = SAME_TIMEFRAME_STATS_SNAPSHOT_TABLE
 DEFAULT_STRUCTURE_CONTRACT_VERSION: Final[str] = "structure-snapshot-v1"
 
 
@@ -50,6 +56,8 @@ class StructureSnapshotBuildSummary:
     malf_ledger_path: str
     source_context_table: str
     source_structure_input_table: str
+    source_break_confirmation_table: str
+    source_stats_table: str
 
     def as_dict(self) -> dict[str, object]:
         """返回适合写入 summary JSON 的稳定字典。"""
@@ -82,6 +90,24 @@ class _StructureContextRow:
 
 
 @dataclass(frozen=True)
+class _BreakConfirmationRow:
+    instrument: str
+    trigger_bar_dt: date
+    confirmation_status: str
+    break_event_nk: str
+
+
+@dataclass(frozen=True)
+class _StatsSnapshotRow:
+    instrument: str
+    signal_date: date
+    asof_bar_dt: date
+    stats_snapshot_nk: str
+    exhaustion_risk_bucket: str | None
+    reversal_probability_bucket: str | None
+
+
+@dataclass(frozen=True)
 class _StructureSnapshotRow:
     structure_snapshot_nk: str
     instrument: str
@@ -97,6 +123,11 @@ class _StructureSnapshotRow:
     is_failed_extreme: bool
     failure_type: str | None
     structure_progress_state: str
+    break_confirmation_status: str | None
+    break_confirmation_ref: str | None
+    stats_snapshot_nk: str | None
+    exhaustion_risk_bucket: str | None
+    reversal_probability_bucket: str | None
     source_context_nk: str
     structure_contract_version: str
     first_seen_run_id: str
@@ -116,6 +147,8 @@ def run_structure_snapshot_build(
     run_id: str | None = None,
     source_context_table: str = DEFAULT_STRUCTURE_CONTEXT_TABLE,
     source_structure_input_table: str = DEFAULT_STRUCTURE_INPUT_TABLE,
+    source_break_confirmation_table: str = DEFAULT_STRUCTURE_BREAK_CONFIRMATION_TABLE,
+    source_stats_table: str = DEFAULT_STRUCTURE_STATS_TABLE,
     structure_contract_version: str = DEFAULT_STRUCTURE_CONTRACT_VERSION,
     runner_name: str = "structure_snapshot_builder",
     runner_version: str = "v1",
@@ -155,6 +188,20 @@ def run_structure_snapshot_build(
         (row.instrument, row.signal_date, row.asof_date): row
         for row in context_rows
     }
+    break_confirmation_map = _load_break_confirmation_rows(
+        malf_path=resolved_malf_path,
+        table_name=source_break_confirmation_table,
+        signal_start_date=normalized_start_date,
+        signal_end_date=normalized_end_date,
+        instruments=tuple(sorted({row.instrument for row in input_rows})),
+    )
+    stats_snapshot_map = _load_stats_snapshot_rows(
+        malf_path=resolved_malf_path,
+        table_name=source_stats_table,
+        signal_start_date=normalized_start_date,
+        signal_end_date=normalized_end_date,
+        instruments=tuple(sorted({row.instrument for row in input_rows})),
+    )
 
     structure_connection = duckdb.connect(str(resolved_structure_path))
     try:
@@ -177,6 +224,8 @@ def run_structure_snapshot_build(
             run_id=materialization_run_id,
             input_rows=input_rows,
             context_map=context_map,
+            break_confirmation_map=break_confirmation_map,
+            stats_snapshot_map=stats_snapshot_map,
             structure_contract_version=structure_contract_version,
             runner_name=runner_name,
             runner_version=runner_version,
@@ -186,6 +235,8 @@ def run_structure_snapshot_build(
             malf_path=resolved_malf_path,
             source_context_table=source_context_table,
             source_structure_input_table=source_structure_input_table,
+            source_break_confirmation_table=source_break_confirmation_table,
+            source_stats_table=source_stats_table,
             batch_size=normalized_batch_size,
         )
         _mark_run_completed(structure_connection, run_id=materialization_run_id, summary=summary)
@@ -405,12 +456,149 @@ def _load_context_rows(
         connection.close()
 
 
+def _load_break_confirmation_rows(
+    *,
+    malf_path: Path,
+    table_name: str,
+    signal_start_date: date | None,
+    signal_end_date: date | None,
+    instruments: tuple[str, ...],
+) -> dict[tuple[str, date], _BreakConfirmationRow]:
+    if not malf_path.exists() or not instruments:
+        return {}
+    connection = duckdb.connect(str(malf_path), read_only=True)
+    try:
+        available_columns = _load_table_columns(connection, table_name)
+    except ValueError:
+        return {}
+    try:
+        instrument_column = _resolve_existing_column(
+            available_columns,
+            ("instrument", "entity_code", "code"),
+            field_name="instrument",
+            table_name=table_name,
+        )
+        trigger_date_column = _resolve_existing_column(
+            available_columns,
+            ("trigger_bar_dt", "signal_date"),
+            field_name="trigger_bar_dt",
+            table_name=table_name,
+        )
+        placeholders = ", ".join("?" for _ in instruments)
+        parameters: list[object] = [*instruments]
+        where_clauses = [f"{instrument_column} IN ({placeholders})"]
+        if signal_start_date is not None:
+            where_clauses.append(f"{trigger_date_column} >= ?")
+            parameters.append(signal_start_date)
+        if signal_end_date is not None:
+            where_clauses.append(f"{trigger_date_column} <= ?")
+            parameters.append(signal_end_date)
+        rows = connection.execute(
+            f"""
+            SELECT
+                {instrument_column} AS instrument,
+                {trigger_date_column} AS trigger_bar_dt,
+                COALESCE({_resolve_optional_column(available_columns, ("confirmation_status",)) or "'pending'"}, 'pending') AS confirmation_status,
+                COALESCE({_resolve_optional_column(available_columns, ("break_event_nk",)) or "NULL"}, '') AS break_event_nk
+            FROM {table_name}
+            WHERE {' AND '.join(where_clauses)}
+            ORDER BY {trigger_date_column}, {instrument_column}
+            """,
+            parameters,
+        ).fetchall()
+        return {
+            (str(row[0]), _normalize_date_value(row[1], field_name="trigger_bar_dt")): _BreakConfirmationRow(
+                instrument=str(row[0]),
+                trigger_bar_dt=_normalize_date_value(row[1], field_name="trigger_bar_dt"),
+                confirmation_status=_normalize_optional_str(row[2], default="pending"),
+                break_event_nk=_normalize_optional_str(row[3]),
+            )
+            for row in rows
+        }
+    finally:
+        connection.close()
+
+
+def _load_stats_snapshot_rows(
+    *,
+    malf_path: Path,
+    table_name: str,
+    signal_start_date: date | None,
+    signal_end_date: date | None,
+    instruments: tuple[str, ...],
+) -> dict[tuple[str, date, date], _StatsSnapshotRow]:
+    if not malf_path.exists() or not instruments:
+        return {}
+    connection = duckdb.connect(str(malf_path), read_only=True)
+    try:
+        available_columns = _load_table_columns(connection, table_name)
+    except ValueError:
+        return {}
+    try:
+        instrument_column = _resolve_existing_column(
+            available_columns,
+            ("instrument", "entity_code", "code"),
+            field_name="instrument",
+            table_name=table_name,
+        )
+        signal_date_column = _resolve_existing_column(
+            available_columns,
+            ("signal_date",),
+            field_name="signal_date",
+            table_name=table_name,
+        )
+        asof_date_column = _resolve_optional_column(available_columns, ("asof_bar_dt", "asof_date")) or signal_date_column
+        placeholders = ", ".join("?" for _ in instruments)
+        parameters: list[object] = [*instruments]
+        where_clauses = [f"{instrument_column} IN ({placeholders})"]
+        if signal_start_date is not None:
+            where_clauses.append(f"{signal_date_column} >= ?")
+            parameters.append(signal_start_date)
+        if signal_end_date is not None:
+            where_clauses.append(f"{signal_date_column} <= ?")
+            parameters.append(signal_end_date)
+        rows = connection.execute(
+            f"""
+            SELECT
+                {instrument_column} AS instrument,
+                {signal_date_column} AS signal_date,
+                {asof_date_column} AS asof_bar_dt,
+                COALESCE({_resolve_optional_column(available_columns, ("stats_snapshot_nk",)) or "NULL"}, '') AS stats_snapshot_nk,
+                {_resolve_optional_column(available_columns, ("exhaustion_risk_bucket",)) or "NULL"} AS exhaustion_risk_bucket,
+                {_resolve_optional_column(available_columns, ("reversal_probability_bucket",)) or "NULL"} AS reversal_probability_bucket
+            FROM {table_name}
+            WHERE {' AND '.join(where_clauses)}
+            ORDER BY {signal_date_column}, {instrument_column}, {asof_date_column}
+            """,
+            parameters,
+        ).fetchall()
+        return {
+            (
+                str(row[0]),
+                _normalize_date_value(row[1], field_name="signal_date"),
+                _normalize_date_value(row[2], field_name="asof_bar_dt"),
+            ): _StatsSnapshotRow(
+                instrument=str(row[0]),
+                signal_date=_normalize_date_value(row[1], field_name="signal_date"),
+                asof_bar_dt=_normalize_date_value(row[2], field_name="asof_bar_dt"),
+                stats_snapshot_nk=_normalize_optional_str(row[3]),
+                exhaustion_risk_bucket=_normalize_optional_nullable_str(row[4]),
+                reversal_probability_bucket=_normalize_optional_nullable_str(row[5]),
+            )
+            for row in rows
+        }
+    finally:
+        connection.close()
+
+
 def _materialize_structure_rows(
     *,
     connection: duckdb.DuckDBPyConnection,
     run_id: str,
     input_rows: list[_StructureInputRow],
     context_map: dict[tuple[str, date, date], _StructureContextRow],
+    break_confirmation_map: dict[tuple[str, date], _BreakConfirmationRow],
+    stats_snapshot_map: dict[tuple[str, date, date], _StatsSnapshotRow],
     structure_contract_version: str,
     runner_name: str,
     runner_version: str,
@@ -420,6 +608,8 @@ def _materialize_structure_rows(
     malf_path: Path,
     source_context_table: str,
     source_structure_input_table: str,
+    source_break_confirmation_table: str,
+    source_stats_table: str,
     batch_size: int,
 ) -> StructureSnapshotBuildSummary:
     inserted_count = 0
@@ -442,6 +632,8 @@ def _materialize_structure_rows(
                 run_id=run_id,
                 input_row=input_row,
                 context_row=context_row,
+                break_confirmation_row=break_confirmation_map.get((input_row.instrument, input_row.signal_date)),
+                stats_snapshot_row=stats_snapshot_map.get((input_row.instrument, input_row.signal_date, input_row.asof_date)),
                 structure_contract_version=structure_contract_version,
             )
             materialization_action = _upsert_structure_snapshot(connection, snapshot_row=snapshot_row)
@@ -501,6 +693,8 @@ def _materialize_structure_rows(
         malf_ledger_path=str(malf_path),
         source_context_table=source_context_table,
         source_structure_input_table=source_structure_input_table,
+        source_break_confirmation_table=source_break_confirmation_table,
+        source_stats_table=source_stats_table,
     )
 
 
@@ -575,6 +769,8 @@ def _build_structure_snapshot_row(
     run_id: str,
     input_row: _StructureInputRow,
     context_row: _StructureContextRow,
+    break_confirmation_row: _BreakConfirmationRow | None,
+    stats_snapshot_row: _StatsSnapshotRow | None,
     structure_contract_version: str,
 ) -> _StructureSnapshotRow:
     structure_progress_state = _derive_structure_progress_state(input_row)
@@ -600,6 +796,11 @@ def _build_structure_snapshot_row(
         is_failed_extreme=input_row.is_failed_extreme,
         failure_type=input_row.failure_type,
         structure_progress_state=structure_progress_state,
+        break_confirmation_status=None if break_confirmation_row is None else break_confirmation_row.confirmation_status,
+        break_confirmation_ref=None if break_confirmation_row is None else break_confirmation_row.break_event_nk,
+        stats_snapshot_nk=None if stats_snapshot_row is None else stats_snapshot_row.stats_snapshot_nk,
+        exhaustion_risk_bucket=None if stats_snapshot_row is None else stats_snapshot_row.exhaustion_risk_bucket,
+        reversal_probability_bucket=None if stats_snapshot_row is None else stats_snapshot_row.reversal_probability_bucket,
         source_context_nk=context_row.source_context_nk,
         structure_contract_version=structure_contract_version,
         first_seen_run_id=run_id,
@@ -671,6 +872,11 @@ def _upsert_structure_snapshot(
             is_failed_extreme,
             failure_type,
             structure_progress_state,
+            break_confirmation_status,
+            break_confirmation_ref,
+            stats_snapshot_nk,
+            exhaustion_risk_bucket,
+            reversal_probability_bucket,
             first_seen_run_id
         FROM {STRUCTURE_SNAPSHOT_TABLE}
         WHERE structure_snapshot_nk = ?
@@ -695,12 +901,17 @@ def _upsert_structure_snapshot(
                 is_failed_extreme,
                 failure_type,
                 structure_progress_state,
+                break_confirmation_status,
+                break_confirmation_ref,
+                stats_snapshot_nk,
+                exhaustion_risk_bucket,
+                reversal_probability_bucket,
                 source_context_nk,
                 structure_contract_version,
                 first_seen_run_id,
                 last_materialized_run_id
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 snapshot_row.structure_snapshot_nk,
@@ -717,6 +928,11 @@ def _upsert_structure_snapshot(
                 snapshot_row.is_failed_extreme,
                 snapshot_row.failure_type,
                 snapshot_row.structure_progress_state,
+                snapshot_row.break_confirmation_status,
+                snapshot_row.break_confirmation_ref,
+                snapshot_row.stats_snapshot_nk,
+                snapshot_row.exhaustion_risk_bucket,
+                snapshot_row.reversal_probability_bucket,
                 snapshot_row.source_context_nk,
                 snapshot_row.structure_contract_version,
                 snapshot_row.first_seen_run_id,
@@ -736,6 +952,11 @@ def _upsert_structure_snapshot(
         bool(existing_row[7]),
         _normalize_optional_nullable_str(existing_row[8]),
         _normalize_optional_str(existing_row[9], default="unknown"),
+        _normalize_optional_nullable_str(existing_row[10]),
+        _normalize_optional_nullable_str(existing_row[11]),
+        _normalize_optional_nullable_str(existing_row[12]),
+        _normalize_optional_nullable_str(existing_row[13]),
+        _normalize_optional_nullable_str(existing_row[14]),
     )
     new_fingerprint = (
         snapshot_row.malf_context_4,
@@ -748,8 +969,13 @@ def _upsert_structure_snapshot(
         snapshot_row.is_failed_extreme,
         snapshot_row.failure_type,
         snapshot_row.structure_progress_state,
+        snapshot_row.break_confirmation_status,
+        snapshot_row.break_confirmation_ref,
+        snapshot_row.stats_snapshot_nk,
+        snapshot_row.exhaustion_risk_bucket,
+        snapshot_row.reversal_probability_bucket,
     )
-    first_seen_run_id = str(existing_row[10]) if existing_row[10] is not None else snapshot_row.first_seen_run_id
+    first_seen_run_id = str(existing_row[15]) if existing_row[15] is not None else snapshot_row.first_seen_run_id
     connection.execute(
         f"""
         UPDATE {STRUCTURE_SNAPSHOT_TABLE}
@@ -764,6 +990,11 @@ def _upsert_structure_snapshot(
             is_failed_extreme = ?,
             failure_type = ?,
             structure_progress_state = ?,
+            break_confirmation_status = ?,
+            break_confirmation_ref = ?,
+            stats_snapshot_nk = ?,
+            exhaustion_risk_bucket = ?,
+            reversal_probability_bucket = ?,
             first_seen_run_id = ?,
             last_materialized_run_id = ?,
             updated_at = CURRENT_TIMESTAMP
@@ -780,6 +1011,11 @@ def _upsert_structure_snapshot(
             snapshot_row.is_failed_extreme,
             snapshot_row.failure_type,
             snapshot_row.structure_progress_state,
+            snapshot_row.break_confirmation_status,
+            snapshot_row.break_confirmation_ref,
+            snapshot_row.stats_snapshot_nk,
+            snapshot_row.exhaustion_risk_bucket,
+            snapshot_row.reversal_probability_bucket,
             first_seen_run_id,
             snapshot_row.last_materialized_run_id,
             snapshot_row.structure_snapshot_nk,

@@ -3,7 +3,7 @@
 日期：`2026-04-09`
 状态：`生效中`
 
-1. 当前下一锤：`24-malf-mechanism-layer-break-confirmation-and-stats-sidecar-card-20260411.md`
+1. 当前下一锤：`25-malf-mechanism-ledger-bootstrap-and-downstream-sidecar-integration-card-20260411.md`
 2. 正式主线剩余卡：`0`
 3. 可选 Sidecar 剩余卡：`0`
 4. 后置修复剩余卡：`0`
@@ -33,11 +33,13 @@
 21. 封存 `data` 模块当前日更源头治理：`stock` 继续走 `TdxQuant(none)` 主路、`txt` 保留 fallback，`index/block` 继续走 `H:\tdx_offline_Data` txt 主路，未来统一 source adapter 必须另开新卡
 22. 收缩 `malf` 正式核心：按时间级别独立运行的纯语义走势账本生效，bridge v1 继续保留为兼容层
 23. 冻结 `pivot-confirmed break` 与 `same-timeframe stats sidecar` 的机制层边界，正式把 break 确认和统计读数从 `malf core` 中剥离为只读 sidecar
+24. 落地 bridge-era `malf` 机制层账本、bounded runner、checkpoint 与最小 `structure / filter` sidecar 接入
 
 ## 当前口径
 
-1. 最新生效结论锚点已经切到 `24`。
-2. 当前待施工锚点暂保留 `24` 以满足门禁检查；这不表示 `24` 仍未完成，正式主线剩余卡已清零。
+1. 最新生效结论锚点已经切到 `25`。
+2. 当前治理锚点保留 `25` 以满足门禁检查；这不表示 `25` 仍未完成，正式主线剩余卡已清零。
 3. 卡 `23` 已正式把 `malf` 核心收缩为纯语义走势账本，并把高周期 `context` 与动作接口移出核心定义；`牛逆 / 熊逆` 也已收紧为本级别过渡状态。
 4. 卡 `24` 已正式把 `pivot-confirmed break` 与 `same-timeframe stats sidecar` 冻结为只读机制层 sidecar，不再允许回写 `malf core`。
 5. 卡 `22` 继续保留 data 日更 source governance 作为当前前置运营事实。
+6. `25` 已经把机制层 sidecar 正式落成账本、runner、checkpoint 与最小下游接入。
