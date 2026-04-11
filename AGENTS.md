@@ -104,13 +104,14 @@
 9. `trade` 负责执行与成交账本，不承担组合研究职责。
    - 当前 `trade` 的正式 bounded runner 入口为 `scripts/trade/run_trade_runtime_build.py`，只允许消费官方 `portfolio_plan_snapshot`、上一轮 `trade_carry_snapshot` 与 `market_base.stock_daily_adjusted(adjust_method='none')`，不允许改回复权价计算成交股数。
 10. `system` 负责编排、治理、审计、冻结，不保存策略事实主数据。
+   - 当前 `system` 的正式 bounded runner 入口为 `scripts/system/run_system_mainline_readout_build.py`，只允许消费官方 `structure / filter / alpha / position / portfolio_plan / trade` 账本与 `trade_*` 正式落表事实，物化 `system_run / system_child_run_readout / system_mainline_snapshot / system_run_snapshot`，不允许回读私有中间过程，也不允许越界扩成 live orchestration / broker runtime。
 
 补充价格口径：
 
 1. `malf -> structure -> filter -> alpha` 默认使用 `adjust_method = backward`
 2. `position -> trade` 默认使用 `adjust_method = none`
 3. `adjust_method = forward` 当前只作为研究与展示保留，不作为正式执行口径
-4. 当前最新生效结论锚点已推进到 `26-mainline-truthfulness-revalidation-after-malf-sidecar-bootstrap-conclusion-20260411.md`；它已裁决整链 truthfulness 通过，下一张应开 `system` 主线卡，而不是后置修复卡。
+4. 当前最新生效结论锚点已推进到 `27-system-mainline-bounded-acceptance-readout-and-audit-bootstrap-conclusion-20260411.md`；它已裁决 `system` 最小官方 readout / audit bootstrap 通过。当前治理锚点已切到 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`；自然数顺排后的后续卡依次是 `29 -> 30 -> 31 -> 32 -> 33 -> 34`，其中 `34-system-runtime-orchestration-bootstrap-card-20260411.md` 是后置卡，而不是当前施工卡。
 
 ## 5. 历史账本原则
 

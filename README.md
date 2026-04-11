@@ -78,7 +78,7 @@
   - 从官方 `raw_market` 物化 `market_base.{stock,index,block}_daily_adjusted`
   - 支持 `--asset-type {stock,index,block}`
 
-### malf / structure / filter / alpha / position / portfolio_plan / trade
+### malf / structure / filter / alpha / position / portfolio_plan / trade / system
 
 - `scripts/malf/run_malf_snapshot_build.py`
 - `scripts/malf/run_malf_mechanism_build.py`
@@ -91,6 +91,9 @@
   - 默认 `adjust_method='none'`
 - `scripts/portfolio_plan/run_portfolio_plan_build.py`
 - `scripts/trade/run_trade_runtime_build.py`
+- `scripts/system/run_system_mainline_readout_build.py`
+  - 只消费官方 `structure / filter / alpha / position / portfolio_plan / trade` 账本与 `trade_*` 正式落表事实
+  - 物化 `system_run / system_child_run_readout / system_mainline_snapshot / system_run_snapshot`
 
 ## 当前 data 正式口径
 
@@ -103,7 +106,7 @@
   - `malf -> structure -> filter -> alpha` 默认消费 `adjust_method='backward'`
   - `position -> trade` 默认消费 `adjust_method='none'`
   - `forward` 当前只作研究与展示保留
-- 当前最新生效结论锚点已推进到 `26-mainline-truthfulness-revalidation-after-malf-sidecar-bootstrap-conclusion-20260411.md`：整链 truthfulness 已复核通过，下一张应开 `system` 主线卡
+- 当前最新生效结论锚点已推进到 `27-system-mainline-bounded-acceptance-readout-and-audit-bootstrap-conclusion-20260411.md`：`system` 最小官方 readout / audit bootstrap 已成立；当前治理锚点已切到 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`，自然数顺排后的后续卡依次为 `29 -> 30 -> 31 -> 32 -> 33 -> 34`
 - `txt -> raw_market -> market_base` 继续保留为正式 fallback
 
 ## 当前 malf 正式口径

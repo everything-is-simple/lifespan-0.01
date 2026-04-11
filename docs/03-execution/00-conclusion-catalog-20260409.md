@@ -1,11 +1,11 @@
 # 结论目录
 
 日期：`2026-04-09`
-状态：`生效中`
+状态：`持续更新`
 
-本文记录当前执行区已经建立的结论入口。当前最新已生效结论锚点：`26-mainline-truthfulness-revalidation-after-malf-sidecar-bootstrap-conclusion-20260411.md`
+当前最新生效结论锚点：`27-system-mainline-bounded-acceptance-readout-and-audit-bootstrap-conclusion-20260411.md`
 
-## 当前结论文档
+## 正式结论目录
 
 1. `01-governance-tooling-and-environment-bootstrap-conclusion-20260409.md`
 2. `02-shared-ledger-contract-and-pytest-path-fix-conclusion-20260409.md`
@@ -33,17 +33,17 @@
 24. `24-malf-mechanism-layer-break-confirmation-and-stats-sidecar-conclusion-20260411.md`
 25. `25-malf-mechanism-ledger-bootstrap-and-downstream-sidecar-integration-conclusion-20260411.md`
 26. `26-mainline-truthfulness-revalidation-after-malf-sidecar-bootstrap-conclusion-20260411.md`
+27. `27-system-mainline-bounded-acceptance-readout-and-audit-bootstrap-conclusion-20260411.md`
+28. `28-system-wide-checkpoint-and-dirty-queue-alignment-conclusion-20260411.md`
+29. `29-trade-signal-anchor-contract-freeze-conclusion-20260411.md`
+30. `30-position-entry-t-plus-1-open-reference-price-correction-conclusion-20260411.md`
+31. `31-trade-exit-pnl-ledger-bootstrap-conclusion-20260411.md`
+32. `32-trade-backtest-progression-runner-conclusion-20260411.md`
+33. `33-mainline-real-data-smoke-regression-conclusion-20260411.md`
+34. `34-system-runtime-orchestration-bootstrap-conclusion-20260411.md`
 
-## 已冻结基础口径
+## 当前说明
 
-1. 文档先行治理已经生效，正式实现继续受 `doc-first gating` 约束。
-2. `position / portfolio_plan / trade` 最小正式账本与 bounded runner 已成立。
-3. `data -> raw_market -> market_base -> malf -> structure` 最小官方前半段主链已成立。
-4. `raw/base` 已升级为 run/file/request/checkpoint/dirty queue 齐备的正式历史账本。
-5. `TdxQuant(dividend_type='none')` 已正式桥接进入股票 `raw_market`，并联动 `market_base.none`。
-6. `txt -> raw_market -> market_base` 正式主链现已覆盖 `stock + index + block` 三类资产，并具备一次性建仓与每日断点续传增量更新能力。
-7. `data` 模块当前日更源头治理已经封存：`stock` 以 `TdxQuant(none)` 为日更主路、`txt` 为 fallback；`index/block` 继续以 `H:\tdx_offline_Data` txt 为日更主路；未来若要统一 source adapter 必须另开新卡。
-8. `malf` 正式核心已收缩为按时间级别独立运行的纯语义走势账本；高周期 `context`、执行接口与直接动作建议不再属于 `malf` core；`牛逆 / 熊逆` 也已正式收紧为本级别过渡状态。
-9. `pivot-confirmed break` 与 `same-timeframe stats sidecar` 已正式冻结为 `malf` 之外的只读机制层能力：前者只确认 break 站稳，不确认新趋势；后者只提供同级别位置读数，不反向参与状态机。
-10. bridge-era `malf` 机制层账本、checkpoint 与最小 `structure / filter` sidecar 接入已经正式落地。
-11. `26` 已正式复核 `23/24/25` 之后整链 truthfulness：sidecar 仍保持只读附加身份，`position -> trade` 的 `none` 价格边界仍真实成立；下一张应开 `system` 主线卡，而不是后置修复卡。
+1. `27` 仍是最新生效结论。
+2. `28` 是当前治理主卡，但尚未形成新生效结论。
+3. 自然数顺排后的后续卡为 `29-34`。

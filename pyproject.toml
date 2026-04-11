@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "lifespan-0.01"
 version = "0.1.0"
-description = "Local-first historical ledger system with pure-semantic malf core and read-only mechanism sidecars."
+description = "Local-first historical ledger system with pure-semantic malf core, read-only mechanism sidecars, and official system readout audit ledgers."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -42,7 +42,7 @@ system_tracker_files = [
     "docs/02-spec/β-system-roadmap-and-progress-tracker-spec-20260409.md",
     "docs/02-spec/Ω-system-delivery-roadmap-20260409.md",
 ]
-# 当前最新生效结论已推进到 26；`position / trade` 的正式执行口径固定为 `adjust_method='none'`。
+# 当前最新生效结论已推进到 27；当前待施工卡已切到 28；`position / trade` 的正式执行口径固定为 `adjust_method='none'`，`system` 已拥有最小官方 readout / audit runner。
 formal_runner_scripts = [
     "scripts/data/run_tdx_asset_raw_ingest.py",
     "scripts/data/run_tdx_stock_raw_ingest.py",
@@ -58,6 +58,7 @@ formal_runner_scripts = [
     "scripts/position/run_position_formal_signal_materialization.py",
     "scripts/portfolio_plan/run_portfolio_plan_build.py",
     "scripts/trade/run_trade_runtime_build.py",
+    "scripts/system/run_system_mainline_readout_build.py",
 ]
 
 [tool.mlq.ledger_governance]

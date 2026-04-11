@@ -1,15 +1,15 @@
 # 卡片目录
 
 日期：`2026-04-09`
-状态：`生效中`
+状态：`持续更新`
 
-1. 当前下一锤：`26-mainline-truthfulness-revalidation-after-malf-sidecar-bootstrap-card-20260411.md`
-2. 当前待施工卡：`26-mainline-truthfulness-revalidation-after-malf-sidecar-bootstrap-card-20260411.md`
-3. 正式主线剩余卡：`1`
-4. 可选 Sidecar 剩余卡：`0`
-5. 后置修复剩余卡：`0`
+1. 当前下一锤：`28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`
+2. 当前待施工卡：`28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`
+3. 当前正式主线剩余卡：`7`
+4. 当前 sidecar 卡：`0`
+5. 当前修复卡：`0`
 
-## 卡片总表
+## 正式卡目录
 
 1. `01-governance-tooling-and-environment-bootstrap-card-20260409.md`
 2. `02-shared-ledger-contract-and-pytest-path-fix-card-20260409.md`
@@ -37,12 +37,18 @@
 24. `24-malf-mechanism-layer-break-confirmation-and-stats-sidecar-card-20260411.md`
 25. `25-malf-mechanism-ledger-bootstrap-and-downstream-sidecar-integration-card-20260411.md`
 26. `26-mainline-truthfulness-revalidation-after-malf-sidecar-bootstrap-card-20260411.md`
+27. `27-system-mainline-bounded-acceptance-readout-and-audit-bootstrap-card-20260411.md`
+28. `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`
+29. `29-trade-signal-anchor-contract-freeze-card-20260411.md`
+30. `30-position-entry-t-plus-1-open-reference-price-correction-card-20260411.md`
+31. `31-trade-exit-pnl-ledger-bootstrap-card-20260411.md`
+32. `32-trade-backtest-progression-runner-card-20260411.md`
+33. `33-mainline-real-data-smoke-regression-card-20260411.md`
+34. `34-system-runtime-orchestration-bootstrap-card-20260411.md`
 
-## 当前口径
+## 当前说明
 
-1. `22` 已把 data 日更源头治理封存为正式结论：`stock` 继续走 `TdxQuant(none)` 主路，`index/block` 继续走 `H:\tdx_offline_Data` txt 主路，不再把“统一 source adapter”视为当前已批准工作。
-2. `23` 已把 `malf` 正式核心收缩为按时间级别独立运行的纯语义走势账本，并明确 bridge v1 只是兼容层。
-3. `24` 已完成机制层边界冻结：`pivot-confirmed break` 与 `same-timeframe stats sidecar` 的正式边界已成立。
-4. `25` 已完成机制层实现卡：`pivot_confirmed_break_ledger / same_timeframe_stats_profile / same_timeframe_stats_snapshot`、bounded runner、checkpoint 与最小下游接入已经落地。
-5. `26` 已完成主链 truthfulness 复核：`23/24/25` 之后整链仍真实成立到 `trade`，不需要另开后置修复卡。
-6. 最新生效结论锚点已切到 `26`；当前治理锚点暂保留在 `26`，直到下一张 `system` 主线卡正式打开。
+1. 最新生效结论锚点仍是 `27-system-mainline-bounded-acceptance-readout-and-audit-bootstrap-conclusion-20260411.md`。
+2. 当前治理锚点与当前施工卡已经切到 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`。
+3. 自然数顺排后的后续卡依次为 `29 -> 30 -> 31 -> 32 -> 33 -> 34`。
+4. `34-system-runtime-orchestration-bootstrap` 是后置卡，不再作为旧 `28` 的并行阻塞卡存在。

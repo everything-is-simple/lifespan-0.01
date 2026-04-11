@@ -1,20 +1,25 @@
 # 执行阅读顺序
 
 日期：`2026-04-09`
-状态：`生效中`
+状态：`持续更新`
 
-当前默认顺序：
-1. 先读 `00-conclusion-catalog-20260409.md`
-2. 再读 `B-card-catalog-20260409.md`
-3. 再读 `C-system-completion-ledger-20260409.md`
-4. 先看最新已生效结论 `26-mainline-truthfulness-revalidation-after-malf-sidecar-bootstrap-conclusion-20260411.md`
-5. 如果需要理解当前 `malf` pure semantic core，再看 `23-malf-pure-semantic-ledger-boundary-freeze-conclusion-20260411.md`
-6. 如果需要理解当前 `malf` 纯语义核心与 bridge v1 兼容边界，再看 `16-data-malf-minimal-official-mainline-bridge-conclusion-20260410.md`
-7. 如果需要理解 data 日更主路/fallback 与历史账本硬约束，再看 `22-data-daily-source-governance-sealing-conclusion-20260411.md`
-8. 当前治理锚点是 `26-mainline-truthfulness-revalidation-after-malf-sidecar-bootstrap-card-20260411.md`
+## 首读顺序
 
-## 当前活动主线
+1. `00-conclusion-catalog-20260409.md`
+2. `B-card-catalog-20260409.md`
+3. `C-system-completion-ledger-20260409.md`
+4. `27-system-mainline-bounded-acceptance-readout-and-audit-bootstrap-conclusion-20260411.md`
+5. `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`
 
-1. `data -> raw_market -> market_base -> malf -> structure` 最小官方前半段主线已经成立。
-2. `stock + index + block txt` 的 `raw/base` 主链已经正式成立，`TdxQuant(none)` 股票桥接也已经成立。
-3. 当前最新封存口径是：`26` 已完成整链 truthfulness 复核，确认 bridge-era `pivot-confirmed break / same-timeframe stats sidecar` 没有破坏当前主链正式闭环，`position -> trade` 的 `none` 价格边界也仍真实成立；下一张应开 `system` 主线卡。
+## 当前正式口径
+
+1. 最新生效结论锚点仍是 `27`。
+2. 当前治理锚点与当前待施工卡是 `28`。
+3. 自然数顺排后的后续卡依次为：
+   - `29-trade-signal-anchor-contract-freeze`
+   - `30-position-entry-t-plus-1-open-reference-price-correction`
+   - `31-trade-exit-pnl-ledger-bootstrap`
+   - `32-trade-backtest-progression-runner`
+   - `33-mainline-real-data-smoke-regression`
+   - `34-system-runtime-orchestration-bootstrap`
+4. `34` 不再是旧编号意义上的阻塞卡，而是自然数顺排下的最后一张后置卡。

@@ -1,9 +1,9 @@
 # 证据目录
 
 日期：`2026-04-09`
-状态：`生效中`
+状态：`持续更新`
 
-## 当前证据目录
+## 正式证据目录
 
 1. `01-governance-tooling-and-environment-bootstrap-evidence-20260409.md`
 2. `02-shared-ledger-contract-and-pytest-path-fix-evidence-20260409.md`
@@ -31,3 +31,11 @@
 24. `24-malf-mechanism-layer-break-confirmation-and-stats-sidecar-evidence-20260411.md`
 25. `25-malf-mechanism-ledger-bootstrap-and-downstream-sidecar-integration-evidence-20260411.md`
 26. `26-mainline-truthfulness-revalidation-after-malf-sidecar-bootstrap-evidence-20260411.md`
+27. `27-system-mainline-bounded-acceptance-readout-and-audit-bootstrap-evidence-20260411.md`
+28. `28-system-wide-checkpoint-and-dirty-queue-alignment-evidence-20260411.md`
+29. `29-trade-signal-anchor-contract-freeze-evidence-20260411.md`
+30. `30-position-entry-t-plus-1-open-reference-price-correction-evidence-20260411.md`
+31. `31-trade-exit-pnl-ledger-bootstrap-evidence-20260411.md`
+32. `32-trade-backtest-progression-runner-evidence-20260411.md`
+33. `33-mainline-real-data-smoke-regression-evidence-20260411.md`
+34. `34-system-runtime-orchestration-bootstrap-evidence-20260411.md`
