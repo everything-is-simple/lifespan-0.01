@@ -52,6 +52,17 @@
    - 至少一次 unchanged rerun
    - 至少一次受控输入变化 rerun
 
+## 执行层与组合桥接图
+
+```mermaid
+flowchart LR
+    PP[portfolio_plan] --> TR[trade run]
+    TR --> TP[trade execution plan]
+    TP --> TL[trade position leg]
+    TP --> TC[trade carry snapshot]
+    TL --> TE[trade execution]
+```
+
 ## 实现边界
 
 - 范围内：

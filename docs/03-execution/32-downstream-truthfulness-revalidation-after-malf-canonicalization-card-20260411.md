@@ -24,6 +24,17 @@
 2. 用真实数据样本做最小 smoke。
 3. 裁决后续 `100-105` 是否恢复正式施工。
 
+## 复核路径图
+
+```mermaid
+flowchart LR
+    MC[malf canonical] --> S[structure]
+    S --> F[filter]
+    F --> A[alpha]
+    A --> VAL[truthfulness validation]
+    VAL -->|decision| NEXT[next card]
+```
+
 ## 实现边界
 
 - 范围内：

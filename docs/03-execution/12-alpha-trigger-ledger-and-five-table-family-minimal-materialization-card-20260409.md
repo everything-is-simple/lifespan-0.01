@@ -42,6 +42,25 @@
    - 证明正式 trigger 事实能被 `formal signal` 稳定引用。
    - 证明重复运行时能正确区分 `inserted / reused / rematerialized`。
 
+## 五表族与触发链图
+
+```mermaid
+flowchart LR
+    TR[alpha trigger run] --> TE[alpha trigger event]
+    TR --> TRE[alpha trigger run event]
+    TE --> AT[alpha trigger]
+    TE --> AFS[alpha formal signal]
+    AFS --> TR
+    subgraph families["五家族共享"]
+        BOF[bof]
+        TST[tst]
+        PB[pb]
+        CPB[cpb]
+        BPB[bpb]
+    end
+    TE --> families
+```
+
 ## 实现边界
 
 - 范围内：

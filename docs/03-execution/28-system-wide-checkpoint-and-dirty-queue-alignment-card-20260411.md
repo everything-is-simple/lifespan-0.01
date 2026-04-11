@@ -37,6 +37,20 @@
 3. 明确 `28 -> 29 -> 30 -> 31 -> 32 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105` 的自然数施工顺序，并把 `29-32` 固化为 malf 优先卡组、`100-105` 固化为后置 trade/system 卡组。
 4. 回填 `28` 的 evidence / record / conclusion，并同步治理入口与执行索引。
 
+## 全模块 Checkpoint 对齐图
+
+```mermaid
+flowchart LR
+    D[data] --> DQ[data dirty queue]
+    DQ --> DC[data checkpoint]
+    M[malf] --> MQ[malf dirty queue]
+    MQ --> MC[malf checkpoint]
+    S[structure] --> SQ[structure dirty queue]
+    SQ --> SC[structure checkpoint]
+    F[filter] --> FQ[filter dirty queue]
+    FQ --> FC[filter checkpoint]
+```
+
 ## 实现边界
 
 - 范围内：

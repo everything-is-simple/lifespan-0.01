@@ -33,8 +33,28 @@
 ## 任务分解
 
 1. 汇总卡 `18/19/20/21` 与 `2026-04-10` 收盘后真实增量运行得到的 source governance 观察，整理成当前已生效事实。
-2. 冻结 `stock / index / block` 三类资产当前日更主路、fallback、operator 责任边界与“暂不统一”的治理裁决。
+2. 冻结 `stock / index / block` 三类资产当前日更主路、fallback、operator 责任边界与”暂不统一”的治理裁决。
 3. 明确未来若要推进 “`TdxQuant(none)` 主路 + txt fallback” 的统一方案，必须补开的设计、验证与治理门槛，并把四件套和执行索引回填完成。
+
+## 源头治理封存图
+
+```mermaid
+flowchart LR
+    subgraph stock[“stock 日更”]
+        TQ[TdxQuant none]
+        TXT[txt fallback]
+    end
+    subgraph index[“index 日更”]
+        TXI[txt]
+    end
+    subgraph block[“block 日更”]
+        TXB[txt]
+    end
+    TQ --> RM[raw market]
+    TXT --> RM
+    TXI --> RM
+    TXB --> RM
+```
 
 ## 实现边界
 

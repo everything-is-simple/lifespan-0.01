@@ -35,6 +35,21 @@
 3. 运行一组 bounded mainline system 验证，确认 `system` 可以把官方主链结果冻结为 `system` 级 snapshot 与审计事实。
 4. 回填 `27` 的 evidence / record / conclusion，并裁决后续 `system` 应继续开 runtime/orchestration 卡还是修复卡。
 
+## System 读取与审计图
+
+```mermaid
+flowchart LR
+    M[malf run] --> SY[system]
+    S[structure run] --> SY
+    F[filter run] --> SY
+    A[alpha run] --> SY
+    P[position run] --> SY
+    PP[portfolio_plan run] --> SY
+    T[trade run] --> SY
+    SY --> SS[system snapshot]
+    SY --> CR[child run readout]
+```
+
 ## 实现边界
 
 - 范围内：

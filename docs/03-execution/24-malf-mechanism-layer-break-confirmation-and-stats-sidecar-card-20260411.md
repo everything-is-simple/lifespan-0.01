@@ -36,6 +36,18 @@
 4. 同步修订 `structure / filter` 的角色声明，明确它们只能按只读机制层 sidecar 消费这些能力。
 5. 回填 `24` 号 card/evidence/record/conclusion 与执行索引、入口文件。
 
+## 机制层与 Sidecar 图
+
+```mermaid
+flowchart LR
+    MF[malf core] --> BR[pivot confirmed break]
+    MF --> ST[stats sidecar]
+    ST --> SP[stats profile]
+    ST --> SS[stats snapshot]
+    BR --> STR[structure]
+    ST --> FIL[filter]
+```
+
 ## 实现边界
 
  - 范围内：

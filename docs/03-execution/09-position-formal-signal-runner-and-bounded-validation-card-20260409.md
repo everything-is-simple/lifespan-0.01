@@ -27,6 +27,16 @@
 2. 把 runner 接到当前 `position` bootstrap/materialization helper，而不是另起第二套落表逻辑。
 3. 留下 bounded validation 的命令、落表摘要与闭环文档。
 
+## 数据流图
+
+```mermaid
+flowchart LR
+    A[alpha formal signal] -->|bounded read| PR[position runner]
+    PR -->|market_base ref price| PC[position candidate]
+    PC --> PF[position funding snapshot]
+    PF --> PS[position sizing snapshot]
+```
+
 ## 实现边界
 
 - 范围内：

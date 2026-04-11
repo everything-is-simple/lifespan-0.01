@@ -28,6 +28,18 @@
 2. 明确 `alpha -> position -> trade` 的桥接。
 3. 回填 `100` 的 execution 文档与索引。
 
+## 信号锚点桥接图
+
+```mermaid
+flowchart LR
+    A[alpha] --> P[position]
+    P --> T[trade]
+    A --> SL[signal_low]
+    A --> LHL[last_higher_low]
+    SL --> T
+    LHL --> T
+```
+
 ## 实现边界
 
 - 范围内：

@@ -27,3 +27,12 @@
 1. 冻结最小退出账本表族与自然键。
 2. 说明 `1R` 半仓与尾仓退出如何共同落账。
 3. 回填 `102` 文档与索引。
+
+## 退出账本结构图
+
+```mermaid
+flowchart LR
+    POS[position] --> EXIT[trade exit]
+    EXIT --> PNLR[realized pnl]
+    EXIT --> POSR[position]
+```

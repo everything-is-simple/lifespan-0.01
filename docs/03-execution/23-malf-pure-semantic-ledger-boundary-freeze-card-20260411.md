@@ -35,6 +35,24 @@
 3. 把前 4 段合并后的最终公理层写进 `03` 号 malf design/spec 与 `23` 号结论，并明确下一步只剩 `pivot-confirmed break` 与 `same-timeframe stats sidecar` 两个机制层议题。
 4. 回填 `23` 号四件套、目录索引和入口文件，确保仓库入口不滞后于最新 `malf` 正式口径。
 
+## malf 核心边界图
+
+```mermaid
+flowchart LR
+    subgraph malf_core["malf 纯语义核心"]
+        P[pivot]
+        W[wave]
+        S[state]
+        PR[progress]
+        B[break]
+        C[count]
+    end
+    MALF[malf] --> malf_core
+    MALF -. compat .-> BR[bridge v1]
+    MALF -.-> SC[stats sidecar]
+    MALF -.-> CT[context]
+```
+
 ## 实现边界
 
 - 范围内：

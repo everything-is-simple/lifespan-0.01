@@ -45,6 +45,18 @@
    - 补唯一约束、关键 `NOT NULL`
    - 提供 bounded validation 与 readout
 
+## 增量物化与断点图
+
+```mermaid
+flowchart LR
+    RAW[raw ingest run] --> RAWFILE[raw ingest file]
+    RAW --> BD[base dirty instrument]
+    BD --> BA[base build action]
+    BA --> BS[base build scope]
+    BS --> BR[base build run]
+    BR -->|incremental| BD
+```
+
 ## 实现边界
 
 - 范围内：

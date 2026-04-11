@@ -35,6 +35,21 @@
 2. 升级 raw/base 共享账本为多 `asset_type`，落 `index/block` raw ingest 与 base build 的最小正式实现，同时保留 stock 兼容入口。
 3. 补单测，完成 bounded 初始化与增量 replay，并回填 evidence / record / conclusion。
 
+## 多 asset_type 账本图
+
+```mermaid
+flowchart LR
+    subgraph sources["多资产源头"]
+        TXT[txt stock]
+        TXI[txt index]
+        TXB[txt block]
+    end
+    TXT --> RM[raw market]
+    TXI --> RM
+    TXB --> RM
+    RM --> MB[market base]
+```
+
 ## 实现边界
 
 - 范围内：

@@ -28,6 +28,17 @@
 2. 把 `filter / alpha / PAS` 的上游合同切到 canonical malf。
 3. 清理 bridge-v1 在正式主线中的临时真值地位。
 
+## 重绑路径图
+
+```mermaid
+flowchart LR
+    MC[malf canonical] --> STR[structure]
+    MC --> FIL[filter]
+    MC --> ALP[alpha]
+    STR --> FIL
+    FIL --> ALP
+```
+
 ## 实现边界
 
 - 范围内：

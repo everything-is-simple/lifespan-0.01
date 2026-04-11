@@ -38,7 +38,16 @@
 3. 建立 `data -> malf -> structure` 的 bounded 官方验证。
    - 真实写入 `H:\Lifespan-data`
    - 留下 `inserted / reused / rematerialized` 证据
-4. 回填执行索引、入口文件与路线图，纠正“前半段已通”的错误口径。
+4. 回填执行索引、入口文件与路线图，纠正”前半段已通”的错误口径。
+
+## 数据主线桥接图
+
+```mermaid
+flowchart LR
+    RM[raw market] --> MB[market_base]
+    MB --> MF[malf]
+    MF --> ST[structure]
+```
 
 ## 实现边界
 

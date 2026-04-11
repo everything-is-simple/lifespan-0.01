@@ -46,7 +46,7 @@
 ## 任务分解
 
 1. 建立卡 `19` 的正式设计与实现边界。
-   - 冻结 `TdxQuant` 在本卡只作为“日更原始事实源头”
+   - 冻结 `TdxQuant` 在本卡只作为”日更原始事实源头”
    - 冻结 `front/back` 不直接进入正式 `market_base`
    - 冻结与 `txt` 正式入口并存的 fallback 规则
 2. 设计 raw 侧账本桥接合同。
@@ -57,6 +57,17 @@
    - 落最小 runner
    - 做至少一轮 official bounded run
    - 回填 evidence / record / conclusion
+
+## TdxQuant 桥接图
+
+```mermaid
+flowchart LR
+    TX[TdxQuant] --> RQ[raw tdxquant request]
+    RQ --> RC[raw tdxquant instrument checkpoint]
+    RC --> RM[raw market]
+    RM --> BD[base dirty instrument]
+    BD --> MB[market base]
+```
 
 ## 实现边界
 

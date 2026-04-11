@@ -26,6 +26,38 @@
 3. 实现 `alpha formal signal -> position_candidate_audit / position_capacity_snapshot / position_sizing_snapshot` 的最小 in-process 消费入口，并让当前激活 policy 能写入对应 family snapshot。
 4. 补最小测试、命令证据和落表核查，确认 08 的 schema/bootstrap 与最小消费入口已满足文档先行门禁。
 
+## 表族结构图
+
+```mermaid
+flowchart TD
+    subgraph public["公共账本层"]
+        PRUN[position_run]
+        PPR[position_policy_registry]
+        PCA[position_candidate_audit]
+        PCS[position_capacity_snapshot]
+        PSS[position_sizing_snapshot]
+    end
+    subgraph funding["资金管理分表层"]
+        PFNS[position_funding_fixed_notional_snapshot]
+        PSLS[position_funding_single_lot_snapshot]
+    end
+    subgraph exit["退出计划层"]
+        PEP[position_exit_plan]
+        PEL[position_exit_leg]
+    end
+    A[alpha formal signal] --> PCA
+    A --> PCS
+    A --> PSS
+    PCA --> PPR
+    PCS --> PPR
+    PSS --> PPR
+    PPR --> PFNS
+    PPR --> PSLS
+    PFNS --> PEP
+    PSLS --> PEP
+    PEP --> PEL
+```
+
 ## 实现边界
 
 - 范围内：

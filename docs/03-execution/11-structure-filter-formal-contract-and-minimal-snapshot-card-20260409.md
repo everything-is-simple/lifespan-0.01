@@ -30,6 +30,16 @@
 2. 冻结 `filter` 最小正式三表、最小准入字段组、最小 runner 合同与 bounded evidence 口径。
 3. 让 `alpha` 后续正式实现可以优先消费 `filter_snapshot + structure_snapshot`，不再默认回读旧兼容结构/准入字段。
 
+## 上游分层图
+
+```mermaid
+flowchart LR
+    M[malf] --> S[structure]
+    S --> F[filter]
+    F --> A[alpha]
+    A --> P[position]
+```
+
 ## 实现边界
 
 - 范围内：

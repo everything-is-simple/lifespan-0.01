@@ -43,6 +43,24 @@
    - 明确推荐主路径、备选路径和拒绝项
    - 如果需要进入实现，再开后续实现卡，不直接在本卡偷跑大规模重写
 
+## 源头选型对比图
+
+```mermaid
+flowchart LR
+    subgraph community["社区方案"]
+        VD[vipdoc/*.day]
+        MD[mootdx]
+    end
+    subgraph official["官方方案"]
+        TX[TdxQuant]
+        TQ[tqcenter]
+    end
+    VD --> MB[market_base]
+    MD --> MB
+    TX --> MB
+    TQ --> MB
+```
+
 ## 实现边界
 
 - 范围内：

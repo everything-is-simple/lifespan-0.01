@@ -34,6 +34,19 @@
 5. 把 `execution_interface / allowed_actions / confidence / context feedback` 从 `malf core` 排除。
 6. 回填 `29` 的 evidence / record / conclusion。
 
+## Canonical 语义边界图
+
+```mermaid
+flowchart LR
+    MB[market_base] --> MALF[malf]
+    MALF --> PL[pivot ledger]
+    MALF --> WL[wave ledger]
+    MALF --> EL[extreme progress ledger]
+    MALF --> SS[state snapshot]
+    MALF --> SLS[same level stats]
+    MALF -. excluded .-> EI[execution interface]
+```
+
 ## 范围
 
 ### 包含

@@ -21,6 +21,30 @@
 2. 切片 2：升级执行卡模板与 `check_doc_first_gating_governance.py`，把 `历史账本约束` 六条声明接入正式硬门禁。
 3. 切片 3：补单测、同步入口文件与执行闭环，并确认卡 `20` 的 `index/block raw->base` 已作为新合同的已验证前置事实。
 
+## 全系统治理结构图
+
+```mermaid
+flowchart TD
+    subgraph modules["各模块账本"]
+        RAW[raw ingest]
+        BASE[market base]
+        MALF[malf]
+        STR[structure]
+        FIL[filter]
+        ALP[alpha]
+        POS[position]
+        TRD[trade]
+    end
+    RAW --> BASE
+    BASE --> MALF
+    MALF --> STR
+    STR --> FIL
+    FIL --> ALP
+    ALP --> POS
+    POS --> TRD
+    G[governance checker] -.->|hard constraint| modules
+```
+
 ## 实现边界
 
 - 范围内：

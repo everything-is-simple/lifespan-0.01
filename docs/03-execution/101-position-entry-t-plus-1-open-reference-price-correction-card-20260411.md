@@ -27,3 +27,12 @@
 1. 冻结 `T+1 open` 的正式参考价口径。
 2. 回填 `101` 文档与索引。
 3. 为 `35-36` 提供 entry price 基线。
+
+## 参考价校正路径图
+
+```mermaid
+flowchart LR
+    MB[market_base none] --> EP[entry price]
+    EP --> POS[position]
+    EP --> TRD[trade]
+```

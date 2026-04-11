@@ -36,6 +36,18 @@
 4. 为 `structure / filter` 增加最小只读 sidecar 接入字段和 runner 读取路径，但不改写其现有硬判断逻辑。
 5. 补单测、运行证据、执行四件套与索引回填。
 
+## 机制层 Sidecar 接入图
+
+```mermaid
+flowchart LR
+    MC[malf core] --> BR[pivot confirmed break ledger]
+    MC --> ST[stats snapshot]
+    BR --> STR[structure]
+    ST --> FIL[filter]
+    STR --> ALP[alpha]
+    FIL --> ALP
+```
+
 ## 实现边界
 
 - 范围内：

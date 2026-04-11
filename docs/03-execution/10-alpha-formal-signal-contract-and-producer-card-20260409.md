@@ -29,6 +29,16 @@
 2. 实现最小 producer runner，支持 bounded 读取、按 `instrument` 分批、写入 `run / event / run_event` 与 summary。
 3. 让 `position` 正式 runner 直接对接 `alpha_formal_signal_event`，并留下 unit test、bounded smoke、record、conclusion。
 
+## 生产者-消费者图
+
+```mermaid
+flowchart LR
+    AR[alpha formal signal run] --> AE[alpha formal signal event]
+    AR --> ARE[alpha formal signal run event]
+    AE --> PR[position runner]
+    ARE --> PR
+```
+
 ## 实现边界
 
 - 范围内：

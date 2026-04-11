@@ -34,8 +34,23 @@
 ## 任务分解
 
 1. 切片 1：梳理旧仓 `position / positioning / system 291/293/294` 的已定论边界，确认新仓应沿袭的主合同与拒绝事项。
-2. 切片 2：补 `position` 正式 design/spec，冻结公共账本层、资金管理分表层、自然键和“测试仓/主仓”新语义。
-3. 切片 3：回填 07 的 evidence / record / conclusion，并顺手开 08 草卡，让执行索引切到“表族落库与 bootstrap”。
+2. 切片 2：补 `position` 正式 design/spec，冻结公共账本层、资金管理分表层、自然键和”测试仓/主仓”新语义。
+3. 切片 3：回填 07 的 evidence / record / conclusion，并顺手开 08 草卡，让执行索引切到”表族落库与 bootstrap”。
+
+## 模块边界与数据流图
+
+```mermaid
+flowchart LR
+    A[alpha formal signal] --> PA[position candidate audit]
+    A --> PC[position capacity snapshot]
+    A --> PS[position sizing snapshot]
+    PA --> PF[position funding layer]
+    PC --> PF
+    PS --> PF
+    PF --> PR[position policy registry]
+    PR --> PE[position exit plan]
+    PE --> PL[position exit leg]
+```
 
 ## 实现边界
 

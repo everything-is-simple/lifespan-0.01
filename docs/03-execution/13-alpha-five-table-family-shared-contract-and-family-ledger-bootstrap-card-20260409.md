@@ -48,6 +48,27 @@
    - 不追求一次覆盖五个 family 的全部最终细节。
    - 先用最小 family ledger bootstrap 证明 schema、rerun 和 bounded pilot 成立。
 
+## 五表族结构图
+
+```mermaid
+flowchart LR
+    TR[alpha trigger run] --> TE[alpha trigger event]
+    TE --> FE[alpha family event]
+    TR --> FRE[alpha family run event]
+    subgraph families["五表族"]
+        BOF[bof]
+        TST[tst]
+        PB[pb]
+        CPB[cpb]
+        BPB[bpb]
+    end
+    FE --> BOF
+    FE --> TST
+    FE --> PB
+    FE --> CPB
+    FE --> BPB
+```
+
 ## 实现边界
 
 - 范围内：

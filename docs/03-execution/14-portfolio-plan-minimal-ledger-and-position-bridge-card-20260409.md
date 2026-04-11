@@ -48,6 +48,18 @@
    - 至少一次 unchanged rerun
    - 至少一次受控输入变化 rerun
 
+## 组合层与 position 桥接图
+
+```mermaid
+flowchart LR
+    P[position] --> PP[portfolio_plan]
+    PP --> PPS[portfolio_plan snapshot]
+    PPS --> ADM[admitted]
+    PPS --> BLK[blocked]
+    PPS --> TRM[trimmed]
+    ADM --> PGR[portfolio gross remaining weight]
+```
+
 ## 实现边界
 
 - 范围内：

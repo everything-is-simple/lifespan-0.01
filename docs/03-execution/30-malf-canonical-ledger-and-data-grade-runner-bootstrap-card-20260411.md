@@ -37,6 +37,20 @@
    - dirty queue / checkpoint / replay
 5. 回填 `30` 的 evidence / record / conclusion。
 
+## Canonical 表族与 Runner 图
+
+```mermaid
+flowchart LR
+    MB[market_base] --> CR[malf canonical runner]
+    CR --> PL[malf pivot ledger]
+    CR --> WL[malf wave ledger]
+    CR --> EL[malf extreme progress ledger]
+    CR --> SS[malf state snapshot]
+    CR --> SLS[malf same level stats]
+    CR --> WQ[malf canonical work queue]
+    WQ --> CP[malf canonical checkpoint]
+```
+
 ## 范围
 
 ### 包含

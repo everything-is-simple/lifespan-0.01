@@ -34,6 +34,21 @@
 3. 复核 `backward` 与 `none` 两套价格口径在主链中的切换边界是否仍与正式治理口径一致。
 4. 运行 bounded mainline 验证，补齐 evidence / record / conclusion，并给出正式裁决：下一张是主线卡、修复卡，还是 system 卡。
 
+## 主链复核路径图
+
+```mermaid
+flowchart LR
+    D[data] --> M[malf]
+    M --> S[structure]
+    S --> F[filter]
+    F --> A[alpha]
+    A --> P[position]
+    P --> PP[portfolio_plan]
+    PP --> T[trade]
+    D -->|backward| M
+    A -->|none| P
+```
+
 ## 实现边界
 
 - 范围内：
