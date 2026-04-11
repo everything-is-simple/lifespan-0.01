@@ -5,7 +5,7 @@
 
 1. 当前下一锤：`28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`
 2. 当前待施工卡：`28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`
-3. 当前正式主线剩余卡：`11`
+3. 当前正式主线剩余卡：`9`
 4. 当前 sidecar 卡：`0`
 5. 当前修复卡：`0`
 
@@ -52,11 +52,9 @@
 
 ## 当前说明
 
-1. 最新生效结论锚点仍是 `27-system-mainline-bounded-acceptance-readout-and-audit-bootstrap-conclusion-20260411.md`。
-2. 当前治理锚点与当前施工卡是 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`。
-3. `29-32` 是 malf 优先卡组：
-   - semantic canonical contract freeze
-   - canonical ledger + data-grade runner
+1. 最新生效结论锚点已推进到 `30-malf-canonical-ledger-and-data-grade-runner-bootstrap-conclusion-20260411.md`。
+2. 当前治理锚点与当前施工主卡仍是 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`。
+3. `29-30` 已完成并生效；`31-32` 仍是 malf 后续卡组：
    - downstream rebind
    - truthfulness revalidation
-4. `100-105` 是在 malf 收口后再恢复的 trade/system 卡组。
+4. `100-105` 仍是 malf 收口后再恢复的 trade/system 卡组。

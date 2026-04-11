@@ -2,64 +2,76 @@
 
 卡片编号：`30`
 日期：`2026-04-11`
-状态：`待执行`
+状态：`待施工`
 
-## 需求
+## 目标
 
-- 问题：
-  你要求 `malf` 数据库像 `data` 一样，既能一次性批量建仓，也能每日增量更新并支持断点续跑。当前 `malf` 只有有限 checkpoint，不具备完整 data-grade dirty queue。
-- 目标结果：
-  建立 canonical malf 的正式表族、bounded runner、dirty/work queue、checkpoint ledger 与 replay/resume 契约。
-- 为什么现在做：
-  没有 data-grade runner，canonical malf 就只是文档真值，不能成为正式上游。
+真正把 canonical `malf v2` 做成可运行、可续跑、可审计的正式历史账本实现。
 
-## 设计输入
+## 依赖
 
-- 设计文档：
-  - `docs/01-design/modules/malf/07-malf-canonical-ledger-and-data-grade-runner-bootstrap-charter-20260411.md`
-- 规格文档：
-  - `docs/02-spec/modules/malf/07-malf-canonical-ledger-and-data-grade-runner-bootstrap-spec-20260411.md`
-- 当前锚点结论：
-  - `docs/03-execution/29-malf-semantic-canonical-contract-freeze-conclusion-20260411.md`
+- [07-malf-canonical-ledger-and-data-grade-runner-bootstrap-charter-20260411.md](</h:/lifespan-0.01/docs/01-design/modules/malf/07-malf-canonical-ledger-and-data-grade-runner-bootstrap-charter-20260411.md>)
+- [07-malf-canonical-ledger-and-data-grade-runner-bootstrap-spec-20260411.md](</h:/lifespan-0.01/docs/02-spec/modules/malf/07-malf-canonical-ledger-and-data-grade-runner-bootstrap-spec-20260411.md>)
+- [29-malf-semantic-canonical-contract-freeze-conclusion-20260411.md](</h:/lifespan-0.01/docs/03-execution/29-malf-semantic-canonical-contract-freeze-conclusion-20260411.md>)
 
-## 任务分解
+## 任务
 
-1. 建立 canonical malf 正式表族与 bounded runner。
-2. 冻结 batch build、daily incremental、dirty/work queue、checkpoint、resume 语义。
-3. 回填 `30` 的 execution 文档与索引。
+1. 新增 canonical `malf` 表族：
+   - `malf_canonical_run`
+   - `malf_canonical_work_queue`
+   - `malf_canonical_checkpoint`
+   - `malf_pivot_ledger`
+   - `malf_wave_ledger`
+   - `malf_extreme_progress_ledger`
+   - `malf_state_snapshot`
+   - `malf_same_level_stats`
+2. 新增 canonical runner：
+   - 从官方 `market_base` 读取 bars
+   - 支持 `D / W / M`
+   - 支持批量建仓 / 每日增量 / resume
+3. 新增 canonical script，供后续卡与验证脚本调用。
+4. 补 canonical 单元测试，覆盖：
+   - pivot 生成与 `confirmed_at`
+   - wave/state/extreme 物化
+   - same-level wave stats
+   - dirty queue / checkpoint / replay
+5. 回填 `30` 的 evidence / record / conclusion。
 
-## 实现边界
+## 范围
 
-- 范围内：
-  - `docs/01-design/modules/malf/07-*`
-  - `docs/02-spec/modules/malf/07-*`
-  - `docs/03-execution/30-*`
-  - `docs/03-execution/evidence/30-*`
-  - `docs/03-execution/records/30-*`
-  - `src/mlq/malf/*`
-  - `scripts/malf/*`
-  - `tests/unit/malf/*`
-- 范围外：
-  - 下游 rebind
-  - trade/system 逻辑
+### 包含
+
+- `src/mlq/malf/*`
+- `scripts/malf/*`
+- `tests/unit/malf/*`
+- `docs/01-design/modules/malf/07-*`
+- `docs/02-spec/modules/malf/07-*`
+- `docs/03-execution/30-*`
+- `docs/03-execution/evidence/30-*`
+- `docs/03-execution/records/30-*`
+
+### 不包含
+
+- `31` 的 downstream rebind
+- `32` 的 truthfulness revalidation
+- 交易动作与 alpha 决策矩阵
 
 ## 历史账本约束
 
-- 实体锚点：
-  以 `code + timeframe + semantic_stage + trade_date` 作为 canonical malf 主锚点。
+- 实体锚点：`asset_type + code + timeframe`
 - 业务自然键：
-  以 `code + timeframe + trade_date + semantic_stage` 作为业务自然键；`run_id` 只做审计。
-- 批量建仓：
-  首次全量扫描目标窗口，建立 canonical malf 正式表族与初始 queue/checkpoint。
-- 增量更新：
-  后续只按 dirty/work queue 和新增日期推进，不默认重跑整仓历史。
-- 断点续跑：
-  runner 中断后必须能从 queue + checkpoint 恢复。
-- 审计账本：
-  审计落在 `malf` 正式 `run / queue / checkpoint / replay` 账本与 `30` 的 evidence / record / conclusion。
+  - `pivot_bar_dt + pivot_type`
+  - `wave_id`
+  - `wave_id + extreme_seq`
+  - `asof_bar_dt`
+- 批量建仓：按 `code + timeframe` 全历史回放
+- 增量更新：按 dirty scope 回放 `tail_start_bar_dt` 之后的 bars
+- 断点续跑：`work_queue + checkpoint + replay`
+- 审计账本：`malf_canonical_run` + execution 文档
 
-## 收口标准
+## 完成标准
 
-1. `malf` 具备 data-grade 批量建仓、增量更新与断点续跑能力。
-2. canonical runner 成为正式入口。
-3. 为 `31-32` 提供可信上游。
+1. canonical `malf` 在本地 DuckDB 中正式落表。
+2. `D / W / M` 三个时间级别可独立产出结果。
+3. `malf` 具备批量建仓、每日增量、断点续跑能力。
+4. bridge-v1 兼容产物与 canonical v2 并存，但不混真值。

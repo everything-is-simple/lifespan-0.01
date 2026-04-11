@@ -4,7 +4,7 @@
 状态：`持续更新`
 
 1. 当前下一锤：`28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`
-2. 当前正式主线剩余卡：`11`
+2. 当前正式主线剩余卡：`9`
 3. 当前 sidecar 卡：`0`
 4. 当前修复卡：`0`
 
@@ -19,7 +19,7 @@
 
 ## 当前阶段
 
-1. 最新生效结论锚点保持在 `27`。
-2. 当前施工卡切到 `28`，主题是“全模块向 data-grade checkpoint + dirty queue 对齐”。
-3. `29-32` 是 malf 优先修订卡组，目标是让 canonical malf 成为可信上游。
-4. `100-105` 是 malf 收口后的 trade/system 恢复施工卡组。
+1. 最新生效结论锚点已推进到 `30`。
+2. 当前施工总卡仍是 `28`，主题是“全模块向 data-grade checkpoint + dirty queue 对齐”。
+3. `29-30` 已完成并生效；`31-32` 继续承担 malf downstream rebind 与主链复核。
+4. `100-105` 仍是 malf 收口后的 trade/system 恢复施工卡组。

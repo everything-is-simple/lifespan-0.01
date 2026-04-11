@@ -3,7 +3,7 @@
 日期：`2026-04-09`
 状态：`持续更新`
 
-当前最新生效结论锚点：`27-system-mainline-bounded-acceptance-readout-and-audit-bootstrap-conclusion-20260411.md`
+当前最新生效结论锚点：`30-malf-canonical-ledger-and-data-grade-runner-bootstrap-conclusion-20260411.md`
 
 ## 正式结论目录
 
@@ -48,7 +48,7 @@
 
 ## 当前说明
 
-1. `27` 仍是最新生效结论。
-2. `28` 是当前治理主卡。
-3. `29-32` 是 malf 优先卡组。
-4. `100-105` 是 malf 收口后的 trade/system 卡组。
+1. `30` 已成为当前最新生效结论锚点。
+2. `28` 仍是当前未收口的总治理主卡。
+3. `29-30` 已完成并生效，`31-32` 仍是 malf 后续卡组。
+4. `100-105` 继续保持为 malf 收口后的 trade/system 卡组。
