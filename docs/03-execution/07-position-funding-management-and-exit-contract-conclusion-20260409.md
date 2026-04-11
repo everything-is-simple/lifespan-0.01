@@ -22,6 +22,16 @@
 
 ## 影响
 
-1. 路线图中原来关于 `position` 资金管理分表、自然键和“测试仓 + 加码”落点的三处核心未定项，从本轮开始转为仓库内正式合同。
+1. 路线图中原来关于 `position` 资金管理分表、自然键和"测试仓 + 加码"落点的三处核心未定项，从本轮开始转为仓库内正式合同。
 2. `position` 已经具备开 08 的前提，下一步可以直接进入表族落库与 bootstrap，而不是继续围绕命名和分层打转。
 3. `portfolio_plan / trade / system` 以后消费 `position` 时，面对的是显式的允许仓位、减仓裁决和退出腿合同，不再只是旧研究线残留的口头语义。
+
+## position 表族结构图
+
+```mermaid
+flowchart TD
+    ALPHA[alpha formal signal] --> PA[position_candidate_audit]
+    PA --> PC[position_capacity_snapshot]
+    PC --> PS[position_sizing_snapshot]
+    PS --> PP[portfolio_plan]
+```

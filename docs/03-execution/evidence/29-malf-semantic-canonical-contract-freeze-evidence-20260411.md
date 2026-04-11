@@ -19,3 +19,13 @@
 - canonical `malf` 真值从 bridge v1 `MA / ret20 / new_high_count` 近似层切换到纯语义 `pivot / wave / extreme / state / same_level_stats`
 - `D / W / M` 独立计算、禁止跨级别反馈、禁止执行动作进入 `malf core`
 - bridge v1 被降级为兼容输出，不再代表正式真值
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    OLD[bridge v1 MA/ret20/new_high] -->|降级兼容| COMPAT[兼容输出保留]
+    NEW[canonical pivot/wave/extreme/state] --> TRUE[malf 正式真值]
+    DWM[D/W/M 独立计算] --> TRUE
+    TRUE --> OK[29 合同冻结收口]
+```

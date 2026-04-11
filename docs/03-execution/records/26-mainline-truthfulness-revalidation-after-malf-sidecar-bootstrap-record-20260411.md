@@ -25,3 +25,14 @@
 - 静态合同复核表明：`structure / filter / alpha / position / portfolio_plan / trade` 当前仍通过正式上游账本对接，未发现绕过正式账本直接消费 bridge 私有中间过程的主链断裂。
 - bounded 整链测试证明：`23/24/25` 引入的新 `malf` 口径没有破坏主链 truthfulness；本次唯一偏差是 `position` CLI 默认值漂移，而不是主链设计本身失真。
 - 由于下一张卡尚未正式开启，当前治理锚点仍保留在 `26`；后续若要进入 `system` 正式实现，必须先另开新卡，不能继续借 `26` 施工。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    MALF[malf sidecar 接入] --> DS[structure/filter/alpha]
+    DS --> MAIN[position/portfolio_plan/trade]
+    MAIN -->|adjust_method=none| EXEC[执行口径不污染]
+    FIX[position CLI默认值修正] --> PT[15 passed]
+    PT --> OK[26卡 主链 truthfulness 复核收口]
+```

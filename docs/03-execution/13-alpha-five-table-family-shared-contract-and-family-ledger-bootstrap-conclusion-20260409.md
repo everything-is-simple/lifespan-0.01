@@ -24,3 +24,12 @@
 - `alpha` 当前已经从“trigger ledger + formal signal 两级正式账本”推进到“trigger ledger + family ledger + formal signal 三级正式账本”。
 - 后续继续扩 `alpha` 时，应优先在当前 family ledger 之上细化 `bof / tst / pb / cpb / bpb` 的 family-specific payload、trace 或专表，而不是回头扩 `position` 掩盖上游缺口。
 - 当前正式主线卡已清零；下一轮应回到 `Ω-system-delivery-roadmap-20260409.md` 重新规划 `portfolio_plan / trade / system` 或 `alpha` 后续深挖的正式开工顺序。
+
+## alpha 家族账本图
+
+```mermaid
+flowchart LR
+    TRG[trigger_event] --> FAM[family_event bof/pb/...]
+    FAM --> SIG[formal_signal_event]
+    SIG --> POS[position]
+```

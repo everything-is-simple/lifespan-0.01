@@ -23,3 +23,13 @@
 
 - 当前模块状态仍然属于人工裁定版看板，不是自动从代码和数据库里采样生成；后续如果需要，可以再开卡做自动化状态采集。
 - 当前路线图主要服务“系统级推进与施工顺序”，不替代具体模块的 design/spec/card。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    CHARTER[路线图 charter/spec] --> ROADMAP[系统级总路线图]
+    ROADMAP --> ENTRY[AGENTS.md/README.md 入口更新]
+    ENTRY --> CHECK[治理+索引检查通过]
+    CHECK --> OK[05卡收口]
+```

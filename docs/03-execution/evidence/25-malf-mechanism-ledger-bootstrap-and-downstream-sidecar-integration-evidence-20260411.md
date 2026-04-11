@@ -32,3 +32,14 @@ python scripts/system/check_development_governance.py AGENTS.md README.md pyproj
 - `tests/unit/malf/test_mechanism_runner.py`
 - `tests/unit/structure/test_runner.py`
 - `tests/unit/filter/test_runner.py`
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    MALF[malf core 快照] --> MECH[run_malf_mechanism_build]
+    MECH --> PCB[pivot_confirmed_break_ledger]
+    MECH --> STATS[same_timeframe_stats_snapshot]
+    PCB -.->|只读sidecar| STR[structure]
+    STATS -.->|只读sidecar| FLT[filter]
+```

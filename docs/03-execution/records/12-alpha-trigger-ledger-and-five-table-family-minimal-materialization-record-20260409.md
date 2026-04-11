@@ -31,3 +31,13 @@
 
 - 当前命令行环境会优先命中旧仓 `mlq`，因此本轮所有实现验证和 pilot 命令都显式带 `PYTHONPATH=src`，保证读取的是本仓源码口径。
 - `alpha_formal_signal_event` 本轮没有改 schema，只继续复用它对 `source_trigger_event_nk` 的既有正式合同；变化发生在它现在真正引用的是官方 `alpha_trigger_event.trigger_event_nk`，而不再是裸 detector 表。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    STR[structure/filter] --> TRG[run_alpha_trigger_ledger_build]
+    TRG --> EVT[alpha_trigger_event]
+    EVT --> SIG[alpha_formal_signal_event 官方桥接]
+    PT[8 passed] --> OK[12卡收口]
+```

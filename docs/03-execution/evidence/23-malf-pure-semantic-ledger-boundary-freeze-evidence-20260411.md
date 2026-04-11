@@ -23,3 +23,12 @@ python scripts/system/check_doc_first_gating_governance.py
 - `docs/01-design/modules/malf/03-malf-pure-semantic-structure-ledger-charter-20260411.md`
 - `docs/02-spec/modules/malf/03-malf-pure-semantic-structure-ledger-spec-20260411.md`
 - `docs/03-execution/23-malf-pure-semantic-ledger-boundary-freeze-conclusion-20260411.md`
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    CHARTER[malf 纯语义 charter/spec 落地] --> FREEZE[malf 边界冻结]
+    FREEZE --> PRIM[HH/HL/LL/LH/break/count 确认]
+    GATE[门禁+治理+索引通过] --> OK[23卡收口]
+```

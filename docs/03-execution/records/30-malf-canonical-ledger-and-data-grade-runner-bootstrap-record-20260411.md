@@ -28,3 +28,15 @@
 pytest tests/unit/malf/test_canonical_runner.py -q
 pytest tests/unit/malf/test_malf_runner.py tests/unit/malf/test_mechanism_runner.py tests/unit/malf/test_canonical_runner.py -q
 ```
+
+## 流程图
+
+```mermaid
+flowchart LR
+    MB[market_base backward] --> CANON[run_malf_canonical_build]
+    CANON --> PIVOT[malf_pivot_ledger confirmed_at]
+    CANON --> WAVE[malf_wave_ledger]
+    CANON --> STATE[malf_state_snapshot]
+    CANON -->|D/W/M独立| DWM[三级别独立账本]
+    PT[canonical test 通过] --> OK[30卡收口]
+```

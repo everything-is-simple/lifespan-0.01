@@ -57,3 +57,14 @@
   - `TdxQuant(dividend_type='none')` 更适合作为官方日更原始事实入口
   - 复权继续留在仓内可审计物化层
   - `txt` 路线继续保留为正式 fallback
+
+## 流程图
+
+```mermaid
+flowchart LR
+    TDXQ[TdxQuant none 日更] --> SYNC[run_tdxquant_daily_raw_sync]
+    SYNC -->|checkpoint续跑| CP[run/request/instrument]
+    SYNC --> RAW[raw_market stock_daily_bar none]
+    RAW -->|dirty联动| BASE[base incremental none]
+    TXT[txt 离线] -.->|fallback| RAW
+```

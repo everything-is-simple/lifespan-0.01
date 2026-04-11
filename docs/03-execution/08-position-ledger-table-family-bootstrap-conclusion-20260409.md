@@ -22,3 +22,14 @@
 1. `position` 当前状态从“合同已冻结”推进到“最小 bootstrap 与最小消费入口已建立”。
 2. 后续 09 可以直接围绕“真实读取 `alpha` 官方 formal signal、补 market_base 参考价、做 bounded validation”展开，而不必再重搭基础表族。
 3. `portfolio_plan / trade / system` 未来消费 `position` 时，已经有正式的最小账本出口，而不是只有文档描述。
+
+## position 最小账本图
+
+```mermaid
+flowchart LR
+    SIG[alpha_formal_signal_event] --> MAT[materialize_position]
+    MAT --> CA[candidate_audit]
+    MAT --> CAP[capacity_snapshot]
+    MAT --> SZ[sizing_snapshot]
+    MAT --> FAM[family_snapshot]
+```

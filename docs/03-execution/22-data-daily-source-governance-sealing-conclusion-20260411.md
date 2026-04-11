@@ -34,3 +34,19 @@
   - 可以研究 `index/block` 的 official 日更桥接；
   - 可以研究 “`TdxQuant(none)` 主路 + txt fallback” 的全资产统一治理；
   - 但必须以不破坏当前正式 txt fallback 与仓内复权物化口径为前提。
+
+## data 双路径运行图
+
+```mermaid
+flowchart LR
+    subgraph stock日更
+        TQ[TdxQuant none] --> RAW[raw_market stock]
+    end
+    subgraph index/block日更
+        DIR[H:/tdx_offline_Data] --> RAW2[raw_market index/block]
+    end
+    RAW --> BASE[market_base]
+    RAW2 --> BASE
+    BASE -->|none| EXEC[position/trade]
+    BASE -->|backward| SIG[malf/structure/filter/alpha]
+```

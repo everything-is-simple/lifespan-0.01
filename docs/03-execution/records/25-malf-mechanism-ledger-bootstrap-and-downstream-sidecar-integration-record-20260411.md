@@ -24,3 +24,15 @@
 
 - `run_malf_snapshot_build.py` 仍继续承担 bridge v1 兼容输出职责，`run_malf_mechanism_build.py` 则只消费 bridge v1 输出并沉淀机制层 sidecar 账本。
 - scoped `check_development_governance.py` 通过；全仓运行时仍会继续报仓库既有的超长文件和中文化历史债务，这次没有新增同类问题。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    BRG[bridge v1 pas_context_snapshot] --> MECH[run_malf_mechanism_build]
+    MECH --> PCB[pivot_confirmed_break_ledger]
+    MECH --> STATS[same_timeframe_stats_snapshot]
+    PCB -.->|只读sidecar| STR[structure]
+    STATS -.->|只读sidecar| FLT[filter]
+    OK[25卡收口]
+```

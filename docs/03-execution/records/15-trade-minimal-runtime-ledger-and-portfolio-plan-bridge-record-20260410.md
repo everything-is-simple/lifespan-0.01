@@ -56,3 +56,14 @@
 2. 不做 broker/session/partial fill。
 3. 不做完整 exit/replay 引擎。
 4. 不做多账户、多组合簇调度。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    PP[portfolio_plan_snapshot] --> TRADE[run_trade_runtime_build]
+    MB[market_base none] --> TRADE
+    TRADE -->|enter| PLAN[trade_execution_plan]
+    TRADE -->|carry| CARRY[trade_carry_snapshot]
+    PT[9 passed] --> OK[15卡收口]
+```

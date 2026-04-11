@@ -23,3 +23,13 @@
 ## 备注
 
 - 经过卡 `21` 后，后续任何正式卡如果不显式说明“自然键是什么、怎么建仓、怎么增量、怎么续跑、审计账本在哪”，都不能合法进入 `src/`、`scripts/`、`.codex/` 的正式实现。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    SHARED[共享合同 稳定实体锚点] --> GATE[check_doc_first_gating 硬门禁]
+    GATE --> TMPL[执行卡模板 六条声明]
+    TMPL --> TEST[test_doc_first_gating_governance 通过]
+    TEST --> OK[21卡 全系统账本硬约束收口]
+```

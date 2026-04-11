@@ -33,3 +33,13 @@ python scripts/system/check_development_governance.py scripts/position tests/uni
 - `tests/unit/position/test_cli_entrypoint.py`
 - `tests/unit/system/test_mainline_truthfulness_revalidation.py`
 - `tests/unit/alpha/test_runner.py`
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    MALF[malf sidecar 接入] --> DS[alpha/position/portfolio_plan/trade]
+    DS --> PT[15 passed 全量通过]
+    PT --> TRUTH[主链 truthfulness 复核收口]
+    GATE[门禁+治理通过] --> TRUTH
+```

@@ -24,3 +24,14 @@
 - `23` 号卡继续负责 pure semantic core；
 - `24` 号卡只负责 pure semantic core 之外的只读机制层；
 - 后续若实现机制层 runner 或正式表族，必须另开新卡补齐实现、证据与审计账本。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    CORE[malf core HH/HL/break] --> MECH[机制层文档合同]
+    MECH --> PCB[pivot_confirmed_break 只读合同]
+    MECH --> STATS[same_timeframe_stats sidecar 合同]
+    PCB -.->|只读| DS[structure/filter]
+    GATE[门禁+治理通过] --> OK[24卡收口]
+```

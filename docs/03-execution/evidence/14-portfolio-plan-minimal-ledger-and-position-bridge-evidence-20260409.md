@@ -223,3 +223,14 @@ PY
 - `H:\Lifespan-data\position\position.duckdb`
 - `H:\Lifespan-data\portfolio_plan\portfolio_plan.duckdb`
 - `H:\Lifespan-report\portfolio_plan\portfolio-plan-pilot-20260409-001.json`
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    POS[position 4条样本] --> PP[run_portfolio_plan_build]
+    PP -->|inserted=4| SNAP[portfolio_plan_snapshot]
+    PP -->|reused=4| REUSE[unchanged rerun]
+    PP -->|rematerialized=1| RMAT[upstream changed rerun]
+    PT[13 passed] --> OK[14卡收口]
+```

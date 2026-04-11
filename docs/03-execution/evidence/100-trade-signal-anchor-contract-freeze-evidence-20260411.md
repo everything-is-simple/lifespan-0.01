@@ -18,3 +18,12 @@
 
 - 产物路径 1
 - 产物路径 2
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    ALPHA[alpha formal signal] --> ANCHOR[trade signal anchor 合同冻结]
+    ANCHOR --> TRADE[trade runner 信号锚点绑定]
+    TRADE --> OK[100卡收口]
+```

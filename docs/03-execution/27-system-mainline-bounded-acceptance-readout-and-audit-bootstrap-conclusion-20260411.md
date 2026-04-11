@@ -38,3 +38,14 @@
 - `python scripts/system/check_doc_first_gating_governance.py`
 - `python scripts/system/check_development_governance.py src/mlq/system scripts/system tests/unit/system docs/03-execution`
 - `python .codex/skills/lifespan-execution-discipline/scripts/check_execution_indexes.py --include-untracked`
+
+## system 账本层图
+
+```mermaid
+flowchart LR
+    CHAIN[structure/filter/alpha/position/portfolio_plan/trade] --> SYS[run_system_mainline_readout_build]
+    SYS --> RUN[system_run]
+    SYS --> CHILD[system_child_run_readout]
+    SYS --> SNAP[system_mainline_snapshot]
+    SYS --> RS[system_run_snapshot]
+```

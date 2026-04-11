@@ -42,3 +42,15 @@
 - `python .codex/skills/lifespan-execution-discipline/scripts/check_execution_indexes.py --include-untracked`
 - `python scripts/system/check_doc_first_gating_governance.py`
 - `python scripts/system/check_development_governance.py scripts/position tests/unit/alpha tests/unit/position tests/unit/portfolio_plan tests/unit/trade tests/unit/system docs/03-execution`
+
+## 主链真值复核图
+
+```mermaid
+flowchart LR
+    STR[structure_snapshot] -->|sidecar只读附加| FLT[filter_snapshot]
+    FLT --> ALPHA[alpha trigger/formal_signal]
+    ALPHA --> POS[position none价格]
+    POS --> PP[portfolio_plan]
+    PP --> TRADE[trade none价格]
+    TRADE --> SYS[system]
+```

@@ -36,3 +36,14 @@
 - 当前主线卡已清零；后续最可能的新问题将转向：
   - TQ raw 日更与 `txt` fallback 的并存治理
   - 仓内复权物化如何接管 `forward / backward`
+
+## TdxQuant 桥接链路图
+
+```mermaid
+flowchart LR
+    TQ[TdxQuant none] --> SYNC[run_tdxquant_daily_raw_sync]
+    SYNC --> RUN[raw_tdxquant_run/request/checkpoint]
+    SYNC --> RAW[raw_market.stock_daily_bar none]
+    RAW --> DIRTY[base_dirty_instrument]
+    DIRTY --> BASE[market_base none]
+```

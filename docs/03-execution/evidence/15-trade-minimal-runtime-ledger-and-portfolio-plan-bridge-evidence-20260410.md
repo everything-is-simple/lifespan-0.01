@@ -122,3 +122,15 @@
    - `H:\Lifespan-report\trade\card15\trade-official-main-carry-003.json`
    - `H:\Lifespan-report\trade\card15\trade-official-pilot-004a.json`
    - `H:\Lifespan-report\trade\card15\trade-official-pilot-004b.json`
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    PP[portfolio_plan_snapshot] --> TRADE[run_trade_runtime_build]
+    MB[market_base none] --> TRADE
+    TRADE -->|enter| PLAN[trade_execution_plan enter]
+    TRADE -->|carry| CARRY[trade_carry_snapshot]
+    TRADE -->|rematerialized| RMAT[upstream changed]
+    PT[9 passed] --> OK[15卡收口]
+```

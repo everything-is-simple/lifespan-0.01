@@ -16,3 +16,12 @@
 
 - 备注 1
 - 备注 2
+
+## 流程图
+
+```mermaid
+flowchart LR
+    REAL[真实 market_base 全量] --> SMOKE[主链 smoke runner]
+    SMOKE --> PIPE[data/malf/structure/filter/alpha/position/trade]
+    PIPE --> OK[104 真实数据 smoke 回归收口]
+```

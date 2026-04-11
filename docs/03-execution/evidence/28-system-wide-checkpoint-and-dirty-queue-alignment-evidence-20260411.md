@@ -25,3 +25,14 @@ python -m pytest tests/unit -q
 - `docs/03-execution/evidence/28-system-wide-checkpoint-and-dirty-queue-alignment-evidence-20260411.md`
 - `docs/03-execution/records/28-system-wide-checkpoint-and-dirty-queue-alignment-record-20260411.md`
 - `docs/03-execution/28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    CARD28[28卡 checkpoint对齐] --> C29[29 malf canonical 合同]
+    C29 --> C30[30 canonical runner bootstrap]
+    C30 --> C31[31 下游改绑]
+    C31 --> C32[32 真值复核]
+    C32 --> OK[59 passed 无回归]
+```

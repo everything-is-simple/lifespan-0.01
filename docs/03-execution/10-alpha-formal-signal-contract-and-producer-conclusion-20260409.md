@@ -25,3 +25,13 @@
 1. `alpha` 从“只有 design/spec/card”推进到“已有最小官方 producer 与正式账本出口”。
 2. `position` 当前真上游已经切到 `alpha_formal_signal_event`，后续不应再为弥补上游缺口继续扩 `position` family 表。
 3. 当前主线剩余阻塞已从“alpha 官方出口不存在”收缩为“alpha 内部五表族、structure/filter 正式合同、以及更下游模块尚未开工”。
+
+## alpha 正式出口图
+
+```mermaid
+flowchart LR
+    PROD[run_alpha_formal_signal_build] --> RUN[alpha_formal_signal_run]
+    PROD --> EVT[alpha_formal_signal_event]
+    PROD --> RE[alpha_formal_signal_run_event]
+    EVT --> POS[position]
+```

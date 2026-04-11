@@ -18,3 +18,16 @@
 
 - 影响 1
 - 影响 2
+
+## smoke regression 流程图
+
+```mermaid
+flowchart LR
+    REAL[真实 H:/Lifespan-data] --> SMOKE[mainline smoke runner]
+    SMOKE --> DATA[data raw/base]
+    SMOKE --> MALF[malf canonical]
+    SMOKE --> DOWN[structure/filter/alpha/position/portfolio_plan/trade/system]
+    DOWN --> PASS{全链通过?}
+    PASS -->|是| OK[回归通过]
+    PASS -->|否| FAIL[告警输出]
+```

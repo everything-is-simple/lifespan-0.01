@@ -60,3 +60,14 @@ python scripts/system/check_doc_first_gating_governance.py
 - `H:\Lifespan-report\data\card17\raw-controlled-full-001.json`
 - `H:\Lifespan-report\data\card17\raw-controlled-continue-003.json`
 - `H:\Lifespan-report\data\card17\controlled-readout-001.json`
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    TDX[tdx_offline_Data] --> RAW[raw_ingest full/incremental]
+    RAW -->|checkpoint| CP[file_registry]
+    DIRTY[mark_base_dirty] --> BASE[base_build incremental]
+    BASE -->|rematerialized| RMAT[脏标的重物化]
+    PT[测试+治理通过] --> OK[17卡收口]
+```

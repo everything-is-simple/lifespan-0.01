@@ -43,3 +43,12 @@
 2. A/B/C 执行入口文件命名完成
 3. 脚本与测试引用修复并通过
 4. 证据、记录、结论写完
+
+## 经验吸收与入口图
+
+```mermaid
+flowchart LR
+    OLD[老仓踩坑总表] --> MOD[docs/01-design/modules/ 模块经验]
+    MOD --> IDX[执行区入口字母命名 A/B/C]
+    IDX --> REF[脚本/测试引用修复]
+```

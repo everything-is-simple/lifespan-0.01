@@ -47,6 +47,18 @@
 
 `data -> malf -> structure -> filter -> alpha -> position -> portfolio_plan -> trade -> system`
 
+```mermaid
+flowchart LR
+    D[data] --> M[malf]
+    M --> S[structure]
+    S --> F[filter]
+    F --> A[alpha]
+    A --> P[position]
+    P --> PP[portfolio_plan]
+    PP --> T[trade]
+    T --> SY[system]
+```
+
 ## 五根目录契约
 
 1. `H:\lifespan-0.01`

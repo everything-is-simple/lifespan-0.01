@@ -27,3 +27,12 @@
 2. `trade / system` 后续若要消费 `position`，已经可以站在正式脚本入口之上，而不是只能调用库内 helper。
 3. 系统里程碑 `M2 alpha-position 正式桥接成立` 仍不能标记为完成，因为上游 `alpha formal signal` 正式账本出口还未在新仓落下。
 4. 当前最自然的下一步不是继续堆 `position` 内部表，而是回到 `alpha`，把新仓里的正式 `formal signal` 出口 design/spec/card 补齐后落库。
+
+## position runner 数据流图
+
+```mermaid
+flowchart LR
+    ALPHA[alpha formal signal] --> RUNNER[run_position_formal_signal_materialization]
+    MB[market_base none 参考价] --> RUNNER
+    RUNNER --> LEDGER[position 正式账本]
+```

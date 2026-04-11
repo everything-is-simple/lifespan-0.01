@@ -87,3 +87,13 @@
 - 当前卡 `18` 的复权子问题已经进一步收敛为：
   - 若后续要采用候选 B 做每日主源头，则复权更可能需要走“官方日更原始事实 + 仓内可审计复权物化”
   - 而不是直接把 `TdxQuant(front/back)` 当作正式 `market_base` 价格
+
+## 流程图
+
+```mermaid
+flowchart LR
+    A[候选A: txt离线回放] --> PROBE[bounded probe 对比]
+    B[候选B: TdxQuant 日更] --> PROBE
+    PROBE -->|价格一致/稳定| OK[裁决 路线A为官方口径]
+    PROBE -->|drift/不稳定| FAIL[路线B 暂不进主链]
+```

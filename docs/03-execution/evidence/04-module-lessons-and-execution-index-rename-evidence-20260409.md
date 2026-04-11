@@ -39,3 +39,13 @@ rg -n "22-card-catalog-20260409|77-system-completion-ledger-20260409|00-executio
 - `docs/03-execution/A-execution-reading-order-20260409.md`
 - `docs/03-execution/B-card-catalog-20260409.md`
 - `docs/03-execution/C-system-completion-ledger-20260409.md`
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    LESSONS[模块经验文档 10个模块] --> MOD[docs/01-design/modules/]
+    RENAME[A/B/C 字母化重命名] --> IDX[执行入口索引更新]
+    IDX --> CHK[check_execution_indexes 通过]
+    MOD --> CHK
+```

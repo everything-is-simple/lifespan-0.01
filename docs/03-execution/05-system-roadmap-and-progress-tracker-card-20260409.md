@@ -44,3 +44,13 @@
 2. 状态枚举与刷新规则写清
 3. 仓库入口同步完成
 4. 证据、记录、结论写完
+
+## 路线图结构图
+
+```mermaid
+flowchart TD
+    CHARTER[α 路线图宪章] --> SPEC[β 路线图规格]
+    SPEC --> ROADMAP[Ω 系统级总路线图]
+    ROADMAP --> STATUS[模块状态枚举]
+    ROADMAP --> NEXT[下一锤/阻塞项/里程碑]
+```

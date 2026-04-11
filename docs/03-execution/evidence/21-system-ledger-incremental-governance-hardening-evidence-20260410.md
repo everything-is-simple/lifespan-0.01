@@ -48,3 +48,12 @@ python -m pytest -p no:cacheprovider --basetemp H:\Lifespan-temp\pytest\card20_d
   - [AGENTS.md](H:/lifespan-0.01/AGENTS.md)
   - [README.md](H:/lifespan-0.01/README.md)
   - [pyproject.toml](H:/lifespan-0.01/pyproject.toml)
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    GATE[doc_first_gating 通过] --> SPEC[system 治理 charter/spec 落地]
+    SPEC --> TEST[test_doc_first_gating 通过]
+    TEST --> HARD[全系统账本增量硬约束收口]
+```

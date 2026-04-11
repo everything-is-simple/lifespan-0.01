@@ -53,3 +53,13 @@ python scripts/system/check_doc_first_gating_governance.py
 - `scripts/alpha/run_alpha_formal_signal_build.py`
 - `tests/unit/alpha/test_runner.py`
 - `docs/03-execution/10-alpha-formal-signal-contract-and-producer-conclusion-20260409.md`
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    ALPHA[run_alpha_formal_signal_build 2条] --> THREE[三表 inserted=2]
+    THREE --> POS[run_position_formal_signal admitted=1 blocked=1]
+    PT[pytest alpha+position] --> PASS[全部通过]
+    GATE[门禁+索引通过] --> OK[10卡收口]
+```

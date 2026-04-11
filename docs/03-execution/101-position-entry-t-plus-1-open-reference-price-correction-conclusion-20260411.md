@@ -18,3 +18,12 @@
 
 - 影响 1
 - 影响 2
+
+## T+1 参考价修正图
+
+```mermaid
+flowchart LR
+    SIG[alpha_formal_signal_event signal_date] --> RUNNER[run_position_formal_signal_materialization]
+    MB[market_base T+1 open none] --> RUNNER
+    RUNNER --> PS[position_sizing_snapshot entry_reference_price]
+```

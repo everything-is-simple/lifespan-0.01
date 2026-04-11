@@ -32,3 +32,14 @@ pytest tests/unit/malf/test_canonical_runner.py tests/unit/structure/test_runner
    - 证明在只有 canonical `malf_state_snapshot`、没有 bridge-v1 表的前提下，`structure -> filter -> alpha` 默认主线可直接跑通
 3. 原有 `structure / filter / alpha / system` 单测继续通过
    - 证明 canonical 默认入口成立后，legacy bounded 样本仍能通过兼容回退维持测试可复现
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    CANON[malf_state_snapshot canonical] --> STR[structure runner 默认绑定]
+    CANON --> FLT[filter runner 默认绑定]
+    CANON --> ALPHA[alpha formal signal 默认绑定]
+    BRG[bridge v1] -.->|兼容回退| STR
+    PT[16 passed] --> OK[31卡下游改绑收口]
+```

@@ -23,3 +23,13 @@
 1. 新仓后续重构可以在执行索引、证据回填和环境重建约束下继续推进。
 2. `pytest` 临时文件不再污染仓库根目录，而是沉到 `H:\Lifespan-temp`。
 3. 业务 runner 迁移仍需另开新卡，不包含在本结论内。
+
+## 治理能力图
+
+```mermaid
+flowchart LR
+    REPO[仓库] --> IDX[执行索引检查]
+    REPO --> ENV[环境重建入口]
+    REPO --> CHK[治理检查器]
+    REPO --> PT[pytest 外置临时目录]
+```

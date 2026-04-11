@@ -24,3 +24,13 @@
 2. `malf -> structure -> filter -> alpha` 默认使用 `backward`。
 3. `position -> trade` 默认使用 `none`。
 4. 本轮只宣称 `data -> malf -> structure` 最小官方桥接成立，不宣称 `system` 已成立。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    TDX[tdx 离线] --> RAW[raw_market]
+    RAW --> BASE[market_base backward/none/forward]
+    BASE -->|backward| MALF[malf snapshot]
+    MALF --> STR[structure runner 下游通过]
+```

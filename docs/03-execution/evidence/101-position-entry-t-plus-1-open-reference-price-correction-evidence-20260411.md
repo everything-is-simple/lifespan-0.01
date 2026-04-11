@@ -18,3 +18,13 @@
 
 - 产物路径 1
 - 产物路径 2
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    SIG[formal signal T日] --> POS[position entry 参考价]
+    POS -->|T+1开盘修正| OPEN[T+1 open price 锚点]
+    OPEN --> EXEC[execution_plan 参考价修正]
+    EXEC --> OK[101卡收口]
+```

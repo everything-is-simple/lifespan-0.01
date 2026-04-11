@@ -29,3 +29,13 @@
 - 当前若要做增量 `base` 物化，已可通过 `raw` 自动联动或 `mark_base_instrument_dirty(...)` 显式写入口写入 dirty queue 后运行 `incremental` 模式。
 - 当前 `raw` 成功 ingest 会自动把 `inserted / rematerialized` 标的推入 dirty queue；`base full` 成功后会自动清理其覆盖范围内的 pending dirty。
 - 当前若要排查 `raw` 中断或异常，已可直接读取 `raw_ingest_run / raw_ingest_file`，不必再从结果表反推。
+
+## raw/base 增量机制图
+
+```mermaid
+flowchart LR
+    TXT[离线文件] --> RAW[raw_ingest_run/file]
+    RAW -->|inserted/rematerialized| DIRTY[base_dirty_instrument]
+    DIRTY --> BASE[market_base full/incremental]
+    BASE -->|成功| CLEAN[清除 pending dirty]
+```

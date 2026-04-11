@@ -48,3 +48,13 @@ python scripts/system/check_development_governance.py
 8. `H:\Lifespan-report\data\card16\malf-002.json`
 9. `H:\Lifespan-report\data\card16\structure-001.json`
 10. `H:\Lifespan-report\data\card16\structure-002.json`
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    TDX[tdx_offline_Data] --> RAW[raw_market backward/none/forward]
+    RAW --> BASE[market_base 三套价格]
+    BASE -->|backward| MALF[malf snapshot]
+    MALF --> STR[structure runner 下游通过]
+```

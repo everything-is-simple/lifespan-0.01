@@ -24,3 +24,13 @@
 
 - 本轮只增强了系统级路线图与来源图谱，没有直接进入 `position` 的正式 design/spec。
 - 当前模块来源与置信度仍然是人工裁决版看板，不是自动从卡、结论和代码状态回收生成。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    LEGACY[老仓来源梳理] --> MAP[Γ-legacy-source-grounding-map]
+    MAP --> ROADMAP[α/β/Ω 路线图增强]
+    ROADMAP --> ENTRY[入口文件同步]
+    ENTRY --> OK[06卡收口]
+```

@@ -66,3 +66,14 @@ python scripts/system/check_doc_first_gating_governance.py
   - `docs/03-execution/evidence/22-data-daily-source-governance-sealing-evidence-20260411.md`
   - `docs/03-execution/records/22-data-daily-source-governance-sealing-record-20260411.md`
   - `docs/03-execution/22-data-daily-source-governance-sealing-conclusion-20260411.md`
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    TDX[tdx 离线 backward] --> RAW[raw_ingest 历史回溯]
+    TDXQ[TdxQuant none 日更] --> SYNC[tdxquant_sync]
+    RAW --> BASE[market_base backward/none/forward]
+    SYNC --> BASE
+    BASE --> OK[data 日更两路封存]
+```

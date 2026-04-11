@@ -67,3 +67,13 @@ python -m pytest -p no:cacheprovider --basetemp H:\Lifespan-temp\pytest\card19_d
 - `AGENTS.md`
 - `README.md`
 - `pyproject.toml`
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    TDXQ[TdxQuant none 日更] --> SYNC[run_tdxquant_daily_raw_sync]
+    SYNC -->|checkpoint续跑| CP[run/request/instrument checkpoint]
+    SYNC --> RAW[raw_market stock_daily_bar none]
+    RAW -->|脏标记| BASE[base incremental]
+```

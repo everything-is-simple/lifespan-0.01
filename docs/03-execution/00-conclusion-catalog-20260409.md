@@ -3,7 +3,7 @@
 日期：`2026-04-09`
 状态：`持续更新`
 
-当前最新生效结论锚点：`31-structure-filter-alpha-rebind-to-canonical-malf-conclusion-20260411.md`
+当前最新生效结论锚点：`32-downstream-truthfulness-revalidation-after-malf-canonicalization-conclusion-20260411.md`
 
 ## 正式结论目录
 
@@ -48,7 +48,32 @@
 
 ## 当前说明
 
-1. `31` 已成为当前最新生效结论锚点。
-2. `28` 仍是当前未收口的总治理主卡。
-3. `29-31` 已完成并生效，`32` 是当前 malf 后续复核卡。
-4. `100-105` 继续保持为 malf 收口后的 trade/system 卡组。
+1. `32` 已成为当前最新生效结论锚点。
+2. `28` 仍是当前未收口的总治理主卡，当前待施工卡已推进到 `33`。
+3. `29-32` 已完成并生效，当前 malf 后续主线卡组为 `33-35`，sidecar 卡为 `36`。
+4. `100-105` 为 `33-36` 全部收口后的 trade/system 后置恢复卡组，**不得在 33-36 完成前提前推进**。
+
+## 卡组进度图
+
+```mermaid
+flowchart LR
+    subgraph 治理地基
+        C01[01-06 治理/路线图]
+    end
+    subgraph 主链建立
+        C07[07-15 position→trade]
+    end
+    subgraph data强化
+        C16[16-22 data/raw/base]
+    end
+    subgraph malf收口
+        C23[23-32 malf canonical]
+    end
+    subgraph malf下游主线
+        C33[33-36 downstream+sidecar]
+    end
+    subgraph 后置恢复
+        C100[100-105 trade/system]
+    end
+    治理地基 --> 主链建立 --> data强化 --> malf收口 --> malf下游主线 --> 后置恢复
+```

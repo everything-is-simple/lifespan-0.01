@@ -18,3 +18,13 @@
 
 - 产物路径 1
 - 产物路径 2
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    SCHED[日更调度入口] --> ORCH[system orchestration runner]
+    ORCH --> PIPE[data→malf→structure→filter→alpha→position→portfolio_plan→trade]
+    PIPE --> SYS[system_mainline_snapshot]
+    SYS --> OK[105 runtime 编排收口]
+```

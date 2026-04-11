@@ -44,3 +44,15 @@ python scripts/system/check_doc_first_gating_governance.py
 - `docs/02-spec/modules/structure/01-structure-formal-snapshot-spec-20260409.md`
 - `docs/02-spec/modules/filter/01-filter-formal-snapshot-spec-20260409.md`
 - `docs/03-execution/11-structure-filter-formal-contract-and-minimal-snapshot-card-20260409.md`
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    STR[run_structure_snapshot_build] --> SS[structure三表]
+    FLT[run_filter_snapshot_build] --> FS[filter三表]
+    SS --> ALPHA[alpha smoke 消费官方上游]
+    FS --> ALPHA
+    ALPHA --> POS[position smoke 下游通过]
+    PT[21 passed] --> OK[11卡收口]
+```

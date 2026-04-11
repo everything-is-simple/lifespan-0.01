@@ -33,3 +33,15 @@ pytest tests/unit/malf/test_canonical_runner.py tests/unit/structure/test_runner
 ```
 
 结果：`16 passed`
+
+## 下游改绑完成图
+
+```mermaid
+flowchart LR
+    CANON[malf_state_snapshot D canonical] -->|默认| STR[structure]
+    CANON -->|默认| FLT[filter]
+    CANON -->|默认| ALPHA[alpha]
+    BRIDGE[bridge v1] -.->|canonical缺失时回退| STR
+    BRIDGE -.->|canonical缺失时回退| FLT
+    ALPHA -->|formal signal fallback关闭| SIG[alpha_formal_signal_event]
+```

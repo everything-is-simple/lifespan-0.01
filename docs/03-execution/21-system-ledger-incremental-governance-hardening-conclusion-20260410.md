@@ -30,3 +30,16 @@
   - 断点续跑
   - 审计账本
 - 卡 `20` 的 `stock/index/block raw->base` 机制现已不只是 data 模块经验，而是全系统正式治理标准。
+
+## 历史账本治理门禁图
+
+```mermaid
+flowchart TD
+    CARD[新卡开出] --> DECLARE{声明六条账本约束}
+    DECLARE -->|缺失| BLOCK[门禁拦截 不得进入实现]
+    DECLARE -->|完整| IMPL[正式实现]
+    IMPL --> BATCH[一次性批量建仓]
+    IMPL --> INC[增量更新]
+    IMPL --> CP[断点续跑]
+    IMPL --> AUDIT[审计账本]
+```

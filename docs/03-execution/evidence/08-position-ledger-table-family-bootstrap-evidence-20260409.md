@@ -57,3 +57,14 @@ import duckdb
 3. `tests/unit/position/test_bootstrap.py`
 4. `docs/02-spec/modules/position/02-alpha-to-position-formal-signal-bridge-spec-20260409.md`
 5. `docs/03-execution/08-position-ledger-table-family-bootstrap-card-20260409.md`
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    BOOT[bootstrap_position_ledger] --> FIVE[5表族创建]
+    SIG[admitted/blocked 信号] --> MAT[materialize_position]
+    MAT --> AUDIT[candidate/capacity/sizing 账本]
+    PT[5 passed] --> PASS[测试通过]
+    PASS --> SMOKE[smoke 账本数据核查]
+```

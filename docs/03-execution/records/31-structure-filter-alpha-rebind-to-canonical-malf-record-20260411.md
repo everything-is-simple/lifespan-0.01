@@ -17,3 +17,14 @@
 1. `structure / filter / alpha` 的默认正式入口已经从 bridge-v1 改绑到 canonical malf。
 2. bridge-v1 不再是默认正式真值，只保留成受控兼容回退。
 3. `32` 现在可以直接承接 canonical 后的 downstream truthfulness revalidation。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    CANON[malf_state_snapshot canonical] --> STR[structure 默认绑定]
+    STR --> FLT[filter 默认绑定]
+    FLT --> ALPHA[alpha 默认绑定]
+    BRG[bridge v1] -.->|canonical缺失时回退| STR
+    PT[test_canonical_malf_rebind 通过] --> OK[31卡收口]
+```

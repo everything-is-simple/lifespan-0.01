@@ -40,3 +40,13 @@
 - 因此本轮不能宣称 `alpha` 模块已经正式完工；更准确的说法是：`position` 已具备消费官方 `alpha formal signal` 合同的 runner，等待上游在新仓正式落库。
 - 本机 `pytest` 对临时目录存在 Windows 权限问题，runner 断言改以 smoke 留证；单测文件已经补齐，但需要后续在稳定临时目录环境下再跑完整 `pytest` 会话。
 - `src/mlq/position/bootstrap.py` 仍然超过 `800` 行软上限；本轮新增逻辑已独立放进 `runner.py`，但 bootstrap 本体尚未回拆。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    ALPHA[alpha formal signal 合同] --> RUNNER[run_position_formal_signal_materialization]
+    RUNNER -->|reference_price=close| POS[position_candidate/capacity/sizing]
+    RUNNER -->|缺价跳过| SKIP[skip count]
+    TEST[test_runner 覆盖] --> OK[09卡收口]
+```

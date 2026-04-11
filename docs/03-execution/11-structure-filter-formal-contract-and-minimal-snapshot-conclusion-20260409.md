@@ -23,6 +23,16 @@
 
 ## 影响
 
-1. 新仓主线第一次具备 `malf -> structure -> filter -> alpha -> position` 的官方最小连续链。
-2. 后续继续补 `alpha` 内部五表族时，应优先对接 `filter_snapshot / structure_snapshot`，而不是重新把语义塞回旧兼容字段。
-3. 执行入口文件已同步补到 `structure/filter` runner 口径。
+1. 系统主链第一次从"只有 alpha + position"扩展成"malf -> structure -> filter -> alpha -> position"的正式最小连续链。
+2. 后续 `alpha` 正式 producer 已经可以直接从官方 `filter_snapshot` 和 `structure_snapshot` 拿上游，不必再自己维护独立的 context 字段。
+3. `filter` 的最小硬门准入已经固化：只拦 `failed_extreme / structure_failed`，对 `stalled / unknown` 保守放行，研究边界仍开放。
+
+## structure/filter 最小链路图
+
+```mermaid
+flowchart LR
+    MALF[malf] --> STR[structure_snapshot]
+    STR --> FLT[filter_snapshot]
+    FLT -->|硬拦: failed_extreme/structure_failed| BLOCK[blocked]
+    FLT -->|放行| ALPHA[alpha producer]
+```

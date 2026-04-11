@@ -30,4 +30,14 @@
 ## 备注
 
 - `position_run` 历史上没有 `summary_json` 字段，只有 `notes` 与 `source_signal_*` 元数据；本轮 `system` readout 对它做了兼容封装，但没有借机改造 `position` 上游账本结构。
-- `system_mainline_snapshot` 的自然键固定为 `portfolio_id + snapshot_date + system_scene + system_contract_version`；因此即使系统级读数相同，只要引用的官方 child run 发生变化，也会按正式审计语义记为 `rematerialized`，而不是口头认定“看起来一样”。 
+- `system_mainline_snapshot` 的自然键固定为 `portfolio_id + snapshot_date + system_scene + system_contract_version`；因此即使系统级读数相同，只要引用的官方 child run 发生变化，也会按正式审计语义记为 `rematerialized`，而不是口头认定“看起来一样”。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    DS[structure/filter/alpha/position/portfolio_plan/trade] --> SYS[run_system_mainline_readout_build]
+    SYS --> SNAP[system_mainline_snapshot]
+    SYS --> AUDIT[system_child_run_readout]
+    PT[system test 通过] --> OK[27卡收口]
+```

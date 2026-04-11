@@ -24,3 +24,13 @@ pytest -p no:cacheprovider tests/unit/system/test_canonical_malf_rebind.py tests
 - `docs/03-execution/32-downstream-truthfulness-revalidation-after-malf-canonicalization-conclusion-20260411.md`
 - `docs/03-execution/B-card-catalog-20260409.md`
 - `docs/03-execution/C-system-completion-ledger-20260409.md`
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    CANON[canonical malf_state_snapshot] --> DS[structure/filter/alpha 下游]
+    DS --> MAIN[position/trade/system 主链]
+    MAIN -->|adjust_method=none| EXEC[执行口径不污染]
+    PT[6 passed 无回归] --> OK[32 真值复核收口]
+```

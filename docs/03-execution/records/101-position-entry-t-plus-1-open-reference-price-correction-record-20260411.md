@@ -16,3 +16,13 @@
 
 - 备注 1
 - 备注 2
+
+## 流程图
+
+```mermaid
+flowchart LR
+    SIG[alpha formal signal date] --> T1[T+1 开盘参考价修正]
+    T1 --> REF[reference_price = T+1 open]
+    REF --> POS[position_candidate enrichment]
+    REF --> OK[101卡收口]
+```

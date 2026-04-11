@@ -22,3 +22,13 @@
 
 - 本轮只冻结文档口径，不宣称 pure semantic canonical ledger 已有代码实现。
 - 当前 `scripts/malf/run_malf_snapshot_build.py` 继续保留 bridge v1 兼容职责，后续若要实现 pure semantic canonical runner，必须另开新卡。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    SPEC03[malf 03号 pure semantic charter/spec] --> FREEZE[边界冻结]
+    FREEZE --> PRIM[HH/HL/LL/LH/break 纯语义核心]
+    BRG[bridge v1] -.->|兼容层保留| COMPAT[历史兼容]
+    GATE[门禁+治理+索引通过] --> OK[23卡收口]
+```

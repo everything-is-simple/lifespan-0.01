@@ -20,3 +20,13 @@
 1. 你以后随时都可以通过 [Ω-system-delivery-roadmap-20260409.md](H:\lifespan-0.01\docs\02-spec\Ω-system-delivery-roadmap-20260409.md) 查看系统全局进度。
 2. 后续每次切换系统阶段、模块状态或下一锤时，都有明确的正式刷新入口。
 3. 新仓已经从“有单卡和结论”升级到“有系统级总视图”，更适合长期推进。
+
+## 路线图成果图
+
+```mermaid
+flowchart LR
+    CHAT[聊天口头进度] --> ROADMAP[Ω 正式总路线图]
+    ROADMAP --> STAGE[阶段进度追踪]
+    ROADMAP --> STATE[模块状态枚举]
+    ROADMAP --> NEXT[下一锤明确冻结]
+```

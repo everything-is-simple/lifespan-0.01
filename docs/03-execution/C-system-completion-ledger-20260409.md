@@ -24,3 +24,15 @@
 2. 当前施工总卡仍是 `28`，主题是“全模块向 data-grade checkpoint + dirty queue 对齐”。
 3. `29-32` 已完成并生效；`33-35` 是让 `malf` 成为下游运转中心的主线卡组；`36` 是后续寿命概率 sidecar 卡；`100-105` 顺延为其后的 trade/system 恢复施工卡组。
 4. 当前主线待施工卡已调整为 `33-malf-downstream-canonical-contract-purge-card-20260411.md`。
+
+## 完成阶段图
+
+```mermaid
+flowchart LR
+    G01[01-06 治理入口] --> P07[07-09 position]
+    P07 --> A10[10-13 alpha/structure/filter]
+    A10 --> T14[14-15 portfolio_plan/trade]
+    T14 --> D16[16-25 data/malf/system]
+    D16 --> M29[29-32 malf canonical 已生效]
+    M29 --> NEXT[33 当前待施工]
+```

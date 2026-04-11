@@ -30,3 +30,14 @@
 - 当前 shell 默认会优先命中旧仓安装态 `mlq`，所以所有正式脚本命令都显式带 `PYTHONPATH=src`，保证命中的就是本仓源码。
 - 本轮真实执行暴露了 DuckDB 文件锁限制：共享上游或共享目标库的 runner 不能并行推进，正式 readout 与 evidence 已按串行顺序收口。
 - family ledger 当前仍是 `alpha` 内部解释层；`position / trade / system` 继续只允许消费 `alpha_formal_signal_event`，没有被本轮顺手改写。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    TRG[alpha_trigger_event] --> FAM[run_alpha_family_build]
+    FAM --> FEVT[alpha_family_event bof/pb]
+    FEVT -.->|内部解释层| ALPHA[alpha internal]
+    SIG[alpha_formal_signal_event] --> POS[position 消费]
+    PT[15 passed] --> OK[13卡收口]
+```

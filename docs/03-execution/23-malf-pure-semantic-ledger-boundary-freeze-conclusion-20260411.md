@@ -33,3 +33,16 @@
 - 与 `malf` 相邻的 `structure / filter` design/spec 已同步修订为：bridge v1 兼容上下文只代表过渡输入或下游 sidecar，不再允许被表述成 `malf core`。
 - 仓库当前正式口径已切到 `23` 号结论，`AGENTS.md / README.md / pyproject.toml` 与执行目录已同步更新；未来若要落地 pure semantic canonical runner，必须另开新卡。
 - `malf` 下一阶段的正式议题只剩两项：`pivot-confirmed break` 是否进入 core 硬规则，以及 `same-timeframe stats sidecar` 如何独立冻结。
+
+## malf 纯语义边界图
+
+```mermaid
+flowchart TD
+    BAR[price bar] --> CORE[malf core]
+    CORE --> P[pivot HH/HL/LL/LH]
+    CORE --> W[wave]
+    CORE --> ST[state 牛顺/牛逆/熊顺/熊逆]
+    CORE --> BRK[break 旧结构失效]
+    CORE --> CNT[hh_count/ll_count]
+    EXCLUDED[高周期context/动作接口/仓位建议] -.->|禁止写入| CORE
+```

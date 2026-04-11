@@ -25,3 +25,14 @@
 
 - 卡 `20` 已从施工态切换为正式生效结论锚点。
 - 当前 `data` txt 主链已覆盖 `stock + index + block`，并且真实验证了“建仓后 replay 不重写、dirty queue 为空时 base no-op 续跑”的增量语义。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    TDX[tdx 离线 index/block] --> RAW[run_tdx_asset_raw_ingest]
+    RAW --> RM[raw_market index/block_daily_bar]
+    RM -->|dirty| BASE[run_asset_market_base_build]
+    BASE --> MB[market_base index/block backward/none/forward]
+    MB --> OK[20卡收口]
+```

@@ -25,3 +25,14 @@ python scripts/system/check_doc_first_gating_governance.py
 - `docs/01-design/modules/malf/04-malf-mechanism-layer-break-confirmation-and-same-timeframe-stats-sidecar-charter-20260411.md`
 - `docs/02-spec/modules/malf/04-malf-mechanism-layer-break-confirmation-and-same-timeframe-stats-sidecar-spec-20260411.md`
 - `docs/03-execution/24-malf-mechanism-layer-break-confirmation-and-stats-sidecar-conclusion-20260411.md`
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    CORE[malf core HH/HL/break] --> MECH[机制层 pivot_confirmed_break]
+    CORE --> STATS[same_timeframe_stats sidecar]
+    MECH -.->|只读| DS[structure/filter 只读消费]
+    STATS -.->|只读| DS
+    GATE[门禁+治理通过] --> OK[24卡收口]
+```

@@ -35,3 +35,20 @@
 - `structure / filter` 已同步补充角色声明；其中 `structure` 规格正文的正式输入合同也已吸收“只读机制层可选输入”口径：若消费 `pivot-confirmed break` 或 `same-timeframe stats sidecar`，只能按只读机制层解释，不得反向定义 `malf core`。
 - 执行区当前最新生效结论锚点已切到 `24`；治理锚点暂保留 `24` 以满足门禁检查，但这不表示 `24` 仍未完成，正式主线剩余卡已清零。
 - 当前结论仍然只冻结正式合同，不宣称 canonical mechanism runner 或新账本表族代码已经落地；若后续要实现这些账本，必须另开新卡。
+
+## malf 两层分离图
+
+```mermaid
+flowchart TD
+    subgraph core[pure semantic core]
+        PIVOT[pivot HH/HL/LL/LH] --> WAVE[wave]
+        WAVE --> STATE[state]
+        STATE --> BRK[break trigger]
+    end
+    subgraph mech[只读机制层 sidecar]
+        PCB[pivot_confirmed_break_ledger]
+        STATS[same_timeframe_stats_profile/snapshot]
+    end
+    core --> mech
+    mech -.->|只读附加 不反写 core| STR[structure/filter]
+```

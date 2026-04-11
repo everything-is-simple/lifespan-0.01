@@ -30,3 +30,13 @@
 - `remaining_portfolio_capacity_weight` 当前在 smoke 和单测里仍允许默认值路径；真正的组合剩余空间读模型仍待后续卡继续冻结。
 - family snapshot 当前是最小版落表，距离“完整方法学参数与真实 runner”还有一层实现距离。
 - `src/mlq/position/bootstrap.py` 当前达到 `934` 行，虽未触发硬门禁，但已经越过 `800` 行软目标；后续适合拆出 runner/materialization 子模块减轻维护压力。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    SCHEMA[position 五表族 schema/DDL] --> BOOT[bootstrap.py 落库]
+    BOOT --> TEST[test_bootstrap admitted/blocked/trim]
+    TEST --> SMOKE[bounded smoke 最小账本]
+    SMOKE --> OK[08卡收口]
+```

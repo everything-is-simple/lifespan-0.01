@@ -56,3 +56,19 @@
   - `index txt -> raw_market -> market_base`
   - `block txt -> raw_market -> market_base`
 - `txt -> raw_market -> market_base` 仍保留为正式 fallback；卡 `19` 的 `TdxQuant(none)` 股票日更桥接继续成立，且与本卡不冲突。
+
+## 全资产 raw/base 覆盖图
+
+```mermaid
+flowchart LR
+    subgraph 离线源头
+        S[stock txt]
+        I[index txt]
+        B[block txt]
+    end
+    S --> RAW[raw_market]
+    I --> RAW
+    B --> RAW
+    RAW --> DIRTY[base_dirty_instrument]
+    DIRTY --> BASE[market_base none/backward/forward]
+```

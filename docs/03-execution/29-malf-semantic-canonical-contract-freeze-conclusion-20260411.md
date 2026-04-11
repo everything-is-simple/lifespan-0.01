@@ -15,7 +15,21 @@
 - 核心原语只允许是 `HH / HL / LL / LH / break / count`
 - `D / W / M` 必须独立计算结构，不允许跨级别共享状态、极值、计数
 - 高周期 `context`、执行动作、仓位建议、跨级别解释反馈不属于 `malf core`
-- bridge v1 `pas_context_snapshot / structure_candidate_snapshot` 仍可保留供 `31` 之前的下游过渡消费，但不再代表 `malf` 正式真值
+- bridge v1 `pas_context_snapshot / structure_candidate_snapshot` 仍可保留供 `31` 之前的下游过渡消费，但不再代表 `malf` 正式真值。后续 `structure / filter` design/spec 已同步修订为：bridge v1 兼容上下文只代表过渡输入或下游 sidecar，不再允许被表述成 `malf core`。
+
+## canonical malf 合同图
+
+```mermaid
+flowchart TD
+    MB[market_base backward] --> CANON[canonical runner D/W/M 独立]
+    CANON --> PL[malf_pivot_ledger]
+    CANON --> WL[malf_wave_ledger]
+    CANON --> SS[malf_state_snapshot]
+    CANON --> SLS[malf_same_level_stats]
+    CANON --> CP[malf_canonical_checkpoint]
+    BRIDGE[bridge v1] -.->|兼容回退| DS[structure/filter下游]
+    SS --> DS
+```
 
 本次裁决同步落到了：
 

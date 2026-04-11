@@ -11,7 +11,7 @@
 - 目标结果：
   实现基于日线 OHLC 的最小 progression runner，支持快速失败、`1R` 半仓和 `break_last_higher_low`。
 - 为什么现在做：
-  只有在 `33-35` 把锚点、entry price 和 exit ledger 都冻结后，这张卡才具备稳定输入。
+  只有在 `100-102` 把锚点、entry price 和 exit ledger 都冻结后，这张卡才具备稳定输入。
 
 ## 设计输入
 

@@ -15,5 +15,24 @@
 
 ## 影响
 
-- `100-105` 可以恢复推进为后置正式施工卡组。
+- `100-105` 获得恢复推进资格，但**必须在 `33-36` 全部收口后才能实际启动**。
+  - `33-malf-downstream-canonical-contract-purge`：下游合同清除旧字段壳
+  - `34-malf-multi-timeframe-downstream-consumption`：W/M 多级别消费冻结
+  - `35-downstream-data-grade-checkpoint-alignment-after-malf`：下游 queue/checkpoint 对齐
+  - `36-malf-wave-life-probability-sidecar-bootstrap`：波段寿命概率 sidecar
 - `trade / system` 继续按各自正式卡推进，不在 `32` 里越界展开。
+
+## canonical 主链真值收口图
+
+```mermaid
+flowchart LR
+    CANON[malf canonical v2] --> STR[structure]
+    STR --> FLT[filter]
+    FLT --> ALPHA[alpha]
+    ALPHA --> POS[position none]
+    POS --> PP[portfolio_plan]
+    PP --> TRADE[trade none]
+    TRADE --> SYS[system]
+    RESULT[32结论生效] -->|解锁资格| M33[33-36 malf下游主线]
+    M33 -->|全部收口后| NEXT[100-105 trade/system恢复]
+```

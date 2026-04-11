@@ -23,3 +23,12 @@
 
 - 连续复用同一个固定 `basetemp` 时，Windows 上偶发会出现目录回收抖动；本轮验证采用先清理再运行的方式隔离平台噪音。
 - `doc-first gating` 检查器尚未实现，仍是下一刀。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    PYTEST[pytest basetemp/cache 外置] --> CONTRACT[共享账本契约文档落地]
+    CONTRACT --> ENTRY[AGENTS.md/README.md 更新]
+    ENTRY --> OK[02卡收口]
+```

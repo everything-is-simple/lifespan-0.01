@@ -90,3 +90,13 @@ python scripts/data/run_market_base_build.py --asset-type block --adjust-method 
 - 正式账本：
   - `H:\Lifespan-data\raw\raw_market.duckdb`
   - `H:\Lifespan-data\base\market_base.duckdb`
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    TDX[tdx 离线] --> RAW[run_tdx_asset_raw_ingest index/block]
+    RAW --> RM[raw_market index/block_daily_bar]
+    RM -->|脏标记| BASE[run_market_base_build index/block]
+    BASE --> MB[market_base index/block backward/none/forward]
+```

@@ -43,3 +43,13 @@
 103. `103-trade-backtest-progression-runner-evidence-20260411.md`
 104. `104-mainline-real-data-smoke-regression-evidence-20260411.md`
 105. `105-system-runtime-orchestration-bootstrap-evidence-20260411.md`
+
+## 证据闭环图
+
+```mermaid
+flowchart LR
+    CARD[卡片实现] --> CMD[命令执行]
+    CMD --> RESULT[关键结果]
+    RESULT --> ART[产物落地]
+    ART --> CON[结论引用]
+```

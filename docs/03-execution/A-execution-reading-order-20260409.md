@@ -25,3 +25,15 @@
    - `103-trade-backtest-progression-runner`
    - `104-mainline-real-data-smoke-regression`
    - `105-system-runtime-orchestration-bootstrap`
+
+## 阅读顺序图
+
+```mermaid
+flowchart LR
+    CONC[00结论目录] --> BCAT[B卡片目录]
+    BCAT --> CLED[C完成账本]
+    CLED --> ANC[最新结论锚点32]
+    ANC --> GATE[28治理锚点]
+    GATE --> NEXT[33-35 malf主线卡组]
+    NEXT --> POST[100-105 trade/system恢复卡组]
+```

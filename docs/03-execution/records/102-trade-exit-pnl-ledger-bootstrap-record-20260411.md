@@ -16,3 +16,13 @@
 
 - 备注 1
 - 备注 2
+
+## 流程图
+
+```mermaid
+flowchart LR
+    CARRY[trade_carry_snapshot] --> EXIT[退出事件触发]
+    EXIT --> PNL[trade_exit_pnl_ledger]
+    PNL --> AUDIT[PnL 审计账本]
+    AUDIT --> OK[102卡收口]
+```

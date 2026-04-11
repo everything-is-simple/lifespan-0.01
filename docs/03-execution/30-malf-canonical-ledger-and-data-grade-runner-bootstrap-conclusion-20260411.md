@@ -29,6 +29,25 @@
 - 物化 pivot 的 `confirmed_at`
 - 物化 wave / extreme / state / same_level_stats
 
+## 影响
+
+- `malf` 现在拥有两套并行 runner：bridge v1（`run_malf_snapshot_build.py`）负责兼容输出，canonical v2（`run_malf_canonical_build.py`）负责正式纯语义账本。
+- `structure / filter / alpha` 当前仍消费 bridge v1 出口；切换到 canonical v2 上游属于 `31` 的任务边界。
+- 当前正式主链 `data -> ... -> system` 的 truthfulness revalidation 属于 `32` 的任务边界，不在本轮内承诺。
+
+## canonical runner 续跑图
+
+```mermaid
+flowchart LR
+    WQ[malf_canonical_work_queue] --> RUNNER[run_malf_canonical_build]
+    CP[malf_canonical_checkpoint] --> RUNNER
+    RUNNER -->|D/W/M 独立| PL[pivot_ledger]
+    RUNNER --> WL[wave_ledger]
+    RUNNER --> SS[state_snapshot]
+    RUNNER --> SLS[same_level_stats]
+    RUNNER --> CP2[更新 checkpoint]
+```
+
 当前保留边界：
 
 - canonical runner 不回写 bridge v1 表

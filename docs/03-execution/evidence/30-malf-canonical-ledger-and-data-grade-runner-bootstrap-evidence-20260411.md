@@ -35,3 +35,15 @@ pytest tests/unit/malf/test_malf_runner.py tests/unit/malf/test_mechanism_runner
 - `AGENTS.md`
 - `README.md`
 - `pyproject.toml`
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    MB[market_base backward] --> CANON[run_malf_canonical_build]
+    CANON --> PIVOT[malf_pivot_ledger]
+    CANON --> WAVE[malf_wave_ledger]
+    CANON --> STATE[malf_state_snapshot]
+    CANON -->|D/W/M独立| DWM[三级别并行落表]
+    PT[canonical test 通过] --> OK[30卡收口]
+```

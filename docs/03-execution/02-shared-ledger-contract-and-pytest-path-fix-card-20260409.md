@@ -44,3 +44,16 @@
 3. 证据写完
 4. 记录写完
 5. 结论写完
+
+## 双目标流程图
+
+```mermaid
+flowchart LR
+    subgraph pytest路径修正
+        PT[pyproject.toml 固定 basetemp] --> T[H:\Lifespan-temp]
+    end
+    subgraph 共享账本契约
+        NK[自然键冻结] --> LAYER[账本/快照分层]
+        LAYER --> PRIO[五根目录来源优先级]
+    end
+```

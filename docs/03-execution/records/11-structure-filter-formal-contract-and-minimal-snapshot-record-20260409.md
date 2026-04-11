@@ -32,3 +32,13 @@
 
 - 当前 `filter` 有意保持“少拦截”的正式口径：`stalled / unknown` 只写 note，不直接 block。
 - 本轮已经把真实上游补到 `alpha` 前，不再需要回头扩 `position` 来掩盖上游缺口。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    MALF[malf snapshot] --> STR[run_structure_snapshot_build]
+    STR --> FLT[run_filter_snapshot_build]
+    FLT --> ALPHA[alpha runner 正式上游]
+    PT[测试通过] --> OK[11卡收口]
+```

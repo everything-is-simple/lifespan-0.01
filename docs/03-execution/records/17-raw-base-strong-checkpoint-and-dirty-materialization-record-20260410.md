@@ -45,3 +45,15 @@
 - 执行索引已同步回填，且 `check_execution_indexes.py --include-untracked` 与 `check_doc_first_gating_governance.py` 在收口后重新通过。
 - 当前 `raw` 失败文件会被显式记录为 `failed`，并把 run 状态更新为 `failed`；后续续跑已可直接引用这一锚点。
 - 当前 `full` 模式会自动清理其覆盖范围内的 pending dirty，避免老 dirty 泄漏到后续 `incremental` 运行。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    TDX[tdx 离线] --> RAW[raw_ingest full/incremental]
+    RAW -->|inserted| DIRTY[base_dirty_instrument pending]
+    DIRTY --> BASE[base_build incremental]
+    BASE -->|consumed| CLEAN[dirty mark_clean]
+    CP[force_hash/continue_from_last] --> RAW
+    PT[测试全覆盖] --> OK[17卡收口]
+```

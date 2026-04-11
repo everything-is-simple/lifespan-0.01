@@ -34,3 +34,21 @@
 - `python .codex/skills/lifespan-execution-discipline/scripts/check_execution_indexes.py --include-untracked`
 - `python scripts/system/check_doc_first_gating_governance.py`
 - `python scripts/system/check_development_governance.py AGENTS.md README.md pyproject.toml src/mlq/malf src/mlq/structure src/mlq/filter scripts/malf tests/unit/malf tests/unit/structure tests/unit/filter docs/03-execution`
+
+## malf runner 双段图
+
+```mermaid
+flowchart LR
+    subgraph bridge-v1
+        SNAP[run_malf_snapshot_build] --> PAS[pas_context_snapshot]
+        SNAP --> SC[structure_candidate_snapshot]
+    end
+    subgraph 机制层sidecar
+        MECH[run_malf_mechanism_build] --> PCB[pivot_confirmed_break_ledger]
+        MECH --> STATS[same_timeframe_stats_profile/snapshot]
+        MECH --> CP[malf_mechanism_checkpoint]
+    end
+    PAS --> MECH
+    SC --> MECH
+    STATS -.->|只读附加| STR[structure/filter]
+```

@@ -20,3 +20,12 @@
 - 本卡是治理封存卡，不新增 `src/`、`scripts/` 或 schema 变更。
 - 本卡不是对 “统一到 `TdxQuant(none)` 主路” 的否决，而是把该事项重新降回“未来需单独立项验证”的状态。
 - 本卡默认前提是用户会继续每日维护 `H:\tdx_offline_Data`，因此 `index/block` 的 txt 主链在当前阶段仍具备稳定运营条件。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    TXT[txt 离线主链] --> SEAL[data 日更源头治理封存]
+    TDXQ[TdxQuant none 补充] --> SEAL
+    SEAL --> OK[22卡 data 源头封存收口]
+```

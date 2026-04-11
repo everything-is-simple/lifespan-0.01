@@ -43,6 +43,20 @@
 - 当前最新已生效结论锚点仍是 `17`。
 - 当前待施工卡已切到 `18`，后续研究与 bounded probe 应围绕这张卡推进。
 - 当前最合理的后续动作是：
-  - 继续核验 `TdxQuant` 的下载/刷新前置条件，判断其“每日联动更新”到底依赖终端在线查询、缓存刷新还是文件落地
-  - 若继续推进候选 B，后续实现卡应优先设计“官方日更原始事实 source ledger + 仓内复权物化 + 本地文件 fallback”的双路径合同
+  - 继续核验 `TdxQuant` 的下载/刷新前置条件，判断其"每日联动更新"到底依赖终端在线查询、缓存刷新还是文件落地
+  - 若继续推进候选 B，后续实现卡应优先设计"官方日更原始事实 source ledger + 仓内复权物化 + 本地文件 fallback"的双路径合同
   - 在复权问题没有被仓内显式接管之前，不应直接让 `TdxQuant(front/back)` 进入正式 `market_base`
+
+## 日更源头选型图
+
+```mermaid
+flowchart TD
+    subgraph 候选A
+        DAY[.day 离线文件] -->|fallback/审计| RAW[raw_market]
+    end
+    subgraph 候选B
+        TQ[TdxQuant none] -->|日更主路| RAW
+    end
+    RAW --> BASE[market_base]
+    BASE -->|仓内物化| FQ[backward/forward]
+```

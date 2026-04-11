@@ -18,3 +18,12 @@
 
 - 影响 1
 - 影响 2
+
+## trade signal anchor 结构图
+
+```mermaid
+flowchart LR
+    ALPHA[alpha_formal_signal_event] --> ANCHOR[trade signal anchor contract]
+    ANCHOR --> TP1[T+1 open 参考价冻结]
+    ANCHOR --> TRADE[trade_position_leg]
+```

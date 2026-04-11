@@ -20,3 +20,12 @@
 1. 下一步开启 `position` 正式卡时，可以直接在硬门禁约束下推进，不必担心再次滑回“先写代码、后补文档”。
 2. 仓库入口文件与治理脚本的联动范围更清晰，后续改正式口径时更容易被发现。
 3. 文档先行从原则表达升级为可执行门禁，仓库治理骨架基本成型。
+
+## 门禁链路图
+
+```mermaid
+flowchart LR
+    CARD[当前待施工卡] --> GATE[check_doc_first_gating]
+    GATE --> MAIN[check_development_governance]
+    MAIN --> FRESH[入口新鲜度检查]
+```

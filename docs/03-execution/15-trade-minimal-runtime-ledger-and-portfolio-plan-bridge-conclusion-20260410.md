@@ -29,6 +29,19 @@
   `data -> malf -> structure -> filter -> alpha -> position -> portfolio_plan`
   推进到
   `data -> malf -> structure -> filter -> alpha -> position -> portfolio_plan -> trade`。
+
+## trade runtime 数据流图
+
+```mermaid
+flowchart LR
+    PP[portfolio_plan_snapshot] --> TR[run_trade_runtime_build]
+    CARRY[trade_carry_snapshot] --> TR
+    MB[market_base none] --> TR
+    TR --> LEG[trade_position_leg]
+    TR --> EXEC[trade_execution_plan]
+    TR --> NEXT[trade_carry_snapshot 下一轮]
+```
+
 - 当前执行区主线卡片已清零；若后续进入 `system`，必须重新开卡，不允许直接绕过执行区闭环去改 `src/`。
 - `trade_runtime` 现已能正式回答：
   - 哪些组合计划进入 `trade`

@@ -22,3 +22,25 @@
 1. 以后你每天读 `Ω-system-delivery-roadmap-20260409.md` 时，看到的不只是“现在做到哪”，还会同时看到“这个判断是建立在哪些老仓来源上”。
 2. 后续开启 `position` 正式 design/spec 时，已经有一份系统级依据说明为什么它应该先于其他业务模块开工。
 3. 新仓对老系统的吸收方式从“聊天中口头记忆”升级为“仓库内正式可追溯图谱”。
+
+## 模块继承置信度图
+
+```mermaid
+flowchart LR
+    subgraph 高置信度
+        PA[position/alpha/malf]
+    end
+    subgraph 中置信度
+        DS[data/system]
+    end
+    subgraph 低置信度
+        TC[trade/core]
+    end
+    subgraph 全新建立
+        SFP[structure/filter/portfolio_plan]
+    end
+    PA --> ROADMAP[Ω 路线图]
+    DS --> ROADMAP
+    TC --> ROADMAP
+    SFP --> ROADMAP
+```

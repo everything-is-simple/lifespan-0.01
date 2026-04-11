@@ -24,3 +24,14 @@
 - 新仓正式主线已从 `data -> malf -> structure -> filter -> alpha -> position` 推进到 `data -> malf -> structure -> filter -> alpha -> position -> portfolio_plan`。
 - 后续下一张主线卡应优先回到路线图，规划 `trade` 的最小执行账本与 `portfolio_plan -> trade` 官方桥接，而不是回头把组合语义塞回 `position`。
 - 当前执行区的最新已生效结论已推进到 `14`；下一轮正式施工前，应先完成新卡开出与索引切换，而不是直接在 14 号卡之外继续改 `src/`。
+
+## portfolio_plan 桥接图
+
+```mermaid
+flowchart LR
+    PA[position_candidate_audit] --> PP[portfolio_plan_build]
+    PC[position_capacity_snapshot] --> PP
+    PS[position_sizing_snapshot] --> PP
+    PP -->|admitted/blocked/trimmed| SNAP[portfolio_plan_snapshot]
+    SNAP --> TRADE[trade]
+```

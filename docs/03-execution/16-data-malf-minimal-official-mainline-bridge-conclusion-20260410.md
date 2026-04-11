@@ -30,3 +30,16 @@
    - 若继续沿用 `card 16` runner，则这里的 `malf` 指 bridge v1 兼容层；若要切换到 pure semantic canonical runner，必须另开新卡。
 3. 后续任何 `position / trade` 正式实现，都应默认建立在官方 `market_base(none)` 执行参考价之上。
 4. 下一步不是新增治理 sidecar，而是基于这条已补齐的前半段主线，复核 `data -> malf -> structure -> filter -> alpha -> position -> portfolio_plan -> trade` 是否整体真实对接，然后才决定是否开 `system` 卡。
+
+## data/malf 主线链路图
+
+```mermaid
+flowchart LR
+    RAW[raw_market] --> BASE[market_base]
+    BASE -->|backward| MALF[malf]
+    BASE -->|none| POS[position/trade]
+    MALF --> STR[structure]
+    STR --> FLT[filter]
+    FLT --> ALPHA[alpha]
+    ALPHA --> POS
+```

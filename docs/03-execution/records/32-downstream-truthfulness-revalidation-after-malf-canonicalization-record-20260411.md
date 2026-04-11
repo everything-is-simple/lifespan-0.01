@@ -18,3 +18,14 @@
 ## 备注
 
 - 本次不新增代码实现，只做正式 revalidation 收口。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    CANON[canonical malf v2] --> DS[structure/filter/alpha 默认主链]
+    DS --> REVAL[downstream revalidation 通过]
+    BRG[bridge v1] -.->|兼容回退| COMPAT[历史兼容]
+    REVAL --> NEXT[下一卡指针推进到100]
+    NEXT --> OK[32卡收口]
+```

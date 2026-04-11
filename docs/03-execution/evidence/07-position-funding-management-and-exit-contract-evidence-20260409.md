@@ -51,3 +51,12 @@ git status --short
 5. `docs/03-execution/08-position-ledger-table-family-bootstrap-card-20260409.md`
 6. `docs/02-spec/Ω-system-delivery-roadmap-20260409.md`
 7. `docs/03-execution/A-execution-reading-order-20260409.md`
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    OLD[老仓 position 结论吸收] --> SPEC[position design/spec 落地]
+    SPEC --> GATE[门禁+索引检查通过]
+    GATE --> C07[07结论+08草卡生成]
+```

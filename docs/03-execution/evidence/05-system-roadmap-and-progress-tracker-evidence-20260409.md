@@ -25,3 +25,12 @@ Get-Content -Encoding UTF8 docs\02-spec\Ω-system-delivery-roadmap-20260409.md
 - `docs/02-spec/β-system-roadmap-and-progress-tracker-spec-20260409.md`
 - `docs/02-spec/Ω-system-delivery-roadmap-20260409.md`
 - `docs/03-execution/05-system-roadmap-and-progress-tracker-card-20260409.md`
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    CHK[check_development_governance 全仓+范围] --> PASS[治理通过]
+    IDX[check_execution_indexes] --> PASS
+    PASS --> ROAD[α路线图+Ω交付路线图落地]
+```

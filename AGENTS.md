@@ -74,6 +74,18 @@
 
 `data -> malf -> structure -> filter -> alpha -> position -> portfolio_plan -> trade -> system`
 
+```mermaid
+flowchart LR
+    D[data] --> M[malf]
+    M --> S[structure]
+    S --> F[filter]
+    F --> A[alpha]
+    A --> P[position]
+    P --> PP[portfolio_plan]
+    PP --> T[trade]
+    T --> SY[system]
+```
+
 补充规则：
 
 1. `PAS` 是 `alpha` 内部能力，不再是顶层模块。

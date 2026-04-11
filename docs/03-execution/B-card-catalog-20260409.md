@@ -59,3 +59,16 @@
 2. 当前治理锚点仍是 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`，但当前具体待施工卡已推进到 `33-malf-downstream-canonical-contract-purge-card-20260411.md`。
 3. `29-32` 已完成并生效；`33-35` 是让 `malf` 成为下游运转中心的主线卡组；`36` 是其后的寿命概率 sidecar 卡；`100-105` 顺延为其后的 trade/system 恢复卡组。
 4. 当前卡组排序调整后，`100-105` 不再紧接 `32`，而是在 `33-36` 收口后再恢复推进。
+
+## 卡组顺序图
+
+```mermaid
+flowchart LR
+    G01[01-06 治理入口] --> P07[07-09 position]
+    P07 --> A10[10-13 alpha/structure/filter]
+    A10 --> T14[14-15 portfolio_plan/trade]
+    T14 --> D16[16-25 data/malf/system]
+    D16 --> M29[29-32 malf canonical]
+    M29 --> M33[33-36 malf下游主线]
+    M33 --> POST[100-105 trade/system恢复]
+```

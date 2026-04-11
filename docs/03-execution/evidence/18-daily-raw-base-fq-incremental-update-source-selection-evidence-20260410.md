@@ -337,3 +337,13 @@ PY
 - `docs/02-spec/modules/data/03-daily-raw-base-fq-incremental-update-source-selection-spec-20260410.md`
 - `docs/03-execution/18-daily-raw-base-fq-incremental-update-source-selection-card-20260410.md`
 - `docs/03-execution/evidence/18-daily-raw-base-fq-incremental-update-source-selection-evidence-20260410.md`
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    TDX[tdx 离线文件 raw_backward] --> A[路线A官方离线回溯]
+    TDXQ[TdxQuant API back] --> B[路线B实时复权]
+    A -->|价格一致稳定| OK[裁决: 路线A为官方口径]
+    B -->|price drift/replay不稳定| FAIL[路线B被否决]
+```

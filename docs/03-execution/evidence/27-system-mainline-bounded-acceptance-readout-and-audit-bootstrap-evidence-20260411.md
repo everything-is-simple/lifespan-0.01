@@ -44,3 +44,13 @@ python .codex/skills/lifespan-execution-discipline/scripts/check_execution_index
 - `docs/03-execution/evidence/27-system-mainline-bounded-acceptance-readout-and-audit-bootstrap-evidence-20260411.md`
 - `docs/03-execution/records/27-system-mainline-bounded-acceptance-readout-and-audit-bootstrap-record-20260411.md`
 - `docs/03-execution/27-system-mainline-bounded-acceptance-readout-and-audit-bootstrap-conclusion-20260411.md`
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    DS[structure/filter/alpha/position/portfolio_plan/trade] --> SYS[run_system_mainline_readout_build]
+    SYS --> SNAP[system_mainline_snapshot]
+    SYS --> AUDIT[system_child_run_readout]
+    PT[system test 通过] --> OK[27卡收口]
+```

@@ -19,3 +19,12 @@
 - 自 `28` 起，后续卡的正式施工顺序固定为 `29 -> 30 -> 31 -> 32 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。
 - `29-32` 被正式确认为 malf 优先卡组；`100-105` 被正式确认为 malf 收口后的后置 trade/system 恢复施工卡组。
 - `105-system-runtime-orchestration-bootstrap-card-20260411.md` 被正式固定为最后一张后置卡，而不是当前施工卡。
+
+## 卡组施工顺序图
+
+```mermaid
+flowchart LR
+    C28[28 checkpoint基线裁决] --> MALF[29-32 malf canonical卡组]
+    MALF --> POST[100-105 trade/system恢复卡组]
+    POST --> C105[105 system orchestration]
+```

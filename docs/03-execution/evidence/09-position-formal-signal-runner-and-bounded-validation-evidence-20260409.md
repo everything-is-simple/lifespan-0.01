@@ -64,3 +64,13 @@ from mlq.position import position_ledger_path, run_position_formal_signal_materi
 3. `scripts/position/run_position_formal_signal_materialization.py`
 4. `tests/unit/position/test_runner.py`
 5. `docs/03-execution/09-position-formal-signal-runner-and-bounded-validation-card-20260409.md`
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    ALPHA[alpha_formal_signal_event 2条] --> RUNNER[run_position_formal_signal_materialization]
+    RUNNER -->|有参考价 1条| POS[position 4表族 admitted]
+    RUNNER -->|缺参考价 1条| SKIP[跳过]
+    GATE[门禁+索引检查通过] --> OK[09卡收口]
+```

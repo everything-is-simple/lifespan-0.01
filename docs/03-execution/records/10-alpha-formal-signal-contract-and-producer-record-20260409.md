@@ -30,3 +30,13 @@
 
 - 这张卡完成后，`M2 alpha-position 正式桥接成立` 可以正式标完成。
 - 下一张正式主线卡不应再回到 `position` 深挖 family 表，而应围绕 `structure / filter` 或更下游模块继续开卡。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    TRG[alpha trigger event] --> PROD[run_alpha_formal_signal_build]
+    PROD --> SIG[alpha_formal_signal_event]
+    SIG --> POS[position runner 消费]
+    PT[测试通过] --> OK[10卡 M2桥接收口]
+```

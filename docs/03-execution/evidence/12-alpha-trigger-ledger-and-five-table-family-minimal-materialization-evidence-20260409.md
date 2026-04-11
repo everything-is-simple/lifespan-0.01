@@ -75,3 +75,14 @@ $env:PYTHONPATH='src'; @'
 - `H:\Lifespan-temp\alpha\pilot\12-alpha-trigger-ledger\trigger-summary-003.json`
 - `H:\Lifespan-temp\alpha\pilot\12-alpha-trigger-ledger\formal-signal-summary-001.json`
 - `H:\Lifespan-temp\alpha\pilot\12-alpha-trigger-ledger\formal-signal-summary-003.json`
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    STR[structure/filter pilot] --> TRG[alpha_trigger_ledger]
+    TRG -->|inserted=2| SIG[alpha_formal_signal]
+    TRG -->|reused=2| REUSE[unchanged rerun]
+    TRG -->|rematerialized=1| RMAT[upstream changed rerun]
+    PT[8 passed] --> OK[12卡收口]
+```

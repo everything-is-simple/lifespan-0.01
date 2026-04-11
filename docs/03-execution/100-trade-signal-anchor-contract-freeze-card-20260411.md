@@ -9,9 +9,9 @@
 - 问题：
   在 canonical malf 完成前冻结 `trade` 锚点会建立在不可信上游之上；现在这张卡必须后移到 malf 卡组之后。
 - 目标结果：
-  在 canonical malf 已被 `32` 裁决通过后，冻结 `signal_low / last_higher_low` 的跨模块透传合同。
+  在 canonical malf 下游主线（33-36）全部收口后，冻结 `signal_low / last_higher_low` 的跨模块透传合同。
 - 为什么现在做：
-  `100` 是恢复 trade 链路的第一张卡，但前提是 `32` 已完成。
+  `100` 是恢复 trade 链路的第一张卡，**必须在 `33-36`（malf 下游合同清除、多级别消费、下游 checkpoint 对齐、寿命 sidecar）全部完成后才能启动**。
 
 ## 设计输入
 
@@ -20,7 +20,8 @@
 - 规格文档：
   - `docs/02-spec/modules/system/06-trade-signal-anchor-contract-freeze-spec-20260411.md`
 - 当前锚点结论：
-  - `docs/03-execution/32-downstream-truthfulness-revalidation-after-malf-canonicalization-conclusion-20260411.md`
+  - `docs/03-execution/36-malf-wave-life-probability-sidecar-bootstrap-conclusion-20260411.md`
+  - （前置卡组：33 → 34 → 35 → 36 必须全部生效）
 
 ## 任务分解
 

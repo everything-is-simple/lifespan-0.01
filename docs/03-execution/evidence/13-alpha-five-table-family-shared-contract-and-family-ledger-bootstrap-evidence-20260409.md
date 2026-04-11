@@ -66,3 +66,14 @@ $env:PYTHONPATH='src'; @'
 - `pyproject.toml`
 - `H:\Lifespan-temp\alpha\alpha-family-pilot-13-001-summary.json`
 - `H:\Lifespan-temp\alpha\alpha-family-pilot-13-003-summary.json`
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    TRG[alpha_trigger_event] --> FAM[run_alpha_family_build bof/pb]
+    FAM -->|inserted=2| EVT[alpha_family_event]
+    FAM -->|reused=2| REUSE[unchanged rerun]
+    FAM -->|rematerialized=1| RMAT[upstream changed rerun]
+    PT[15 passed] --> OK[13卡收口]
+```

@@ -25,3 +25,12 @@
 - 本轮只冻结了合同，没有进入 `src/mlq/position` 的 schema/bootstrap 实现。
 - `probe_entry / confirm_add` 已有正式语义落点，但仍是预留状态；后续是否打开，仍取决于 `trade carry` 与多腿开仓桥接是否冻结。
 - `remaining_portfolio_capacity_weight` 的正式来源已经从“固定常量”推进到“必须有正式快照来源”，但组合侧最终读模型仍待后续卡继续冻结。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    OLD[老仓 position/PAS 结论吸收] --> CONTRACT[资金管理与退出合同冻结]
+    CONTRACT --> ENTRY[08草卡 + 入口同步]
+    ENTRY --> OK[07卡收口]
+```

@@ -16,3 +16,14 @@
 
 - 备注 1
 - 备注 2
+
+## 流程图
+
+```mermaid
+flowchart LR
+    PP[portfolio_plan_snapshot] --> BT[trade backtest runner]
+    MB[market_base none] --> BT
+    BT --> PROG[逐日进展账本]
+    PROG --> CARRY[carry_snapshot]
+    CARRY --> OK[103卡收口]
+```

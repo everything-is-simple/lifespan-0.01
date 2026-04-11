@@ -49,3 +49,17 @@
 3. 入口文件与执行入口已同步到新的路线图口径
 4. `check_development_governance.py` 与 `check_execution_indexes.py` 通过
 5. 证据、记录、结论写完
+
+## 老仓来源分层图
+
+```mermaid
+flowchart TD
+    OLD[老仓模块来源] --> L1[核心已验证 position/alpha/malf]
+    OLD --> L2[支持性较强 data/system]
+    OLD --> L3[研究偏少 trade/core]
+    OLD --> L4[新建边界 structure/filter/portfolio_plan]
+    L1 --> NEW[新仓正式吸收]
+    L2 --> NEW
+    L3 --> EXP[只吸收经验]
+    L4 --> BUILD[重新建立合同]
+```

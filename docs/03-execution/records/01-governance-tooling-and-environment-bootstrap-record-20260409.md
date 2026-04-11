@@ -26,3 +26,14 @@
 
 - 本轮只迁移最小治理闭环，没有迁入旧仓业务 runner。
 - 后续如果继续扩展治理脚本，仍需要按新仓索引文件名和文档口径逐项适配。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    IDX[执行索引骨架] --> CODEX[.codex 纪律脚本迁移]
+    CODEX --> SETUP[scripts/setup+system 最小治理]
+    SETUP --> PATH[路径契约+环境隔离修复]
+    PATH --> PYTEST[pytest 外置到 Lifespan-temp]
+    PYTEST --> OK[01卡收口]
+```

@@ -36,3 +36,13 @@ git status --short
 - `docs/02-spec/β-system-roadmap-and-progress-tracker-spec-20260409.md`
 - `docs/02-spec/Ω-system-delivery-roadmap-20260409.md`
 - `docs/03-execution/06-roadmap-legacy-module-absorption-card-20260409.md`
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    OLD[MarketLifespan/EmotionQuant 老仓] --> MAP[Γ来源图谱]
+    MAP --> CONF[高/中/低置信度分层]
+    CONF --> ROAD[α/β/Ω 路线图增强]
+    CHK[治理+索引检查通过] --> ROAD
+```

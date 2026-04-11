@@ -27,3 +27,13 @@
 - 当前裸 `python` 已通过 editable 安装稳定命中本仓 `H:\lifespan-0.01\src\mlq`，不再需要依赖临时 `PYTHONPATH=src`。
 - DuckDB 文件锁约束依旧成立；正式 `position` 与 `portfolio_plan` 共享库的 read/write readout 需要串行推进，不宜并行压测。
 - 14 号卡的实现事实已经落入正式库，但在进入下一张主线卡前，仍应先回到 `Ω-system-delivery-roadmap-20260409.md` 重新规划 `trade / system` 的下一锤。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    POS[position 4条样本] --> PP[run_portfolio_plan_build]
+    PP -->|admitted/trimmed/blocked| SNAP[portfolio_plan_snapshot]
+    PP -->|reused/rematerialized| REMAT[物化审计]
+    PT[13 passed] --> OK[14卡收口]
+```

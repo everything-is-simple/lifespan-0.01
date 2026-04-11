@@ -18,3 +18,17 @@
 
 - 影响 1
 - 影响 2
+
+## system orchestration 图
+
+```mermaid
+flowchart LR
+    DATA[data runner] --> MALF[malf canonical runner]
+    MALF --> STR[structure runner]
+    STR --> FLT[filter runner]
+    FLT --> ALPHA[alpha runner]
+    ALPHA --> POS[position runner]
+    POS --> PP[portfolio_plan runner]
+    PP --> TRADE[trade runtime runner]
+    TRADE --> SYS[system readout runner]
+```

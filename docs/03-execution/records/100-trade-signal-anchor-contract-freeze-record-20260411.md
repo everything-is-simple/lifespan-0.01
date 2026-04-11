@@ -16,3 +16,12 @@
 
 - 备注 1
 - 备注 2
+
+## 流程图
+
+```mermaid
+flowchart LR
+    ALPHA[alpha formal signal] --> ANC[trade signal 锚点合同冻结]
+    ANC --> POSIT[position runner 消费合同]
+    ANC --> OK[100卡收口]
+```

@@ -18,3 +18,12 @@
 
 - 产物路径 1
 - 产物路径 2
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    TRADE[trade_execution_plan exit] --> PNL[exit pnl 计算]
+    PNL --> LEDGER[trade_exit_pnl_ledger bootstrap]
+    LEDGER --> OK[102卡收口]
+```

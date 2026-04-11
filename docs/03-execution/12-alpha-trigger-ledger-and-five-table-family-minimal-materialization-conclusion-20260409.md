@@ -24,3 +24,12 @@
 - `alpha` 当前已经从“只有 formal signal 官方出口”推进到“trigger ledger + formal signal 两级正式账本”。
 - 后续继续扩 `alpha` 时，应优先在当前 trigger ledger 之上继续细化五家族专表、trace 或 detector contract，而不是回头扩 `position` 来掩盖上游缺口。
 - 下一张正式主线卡仍应围绕 `alpha` 细化或其紧邻下游展开，但不应倒退到 `temp-only` 口径。
+
+## alpha 三级账本图
+
+```mermaid
+flowchart TD
+    TRG[alpha_trigger_event] --> FAM[alpha_family_event]
+    FAM --> SIG[alpha_formal_signal_event]
+    SIG --> POS[position]
+```

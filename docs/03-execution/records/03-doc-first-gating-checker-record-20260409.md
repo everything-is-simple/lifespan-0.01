@@ -23,3 +23,13 @@
 
 - 当前门禁聚焦“当前待施工卡”，没有回溯扫描所有历史卡片；这是本轮有意保持最小可执行的取舍。
 - `position` 的正式卡尚未打开，因此卡目录仍把 `03-doc-first-gating-checker-card-20260409.md` 保持为当前施工卡。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    CHARTER[doc-first charter/spec] --> GATE[check_doc_first_gating_governance.py]
+    GATE --> DEVGOV[check_development_governance 串联]
+    DEVGOV --> TEST[单测 有效卡通过/占位卡失败]
+    TEST --> OK[03卡收口]
+```
