@@ -2,54 +2,85 @@
 
 卡号：`24`
 日期：`2026-04-11`
-状态：`待执行`
+状态：`完成`
 
-## 上游依据
+## 需求
 
-1. `docs/01-design/modules/malf/03-malf-pure-semantic-structure-ledger-charter-20260411.md`
-2. `docs/02-spec/modules/malf/03-malf-pure-semantic-structure-ledger-spec-20260411.md`
-3. `docs/03-execution/23-malf-pure-semantic-ledger-boundary-freeze-conclusion-20260411.md`
+ - 问题：
+   `23` 号卡虽然已经把 `malf core` 收缩为纯语义走势账本，但 `pivot-confirmed break` 与 `same-timeframe stats sidecar` 仍停留在“下一步再说”的悬空状态，导致下游仍可能把它们各自私有化、重新写回 `malf core`，或者误当成新趋势确认条件。
+ - 目标结果：
+   在不回退 `23` 号纯语义 core 的前提下，正式冻结 `pivot-confirmed break` 的机制层身份、与 `break 触发 / 新推进确认` 的关系，以及 `same-timeframe stats sidecar` 的实体、自然键、批量建仓、增量更新和只读消费边界，并同步明确 `malf -> structure -> filter` 的正式读取顺序。
+ - 为什么现在做：
+   如果这一步不先收口，后续 `structure / filter` 会继续围绕各自私有字段扩张，最终又把统计、上下文或动作接口倒灌回 `malf`，使 `23` 号卡刚冻结的纯语义边界失效。
 
-## 目标
+## 设计输入
 
-在 `23` 号卡已冻结的 `malf core` 公理层之上，补齐两项机制层议题：
+ - 设计文档：
+   - `docs/01-design/modules/malf/03-malf-pure-semantic-structure-ledger-charter-20260411.md`
+   - `docs/01-design/modules/malf/04-malf-mechanism-layer-break-confirmation-and-same-timeframe-stats-sidecar-charter-20260411.md`
+   - `docs/01-design/modules/structure/01-structure-formal-snapshot-charter-20260409.md`
+   - `docs/01-design/modules/filter/01-filter-formal-snapshot-charter-20260409.md`
+ - 规格文档：
+   - `docs/02-spec/modules/malf/03-malf-pure-semantic-structure-ledger-spec-20260411.md`
+   - `docs/02-spec/modules/malf/04-malf-mechanism-layer-break-confirmation-and-same-timeframe-stats-sidecar-spec-20260411.md`
+   - `docs/02-spec/modules/structure/01-structure-formal-snapshot-spec-20260409.md`
+   - `docs/02-spec/modules/filter/01-filter-formal-snapshot-spec-20260409.md`
+ - 当前锚点结论：
+   - `docs/03-execution/23-malf-pure-semantic-ledger-boundary-freeze-conclusion-20260411.md`
 
-1. 明确 `pivot-confirmed break` 是否进入 `malf core` 的正式硬规则，以及它与 `break 触发 / 新推进确认` 的关系。
-2. 明确 `same-timeframe stats sidecar` 的正式边界、实体、自然键与下游消费方式，确保其不会反向污染 `state`。
+## 任务分解
 
-## 本卡范围
+1. 新增 `04` 号 malf mechanism layer design/spec，正式冻结 `pivot-confirmed break` 与 `same-timeframe stats sidecar` 的边界。
+2. 把 `pivot-confirmed break` 与 `break trigger / new progression confirmation` 的关系写成正式三段式，不允许回写 `malf core`。
+3. 冻结 `same_timeframe_stats_profile / same_timeframe_stats_snapshot` 的正式实体、自然键与只读消费方式。
+4. 同步修订 `structure / filter` 的角色声明，明确它们只能按只读机制层 sidecar 消费这些能力。
+5. 回填 `24` 号 card/evidence/record/conclusion 与执行索引、入口文件。
 
-### 范围内
+## 实现边界
 
-1. 补齐 `break` 的确认机制边界。
-2. 冻结同级别统计 sidecar 的设计与规格边界。
-3. 明确 `malf -> structure -> filter` 如何读取这些机制层能力，而不改写 `malf core` 公理层。
-
-### 范围外
-
-1. 新增 canonical pure semantic runner 代码实现。
-2. 回测、胜率、收益、动作建议。
-3. 多级别 `context` 回写 `malf core`。
+ - 范围内：
+   - `docs/01-design/modules/malf/*`
+   - `docs/02-spec/modules/malf/*`
+   - `docs/01-design/modules/structure/01-structure-formal-snapshot-charter-20260409.md`
+   - `docs/01-design/modules/filter/01-filter-formal-snapshot-charter-20260409.md`
+   - `docs/02-spec/modules/structure/01-structure-formal-snapshot-spec-20260409.md`
+   - `docs/02-spec/modules/filter/01-filter-formal-snapshot-spec-20260409.md`
+   - `docs/03-execution/24-*`
+   - `docs/03-execution/evidence/24-*`
+   - `docs/03-execution/records/24-*`
+   - `docs/03-execution/00-conclusion-catalog-20260409.md`
+   - `docs/03-execution/A-execution-reading-order-20260409.md`
+   - `docs/03-execution/B-card-catalog-20260409.md`
+   - `docs/03-execution/C-system-completion-ledger-20260409.md`
+   - `docs/03-execution/evidence/00-evidence-catalog-20260409.md`
+   - `AGENTS.md`
+   - `README.md`
+   - `pyproject.toml`
+ - 范围外：
+   - 新增 canonical mechanism runner 代码实现
+   - 回测、胜率、收益、动作建议
+   - 多级别 `context` 回写 `malf core`
+   - 改写 `src/mlq/malf` 或 `scripts/malf/run_malf_snapshot_build.py`
 
 ## 历史账本约束
 
-1. 实体锚点：`instrument + timeframe`
-2. 业务自然键：待在设计/规格中冻结 `break confirmation` 与 `stats sidecar` 的自然键
-3. 批量建仓：说明如何从官方 `market_base(backward)` 一次性构建
-4. 增量更新：说明如何按 `instrument + timeframe` 增量续跑
-5. 断点续跑：说明 checkpoint / dirty queue / replay 契约
-6. 审计账本：说明 run / evidence / record / conclusion 如何留痕
+ - 实体锚点：
+   `pivot-confirmed break` 事件与 `same-timeframe stats snapshot` 继续以 `instrument + timeframe` 为主锚；统计分布层以 `universe + timeframe` 为主锚。
+ - 业务自然键：
+   `pivot_confirmed_break_ledger` 以 `instrument + timeframe + guard_pivot_id + trigger_bar_dt` 为自然键；`same_timeframe_stats_profile` 以 `universe + timeframe + regime_family + metric_name + sample_version` 为自然键；`same_timeframe_stats_snapshot` 以 `instrument + timeframe + asof_bar_dt + sample_version + stats_contract_version` 为自然键。
+ - 批量建仓：
+   正式合同冻结为“先构造同级别 `malf core`，再派生 break 确认与 stats sidecar”；本卡不新增代码实现。
+ - 增量更新：
+   正式合同冻结为“仅对上游 `state / wave / progress` 发生变化的 `instrument + timeframe` 续算 sidecar，不跨级别混样本”。
+ - 断点续跑：
+   break 确认续跑必须能按 `guard_pivot_id + trigger_bar_dt` 重放；stats 续跑必须能按 `instrument + timeframe + asof_bar_dt + sample_version` 重放。
+ - 审计账本：
+   当前继续通过 `card / evidence / record / conclusion` 留痕；未来若实现正式机制层 runner，必须另开卡补齐 run/output 审计表族。
 
-## 预期交付
-
-1. `malf` 机制层 design
-2. `malf` 机制层 spec
-3. `card / evidence / record / conclusion` 闭环
-4. 与 `structure / filter` 上下游合同的必要同步修订
-
-## 完成判据
+## 收口标准
 
 1. `pivot-confirmed break` 是否进入 `malf core` 被正式写清。
 2. `same-timeframe stats sidecar` 的边界被正式写清。
 3. 不再把统计、背景或动作重新塞回 `malf core`。
-4. 文档索引与主线入口完成同步。
+4. `structure / filter` 的只读消费顺序被正式写清。
+5. `24` 号四件套、执行索引与入口文件完成同步。

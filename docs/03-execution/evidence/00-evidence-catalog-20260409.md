@@ -28,3 +28,4 @@
 21. `21-system-ledger-incremental-governance-hardening-evidence-20260410.md`
 22. `22-data-daily-source-governance-sealing-evidence-20260411.md`
 23. `23-malf-pure-semantic-ledger-boundary-freeze-evidence-20260411.md`
+24. `24-malf-mechanism-layer-break-confirmation-and-stats-sidecar-evidence-20260411.md`

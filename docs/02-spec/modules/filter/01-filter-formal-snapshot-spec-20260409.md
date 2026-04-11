@@ -5,6 +5,7 @@
 
 > 角色声明：本文是 `filter` 当前最小正式准入合同，不改写 `malf core` 的纯语义边界。
 > 当前 runner 如仍读取 bridge v1 兼容上下文，只能按“过渡输入”解释；长期正式方向是 `structure_snapshot + 下游只读 context/stats sidecar`。
+> 若 `filter` 需要读取 `same_timeframe_stats_snapshot`，必须按 `docs/02-spec/modules/malf/04-malf-mechanism-layer-break-confirmation-and-same-timeframe-stats-sidecar-spec-20260411.md` 作为只读 sidecar 解释，不得反向把它写成 `malf core`。
 
 ## 适用范围
 

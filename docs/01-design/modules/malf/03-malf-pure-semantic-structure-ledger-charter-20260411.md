@@ -7,6 +7,7 @@
 > 它定义纯语义走势账本本身，不负责说明 bridge v1 的现行兼容输出，也不承担 legacy lessons 的经验归档。
 > bridge v1 请读 `01-market-base-to-malf-minimal-snapshot-bridge-charter-20260410.md`；
 > legacy lessons 请读 `00-malf-module-lessons-20260409.md`。
+> 若需要读取机制层 `pivot-confirmed break` 与 `same-timeframe stats sidecar`，请读 `04-malf-mechanism-layer-break-confirmation-and-same-timeframe-stats-sidecar-charter-20260411.md`。
 
 ## 问题
 

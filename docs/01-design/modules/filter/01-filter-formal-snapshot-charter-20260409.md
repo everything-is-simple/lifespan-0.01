@@ -5,6 +5,7 @@
 
 > 角色声明：本文定义 `filter` 的 pre-trigger 准入职责，不把 `malf` 的纯语义核心重新扩写成上下文或动作系统。
 > 当前 runner 若仍需回读 bridge v1 兼容上下文，只代表过渡实现；长期正式方向是 `structure_snapshot + 下游只读 context/stats sidecar`。
+> `pivot-confirmed break` 与 `same-timeframe stats sidecar` 若被消费，也必须按 `docs/01-design/modules/malf/04-malf-mechanism-layer-break-confirmation-and-same-timeframe-stats-sidecar-charter-20260411.md` 作为只读机制层解释。
 
 ## 问题
 

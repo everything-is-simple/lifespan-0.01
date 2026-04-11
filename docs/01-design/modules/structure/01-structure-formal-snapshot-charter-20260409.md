@@ -6,6 +6,7 @@
 > 角色声明：本文定义 `structure` 的正式结构事实层，不改写 `malf core` 的纯语义边界。
 > 当前实现仍允许消费 `malf bridge v1` 的兼容输出作为过渡上游，但这些 bridge 字段不再代表 `malf` 的核心身份。
 > `malf core` 请读 `docs/01-design/modules/malf/03-malf-pure-semantic-structure-ledger-charter-20260411.md`。
+> 若要读取 `pivot-confirmed break` 或 `same-timeframe stats sidecar`，也必须按 `docs/01-design/modules/malf/04-malf-mechanism-layer-break-confirmation-and-same-timeframe-stats-sidecar-charter-20260411.md` 作为只读机制层解释。
 
 ## 问题
 
@@ -34,6 +35,7 @@
 
 1. 从 `malf` 语义层中外提稳定、可复查、可增量沉淀的结构事实。
    - 当前 runner 可暂时从 `malf bridge v1` 兼容视图读取候选输入，但长期目标是消费 `malf core` 或其派生的兼容视图，而不是把旧上下文字段继续当成 `malf` 本体。
+   - 若后续读取 `pivot-confirmed break` 或 `same-timeframe stats sidecar`，也只允许按只读机制层附加输入解释；它们负责补充 break 确认与同级别位置读数，不得反向定义 `malf core`。
 2. 回答“当前这段中级波内部发生了什么结构推进或失败事实”。
 3. 不承担 pre-trigger 准入，也不承担 trigger 检测或 formal signal 判定。
 

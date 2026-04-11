@@ -6,6 +6,7 @@
 > 角色声明：本文是当前唯一应被当作 `malf core` 读取的正式规格。
 > 它定义纯语义走势账本本身，不替代 bridge v1 的现行字段合同。
 > bridge v1 请读 `01-market-base-to-malf-minimal-snapshot-bridge-spec-20260410.md`。
+> 若需要读取机制层 `pivot-confirmed break` 与 `same-timeframe stats sidecar` 合同，请读 `04-malf-mechanism-layer-break-confirmation-and-same-timeframe-stats-sidecar-spec-20260411.md`。
 
 ## 1. 适用范围
 
