@@ -11,6 +11,7 @@ from mlq.filter.bootstrap import (
 from mlq.filter.runner import (
     DEFAULT_FILTER_CONTRACT_VERSION,
     DEFAULT_FILTER_CONTEXT_TABLE,
+    DEFAULT_FILTER_SOURCE_TIMEFRAME,
     DEFAULT_FILTER_STRUCTURE_TABLE,
     FilterSnapshotBuildSummary,
     run_filter_snapshot_build,
@@ -19,6 +20,7 @@ from mlq.filter.runner import (
 __all__ = [
     "DEFAULT_FILTER_CONTRACT_VERSION",
     "DEFAULT_FILTER_CONTEXT_TABLE",
+    "DEFAULT_FILTER_SOURCE_TIMEFRAME",
     "DEFAULT_FILTER_STRUCTURE_TABLE",
     "FILTER_RUN_SNAPSHOT_TABLE",
     "FILTER_RUN_TABLE",

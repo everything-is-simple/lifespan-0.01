@@ -1,7 +1,7 @@
 # structure filter alpha rebind to canonical malf 设计宪章
 
 日期：`2026-04-11`
-状态：`待执行`
+状态：`已裁决`
 
 ## 背景
 
@@ -16,7 +16,9 @@
 ## 核心裁决
 
 1. 下游主线不得继续把 bridge-v1 近似输出当作长期正式真值。
-2. `alpha/PAS` 的 detector 和 formal signal 上游必须与 canonical malf 重对齐。
+2. `structure` 默认改为直接消费 canonical `malf_state_snapshot(timeframe='D')`，并只把 `major_state / current_hh_count / current_ll_count` 映射成下游仍需保留的兼容审计字段。
+3. `filter` 默认改为从 canonical `malf_state_snapshot(timeframe='D')` 做上下文存在性校验，不再默认回读 `pas_context_snapshot`。
+4. `alpha/PAS` 的 detector 和 formal signal 上游必须与 canonical malf 重对齐；`formal signal` 的 `pas_context_snapshot` fallback 只允许显式兼容启用，默认关闭。
 
 ## 非目标
 

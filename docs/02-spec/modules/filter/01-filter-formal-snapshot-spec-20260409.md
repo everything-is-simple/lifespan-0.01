@@ -4,7 +4,7 @@
 状态：`生效中`
 
 > 角色声明：本文是 `filter` 当前最小正式准入合同，不改写 `malf core` 的纯语义边界。
-> 当前 runner 如仍读取 bridge v1 兼容上下文，只能按“过渡输入”解释；长期正式方向是 `structure_snapshot + 下游只读 context/stats sidecar`。
+> 当前 runner 默认读取 `structure_snapshot + canonical malf_state_snapshot(timeframe='D')`；bridge v1 兼容上下文只允许在 canonical 表缺失时作为过渡输入解释。
 > 若 `filter` 需要读取 `same_timeframe_stats_snapshot`，必须按 `docs/02-spec/modules/malf/04-malf-mechanism-layer-break-confirmation-and-same-timeframe-stats-sidecar-spec-20260411.md` 作为只读 sidecar 解释，不得反向把它写成 `malf core`。
 
 ## 适用范围
@@ -24,8 +24,9 @@
 `filter` 当前正式输入固定为：
 
 1. 官方 `structure_snapshot`
-2. 下游只读 `context/stats sidecar`
-   - 当前 runner 可暂时读取 bridge v1 兼容上下文表，但这不再代表 `malf core`
+2. canonical `malf_state_snapshot(timeframe='D')`
+   - 当前只用于上下文存在性审计与只读提示，不参与 `malf core` 回写
+   - bridge v1 `pas_context_snapshot` 只允许在 canonical 表缺失时兼容回退
 
 至少保证以下字段可读：
 
@@ -37,7 +38,7 @@
 6. `is_failed_extreme`
 7. `failure_type`
 
-若当前实现仍挂接 bridge v1 兼容上下文，可额外读取：
+若需要下游兼容审计字段，可额外读取：
 
 1. `malf_context_4`
 2. `lifecycle_rank_high`
@@ -78,7 +79,7 @@
 
 补充说明：
 
-1. `source_context_table` 当前表示下游只读 context/stats sidecar 来源表；在现阶段实现里，它也可以指向 bridge v1 兼容上下文表。
+1. `source_context_table` 当前默认表示 canonical `malf_state_snapshot`；只有在 canonical 缺表时才允许记录成 bridge v1 兼容上下文表。
 2. 该字段用于审计 runner 输入来源，不得被解释成 `malf core` 的一部分。
 
 ### 2. `filter_snapshot`
@@ -107,7 +108,7 @@
 补充说明：
 
 1. `source_context_nk` 当前是上下文来源审计指针。
-2. 若输入来自 bridge v1，则它指向 bridge v1 兼容上下文自然键；若未来切到新的只读 sidecar，应继续保持审计指针职责，而不是默默改写 `filter_snapshot` 主体语义。
+2. 若输入来自 canonical，则它指向 canonical state snapshot 的审计指针；若输入来自兼容回退，则它指向 bridge v1 兼容上下文自然键。
 
 自然键规则：
 
@@ -178,8 +179,8 @@
 
 补充说明：
 
-1. `source_context_table` 当前可指向 bridge v1 兼容上下文表或新的下游只读 sidecar。
-2. 若未来完全移除上下文输入，应另开卡修订本 runner 合同，而不是静默修改语义。
+1. `source_context_table` 当前默认指向 canonical `malf_state_snapshot`，`source_timeframe` 默认固定为 `D`。
+2. bridge v1 兼容上下文表只允许在 canonical 表缺失时作为兼容回退，不再是长期默认正式输入。
 
 ## Bounded Evidence 要求
 

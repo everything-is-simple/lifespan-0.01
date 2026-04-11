@@ -10,6 +10,7 @@ from mlq.structure import (
     DEFAULT_STRUCTURE_CONTEXT_TABLE,
     DEFAULT_STRUCTURE_CONTRACT_VERSION,
     DEFAULT_STRUCTURE_INPUT_TABLE,
+    DEFAULT_STRUCTURE_SOURCE_TIMEFRAME,
     run_structure_snapshot_build,
 )
 
@@ -38,6 +39,10 @@ def build_argument_parser() -> argparse.ArgumentParser:
         "--structure-contract-version",
         default=DEFAULT_STRUCTURE_CONTRACT_VERSION,
     )
+    parser.add_argument(
+        "--source-timeframe",
+        default=DEFAULT_STRUCTURE_SOURCE_TIMEFRAME,
+    )
     parser.add_argument("--summary-path", type=Path)
     return parser
 
@@ -56,6 +61,7 @@ def main() -> None:
         run_id=args.run_id,
         source_context_table=args.source_context_table,
         source_structure_input_table=args.source_structure_input_table,
+        source_timeframe=args.source_timeframe,
         structure_contract_version=args.structure_contract_version,
         summary_path=args.summary_path,
     )

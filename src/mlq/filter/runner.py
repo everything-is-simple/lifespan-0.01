@@ -11,6 +11,7 @@ from typing import Final
 import duckdb
 
 from mlq.core.paths import WorkspaceRoots, default_settings
+from mlq.malf.bootstrap import MALF_STATE_SNAPSHOT_TABLE
 from mlq.filter.bootstrap import (
     FILTER_RUN_SNAPSHOT_TABLE,
     FILTER_RUN_TABLE,
@@ -21,8 +22,10 @@ from mlq.filter.bootstrap import (
 
 
 DEFAULT_FILTER_STRUCTURE_TABLE: Final[str] = "structure_snapshot"
-DEFAULT_FILTER_CONTEXT_TABLE: Final[str] = "pas_context_snapshot"
+DEFAULT_FILTER_CONTEXT_TABLE: Final[str] = MALF_STATE_SNAPSHOT_TABLE
+DEFAULT_FILTER_SOURCE_TIMEFRAME: Final[str] = "D"
 DEFAULT_FILTER_CONTRACT_VERSION: Final[str] = "filter-snapshot-v1"
+LEGACY_FILTER_CONTEXT_TABLE: Final[str] = "pas_context_snapshot"
 
 
 @dataclass(frozen=True)
@@ -49,6 +52,7 @@ class FilterSnapshotBuildSummary:
     malf_ledger_path: str
     source_structure_table: str
     source_context_table: str
+    source_timeframe: str
 
     def as_dict(self) -> dict[str, object]:
         """返回适合写入 summary JSON 的稳定字典。"""
@@ -109,6 +113,7 @@ def run_filter_snapshot_build(
     run_id: str | None = None,
     source_structure_table: str = DEFAULT_FILTER_STRUCTURE_TABLE,
     source_context_table: str = DEFAULT_FILTER_CONTEXT_TABLE,
+    source_timeframe: str = DEFAULT_FILTER_SOURCE_TIMEFRAME,
     filter_contract_version: str = DEFAULT_FILTER_CONTRACT_VERSION,
     runner_name: str = "filter_snapshot_builder",
     runner_version: str = "v1",
@@ -127,9 +132,14 @@ def run_filter_snapshot_build(
     normalized_instruments = tuple(sorted({item for item in instruments or () if item}))
     normalized_limit = max(int(limit), 1)
     normalized_batch_size = max(int(batch_size), 1)
+    normalized_timeframe = _normalize_timeframe(source_timeframe)
     materialization_run_id = run_id or _build_filter_run_id()
 
     _ensure_database_exists(resolved_structure_path, label="structure")
+    actual_source_context_table = _resolve_filter_context_table(
+        malf_path=resolved_malf_path,
+        requested_table=source_context_table,
+    )
     structure_rows = _load_structure_snapshot_rows(
         structure_path=resolved_structure_path,
         table_name=source_structure_table,
@@ -140,10 +150,11 @@ def run_filter_snapshot_build(
     )
     context_presence = _load_context_presence(
         malf_path=resolved_malf_path,
-        table_name=source_context_table,
+        table_name=actual_source_context_table,
         signal_start_date=normalized_start_date,
         signal_end_date=normalized_end_date,
         instruments=tuple(sorted({row.instrument for row in structure_rows})),
+        timeframe=normalized_timeframe,
     )
 
     filter_connection = duckdb.connect(str(resolved_filter_path))
@@ -159,7 +170,7 @@ def run_filter_snapshot_build(
             signal_end_date=normalized_end_date,
             bounded_instrument_count=bounded_instrument_count,
             source_structure_table=source_structure_table,
-            source_context_table=source_context_table,
+            source_context_table=actual_source_context_table,
             filter_contract_version=filter_contract_version,
         )
         summary = _materialize_filter_rows(
@@ -176,7 +187,8 @@ def run_filter_snapshot_build(
             structure_path=resolved_structure_path,
             malf_path=resolved_malf_path,
             source_structure_table=source_structure_table,
-            source_context_table=source_context_table,
+            source_context_table=actual_source_context_table,
+            source_timeframe=normalized_timeframe,
             batch_size=normalized_batch_size,
         )
         _mark_run_completed(filter_connection, run_id=materialization_run_id, summary=summary)
@@ -202,6 +214,11 @@ def _coerce_date(value: str | date | None) -> date | None:
     return datetime.fromisoformat(str(value)).date()
 
 
+def _normalize_timeframe(value: str | None) -> str:
+    candidate = str(value or DEFAULT_FILTER_SOURCE_TIMEFRAME).strip().upper()
+    return candidate or DEFAULT_FILTER_SOURCE_TIMEFRAME
+
+
 def _build_filter_run_id() -> str:
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     return f"filter-snapshot-{timestamp}"
@@ -210,6 +227,34 @@ def _build_filter_run_id() -> str:
 def _ensure_database_exists(path: Path, *, label: str) -> None:
     if not path.exists():
         raise FileNotFoundError(f"Missing {label} database: {path}")
+
+
+def _resolve_filter_context_table(*, malf_path: Path, requested_table: str) -> str:
+    if _database_table_exists(malf_path, requested_table):
+        return requested_table
+    if _database_table_exists(malf_path, LEGACY_FILTER_CONTEXT_TABLE):
+        return LEGACY_FILTER_CONTEXT_TABLE
+    return requested_table
+
+
+def _database_table_exists(path: Path, table_name: str | None) -> bool:
+    if table_name is None or table_name == "" or not path.exists():
+        return False
+    connection = duckdb.connect(str(path), read_only=True)
+    try:
+        rows = connection.execute(
+            """
+            SELECT 1
+            FROM information_schema.tables
+            WHERE table_schema = 'main'
+              AND table_name = ?
+            LIMIT 1
+            """,
+            [table_name],
+        ).fetchall()
+        return bool(rows)
+    finally:
+        connection.close()
 
 
 def _load_structure_snapshot_rows(
@@ -301,6 +346,7 @@ def _load_context_presence(
     signal_start_date: date | None,
     signal_end_date: date | None,
     instruments: tuple[str, ...],
+    timeframe: str,
 ) -> set[tuple[str, date]]:
     if not malf_path.exists() or not instruments:
         return set()
@@ -315,10 +361,12 @@ def _load_context_presence(
         )
         signal_date_column = _resolve_existing_column(
             available_columns,
-            ("signal_date",),
-            field_name="signal_date",
+            ("signal_date", "asof_bar_dt"),
+            field_name="signal_date/asof_bar_dt",
             table_name=table_name,
         )
+        timeframe_column = _resolve_optional_column(available_columns, ("timeframe",))
+        asset_type_column = _resolve_optional_column(available_columns, ("asset_type",))
         placeholders = ", ".join("?" for _ in instruments)
         parameters: list[object] = [*instruments]
         where_clauses = [f"{instrument_column} IN ({placeholders})"]
@@ -328,6 +376,12 @@ def _load_context_presence(
         if signal_end_date is not None:
             where_clauses.append(f"{signal_date_column} <= ?")
             parameters.append(signal_end_date)
+        if timeframe_column is not None:
+            where_clauses.append(f"{timeframe_column} = ?")
+            parameters.append(timeframe)
+        if asset_type_column is not None:
+            where_clauses.append(f"{asset_type_column} = ?")
+            parameters.append("stock")
         rows = connection.execute(
             f"""
             SELECT DISTINCT
@@ -364,6 +418,7 @@ def _materialize_filter_rows(
     malf_path: Path,
     source_structure_table: str,
     source_context_table: str,
+    source_timeframe: str,
     batch_size: int,
 ) -> FilterSnapshotBuildSummary:
     inserted_count = 0
@@ -438,6 +493,7 @@ def _materialize_filter_rows(
         malf_ledger_path=str(malf_path),
         source_structure_table=source_structure_table,
         source_context_table=source_context_table,
+        source_timeframe=source_timeframe,
     )
 
 

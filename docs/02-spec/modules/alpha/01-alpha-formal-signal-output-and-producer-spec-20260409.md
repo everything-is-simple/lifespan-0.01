@@ -203,6 +203,11 @@
 10. `fallback_context_table`
 11. `summary_path`
 
+补充说明：
+
+1. `fallback_context_table` 默认关闭，不再默认指向 `pas_context_snapshot`。
+2. 若显式启用该参数，它只承担 legacy 兼容兜底，不得重新变成长期正式上游。
+
 ### 最小职责
 
 1. 从官方 `alpha trigger + filter_snapshot + structure_snapshot` 读取 bounded 样本

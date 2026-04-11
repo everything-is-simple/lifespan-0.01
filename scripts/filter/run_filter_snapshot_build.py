@@ -9,6 +9,7 @@ from pathlib import Path
 from mlq.filter import (
     DEFAULT_FILTER_CONTRACT_VERSION,
     DEFAULT_FILTER_CONTEXT_TABLE,
+    DEFAULT_FILTER_SOURCE_TIMEFRAME,
     DEFAULT_FILTER_STRUCTURE_TABLE,
     run_filter_snapshot_build,
 )
@@ -38,6 +39,10 @@ def build_argument_parser() -> argparse.ArgumentParser:
         "--filter-contract-version",
         default=DEFAULT_FILTER_CONTRACT_VERSION,
     )
+    parser.add_argument(
+        "--source-timeframe",
+        default=DEFAULT_FILTER_SOURCE_TIMEFRAME,
+    )
     parser.add_argument("--summary-path", type=Path)
     return parser
 
@@ -56,6 +61,7 @@ def main() -> None:
         run_id=args.run_id,
         source_structure_table=args.source_structure_table,
         source_context_table=args.source_context_table,
+        source_timeframe=args.source_timeframe,
         filter_contract_version=args.filter_contract_version,
         summary_path=args.summary_path,
     )

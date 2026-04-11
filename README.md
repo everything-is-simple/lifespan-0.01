@@ -107,7 +107,7 @@
   - `malf -> structure -> filter -> alpha` 默认消费 `adjust_method='backward'`
   - `position -> trade` 默认消费 `adjust_method='none'`
   - `forward` 当前只作研究与展示保留
-- 当前最新生效结论锚点已推进到 `27-system-mainline-bounded-acceptance-readout-and-audit-bootstrap-conclusion-20260411.md`：`system` 最小官方 readout / audit bootstrap 已成立；当前治理锚点已切到 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`，自然数顺排后的后续卡依次为 `29 -> 30 -> 31 -> 32 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`，其中 `29-32` 是 malf 优先卡组
+- 当前最新生效结论锚点已推进到 `31-structure-filter-alpha-rebind-to-canonical-malf-conclusion-20260411.md`：`structure / filter / alpha` 默认已改绑到 canonical `malf v2`；当前治理锚点仍是 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`，当前具体待施工卡已推进到 `32-downstream-truthfulness-revalidation-after-malf-canonicalization-card-20260411.md`，自然数顺排后的后续卡依次为 `29 -> 30 -> 31 -> 32 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`，其中 `29-32` 是 malf 优先卡组
 - `txt -> raw_market -> market_base` 继续保留为正式 fallback
 
 ## 当前 malf 正式口径
@@ -120,11 +120,25 @@
 - 当前 `scripts/malf/run_malf_snapshot_build.py` 仍保留 bridge v1 兼容职责：
   - 消费 `market_base.stock_daily_adjusted(adjust_method='backward')`
   - 物化 `pas_context_snapshot / structure_candidate_snapshot`
-  - 供现有 `structure` runner 过渡消费
+  - 仅供显式兼容回退或历史桥接链路消费，不再承担默认正式真值职责
 - 当前 `scripts/malf/run_malf_mechanism_build.py` 正式负责 bridge-era 机制层 sidecar 账本：
   - 消费 `pas_context_snapshot / structure_candidate_snapshot`
   - 物化 `pivot_confirmed_break_ledger / same_timeframe_stats_profile / same_timeframe_stats_snapshot`
   - 维护 `malf_mechanism_checkpoint`，支持按 `instrument + timeframe` 增量续跑
+
+## 当前 canonical downstream 默认绑定
+
+- `structure`
+  - 默认 `source_context_table / source_structure_input_table='malf_state_snapshot'`
+  - 默认 `source_timeframe='D'`
+  - bridge v1 只保留为 canonical 表缺失时的兼容回退
+- `filter`
+  - 默认 `source_context_table='malf_state_snapshot'`
+  - 默认 `source_timeframe='D'`
+  - bridge v1 `pas_context_snapshot` 只保留兼容回退
+- `alpha`
+  - `alpha trigger` 继续只读官方 `filter_snapshot + structure_snapshot`
+  - `alpha formal signal` 默认关闭 `pas_context_snapshot` fallback，只有显式指定时才启用兼容路径
 
 ## 文档治理
 

@@ -23,7 +23,7 @@ from mlq.core.paths import WorkspaceRoots, default_settings
 DEFAULT_ALPHA_FORMAL_SIGNAL_TRIGGER_TABLE: Final[str] = "alpha_trigger_event"
 DEFAULT_ALPHA_FORMAL_SIGNAL_FILTER_TABLE: Final[str] = "filter_snapshot"
 DEFAULT_ALPHA_FORMAL_SIGNAL_STRUCTURE_TABLE: Final[str] = "structure_snapshot"
-DEFAULT_ALPHA_FORMAL_SIGNAL_FALLBACK_CONTEXT_TABLE: Final[str] = "pas_context_snapshot"
+DEFAULT_ALPHA_FORMAL_SIGNAL_FALLBACK_CONTEXT_TABLE: Final[str | None] = None
 DEFAULT_ALPHA_FORMAL_SIGNAL_CONTRACT_VERSION: Final[str] = "alpha-formal-signal-v1"
 
 

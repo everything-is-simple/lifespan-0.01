@@ -4,7 +4,7 @@
 状态：`生效中`
 
 > 角色声明：本文是 `structure` 当前正式输出合同，不改写 `malf` 的纯语义核心定义。
-> 当前 runner 仍可读取 `malf bridge v1` 的兼容上下文与候选快照，但这些字段只代表现阶段兼容输入，不代表 `malf core` 的正式语义。
+> 当前 runner 默认直接读取 canonical `malf_state_snapshot(timeframe='D')`；bridge v1 兼容上下文与候选快照只允许在 canonical 表缺失时作为兼容回退，不代表 `malf core` 的正式语义。
 > `malf core` 请读 `docs/02-spec/modules/malf/03-malf-pure-semantic-structure-ledger-spec-20260411.md`。
 > 若 `structure` 需要读取 `pivot_confirmed_break_ledger` 或 `same_timeframe_stats_snapshot`，也只能按 `docs/02-spec/modules/malf/04-malf-mechanism-layer-break-confirmation-and-same-timeframe-stats-sidecar-spec-20260411.md` 作为只读机制层输入解释。
 
@@ -22,13 +22,14 @@
 
 ## 正式输入
 
-`structure` 当前正式输入固定为两类必需输入，外加两类只读机制层可选输入：
+`structure` 当前正式输入固定为 canonical `malf` 必需输入，外加两类只读机制层可选输入：
 
-1. 官方 `malf` 上游结构兼容输入
-   - 当前实现可来自 `malf bridge v1` 兼容视图，至少提供 `instrument / signal_date / asof_date`
-   - 若 runner 仍暂时回读 `malf_context_4 / lifecycle_rank_high / lifecycle_rank_total`，这些字段只代表 bridge v1 兼容上下文，不得被重写成 `malf core` 的必备语义
-2. 官方结构候选事实输入
-   - 至少提供 `new_high_count / new_low_count / refresh_density / advancement_density / is_failed_extreme / failure_type`
+1. 官方 canonical `malf_state_snapshot`
+   - 默认读取 `asset_type='stock' + timeframe='D'`
+   - 至少提供 `code / asof_bar_dt / major_state / trend_direction / current_hh_count / current_ll_count`
+2. 下游兼容审计字段由 canonical 派生
+   - `malf_context_4 / lifecycle_rank_high / lifecycle_rank_total / source_context_nk` 仍可写入 `structure_snapshot`
+   - 这些字段现在是 canonical 到下游合同的兼容映射，不得被重写成 `malf core` 的反向定义
 3. 只读机制层 `pivot_confirmed_break_ledger`
    - 若存在，只允许补充 break 是否已经获得同级别 pivot 级确认
    - 不得把它重新解释成 `major_state` 的硬确认条件
@@ -41,7 +42,7 @@
 1. 不允许 `structure` 直接承担 filter admission。
 2. 不允许 `structure` 直接输出 formal signal。
 3. 不允许为方便一次 bounded smoke 而把旧兼容字段继续当作长期官方输出。
-4. 不允许把 `malf_context_4 / lifecycle_rank_* / source_context_*` 反向宣称为 `malf core` 必备字段；它们只允许以 bridge v1 兼容审计指针身份保留。
+4. 不允许把 `malf_context_4 / lifecycle_rank_* / source_context_*` 反向宣称为 `malf core` 必备字段；它们只允许以 canonical-downstream 兼容审计字段身份保留。
 5. `pivot_confirmed_break_ledger / same_timeframe_stats_snapshot` 只允许作为附加只读机制层输入，不得覆盖 `pivot / wave / state` 的 core 裁决。
 
 ## 正式输出
@@ -71,7 +72,7 @@
 
 补充说明：
 
-1. `source_context_table` 当前表示 bridge v1 兼容上下文来源表，未来若切换到新的下游 sidecar 或纯语义派生视图，应保持“上游上下文来源审计字段”这一职责，而不是继续等同于 `malf core`。
+1. `source_context_table` 当前默认表示 canonical `malf_state_snapshot`；如发生兼容回退，它才会记录为 bridge v1 上下文来源表。
 2. `pivot_confirmed_break_ledger / same_timeframe_stats_snapshot` 虽已成为正式可读机制层输入，但当前 runner 合同尚未把它们提升为必需脚本参数；后续若要把这些 sidecar 正式接入 runner，必须另开实现卡补齐显式参数与审计字段。
 
 ### 2. `structure_snapshot`
@@ -104,7 +105,7 @@
 
 补充说明：
 
-1. `malf_context_4 / lifecycle_rank_high / lifecycle_rank_total / source_context_nk` 当前只允许按 bridge v1 兼容字段解读。
+1. `malf_context_4 / lifecycle_rank_high / lifecycle_rank_total / source_context_nk` 当前只允许按 canonical-downstream 兼容字段解读。
 2. 这些字段服务于现阶段 runner 对接与审计，不得被视为 `structure` 对 `malf core` 的反向定义。
 
 `structure_progress_state` 当前最小枚举固定为：
@@ -169,8 +170,8 @@
 
 补充说明：
 
-1. `source_context_table` 当前仍可指向 bridge v1 兼容上下文表。
-2. 后续若切到新的下游只读 context/stats sidecar，应另开卡更新 runner 合同，而不是默默把 sidecar 重新写成 `malf core`。
+1. `source_context_table / source_structure_input_table` 当前默认都指向 canonical `malf_state_snapshot`，`source_timeframe` 默认固定为 `D`。
+2. bridge v1 兼容表只允许在 canonical 表缺失时显式或自动回退，不再是默认正式真值。
 
 ## Bounded Evidence 要求
 

@@ -12,6 +12,7 @@ import duckdb
 
 from mlq.core.paths import WorkspaceRoots, default_settings
 from mlq.malf.bootstrap import (
+    MALF_STATE_SNAPSHOT_TABLE,
     PIVOT_CONFIRMED_BREAK_LEDGER_TABLE,
     SAME_TIMEFRAME_STATS_SNAPSHOT_TABLE,
 )
@@ -24,11 +25,14 @@ from mlq.structure.bootstrap import (
 )
 
 
-DEFAULT_STRUCTURE_CONTEXT_TABLE: Final[str] = "pas_context_snapshot"
-DEFAULT_STRUCTURE_INPUT_TABLE: Final[str] = "structure_candidate_snapshot"
-DEFAULT_STRUCTURE_BREAK_CONFIRMATION_TABLE: Final[str] = PIVOT_CONFIRMED_BREAK_LEDGER_TABLE
-DEFAULT_STRUCTURE_STATS_TABLE: Final[str] = SAME_TIMEFRAME_STATS_SNAPSHOT_TABLE
+DEFAULT_STRUCTURE_CONTEXT_TABLE: Final[str] = MALF_STATE_SNAPSHOT_TABLE
+DEFAULT_STRUCTURE_INPUT_TABLE: Final[str] = MALF_STATE_SNAPSHOT_TABLE
+DEFAULT_STRUCTURE_BREAK_CONFIRMATION_TABLE: Final[str | None] = None
+DEFAULT_STRUCTURE_STATS_TABLE: Final[str | None] = None
+DEFAULT_STRUCTURE_SOURCE_TIMEFRAME: Final[str] = "D"
 DEFAULT_STRUCTURE_CONTRACT_VERSION: Final[str] = "structure-snapshot-v1"
+LEGACY_STRUCTURE_CONTEXT_TABLE: Final[str] = "pas_context_snapshot"
+LEGACY_STRUCTURE_INPUT_TABLE: Final[str] = "structure_candidate_snapshot"
 
 
 @dataclass(frozen=True)
@@ -56,8 +60,9 @@ class StructureSnapshotBuildSummary:
     malf_ledger_path: str
     source_context_table: str
     source_structure_input_table: str
-    source_break_confirmation_table: str
-    source_stats_table: str
+    source_break_confirmation_table: str | None
+    source_stats_table: str | None
+    source_timeframe: str
 
     def as_dict(self) -> dict[str, object]:
         """返回适合写入 summary JSON 的稳定字典。"""
@@ -147,8 +152,9 @@ def run_structure_snapshot_build(
     run_id: str | None = None,
     source_context_table: str = DEFAULT_STRUCTURE_CONTEXT_TABLE,
     source_structure_input_table: str = DEFAULT_STRUCTURE_INPUT_TABLE,
-    source_break_confirmation_table: str = DEFAULT_STRUCTURE_BREAK_CONFIRMATION_TABLE,
-    source_stats_table: str = DEFAULT_STRUCTURE_STATS_TABLE,
+    source_break_confirmation_table: str | None = DEFAULT_STRUCTURE_BREAK_CONFIRMATION_TABLE,
+    source_stats_table: str | None = DEFAULT_STRUCTURE_STATS_TABLE,
+    source_timeframe: str = DEFAULT_STRUCTURE_SOURCE_TIMEFRAME,
     structure_contract_version: str = DEFAULT_STRUCTURE_CONTRACT_VERSION,
     runner_name: str = "structure_snapshot_builder",
     runner_version: str = "v1",
@@ -166,23 +172,46 @@ def run_structure_snapshot_build(
     normalized_instruments = tuple(sorted({item for item in instruments or () if item}))
     normalized_limit = max(int(limit), 1)
     normalized_batch_size = max(int(batch_size), 1)
+    normalized_timeframe = _normalize_timeframe(source_timeframe)
     materialization_run_id = run_id or _build_structure_run_id()
 
     _ensure_database_exists(resolved_malf_path, label="malf")
+    actual_source_context_table = _resolve_structure_source_table(
+        malf_path=resolved_malf_path,
+        requested_table=source_context_table,
+        fallback_table=LEGACY_STRUCTURE_CONTEXT_TABLE,
+    )
+    actual_source_input_table = _resolve_structure_source_table(
+        malf_path=resolved_malf_path,
+        requested_table=source_structure_input_table,
+        fallback_table=LEGACY_STRUCTURE_INPUT_TABLE,
+    )
+    actual_break_confirmation_table = _resolve_optional_sidecar_table(
+        malf_path=resolved_malf_path,
+        requested_table=source_break_confirmation_table,
+        fallback_table=PIVOT_CONFIRMED_BREAK_LEDGER_TABLE if actual_source_input_table == LEGACY_STRUCTURE_INPUT_TABLE else None,
+    )
+    actual_stats_table = _resolve_optional_sidecar_table(
+        malf_path=resolved_malf_path,
+        requested_table=source_stats_table,
+        fallback_table=SAME_TIMEFRAME_STATS_SNAPSHOT_TABLE if actual_source_input_table == LEGACY_STRUCTURE_INPUT_TABLE else None,
+    )
     input_rows = _load_structure_input_rows(
         malf_path=resolved_malf_path,
-        table_name=source_structure_input_table,
+        table_name=actual_source_input_table,
         signal_start_date=normalized_start_date,
         signal_end_date=normalized_end_date,
         instruments=normalized_instruments,
         limit=normalized_limit,
+        timeframe=normalized_timeframe,
     )
     context_rows = _load_context_rows(
         malf_path=resolved_malf_path,
-        table_name=source_context_table,
+        table_name=actual_source_context_table,
         signal_start_date=normalized_start_date,
         signal_end_date=normalized_end_date,
         instruments=tuple(sorted({row.instrument for row in input_rows})),
+        timeframe=normalized_timeframe,
     )
     context_map = {
         (row.instrument, row.signal_date, row.asof_date): row
@@ -190,17 +219,19 @@ def run_structure_snapshot_build(
     }
     break_confirmation_map = _load_break_confirmation_rows(
         malf_path=resolved_malf_path,
-        table_name=source_break_confirmation_table,
+        table_name=actual_break_confirmation_table,
         signal_start_date=normalized_start_date,
         signal_end_date=normalized_end_date,
         instruments=tuple(sorted({row.instrument for row in input_rows})),
+        timeframe=normalized_timeframe,
     )
     stats_snapshot_map = _load_stats_snapshot_rows(
         malf_path=resolved_malf_path,
-        table_name=source_stats_table,
+        table_name=actual_stats_table,
         signal_start_date=normalized_start_date,
         signal_end_date=normalized_end_date,
         instruments=tuple(sorted({row.instrument for row in input_rows})),
+        timeframe=normalized_timeframe,
     )
 
     structure_connection = duckdb.connect(str(resolved_structure_path))
@@ -215,8 +246,8 @@ def run_structure_snapshot_build(
             signal_start_date=normalized_start_date,
             signal_end_date=normalized_end_date,
             bounded_instrument_count=bounded_instrument_count,
-            source_context_table=source_context_table,
-            source_structure_input_table=source_structure_input_table,
+            source_context_table=actual_source_context_table,
+            source_structure_input_table=actual_source_input_table,
             structure_contract_version=structure_contract_version,
         )
         summary = _materialize_structure_rows(
@@ -233,10 +264,11 @@ def run_structure_snapshot_build(
             signal_end_date=normalized_end_date,
             structure_path=resolved_structure_path,
             malf_path=resolved_malf_path,
-            source_context_table=source_context_table,
-            source_structure_input_table=source_structure_input_table,
-            source_break_confirmation_table=source_break_confirmation_table,
-            source_stats_table=source_stats_table,
+            source_context_table=actual_source_context_table,
+            source_structure_input_table=actual_source_input_table,
+            source_break_confirmation_table=actual_break_confirmation_table,
+            source_stats_table=actual_stats_table,
+            source_timeframe=normalized_timeframe,
             batch_size=normalized_batch_size,
         )
         _mark_run_completed(structure_connection, run_id=materialization_run_id, summary=summary)
@@ -262,6 +294,11 @@ def _coerce_date(value: str | date | None) -> date | None:
     return datetime.fromisoformat(str(value)).date()
 
 
+def _normalize_timeframe(value: str | None) -> str:
+    candidate = str(value or DEFAULT_STRUCTURE_SOURCE_TIMEFRAME).strip().upper()
+    return candidate or DEFAULT_STRUCTURE_SOURCE_TIMEFRAME
+
+
 def _build_structure_run_id() -> str:
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     return f"structure-snapshot-{timestamp}"
@@ -272,6 +309,50 @@ def _ensure_database_exists(path: Path, *, label: str) -> None:
         raise FileNotFoundError(f"Missing {label} database: {path}")
 
 
+def _resolve_structure_source_table(
+    *,
+    malf_path: Path,
+    requested_table: str,
+    fallback_table: str,
+) -> str:
+    if _database_table_exists(malf_path, requested_table):
+        return requested_table
+    return fallback_table if _database_table_exists(malf_path, fallback_table) else requested_table
+
+
+def _resolve_optional_sidecar_table(
+    *,
+    malf_path: Path,
+    requested_table: str | None,
+    fallback_table: str | None,
+) -> str | None:
+    if requested_table and _database_table_exists(malf_path, requested_table):
+        return requested_table
+    if fallback_table and _database_table_exists(malf_path, fallback_table):
+        return fallback_table
+    return None
+
+
+def _database_table_exists(path: Path, table_name: str | None) -> bool:
+    if table_name is None or table_name == "" or not path.exists():
+        return False
+    connection = duckdb.connect(str(path), read_only=True)
+    try:
+        rows = connection.execute(
+            """
+            SELECT 1
+            FROM information_schema.tables
+            WHERE table_schema = 'main'
+              AND table_name = ?
+            LIMIT 1
+            """,
+            [table_name],
+        ).fetchall()
+        return bool(rows)
+    finally:
+        connection.close()
+
+
 def _load_structure_input_rows(
     *,
     malf_path: Path,
@@ -280,69 +361,32 @@ def _load_structure_input_rows(
     signal_end_date: date | None,
     instruments: tuple[str, ...],
     limit: int,
+    timeframe: str,
 ) -> list[_StructureInputRow]:
     connection = duckdb.connect(str(malf_path), read_only=True)
     try:
         available_columns = _load_table_columns(connection, table_name)
-        instrument_column = _resolve_existing_column(
-            available_columns,
-            ("instrument", "entity_code", "code"),
-            field_name="instrument",
-            table_name=table_name,
-        )
-        signal_date_column = _resolve_existing_column(
-            available_columns,
-            ("signal_date",),
-            field_name="signal_date",
-            table_name=table_name,
-        )
-        asof_date_column = _resolve_optional_column(available_columns, ("asof_date",)) or signal_date_column
-        parameters: list[object] = []
-        where_clauses: list[str] = []
-        if signal_start_date is not None:
-            where_clauses.append(f"{signal_date_column} >= ?")
-            parameters.append(signal_start_date)
-        if signal_end_date is not None:
-            where_clauses.append(f"{signal_date_column} <= ?")
-            parameters.append(signal_end_date)
-        if instruments:
-            placeholders = ", ".join("?" for _ in instruments)
-            where_clauses.append(f"{instrument_column} IN ({placeholders})")
-            parameters.extend(instruments)
-        where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
-        rows = connection.execute(
-            f"""
-            SELECT
-                {instrument_column} AS instrument,
-                {signal_date_column} AS signal_date,
-                {asof_date_column} AS asof_date,
-                {_resolve_existing_column(available_columns, ("new_high_count",), field_name="new_high_count", table_name=table_name)} AS new_high_count,
-                {_resolve_existing_column(available_columns, ("new_low_count",), field_name="new_low_count", table_name=table_name)} AS new_low_count,
-                {_resolve_existing_column(available_columns, ("refresh_density",), field_name="refresh_density", table_name=table_name)} AS refresh_density,
-                {_resolve_existing_column(available_columns, ("advancement_density",), field_name="advancement_density", table_name=table_name)} AS advancement_density,
-                {_resolve_existing_column(available_columns, ("is_failed_extreme",), field_name="is_failed_extreme", table_name=table_name)} AS is_failed_extreme,
-                {_resolve_optional_column(available_columns, ("failure_type",)) or "NULL"} AS failure_type
-            FROM {table_name}
-            {where_sql}
-            ORDER BY signal_date, instrument, asof_date
-            LIMIT ?
-            """,
-            [*parameters, limit],
-        ).fetchall()
-        return [
-            _StructureInputRow(
-                instrument=str(row[0]),
-                signal_date=_normalize_date_value(row[1], field_name="signal_date"),
-                asof_date=_normalize_date_value(row[2], field_name="asof_date"),
-                new_high_count=_normalize_optional_int(row[3]),
-                new_low_count=_normalize_optional_int(row[4]),
-                refresh_density=_normalize_optional_float(row[5]),
-                advancement_density=_normalize_optional_float(row[6]),
-                is_failed_extreme=bool(row[7]),
-                failure_type=_normalize_optional_nullable_str(row[8]),
+        if _is_canonical_state_table(available_columns):
+            rows = _load_canonical_input_rows(
+                connection,
+                table_name=table_name,
+                signal_start_date=signal_start_date,
+                signal_end_date=signal_end_date,
+                instruments=instruments,
+                limit=limit,
+                timeframe=timeframe,
             )
-            for row in rows
-        ]
+        else:
+            rows = _load_bridge_input_rows(
+                connection,
+                table_name=table_name,
+                available_columns=available_columns,
+                signal_start_date=signal_start_date,
+                signal_end_date=signal_end_date,
+                instruments=instruments,
+                limit=limit,
+            )
+        return rows
     finally:
         connection.close()
 
@@ -354,117 +398,403 @@ def _load_context_rows(
     signal_start_date: date | None,
     signal_end_date: date | None,
     instruments: tuple[str, ...],
+    timeframe: str,
 ) -> list[_StructureContextRow]:
     if not instruments:
         return []
     connection = duckdb.connect(str(malf_path), read_only=True)
     try:
         available_columns = _load_table_columns(connection, table_name)
-        instrument_column = _resolve_existing_column(
-            available_columns,
-            ("instrument", "entity_code", "code"),
-            field_name="instrument",
+        if _is_canonical_state_table(available_columns):
+            return _load_canonical_context_rows(
+                connection,
+                table_name=table_name,
+                signal_start_date=signal_start_date,
+                signal_end_date=signal_end_date,
+                instruments=instruments,
+                timeframe=timeframe,
+            )
+        return _load_bridge_context_rows(
+            connection,
             table_name=table_name,
+            available_columns=available_columns,
+            signal_start_date=signal_start_date,
+            signal_end_date=signal_end_date,
+            instruments=instruments,
         )
-        signal_date_column = _resolve_existing_column(
-            available_columns,
-            ("signal_date",),
-            field_name="signal_date",
-            table_name=table_name,
-        )
-        asof_date_column = _resolve_optional_column(available_columns, ("asof_date", "calc_date")) or signal_date_column
-        source_context_column = _resolve_optional_column(available_columns, ("source_context_nk",))
-        order_columns = [
-            column_name
-            for column_name in (
-                _resolve_optional_column(available_columns, ("asof_date",)),
-                _resolve_optional_column(available_columns, ("calc_date",)),
-                _resolve_optional_column(available_columns, ("created_at",)),
-            )
-            if column_name is not None
-        ]
-        order_sql = ", ".join(f"{column_name} DESC" for column_name in order_columns) or "1"
-        placeholders = ", ".join("?" for _ in instruments)
-        parameters: list[object] = [*instruments]
-        where_clauses = [f"{instrument_column} IN ({placeholders})"]
-        if signal_start_date is not None:
-            where_clauses.append(f"{signal_date_column} >= ?")
-            parameters.append(signal_start_date)
-        if signal_end_date is not None:
-            where_clauses.append(f"{signal_date_column} <= ?")
-            parameters.append(signal_end_date)
-        where_sql = f"WHERE {' AND '.join(where_clauses)}"
-        rows = connection.execute(
-            f"""
-            WITH ranked_context AS (
-                SELECT
-                    {instrument_column} AS instrument,
-                    {signal_date_column} AS signal_date,
-                    {asof_date_column} AS asof_date,
-                    COALESCE({_resolve_optional_column(available_columns, ("malf_context_4",)) or "'UNKNOWN'"}, 'UNKNOWN') AS malf_context_4,
-                    COALESCE({_resolve_optional_column(available_columns, ("lifecycle_rank_high",)) or "0"}, 0) AS lifecycle_rank_high,
-                    COALESCE({_resolve_optional_column(available_columns, ("lifecycle_rank_total",)) or "0"}, 0) AS lifecycle_rank_total,
-                    {source_context_column if source_context_column is not None else "NULL"} AS source_context_nk,
-                    ROW_NUMBER() OVER (
-                        PARTITION BY {instrument_column}, {signal_date_column}, {asof_date_column}
-                        ORDER BY {order_sql}
-                    ) AS row_rank
-                FROM {table_name}
-                {where_sql}
-            )
-            SELECT
-                instrument,
-                signal_date,
-                asof_date,
-                malf_context_4,
-                lifecycle_rank_high,
-                lifecycle_rank_total,
-                source_context_nk
-            FROM ranked_context
-            WHERE row_rank = 1
-            """,
-            parameters,
-        ).fetchall()
-        context_rows: list[_StructureContextRow] = []
-        for row in rows:
-            signal_date_value = _normalize_date_value(row[1], field_name="signal_date")
-            asof_date_value = _normalize_date_value(row[2], field_name="asof_date")
-            instrument_value = str(row[0])
-            malf_context_4 = _normalize_optional_str(row[3], default="UNKNOWN")
-            source_context_nk = _normalize_optional_str(
-                row[6],
-                default=_build_source_context_nk(
-                    instrument=instrument_value,
-                    signal_date=signal_date_value,
-                    asof_date=asof_date_value,
-                    malf_context_4=malf_context_4,
-                ),
-            )
-            context_rows.append(
-                _StructureContextRow(
-                    instrument=instrument_value,
-                    signal_date=signal_date_value,
-                    asof_date=asof_date_value,
-                    malf_context_4=malf_context_4,
-                    lifecycle_rank_high=_normalize_optional_int(row[4]),
-                    lifecycle_rank_total=_normalize_optional_int(row[5]),
-                    source_context_nk=source_context_nk,
-                )
-            )
-        return context_rows
     finally:
         connection.close()
+
+
+def _is_canonical_state_table(available_columns: set[str]) -> bool:
+    return {"major_state", "trend_direction", "current_hh_count", "current_ll_count"}.issubset(available_columns)
+
+
+def _load_bridge_input_rows(
+    connection: duckdb.DuckDBPyConnection,
+    *,
+    table_name: str,
+    available_columns: set[str],
+    signal_start_date: date | None,
+    signal_end_date: date | None,
+    instruments: tuple[str, ...],
+    limit: int,
+) -> list[_StructureInputRow]:
+    instrument_column = _resolve_existing_column(
+        available_columns,
+        ("instrument", "entity_code", "code"),
+        field_name="instrument",
+        table_name=table_name,
+    )
+    signal_date_column = _resolve_existing_column(
+        available_columns,
+        ("signal_date",),
+        field_name="signal_date",
+        table_name=table_name,
+    )
+    asof_date_column = _resolve_optional_column(available_columns, ("asof_date",)) or signal_date_column
+    parameters: list[object] = []
+    where_clauses: list[str] = []
+    if signal_start_date is not None:
+        where_clauses.append(f"{signal_date_column} >= ?")
+        parameters.append(signal_start_date)
+    if signal_end_date is not None:
+        where_clauses.append(f"{signal_date_column} <= ?")
+        parameters.append(signal_end_date)
+    if instruments:
+        placeholders = ", ".join("?" for _ in instruments)
+        where_clauses.append(f"{instrument_column} IN ({placeholders})")
+        parameters.extend(instruments)
+    where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+    rows = connection.execute(
+        f"""
+        SELECT
+            {instrument_column} AS instrument,
+            {signal_date_column} AS signal_date,
+            {asof_date_column} AS asof_date,
+            {_resolve_existing_column(available_columns, ("new_high_count",), field_name="new_high_count", table_name=table_name)} AS new_high_count,
+            {_resolve_existing_column(available_columns, ("new_low_count",), field_name="new_low_count", table_name=table_name)} AS new_low_count,
+            {_resolve_existing_column(available_columns, ("refresh_density",), field_name="refresh_density", table_name=table_name)} AS refresh_density,
+            {_resolve_existing_column(available_columns, ("advancement_density",), field_name="advancement_density", table_name=table_name)} AS advancement_density,
+            {_resolve_existing_column(available_columns, ("is_failed_extreme",), field_name="is_failed_extreme", table_name=table_name)} AS is_failed_extreme,
+            {_resolve_optional_column(available_columns, ("failure_type",)) or "NULL"} AS failure_type
+        FROM {table_name}
+        {where_sql}
+        ORDER BY signal_date, instrument, asof_date
+        LIMIT ?
+        """,
+        [*parameters, limit],
+    ).fetchall()
+    return [
+        _StructureInputRow(
+            instrument=str(row[0]),
+            signal_date=_normalize_date_value(row[1], field_name="signal_date"),
+            asof_date=_normalize_date_value(row[2], field_name="asof_date"),
+            new_high_count=_normalize_optional_int(row[3]),
+            new_low_count=_normalize_optional_int(row[4]),
+            refresh_density=_normalize_optional_float(row[5]),
+            advancement_density=_normalize_optional_float(row[6]),
+            is_failed_extreme=bool(row[7]),
+            failure_type=_normalize_optional_nullable_str(row[8]),
+        )
+        for row in rows
+    ]
+
+
+def _load_canonical_input_rows(
+    connection: duckdb.DuckDBPyConnection,
+    *,
+    table_name: str,
+    signal_start_date: date | None,
+    signal_end_date: date | None,
+    instruments: tuple[str, ...],
+    limit: int,
+    timeframe: str,
+) -> list[_StructureInputRow]:
+    available_columns = _load_table_columns(connection, table_name)
+    code_column = _resolve_existing_column(
+        available_columns,
+        ("code", "instrument", "entity_code"),
+        field_name="code",
+        table_name=table_name,
+    )
+    asof_date_column = _resolve_existing_column(
+        available_columns,
+        ("asof_bar_dt", "asof_date", "signal_date"),
+        field_name="asof_bar_dt",
+        table_name=table_name,
+    )
+    timeframe_column = _resolve_optional_column(available_columns, ("timeframe",))
+    asset_type_column = _resolve_optional_column(available_columns, ("asset_type",))
+    parameters: list[object] = []
+    where_clauses: list[str] = []
+    if signal_start_date is not None:
+        where_clauses.append(f"{asof_date_column} >= ?")
+        parameters.append(signal_start_date)
+    if signal_end_date is not None:
+        where_clauses.append(f"{asof_date_column} <= ?")
+        parameters.append(signal_end_date)
+    if instruments:
+        placeholders = ", ".join("?" for _ in instruments)
+        where_clauses.append(f"{code_column} IN ({placeholders})")
+        parameters.extend(instruments)
+    if timeframe_column is not None:
+        where_clauses.append(f"{timeframe_column} = ?")
+        parameters.append(timeframe)
+    if asset_type_column is not None:
+        where_clauses.append(f"{asset_type_column} = ?")
+        parameters.append("stock")
+    where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+    rows = connection.execute(
+        f"""
+        SELECT
+            {code_column} AS instrument,
+            {asof_date_column} AS signal_date,
+            {asof_date_column} AS asof_date,
+            COALESCE(current_hh_count, 0) AS current_hh_count,
+            COALESCE(current_ll_count, 0) AS current_ll_count,
+            major_state,
+            trend_direction
+        FROM {table_name}
+        {where_sql}
+        ORDER BY {asof_date_column}, {code_column}
+        LIMIT ?
+        """,
+        [*parameters, limit],
+    ).fetchall()
+    input_rows: list[_StructureInputRow] = []
+    for row in rows:
+        major_state = _normalize_optional_str(row[5], default="牛逆")
+        trend_direction = _normalize_optional_str(row[6], default="down").lower()
+        bullish_context = _map_major_state_to_context_code(major_state).startswith("BULL_")
+        new_high_count = _normalize_optional_int(row[3]) if bullish_context else 0
+        new_low_count = _normalize_optional_int(row[4]) if not bullish_context else 0
+        refresh_density = min(float(new_high_count) / 4.0, 1.0) if new_high_count > 0 else 0.0
+        advancement_density = 1.0 if trend_direction == "up" else 0.0
+        failure_type = _derive_failure_type_from_major_state(major_state)
+        input_rows.append(
+            _StructureInputRow(
+                instrument=str(row[0]),
+                signal_date=_normalize_date_value(row[1], field_name="signal_date"),
+                asof_date=_normalize_date_value(row[2], field_name="asof_date"),
+                new_high_count=new_high_count,
+                new_low_count=new_low_count,
+                refresh_density=refresh_density,
+                advancement_density=advancement_density,
+                is_failed_extreme=failure_type is not None,
+                failure_type=failure_type,
+            )
+        )
+    return input_rows
+
+
+def _load_bridge_context_rows(
+    connection: duckdb.DuckDBPyConnection,
+    *,
+    table_name: str,
+    available_columns: set[str],
+    signal_start_date: date | None,
+    signal_end_date: date | None,
+    instruments: tuple[str, ...],
+) -> list[_StructureContextRow]:
+    instrument_column = _resolve_existing_column(
+        available_columns,
+        ("instrument", "entity_code", "code"),
+        field_name="instrument",
+        table_name=table_name,
+    )
+    signal_date_column = _resolve_existing_column(
+        available_columns,
+        ("signal_date",),
+        field_name="signal_date",
+        table_name=table_name,
+    )
+    asof_date_column = _resolve_optional_column(available_columns, ("asof_date", "calc_date")) or signal_date_column
+    source_context_column = _resolve_optional_column(available_columns, ("source_context_nk",))
+    order_columns = [
+        column_name
+        for column_name in (
+            _resolve_optional_column(available_columns, ("asof_date",)),
+            _resolve_optional_column(available_columns, ("calc_date",)),
+            _resolve_optional_column(available_columns, ("created_at",)),
+        )
+        if column_name is not None
+    ]
+    order_sql = ", ".join(f"{column_name} DESC" for column_name in order_columns) or "1"
+    placeholders = ", ".join("?" for _ in instruments)
+    parameters: list[object] = [*instruments]
+    where_clauses = [f"{instrument_column} IN ({placeholders})"]
+    if signal_start_date is not None:
+        where_clauses.append(f"{signal_date_column} >= ?")
+        parameters.append(signal_start_date)
+    if signal_end_date is not None:
+        where_clauses.append(f"{signal_date_column} <= ?")
+        parameters.append(signal_end_date)
+    where_sql = f"WHERE {' AND '.join(where_clauses)}"
+    rows = connection.execute(
+        f"""
+        WITH ranked_context AS (
+            SELECT
+                {instrument_column} AS instrument,
+                {signal_date_column} AS signal_date,
+                {asof_date_column} AS asof_date,
+                COALESCE({_resolve_optional_column(available_columns, ("malf_context_4",)) or "'UNKNOWN'"}, 'UNKNOWN') AS malf_context_4,
+                COALESCE({_resolve_optional_column(available_columns, ("lifecycle_rank_high",)) or "0"}, 0) AS lifecycle_rank_high,
+                COALESCE({_resolve_optional_column(available_columns, ("lifecycle_rank_total",)) or "0"}, 0) AS lifecycle_rank_total,
+                {source_context_column if source_context_column is not None else "NULL"} AS source_context_nk,
+                ROW_NUMBER() OVER (
+                    PARTITION BY {instrument_column}, {signal_date_column}, {asof_date_column}
+                    ORDER BY {order_sql}
+                ) AS row_rank
+            FROM {table_name}
+            {where_sql}
+        )
+        SELECT
+            instrument,
+            signal_date,
+            asof_date,
+            malf_context_4,
+            lifecycle_rank_high,
+            lifecycle_rank_total,
+            source_context_nk
+        FROM ranked_context
+        WHERE row_rank = 1
+        """,
+        parameters,
+    ).fetchall()
+    context_rows: list[_StructureContextRow] = []
+    for row in rows:
+        signal_date_value = _normalize_date_value(row[1], field_name="signal_date")
+        asof_date_value = _normalize_date_value(row[2], field_name="asof_date")
+        instrument_value = str(row[0])
+        malf_context_4 = _normalize_optional_str(row[3], default="UNKNOWN")
+        source_context_nk = _normalize_optional_str(
+            row[6],
+            default=_build_source_context_nk(
+                instrument=instrument_value,
+                signal_date=signal_date_value,
+                asof_date=asof_date_value,
+                malf_context_4=malf_context_4,
+            ),
+        )
+        context_rows.append(
+            _StructureContextRow(
+                instrument=instrument_value,
+                signal_date=signal_date_value,
+                asof_date=asof_date_value,
+                malf_context_4=malf_context_4,
+                lifecycle_rank_high=_normalize_optional_int(row[4]),
+                lifecycle_rank_total=_normalize_optional_int(row[5]),
+                source_context_nk=source_context_nk,
+            )
+        )
+    return context_rows
+
+
+def _load_canonical_context_rows(
+    connection: duckdb.DuckDBPyConnection,
+    *,
+    table_name: str,
+    signal_start_date: date | None,
+    signal_end_date: date | None,
+    instruments: tuple[str, ...],
+    timeframe: str,
+) -> list[_StructureContextRow]:
+    available_columns = _load_table_columns(connection, table_name)
+    code_column = _resolve_existing_column(
+        available_columns,
+        ("code", "instrument", "entity_code"),
+        field_name="code",
+        table_name=table_name,
+    )
+    asof_date_column = _resolve_existing_column(
+        available_columns,
+        ("asof_bar_dt", "asof_date", "signal_date"),
+        field_name="asof_bar_dt",
+        table_name=table_name,
+    )
+    snapshot_nk_column = _resolve_optional_column(available_columns, ("snapshot_nk",))
+    timeframe_column = _resolve_optional_column(available_columns, ("timeframe",))
+    asset_type_column = _resolve_optional_column(available_columns, ("asset_type",))
+    parameters: list[object] = []
+    where_clauses: list[str] = []
+    if instruments:
+        placeholders = ", ".join("?" for _ in instruments)
+        where_clauses.append(f"{code_column} IN ({placeholders})")
+        parameters.extend(instruments)
+    if signal_start_date is not None:
+        where_clauses.append(f"{asof_date_column} >= ?")
+        parameters.append(signal_start_date)
+    if signal_end_date is not None:
+        where_clauses.append(f"{asof_date_column} <= ?")
+        parameters.append(signal_end_date)
+    if timeframe_column is not None:
+        where_clauses.append(f"{timeframe_column} = ?")
+        parameters.append(timeframe)
+    if asset_type_column is not None:
+        where_clauses.append(f"{asset_type_column} = ?")
+        parameters.append("stock")
+    where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+    rows = connection.execute(
+        f"""
+        SELECT
+            {code_column} AS instrument,
+            {asof_date_column} AS signal_date,
+            {asof_date_column} AS asof_date,
+            major_state,
+            COALESCE(current_hh_count, 0) AS current_hh_count,
+            COALESCE(current_ll_count, 0) AS current_ll_count,
+            {snapshot_nk_column if snapshot_nk_column is not None else "NULL"} AS snapshot_nk
+        FROM {table_name}
+        {where_sql}
+        ORDER BY {asof_date_column}, {code_column}
+        """,
+        parameters,
+    ).fetchall()
+    context_rows: list[_StructureContextRow] = []
+    for row in rows:
+        signal_date_value = _normalize_date_value(row[1], field_name="signal_date")
+        asof_date_value = _normalize_date_value(row[2], field_name="asof_date")
+        major_state = _normalize_optional_str(row[3], default="牛逆")
+        malf_context_4 = _map_major_state_to_context_code(major_state)
+        lifecycle_rank_high = _derive_lifecycle_rank_high(
+            malf_context_4=malf_context_4,
+            current_hh_count=_normalize_optional_int(row[4]),
+            current_ll_count=_normalize_optional_int(row[5]),
+        )
+        source_context_nk = _normalize_optional_str(
+            row[6],
+            default=_build_source_context_nk(
+                instrument=str(row[0]),
+                signal_date=signal_date_value,
+                asof_date=asof_date_value,
+                malf_context_4=malf_context_4,
+            ),
+        )
+        context_rows.append(
+            _StructureContextRow(
+                instrument=str(row[0]),
+                signal_date=signal_date_value,
+                asof_date=asof_date_value,
+                malf_context_4=malf_context_4,
+                lifecycle_rank_high=lifecycle_rank_high,
+                lifecycle_rank_total=4,
+                source_context_nk=source_context_nk,
+            )
+        )
+    return context_rows
 
 
 def _load_break_confirmation_rows(
     *,
     malf_path: Path,
-    table_name: str,
+    table_name: str | None,
     signal_start_date: date | None,
     signal_end_date: date | None,
     instruments: tuple[str, ...],
+    timeframe: str,
 ) -> dict[tuple[str, date], _BreakConfirmationRow]:
-    if not malf_path.exists() or not instruments:
+    if not malf_path.exists() or not instruments or not table_name:
         return {}
     connection = duckdb.connect(str(malf_path), read_only=True)
     try:
@@ -484,6 +814,7 @@ def _load_break_confirmation_rows(
             field_name="trigger_bar_dt",
             table_name=table_name,
         )
+        timeframe_column = _resolve_optional_column(available_columns, ("timeframe",))
         placeholders = ", ".join("?" for _ in instruments)
         parameters: list[object] = [*instruments]
         where_clauses = [f"{instrument_column} IN ({placeholders})"]
@@ -493,6 +824,9 @@ def _load_break_confirmation_rows(
         if signal_end_date is not None:
             where_clauses.append(f"{trigger_date_column} <= ?")
             parameters.append(signal_end_date)
+        if timeframe_column is not None:
+            where_clauses.append(f"{timeframe_column} = ?")
+            parameters.append(timeframe)
         rows = connection.execute(
             f"""
             SELECT
@@ -522,12 +856,13 @@ def _load_break_confirmation_rows(
 def _load_stats_snapshot_rows(
     *,
     malf_path: Path,
-    table_name: str,
+    table_name: str | None,
     signal_start_date: date | None,
     signal_end_date: date | None,
     instruments: tuple[str, ...],
+    timeframe: str,
 ) -> dict[tuple[str, date, date], _StatsSnapshotRow]:
-    if not malf_path.exists() or not instruments:
+    if not malf_path.exists() or not instruments or not table_name:
         return {}
     connection = duckdb.connect(str(malf_path), read_only=True)
     try:
@@ -548,6 +883,7 @@ def _load_stats_snapshot_rows(
             table_name=table_name,
         )
         asof_date_column = _resolve_optional_column(available_columns, ("asof_bar_dt", "asof_date")) or signal_date_column
+        timeframe_column = _resolve_optional_column(available_columns, ("timeframe",))
         placeholders = ", ".join("?" for _ in instruments)
         parameters: list[object] = [*instruments]
         where_clauses = [f"{instrument_column} IN ({placeholders})"]
@@ -557,6 +893,9 @@ def _load_stats_snapshot_rows(
         if signal_end_date is not None:
             where_clauses.append(f"{signal_date_column} <= ?")
             parameters.append(signal_end_date)
+        if timeframe_column is not None:
+            where_clauses.append(f"{timeframe_column} = ?")
+            parameters.append(timeframe)
         rows = connection.execute(
             f"""
             SELECT
@@ -608,8 +947,9 @@ def _materialize_structure_rows(
     malf_path: Path,
     source_context_table: str,
     source_structure_input_table: str,
-    source_break_confirmation_table: str,
-    source_stats_table: str,
+    source_break_confirmation_table: str | None,
+    source_stats_table: str | None,
+    source_timeframe: str,
     batch_size: int,
 ) -> StructureSnapshotBuildSummary:
     inserted_count = 0
@@ -695,6 +1035,7 @@ def _materialize_structure_rows(
         source_structure_input_table=source_structure_input_table,
         source_break_confirmation_table=source_break_confirmation_table,
         source_stats_table=source_stats_table,
+        source_timeframe=source_timeframe,
     )
 
 
@@ -816,6 +1157,34 @@ def _derive_structure_progress_state(input_row: _StructureInputRow) -> str:
     if input_row.new_low_count > 0:
         return "stalled"
     return "unknown"
+
+
+def _map_major_state_to_context_code(major_state: str) -> str:
+    mapping = {
+        "牛顺": "BULL_MAINSTREAM",
+        "熊逆": "BULL_COUNTERTREND",
+        "牛逆": "BEAR_COUNTERTREND",
+        "熊顺": "BEAR_MAINSTREAM",
+    }
+    return mapping.get(major_state, "UNKNOWN")
+
+
+def _derive_lifecycle_rank_high(
+    *,
+    malf_context_4: str,
+    current_hh_count: int,
+    current_ll_count: int,
+) -> int:
+    raw_rank = current_hh_count if malf_context_4.startswith("BULL_") else current_ll_count
+    return max(0, min(raw_rank, 4))
+
+
+def _derive_failure_type_from_major_state(major_state: str) -> str | None:
+    if major_state == "熊顺":
+        return "failed_breakdown"
+    if major_state == "牛逆":
+        return "failed_extreme"
+    return None
 
 
 def _build_source_context_nk(

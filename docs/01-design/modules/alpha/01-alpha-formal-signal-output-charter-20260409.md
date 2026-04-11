@@ -112,7 +112,7 @@
 
 1. `alpha` 默认从官方 `alpha trigger + filter_snapshot + structure_snapshot` 做 bounded 读取。
 2. `filter` 负责 pre-trigger 准入，`structure` 负责结构事实，`alpha` 不再默认回读旧 `malf` 兼容准入字段。
-3. 旧 `pas_context_snapshot` 一类输入只保留短期兜底，不再是长期默认上游。
+3. `fallback_context_table` 默认关闭；旧 `pas_context_snapshot` 一类输入只允许显式兼容启用，不再是默认上游。
 
 ## 裁决六：最小 producer runner 只解决“正式落库”，不顺手吞并下游桥接
 
