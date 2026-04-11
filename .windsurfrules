@@ -1,0 +1,29 @@
+# lifespan-0.01 项目规则
+
+## malf 模块核心约束
+- malf 是按时间级别独立运行的纯语义走势账本系统，不是市场标签系统，也不是交易动作系统
+- malf 的唯一核心原语是 HH / HL / LL / LH / break / count，不允许引入均线、收益率标签、背景标签、动作家族
+- 牛逆 / 熊逆 是旧顺结构失效后到新顺结构确认前的本级别过渡状态，不是背景标签
+- break 只表示旧结构失效（触发），不等于新结构成立（确认）；新方向必须由新的 HH 或 LL 推进确认
+- hh_count / ll_count 只在当前 wave_id 内有效，不跨波段继承，不跨时间级别混算
+- D / W / M 各自独立闭环计算结构、推进、统计；高级别 context 不参与低级别状态计算
+- pivot 必须有 confirmed_at 确认机制，信号使用时间是 confirmed_at 而非 pivot_bar_dt，否则是未来函数
+- same_level_stats 统计对象是 wave 不是 bar，不允许跨级别混样本，不允许反向参与 state 计算
+- execution_interface / confidence / allowed_actions / position sizing 不属于 malf，属于下游 alpha / position
+
+## malf 实现层约束
+- canonical runner 入口：scripts/malf/run_malf_canonical_build.py，代码在 src/mlq/malf/canonical_runner.py
+- bridge v1 入口（run_malf_snapshot_build.py）只保留兼容输出职责，不再代表 malf 正式真值
+- HL 只接受比前一个 HL 更高的低点，LH 只接受比前一个 LH 更低的高点（结构单调性约束）
+- break 检测用 close 价格确认，不用 intrabar high/low
+- 三阶段转折模型：trigger（break触发） → hold（新方向存活） → expand（新极值推进确认）
+- switch_mode 时必须重置 hh_count=0 / ll_count=0
+
+## structure / filter / alpha 下游改绑
+- structure 默认从 canonical malf_state_snapshot(timeframe='D') 消费，不再默认用 bridge v1 的 pas_context_snapshot
+- bridge v1 表只作为 canonical 缺失时的兼容回退
+- Alpha 决策矩阵（stage × percentile → action）是 alpha 层未来的重要设计输入，不属于 malf
+
+## 价格口径
+- malf -> structure -> filter -> alpha 默认使用 adjust_method = backward
+- position -> trade 默认使用 adjust_method = none
