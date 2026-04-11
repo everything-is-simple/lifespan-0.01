@@ -3,8 +3,8 @@
 日期：`2026-04-09`
 状态：`生效中`
 
-1. 当前下一锤：`25-malf-mechanism-ledger-bootstrap-and-downstream-sidecar-integration-card-20260411.md`
-2. 正式主线剩余卡：`0`
+1. 当前下一锤：`26-mainline-truthfulness-revalidation-after-malf-sidecar-bootstrap-card-20260411.md`
+2. 正式主线剩余卡：`1`
 3. 可选 Sidecar 剩余卡：`0`
 4. 后置修复剩余卡：`0`
 
@@ -37,9 +37,10 @@
 
 ## 当前口径
 
-1. 最新生效结论锚点已经切到 `25`。
-2. 当前治理锚点保留 `25` 以满足门禁检查；这不表示 `25` 仍未完成，正式主线剩余卡已清零。
+1. 最新生效结论锚点仍是 `25`。
+2. 当前治理锚点已切到 `26`；这不表示 `25` 未完成，而是主线进入整链 truthfulness 复核阶段。
 3. 卡 `23` 已正式把 `malf` 核心收缩为纯语义走势账本，并把高周期 `context` 与动作接口移出核心定义；`牛逆 / 熊逆` 也已收紧为本级别过渡状态。
 4. 卡 `24` 已正式把 `pivot-confirmed break` 与 `same-timeframe stats sidecar` 冻结为只读机制层 sidecar，不再允许回写 `malf core`。
 5. 卡 `22` 继续保留 data 日更 source governance 作为当前前置运营事实。
 6. `25` 已经把机制层 sidecar 正式落成账本、runner、checkpoint 与最小下游接入。
+7. 下一张主线卡不是直接开 `system`，而是先执行 `26`：复核 `23/24/25` 之后主链 truthfulness 是否仍真实成立到 `trade`。
