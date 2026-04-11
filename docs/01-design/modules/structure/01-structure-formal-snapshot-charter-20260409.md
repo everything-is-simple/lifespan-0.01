@@ -3,6 +3,10 @@
 日期：`2026-04-09`
 状态：`生效中`
 
+> 角色声明：本文定义 `structure` 的正式结构事实层，不改写 `malf core` 的纯语义边界。
+> 当前实现仍允许消费 `malf bridge v1` 的兼容输出作为过渡上游，但这些 bridge 字段不再代表 `malf` 的核心身份。
+> `malf core` 请读 `docs/01-design/modules/malf/03-malf-pure-semantic-structure-ledger-charter-20260411.md`。
+
 ## 问题
 
 `alpha -> position` 已经收口，但更上游仍缺一层稳定的官方结构事实出口。当前很多 `new_high / new_low / failed_extreme / density` 一类结构语义，仍散落在旧 `phenomenon / scene` 兼容字段里，没有形成可被 `filter / alpha` 长期消费的正式 `structure` 层。
@@ -29,6 +33,7 @@
 `structure` 的官方身份固定为：
 
 1. 从 `malf` 语义层中外提稳定、可复查、可增量沉淀的结构事实。
+   - 当前 runner 可暂时从 `malf bridge v1` 兼容视图读取候选输入，但长期目标是消费 `malf core` 或其派生的兼容视图，而不是把旧上下文字段继续当成 `malf` 本体。
 2. 回答“当前这段中级波内部发生了什么结构推进或失败事实”。
 3. 不承担 pre-trigger 准入，也不承担 trigger 检测或 formal signal 判定。
 
@@ -81,4 +86,4 @@
 
 ## 一句话收口
 
-`structure` 下一步不是继续把结构语义埋在旧 `malf` 兼容字段里，而是先把最小官方 `snapshot` 出口冻结出来，让 `filter / alpha` 真正有稳定上游可接。`
+`structure` 下一步不是继续把结构语义埋在旧 `malf` 兼容字段里，而是先把最小官方 `snapshot` 出口冻结出来，让 `filter / alpha` 真正有稳定上游可接；当前若仍需桥接兼容字段，也只能以 bridge v1 身份保留，而不能回写成 `malf core`。`

@@ -3,6 +3,9 @@
 日期：`2026-04-09`
 状态：`生效中`
 
+> 角色声明：本文定义 `filter` 的 pre-trigger 准入职责，不把 `malf` 的纯语义核心重新扩写成上下文或动作系统。
+> 当前 runner 若仍需回读 bridge v1 兼容上下文，只代表过渡实现；长期正式方向是 `structure_snapshot + 下游只读 context/stats sidecar`。
+
 ## 问题
 
 老仓已经明确过：`filter` 不是 `PAS`，也不是 `position / trade` 风险门。它的正式职责是 pre-trigger 准入。但新仓到目前为止还没有独立的 `filter` 官方出口，导致：
@@ -26,7 +29,8 @@
 
 `filter` 的官方身份固定为：
 
-1. 消费 `structure_snapshot + execution_context`。
+1. 消费 `structure_snapshot + 下游只读 context/stats sidecar`。
+   - 当前实现若仍需桥接 `malf bridge v1` 兼容上下文，也只允许作为过渡输入，不得再表述成 `malf core`。
 2. 形成 pre-trigger 准入结论。
 3. 不替代 trigger 检测，不替代 position/trade 风险门，不替代 system admission。
 
@@ -75,4 +79,4 @@
 
 ## 一句话收口
 
-`filter` 下一步不是继续寄生在旧兼容上下文里，而是先成为独立、最小、可复查的 pre-trigger 官方准入层。`
+`filter` 下一步不是继续寄生在旧兼容上下文里，而是先成为独立、最小、可复查的 pre-trigger 官方准入层；任何 context/stats 都只能以下游 sidecar 或 bridge v1 兼容输入身份出现，不能回写成 `malf core`。`

@@ -103,6 +103,15 @@
   - `forward` 当前只作研究与展示保留
 - `txt -> raw_market -> market_base` 继续保留为正式 fallback
 
+## 当前 malf 正式口径
+
+- `malf` 的正式核心已冻结为按时间级别独立运行的走势账本，只允许使用 `HH / HL / LL / LH / break / count` 描述本级别结构。
+- 高周期 `context`、动作接口、仓位建议与直接交易解释不属于 `malf` core；若后续需要同级别统计或多级别共读，应在 `malf` 之外单独冻结 sidecar 或消费视图。
+- 当前 `scripts/malf/run_malf_snapshot_build.py` 仍保留 bridge v1 兼容职责：
+  - 消费 `market_base.stock_daily_adjusted(adjust_method='backward')`
+  - 物化 `pas_context_snapshot / structure_candidate_snapshot`
+  - 供现有 `structure` runner 过渡消费
+
 ## 文档治理
 
 正式实现遵循：

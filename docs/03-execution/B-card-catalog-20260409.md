@@ -3,9 +3,9 @@
 日期：`2026-04-09`
 状态：`生效中`
 
-1. 当前下一锤：`22-data-daily-source-governance-sealing-card-20260411.md`
-2. 当前待施工卡：`22-data-daily-source-governance-sealing-card-20260411.md`
-3. 正式主线剩余卡：`0`
+1. 当前下一锤：`24-malf-mechanism-layer-break-confirmation-and-stats-sidecar-card-20260411.md`
+2. 当前待施工卡：`23-malf-pure-semantic-ledger-boundary-freeze-card-20260411.md`
+3. 正式主线剩余卡：`1`
 4. 可选 Sidecar 剩余卡：`0`
 5. 后置修复剩余卡：`0`
 
@@ -33,10 +33,13 @@
 20. `20-index-block-raw-base-incremental-bridge-card-20260410.md`
 21. `21-system-ledger-incremental-governance-hardening-card-20260410.md`
 22. `22-data-daily-source-governance-sealing-card-20260411.md`
+23. `23-malf-pure-semantic-ledger-boundary-freeze-card-20260411.md`
+24. `24-malf-mechanism-layer-break-confirmation-and-stats-sidecar-card-20260411.md`
 
 ## 当前口径
 
-1. `20` 已完成，`index/block txt -> raw_market -> market_base` 正式桥接已成立，正式库也已完成 full 初始化与 replay 验证。
-2. `22` 已把 data 日更源头治理封存为正式结论：`stock` 继续走 `TdxQuant(none)` 主路，`index/block` 继续走 `H:\tdx_offline_Data` txt 主路，不再把“统一 source adapter”视为当前已批准工作。
-3. 最新生效结论锚点已经切到 `22`。
-4. 在下一张卡开出前，当前施工锚点仍保留 `22` 以满足治理检查。
+1. `22` 已把 data 日更源头治理封存为正式结论：`stock` 继续走 `TdxQuant(none)` 主路，`index/block` 继续走 `H:\tdx_offline_Data` txt 主路，不再把“统一 source adapter”视为当前已批准工作。
+2. `23` 已把 `malf` 正式核心收缩为按时间级别独立运行的纯语义走势账本，并明确 bridge v1 只是兼容层。
+3. `24` 已预挂下一卡：补齐 `pivot-confirmed break` 与 `same-timeframe stats sidecar` 的机制层正式边界。
+4. 最新生效结论锚点已经切到 `23`。
+5. 在下一张卡开出前，当前施工锚点保留 `23` 以满足治理检查。

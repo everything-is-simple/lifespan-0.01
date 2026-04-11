@@ -3,6 +3,9 @@
 日期：`2026-04-09`
 状态：`生效中`
 
+> 角色声明：本文是 `filter` 当前最小正式准入合同，不改写 `malf core` 的纯语义边界。
+> 当前 runner 如仍读取 bridge v1 兼容上下文，只能按“过渡输入”解释；长期正式方向是 `structure_snapshot + 下游只读 context/stats sidecar`。
+
 ## 适用范围
 
 本规格冻结新仓 `filter` 模块的最小正式准入输出合同。当前只覆盖：
@@ -20,7 +23,8 @@
 `filter` 当前正式输入固定为：
 
 1. 官方 `structure_snapshot`
-2. 官方 `execution_context` / `malf` 上下文
+2. 下游只读 `context/stats sidecar`
+   - 当前 runner 可暂时读取 bridge v1 兼容上下文表，但这不再代表 `malf core`
 
 至少保证以下字段可读：
 
@@ -28,18 +32,23 @@
 2. `instrument`
 3. `signal_date`
 4. `asof_date`
-5. `malf_context_4`
-6. `lifecycle_rank_high`
-7. `lifecycle_rank_total`
-8. `structure_progress_state`
-9. `is_failed_extreme`
-10. `failure_type`
+5. `structure_progress_state`
+6. `is_failed_extreme`
+7. `failure_type`
+
+若当前实现仍挂接 bridge v1 兼容上下文，可额外读取：
+
+1. `malf_context_4`
+2. `lifecycle_rank_high`
+3. `lifecycle_rank_total`
+4. `source_context_nk`
 
 硬约束：
 
 1. `filter` 不负责 trigger detection。
 2. `filter` 不负责 formal signal 物化。
 3. `filter` 不负责 `position / trade` 风险门。
+4. 不允许把 bridge v1 上下文字段反向宣称为 `malf core` 的正式输入要求。
 
 ## 正式输出
 
@@ -66,6 +75,11 @@
 12. `completed_at`
 13. `summary_json`
 
+补充说明：
+
+1. `source_context_table` 当前表示下游只读 context/stats sidecar 来源表；在现阶段实现里，它也可以指向 bridge v1 兼容上下文表。
+2. 该字段用于审计 runner 输入来源，不得被解释成 `malf core` 的一部分。
+
 ### 2. `filter_snapshot`
 
 用途：
@@ -89,6 +103,11 @@
 12. `first_seen_run_id`
 13. `last_materialized_run_id`
 
+补充说明：
+
+1. `source_context_nk` 当前是上下文来源审计指针。
+2. 若输入来自 bridge v1，则它指向 bridge v1 兼容上下文自然键；若未来切到新的只读 sidecar，应继续保持审计指针职责，而不是默默改写 `filter_snapshot` 主体语义。
+
 自然键规则：
 
 `filter_snapshot_nk` 当前最小固定由下列字段拼出：
@@ -96,6 +115,11 @@
 1. `structure_snapshot_nk`
 2. `source_context_nk`
 3. `filter_contract_version`
+
+说明：
+
+1. 当前自然键仍保留 `source_context_nk`，是为了兼容现有 runner 的上下文审计边界。
+2. 这不代表 `filter` 长期必须依赖 `malf context`；若未来切换到新的 sidecar，应另开卡升级自然键合同。
 
 ### 3. `filter_run_snapshot`
 
@@ -127,7 +151,7 @@
 2. `filter_snapshot.primary_blocking_condition`
 3. `filter_snapshot.blocking_conditions_json`
 
-不再默认回读旧 `scene / phenomenon / pas_context` 兼容准入字段作为长期官方输入。
+不再默认回读旧 `scene / phenomenon / pas_context` 兼容准入字段作为长期官方输入，也不允许把 bridge v1 兼容上下文重新宣称为 `malf core`。
 
 ## Producer Runner 合同
 
@@ -151,6 +175,11 @@
 8. `source_context_table`
 9. `summary_path`
 
+补充说明：
+
+1. `source_context_table` 当前可指向 bridge v1 兼容上下文表或新的下游只读 sidecar。
+2. 若未来完全移除上下文输入，应另开卡修订本 runner 合同，而不是静默修改语义。
+
 ## Bounded Evidence 要求
 
 本卡后续正式实现至少要留下：
@@ -168,4 +197,4 @@
 
 ## 一句话收口
 
-`filter` 当前最小正式目标不是更复杂的规则树，而是一个可被 `alpha` 优先消费的独立 pre-trigger 准入快照层。`
+`filter` 当前最小正式目标不是更复杂的规则树，而是一个可被 `alpha` 优先消费的独立 pre-trigger 准入快照层；任何上下文或统计都只能以下游 sidecar 或 bridge v1 兼容输入身份存在。`

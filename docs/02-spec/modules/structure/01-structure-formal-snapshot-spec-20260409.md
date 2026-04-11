@@ -3,6 +3,10 @@
 日期：`2026-04-09`
 状态：`生效中`
 
+> 角色声明：本文是 `structure` 当前正式输出合同，不改写 `malf` 的纯语义核心定义。
+> 当前 runner 仍可读取 `malf bridge v1` 的兼容上下文与候选快照，但这些字段只代表现阶段兼容输入，不代表 `malf core` 的正式语义。
+> `malf core` 请读 `docs/02-spec/modules/malf/03-malf-pure-semantic-structure-ledger-spec-20260411.md`。
+
 ## 适用范围
 
 本规格冻结新仓 `structure` 模块的最小正式输出合同。当前只覆盖：
@@ -19,8 +23,9 @@
 
 `structure` 当前正式输入固定为两类：
 
-1. 官方 `malf / execution_context` 语义输入
-   - 至少提供 `instrument / signal_date / asof_date / malf_context_4 / lifecycle_rank_high / lifecycle_rank_total`
+1. 官方 `malf` 上游结构兼容输入
+   - 当前实现可来自 `malf bridge v1` 兼容视图，至少提供 `instrument / signal_date / asof_date`
+   - 若 runner 仍暂时回读 `malf_context_4 / lifecycle_rank_high / lifecycle_rank_total`，这些字段只代表 bridge v1 兼容上下文，不得被重写成 `malf core` 的必备语义
 2. 官方结构候选事实输入
    - 至少提供 `new_high_count / new_low_count / refresh_density / advancement_density / is_failed_extreme / failure_type`
 
@@ -29,6 +34,7 @@
 1. 不允许 `structure` 直接承担 filter admission。
 2. 不允许 `structure` 直接输出 formal signal。
 3. 不允许为方便一次 bounded smoke 而把旧兼容字段继续当作长期官方输出。
+4. 不允许把 `malf_context_4 / lifecycle_rank_* / source_context_*` 反向宣称为 `malf core` 必备字段；它们只允许以 bridge v1 兼容审计指针身份保留。
 
 ## 正式输出
 
@@ -54,6 +60,10 @@
 11. `started_at`
 12. `completed_at`
 13. `summary_json`
+
+补充说明：
+
+1. `source_context_table` 当前表示 bridge v1 兼容上下文来源表，未来若切换到新的下游 sidecar 或纯语义派生视图，应保持“上游上下文来源审计字段”这一职责，而不是继续等同于 `malf core`。
 
 ### 2. `structure_snapshot`
 
@@ -82,6 +92,11 @@
 16. `structure_contract_version`
 17. `first_seen_run_id`
 18. `last_materialized_run_id`
+
+补充说明：
+
+1. `malf_context_4 / lifecycle_rank_high / lifecycle_rank_total / source_context_nk` 当前只允许按 bridge v1 兼容字段解读。
+2. 这些字段服务于现阶段 runner 对接与审计，不得被视为 `structure` 对 `malf core` 的反向定义。
 
 `structure_progress_state` 当前最小枚举固定为：
 
@@ -143,6 +158,11 @@
 8. `source_structure_input_table`
 9. `summary_path`
 
+补充说明：
+
+1. `source_context_table` 当前仍可指向 bridge v1 兼容上下文表。
+2. 后续若切到新的下游只读 context/stats sidecar，应另开卡更新 runner 合同，而不是默默把 sidecar 重新写成 `malf core`。
+
 ## Bounded Evidence 要求
 
 本卡后续正式实现至少要留下：
@@ -160,4 +180,4 @@
 
 ## 一句话收口
 
-`structure` 当前最小正式目标不是更多兼容字段，而是一个可被 `filter / alpha` 稳定消费的官方 `snapshot` 事实层。`
+`structure` 当前最小正式目标不是更多兼容字段，而是一个可被 `filter / alpha` 稳定消费的官方 `snapshot` 事实层；bridge v1 兼容输入只允许过渡存在，不允许继续冒充 `malf core`。`

@@ -82,8 +82,10 @@
    - 当前 `data` 的正式 bounded runner 入口为 `scripts/data/run_tdx_asset_raw_ingest.py`，只允许从本地官方离线目录把 `index / block / stock` 日线增量写入各自的 `raw_market.{asset}_file_registry / {asset}_daily_bar`，并为对应 `market_base` 脏标的挂账，不允许把指数、板块临时 DataFrame 直接喂给下游。
    - 当前 `data` 的正式 bounded runner 入口为 `scripts/data/run_tdxquant_daily_raw_sync.py`，只允许把 `TdxQuant(dividend_type='none')` 代表的官方日更原始事实按 `run / request / instrument checkpoint` 账本语义桥接进 `raw_market.stock_daily_bar(adjust_method='none')`，并只标记 `base_dirty_instrument(adjust_method='none')`，不允许把 `front/back` 直接写成正式复权真值。
    - 当前 `data` 的正式 bounded runner 入口为 `scripts/data/run_market_base_build.py`，只允许从官方 `raw_market` 物化 `market_base.{stock,index,block}_daily_adjusted`，并正式沉淀 `adjust_method in {none, backward, forward}` 三套价格，不允许把执行口径和信号口径混写成一套。
-3. `malf` 负责把官方 `market_base` 价格事实沉淀为官方市场语义快照层。
-   - 当前 `malf` 的正式 bounded runner 入口为 `scripts/malf/run_malf_snapshot_build.py`，只允许消费官方 `market_base.stock_daily_adjusted(adjust_method='backward')`，物化 `malf_run / pas_context_snapshot / structure_candidate_snapshot / malf_run_context_snapshot / malf_run_structure_snapshot`，不允许直接回读离线文本或 `raw_market`。
+3. `malf` 负责把官方 `market_base` 价格事实沉淀为按时间级别独立运行的走势语义账本层。
+   - 当前 `malf` 的正式核心只允许使用 `HH / HL / LL / LH / break / count` 描述本级别结构，不允许把高周期 `context`、动作接口或直接交易建议写回 `malf` 核心定义。
+   - 当前 `malf` 的 `牛逆 / 熊逆` 只允许表示旧顺结构失效后、到新顺结构确认前的本级别过渡状态，不允许被解释成背景标签。
+   - 当前 `malf` 的正式 bounded runner 入口为 `scripts/malf/run_malf_snapshot_build.py`，只允许消费官方 `market_base.stock_daily_adjusted(adjust_method='backward')`，并暂时物化 `malf_run / pas_context_snapshot / structure_candidate_snapshot / malf_run_context_snapshot / malf_run_structure_snapshot` 作为 bridge v1 兼容输出，不允许直接回读离线文本或 `raw_market`。
 4. `structure` 负责把 `malf` 结构语义沉淀为官方结构事实层。
    - 当前 `structure` 的正式 bounded runner 入口为 `scripts/structure/run_structure_snapshot_build.py`，只允许从官方 `malf` 结构候选事实与官方执行上下文物化 `structure_run / snapshot / run_snapshot`，不允许夹带 `filter / alpha / position` 判定逻辑。
 5. `filter` 负责 pre-trigger 准入。

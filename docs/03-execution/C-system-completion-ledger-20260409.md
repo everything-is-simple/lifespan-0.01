@@ -3,8 +3,8 @@
 日期：`2026-04-09`
 状态：`生效中`
 
-1. 当前下一锤：`22-data-daily-source-governance-sealing-card-20260411.md`
-2. 正式主线剩余卡：`0`
+1. 当前下一锤：`23-malf-pure-semantic-ledger-boundary-freeze-card-20260411.md`
+2. 正式主线剩余卡：`1`
 3. 可选 Sidecar 剩余卡：`0`
 4. 后置修复剩余卡：`0`
 
@@ -31,10 +31,12 @@
 19. 正式桥接 `index/block txt -> raw_market -> market_base`，并完成 full 初始化与 replay 验证
 20. 把“批量建仓 + 日更增量 + 断点续跑 + 稳定自然键 + 审计账本”提升为全系统治理硬约束，并接入正式门禁
 21. 封存 `data` 模块当前日更源头治理：`stock` 继续走 `TdxQuant(none)` 主路、`txt` 保留 fallback，`index/block` 继续走 `H:\tdx_offline_Data` txt 主路，未来统一 source adapter 必须另开新卡
+22. 收缩 `malf` 正式核心：按时间级别独立运行的纯语义走势账本生效，bridge v1 继续保留为兼容层
 
 ## 当前口径
 
-1. 最新生效结论锚点已经切到 `22`。
-2. 当前下一锤仍保留 `22` 作为治理锚点，直到下一张卡开出。
-3. 卡 `22` 已正式封存 `data` 模块当前日更 source governance，不再把 source adapter 统一视为当前已批准实施项。
-4. 卡 `20` 的 `index/block raw->base` 真实初始化已经完成，并已被卡 `21/22` 继续保留为 data 治理前置事实。
+1. 最新生效结论锚点已经切到 `23`。
+2. 当前待施工锚点仍为 `23`，但下一张待开卡已切到 `24`。
+3. 卡 `23` 已正式把 `malf` 核心收缩为纯语义走势账本，并把高周期 `context` 与动作接口移出核心定义；`牛逆 / 熊逆` 也已收紧为本级别过渡状态。
+4. 卡 `24` 已预挂下一阶段机制层议题：`pivot-confirmed break` 与 `same-timeframe stats sidecar`。
+5. 卡 `22` 继续保留 data 日更 source governance 作为当前前置运营事实。

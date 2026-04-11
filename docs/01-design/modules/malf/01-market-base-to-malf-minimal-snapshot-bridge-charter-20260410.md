@@ -3,6 +3,12 @@
 日期：`2026-04-10`
 状态：`生效中`
 
+> 角色声明：本文是 `malf bridge v1` 的设计章程，用于冻结当前 `scripts/malf/run_malf_snapshot_build.py`
+> 与 `pas_context_snapshot / structure_candidate_snapshot` 的最小桥接合同。
+> 它不是当前 `malf core` 的终局定义。
+> 当前 `malf core` 请读 `03-malf-pure-semantic-structure-ledger-charter-20260411.md`；
+> 老经验来源请读 `00-malf-module-lessons-20260409.md`。
+
 ## 问题
 
 当前新仓 `structure` 虽然已经存在正式 runner，但它依赖的官方上游：

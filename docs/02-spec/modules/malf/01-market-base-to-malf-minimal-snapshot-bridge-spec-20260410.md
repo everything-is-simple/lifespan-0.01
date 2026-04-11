@@ -3,6 +3,11 @@
 日期：`2026-04-10`
 状态：`生效中`
 
+> 角色声明：本文是 `malf bridge v1` 的正式规格，只约束当前 bridge runner、
+> `pas_context_snapshot` 与 `structure_candidate_snapshot` 的兼容输出合同。
+> 它不是当前 `malf core` 的终局规格。
+> 当前 `malf core` 请读 `03-malf-pure-semantic-structure-ledger-spec-20260411.md`。
+
 ## 适用范围
 
 本规格冻结新仓 `malf` 的最小正式上游合同，当前只覆盖：

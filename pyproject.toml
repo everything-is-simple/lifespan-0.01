@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "lifespan-0.01"
 version = "0.1.0"
-description = "Refactored local-first A-share research system."
+description = "Local-first historical ledger system for market structure, research, and execution ledgers."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [

@@ -3,6 +3,11 @@
 日期：`2026-04-09`
 状态：`生效中`
 
+> 角色声明：本文是 `malf legacy lessons`，用于保留老系统经验、坑点与来源线索。
+> 它不是当前 `malf core` 的正式定义，也不是当前 bridge runner 的字段合同。
+> 当前 `malf core` 请读 `03-malf-pure-semantic-structure-ledger-charter-20260411.md`；
+> 当前 bridge v1 请读 `01-market-base-to-malf-minimal-snapshot-bridge-charter-20260410.md`。
+
 ## 当前职责
 
 - 提供结构、execution context、filter、pas_context 等市场语义
