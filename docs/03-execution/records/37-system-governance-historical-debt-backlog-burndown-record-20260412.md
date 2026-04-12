@@ -24,3 +24,6 @@
 20. 将 `src/mlq/malf/bootstrap.py` 拆分为 facade + `bootstrap_tables / bootstrap_columns`，保持对外导出的表名常量、bootstrap/连接/path 入口与表族语义不变。
 21. 通过 `py_compile`、按路径治理检查与 `tests/unit/malf/test_malf_runner.py tests/unit/malf/test_mechanism_runner.py tests/unit/malf/test_wave_life_runner.py tests/unit/malf/test_canonical_runner.py -q` 串行单测，确认 `src/mlq/malf/bootstrap.py` 可从 `LEGACY_TARGET_OVERSIZE_BACKLOG` 移除。
 22. 回填 `37` 的 card / evidence / record / conclusion、入口文件与 backlog 台账，使当前正式口径回到“hard backlog 已清零、target backlog 剩余 2 项”。
+23. 将 `src/mlq/alpha/family_runner.py` 拆分为 bounded orchestrator + `family_shared / family_source / family_materialization`，保持 `run_alpha_family_build` 外部入口、family ledger 表族契约与 bounded 语义不变。
+24. 通过 `py_compile`、按路径治理检查、doc-first gating、执行索引检查与 `tests/unit/alpha/test_family_runner.py -q` 串行单测，确认 `src/mlq/alpha/family_runner.py` 可从 `LEGACY_TARGET_OVERSIZE_BACKLOG` 移除。
+25. 回填 `37` 的 card / evidence / record / conclusion、入口文件与 backlog 台账，使当前正式口径更新为“hard backlog 已清零、target backlog 剩余 1 项”。

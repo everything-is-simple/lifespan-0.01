@@ -48,7 +48,6 @@
 1. `LEGACY_HARD_OVERSIZE_BACKLOG`
 - 已清零。
 2. `LEGACY_TARGET_OVERSIZE_BACKLOG`
-- `src/mlq/alpha/family_runner.py`
 - `src/mlq/position/bootstrap.py`
 
 ## 实现边界
@@ -84,8 +83,8 @@
 
 ## 当前进度
 1. 基线登记、工具纠偏、hard backlog 清零已经完成。
-2. 当前剩余治理债务仅为 `LEGACY_TARGET_OVERSIZE_BACKLOG` 两项。
-3. 下一步按顺序进入 `src/mlq/alpha/family_runner.py` 或 `src/mlq/position/bootstrap.py` 的 target backlog 收敛。
+2. 当前剩余治理债务仅为 `LEGACY_TARGET_OVERSIZE_BACKLOG` 一项。
+3. 下一步按顺序进入 `src/mlq/position/bootstrap.py` 的 target backlog 收敛。
 
 ## 卡片结构图
 ```mermaid
