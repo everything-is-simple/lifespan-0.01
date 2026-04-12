@@ -218,3 +218,13 @@
 ## 一句话收口
 
 增强后的 `data` 正式合同应把 `raw` 提升为文件级运行账本，把 `base` 提升为脏标的增量账本，让全量建库和日常增量都具备显式 run 审计、强断点与可续跑能力。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    FILE[TDX 文件] --> RAW_RUN[raw_ingest_run 文件级账本]
+    RAW_RUN --> DIRTY[base_dirty_instrument]
+    DIRTY --> BASE_RUN[base_build_run 增量]
+    BASE_RUN --> BASE[market_base]
+```

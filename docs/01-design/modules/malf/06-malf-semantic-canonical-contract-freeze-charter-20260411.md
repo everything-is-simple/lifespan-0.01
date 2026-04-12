@@ -122,3 +122,16 @@
 - `30`：把本卡冻结的语义落为正式表结构、runner、queue/checkpoint
 - `31`：`structure / filter / alpha` 改绑 canonical `malf`
 - `32`：主链 truthfulness revalidation
+
+## 流程图
+
+```mermaid
+flowchart LR
+    MB[market_base backward] --> CANON[malf canonical v2]
+    CANON --> PL[pivot_ledger confirmed_at]
+    CANON --> WL[wave_ledger]
+    CANON --> EP[extreme_progress_ledger]
+    CANON --> SS[malf_state_snapshot]
+    CANON --> SLS[same_level_stats]
+    CANON -. 排除 .-> EI[execution_interface/context]
+```

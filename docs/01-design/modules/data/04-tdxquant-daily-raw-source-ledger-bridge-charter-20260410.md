@@ -146,3 +146,13 @@
 ## 一句话收口
 
 卡 `19` 的任务不是继续喂 `txt`，而是把 `TdxQuant` 的日更原始事实正式接进现有 `raw/base` 账本机制，同时把复权继续留在仓内可审计物化层。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    TQ[TdxQuant none] --> REQ[run/request 账本]
+    REQ --> RAW[raw_market stock_daily_bar none]
+    RAW --> DIRTY[base_dirty_instrument]
+    DIRTY --> BASE[market_base 可审计复权物化]
+```

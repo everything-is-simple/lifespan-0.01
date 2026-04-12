@@ -240,7 +240,17 @@
 如果你想继续正式施工，再按下面顺序下钻：
 
 1. 先看当前结论是否已经把下一步边界写死
-2. 再看对应模块在本页的“主要来源 / 继承方式 / 置信度”
+2. 再看对应模块在本页的"主要来源 / 继承方式 / 置信度"
 3. 打开对应模块设计文档
 4. 打开当前待施工卡
 5. 再进入具体实现
+
+## 流程图
+
+```mermaid
+flowchart LR
+    CON[当前结论] --> MOD[模块设计文档]
+    MOD --> CARD[待施工卡]
+    CARD --> IMPL[具体实现]
+    DATA[data] --> MALF[malf] --> STR[structure] --> FLT[filter] --> ALPHA[alpha] --> POS[position] --> PP[portfolio_plan] --> TRADE[trade] --> SYS[system]
+```

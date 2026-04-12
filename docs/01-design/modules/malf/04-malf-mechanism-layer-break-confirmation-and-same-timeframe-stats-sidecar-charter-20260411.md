@@ -177,4 +177,16 @@
 
 ## 一句话收口
 
-`malf core` 继续只负责“结构真相”，而 `pivot-confirmed break` 与 `same-timeframe stats sidecar` 只负责“机制层确认”和“同级别位置读数”；两者都必须只读派生、只读消费，不能倒灌回 `state`。`
+`malf core` 继续只负责“结构真相”，而 `pivot-confirmed break` 与 `same-timeframe stats sidecar` 只负责“机制层确认”和“同级别位置读数”；两者都必须只读派生、只读消费，不能倒灌回 `state`。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    MALF[malf core pivot/wave/state] --> PCB[pivot_confirmed_break_ledger 只读派生]
+    MALF --> STS[same_timeframe_stats sidecar 只读派生]
+    PCB --> STR[structure/filter 只读消费]
+    STS --> STR
+    PCB -. 不回写 .-> MALF
+    STS -. 不回写 .-> MALF
+```

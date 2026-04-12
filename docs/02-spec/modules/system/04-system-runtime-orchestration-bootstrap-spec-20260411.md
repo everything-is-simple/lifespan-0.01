@@ -8,3 +8,13 @@
 ## 目标
 
 为 `system` 冻结最小 orchestration 合同，使一次 bounded mainline 执行拥有正式 step ledger、checkpoint 和最终 snapshot bridge。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    ORCH[orchestration run] --> STEP[step ledger]
+    STEP --> CP[checkpoint]
+    CP --> RESUME[resume/retry]
+    RESUME --> SNAP[system_mainline_snapshot]
+```

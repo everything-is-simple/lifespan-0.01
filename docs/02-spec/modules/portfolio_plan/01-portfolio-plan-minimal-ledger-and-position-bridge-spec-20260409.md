@@ -276,3 +276,13 @@
 ## 一句话收口
 
 `14` 的最小正式合同不是把组合层全部做完，而是先让 `position` 之上的组合计划裁决有一个可复用、可复物化、可审计的正式账本入口。`
+
+## 流程图
+
+```mermaid
+flowchart LR
+    POS[position_candidate] --> PP_RUN[portfolio_plan runner]
+    PP_RUN --> SNAP[portfolio_plan_snapshot]
+    PP_RUN --> ADM[admitted/blocked/trimmed 审计]
+    SNAP --> TRADE[trade 执行层]
+```

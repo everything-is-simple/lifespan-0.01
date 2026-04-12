@@ -12,3 +12,13 @@
 1. 建立最小正式退出账本。
 2. 让部分退出、全退出、退出原因和 realized pnl 有正式落点。
 3. 为后续逐日推进引擎提供稳定写入目标。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    LEG[trade_position_leg] --> EXIT[trade_exit_ledger]
+    EXIT --> PNL[realized pnl]
+    EXIT --> RSN[退出原因 full/partial/stop]
+    PNL --> SYS[system readout]
+```

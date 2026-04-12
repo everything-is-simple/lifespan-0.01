@@ -145,3 +145,13 @@
 ## 一句话收口
 
 `12` 号卡要做的不是继续围着 `position` 打补丁，也不是提前跳下游，而是先把 `alpha` 自己最核心、最常复用的中间事实层沉淀成正式历史账本，让新仓第一次真正把“空间换时间”落到 `alpha` 内部。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    DET[五家族 bof/tst/pb/cpb/bpb] --> TRG[alpha_trigger_event 共享自然键]
+    TRG -->|inserted/reused/rematerialized| LED[H:/Lifespan-data alpha.duckdb]
+    TRG --> SIG[alpha_formal_signal_event]
+    SIG --> POS[position]
+```

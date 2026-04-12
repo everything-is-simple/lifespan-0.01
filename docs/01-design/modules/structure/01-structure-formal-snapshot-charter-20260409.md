@@ -88,4 +88,15 @@
 
 ## 一句话收口
 
-`structure` 下一步不是继续把结构语义埋在旧 `malf` 兼容字段里，而是先把最小官方 `snapshot` 出口冻结出来，让 `filter / alpha` 真正有稳定上游可接；当前若仍需桥接兼容字段，也只能以 bridge v1 身份保留，而不能回写成 `malf core`。`
+`structure` 下一步不是继续把结构语义埋在旧 `malf` 兼容字段里，而是先把最小官方 `snapshot` 出口冻结出来，让 `filter / alpha` 真正有稳定上游可接；当前若仍需桥接兼容字段，也只能以 bridge v1 身份保留，而不能回写成 `malf core`。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    CANON[malf_state_snapshot canonical] --> STR_RUN[structure runner]
+    STR_RUN --> SNAP[structure_snapshot]
+    SNAP --> FLT[filter]
+    SNAP --> ALPHA[alpha]
+    BV1[bridge v1 兼容] -. fallback .-> STR_RUN
+```

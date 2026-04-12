@@ -31,3 +31,14 @@
 
 1. 老系统总表 `battle-tested-lessons-all-modules-and-mainline-bridging-20260408.md`
 2. 老系统 `alpha 02 / 03 / 04 / 05 / 06` 系列章程
+
+## 流程图
+
+```mermaid
+flowchart LR
+    STR[structure] --> FLT[filter]
+    FLT --> TRG[trigger detection]
+    TRG --> LED[trigger ledger 自然键累积]
+    LED --> SIG[formal signal]
+    SIG --> DS[position/trade]
+```

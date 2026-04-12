@@ -36,3 +36,14 @@
 
 1. 老系统总表 `battle-tested-lessons-all-modules-and-mainline-bridging-20260408.md`
 2. 老系统 `malf` 的 structure / filter 分层章程
+
+## 流程图
+
+```mermaid
+flowchart LR
+    MB[market_base] --> MALF[malf 语义账本]
+    MALF --> STR[structure]
+    MALF --> FLT[filter]
+    MALF --> ALPHA[alpha]
+    MALF -. 不含 .-> ACT[execution_interface/confidence/actions]
+```

@@ -40,3 +40,14 @@
 1. 证据
 2. 记录
 3. 结论
+
+## 流程图
+
+```mermaid
+flowchart LR
+    REQ[需求/设计/任务分解] --> CARD[执行卡]
+    CARD --> IMPL[正式实现]
+    IMPL --> EV[证据/记录/结论]
+    DES[01-design] --> SPEC[02-spec]
+    SPEC --> EXEC[03-execution]
+```

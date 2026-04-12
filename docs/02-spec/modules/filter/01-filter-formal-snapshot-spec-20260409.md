@@ -200,3 +200,14 @@
 ## 一句话收口
 
 `filter` 当前最小正式目标不是更复杂的规则树，而是一个可被 `alpha` 优先消费的独立 pre-trigger 准入快照层；任何上下文或统计都只能以下游 sidecar 或 bridge v1 兼容输入身份存在。`
+
+## 流程图
+
+```mermaid
+flowchart LR
+    MALF[malf_state_snapshot canonical D] --> FLT_RUN[filter_runner]
+    STR[structure_snapshot] --> FLT_RUN
+    FLT_RUN --> FS[filter_snapshot]
+    FLT_RUN --> FR[filter_run]
+    FS --> ALPHA[alpha pre-trigger 准入]
+```

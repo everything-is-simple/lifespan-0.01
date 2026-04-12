@@ -93,3 +93,14 @@
 4. summary / audit 输出
 
 若某模块暂时只实现 full bootstrap，也必须在卡片与合同中明确“后续 incremental 方案是什么，当前为何尚未落地”。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    NK[稳定自然键] --> BOOT[full bootstrap]
+    BOOT --> INC[incremental/replay]
+    INC --> CP[checkpoint/dirty queue]
+    CP --> AUD[summary/audit 输出]
+    AUD --> GATE[合同合法]
+```

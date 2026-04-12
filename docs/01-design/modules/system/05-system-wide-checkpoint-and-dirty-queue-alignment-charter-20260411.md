@@ -35,3 +35,13 @@
 
 1. 本卡不直接实现 `29-34` 的业务逻辑。
 2. 本卡不进入 live/runtime 语义。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    MOD[各模块 runner] --> DQ[dirty_queue / work_queue]
+    DQ --> CP[checkpoint ledger]
+    CP --> RESUME[断点续跑]
+    RESUME --> AUD[run_id 审计只]
+```

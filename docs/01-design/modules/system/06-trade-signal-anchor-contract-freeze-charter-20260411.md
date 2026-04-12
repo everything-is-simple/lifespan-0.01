@@ -26,3 +26,12 @@
 1. 本卡不实现逐日推进引擎。
 2. 本卡不改 `position` 的参考价口径。
 3. 本卡不引入 live runtime 或 broker 语义。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    ALPHA[alpha 官方输出] -->|signal_low/last_higher_low| POS[position 透传]
+    POS --> TRADE[trade_position_leg]
+    TRADE -. 不回读 .-> ALPHA
+```

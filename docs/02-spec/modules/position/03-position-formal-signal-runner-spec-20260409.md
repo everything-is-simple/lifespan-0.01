@@ -112,3 +112,13 @@
 ## 一句话收口
 
 09 的正式合同是：`position` 只从官方 `alpha formal signal` 读 bounded 样本，用 `market_base(adjust_method='none')` 补齐下一交易日参考价，再复用既有 materialization helper 落正式账本。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    SIG[alpha_formal_signal bounded] --> RUNNER[position runner]
+    BASE[market_base none T+1 open] --> RUNNER
+    RUNNER --> MAT[position materialization]
+    MAT --> SUM[PositionFormalSignalRunnerSummary]
+```

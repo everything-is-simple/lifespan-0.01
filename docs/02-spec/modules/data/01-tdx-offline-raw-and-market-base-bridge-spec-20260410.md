@@ -171,3 +171,13 @@
 ## 一句话收口
 
 `data` 当前最小正式合同是：把 TDX 离线股票日线稳定变成可增量续跑的 `raw_market` 镜像与 `market_base.stock_daily_adjusted`，并把三种复权口径一次性正式沉淀。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    TDX[TDX 离线日线] --> RAW[raw_market.stock_daily_bar]
+    RAW --> DIRTY[base_dirty_instrument]
+    DIRTY --> BASE[market_base.stock_daily_adjusted]
+    BASE --> NONE[none] & BACK[backward] & FWD[forward]
+```

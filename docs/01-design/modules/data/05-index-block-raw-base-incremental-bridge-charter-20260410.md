@@ -132,4 +132,13 @@
 
 ## 一句话收口
 
-卡 `20` 的任务是把 `H:\tdx_offline_Data\index` 与 `H:\tdx_offline_Data\block` 正式接入和个股同等治理强度的 `raw_market / market_base` 历史账本，并冻结“一次性批量建仓 + 每日断点续传增量更新”的多 `asset_type` 契约。
+卡 `20` 的任务是把 `H:\tdx_offline_Data\index` 与 `H:\tdx_offline_Data\block` 正式接入和个股同等治理强度的 `raw_market / market_base` 历史账本，并冻结"一次性批量建仓 + 每日断点续传增量更新"的多 `asset_type` 契约。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    IDX[tdx_offline index] --> RAW_I[raw_market index_daily_bar]
+    BLK[tdx_offline block] --> RAW_B[raw_market block_daily_bar]
+    RAW_I --> BASE_I[market_base index_daily_adjusted]
+    RAW_B --> BASE_B[market_base block_daily_adjusted]

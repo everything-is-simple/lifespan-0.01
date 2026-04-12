@@ -83,3 +83,14 @@
 - 增量更新
 - 断点续跑
 - 审计账本
+
+## 流程图
+
+```mermaid
+flowchart LR
+    NK[稳定实体锚点 asset_type+code] --> BNK[业务自然键]
+    BNK --> BOOT[批量建仓]
+    BOOT --> INC[增量更新]
+    INC --> CP[checkpoint续跑]
+    CP --> AUDIT[审计层 run_id]
+```

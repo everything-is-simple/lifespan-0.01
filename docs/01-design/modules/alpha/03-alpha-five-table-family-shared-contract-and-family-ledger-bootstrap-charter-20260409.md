@@ -138,3 +138,12 @@
 ## 一句话收口
 
 `13` 号卡要做的不是改写下游，也不是把五表族一口气做完，而是先把 `alpha` 已经共享下来的 trigger 事实继续推进成“共享合同 + family ledger bootstrap”的最小正式历史账本层。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    TRG[alpha_trigger_event] --> FAM[family ledger bof/tst/pb/cpb/bpb]
+    FAM --> BOOT[family ledger bootstrap bounded pilot]
+    BOOT --> SIG[alpha_formal_signal_event]
+    SIG --> POS[position downstream]

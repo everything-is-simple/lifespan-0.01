@@ -99,3 +99,13 @@
 1. 主线将首次拥有官方 `system` 层最小账本，而不再只有模块级账本。
 2. 后续对“主链是否成立”的系统级回答，将从聊天口头裁决升级为可复算的 `system` 官方 readout。
 3. `system` 的扩展门槛被明确约束：先有 bounded acceptance readout，再谈 live/runtime 扩展。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    CHAIN[主链各模块账本] --> SYS_RUN[system bounded runner]
+    SYS_RUN --> RDOUT[system_mainline_snapshot readout]
+    RDOUT --> AUD[audit bootstrap]
+    AUD -->|可复算裁决| ACCEPT[主链成立 bounded acceptance]
+```

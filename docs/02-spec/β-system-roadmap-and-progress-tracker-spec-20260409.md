@@ -192,3 +192,13 @@
 1. `AGENTS.md`
 2. `README.md`
 3. `pyproject.toml`
+
+## 流程图
+
+```mermaid
+flowchart LR
+    CARD[待施工卡切换] --> UPDATE[路线图更新]
+    UPDATE --> AGENTS[AGENTS.md 同步]
+    UPDATE --> README[README.md 同步]
+    UPDATE --> PYPROJ[pyproject.toml 同步]
+```

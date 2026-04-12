@@ -147,4 +147,13 @@
 
 ## 一句话收口
 
-`14` 号卡要做的不是把组合层一次做完，而是先把 `position` 之上的最小组合计划账本立住，让新仓第一次正式回答“这些单标计划放进同一组合后，谁被放行、谁被挡掉、谁被压缩，以及组合容量还剩多少”。`
+`14` 号卡要做的不是把组合层一次做完，而是先把 `position` 之上的最小组合计划账本立住，让新仓第一次正式回答“这些单标计划放进同一组合后，谁被放行、谁被挡掉、谁被压缩，以及组合容量还剩多少”。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    POS[position_candidate] --> PP_RUN[portfolio_plan runner]
+    PP_RUN --> SNAP[portfolio_plan_snapshot]
+    PP_RUN --> AUDIT[admitted/blocked/trimmed]
+    SNAP --> TRADE[trade 执行层]

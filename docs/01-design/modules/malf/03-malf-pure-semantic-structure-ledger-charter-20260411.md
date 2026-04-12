@@ -197,4 +197,17 @@
 
 更短收口：
 
-`malf` 是一个按时间级别独立运行的纯语义走势账本系统，用 `pivot / wave` 组织生命周期，用 `HH/HL/LL/LH` 描述结构，用 `break` 标记旧结构失效，用当前 `wave` 内的极值累计刻画趋势推进；统计、背景和动作都只能在下游分层消费。`
+`malf` 是一个按时间级别独立运行的纯语义走势账本系统，用 `pivot / wave` 组织生命周期，用 `HH/HL/LL/LH` 描述结构，用 `break` 标记旧结构失效，用当前 `wave` 内的极值累计刻画趋势推进；统计、背景和动作都只能在下游分层消费。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    MB[market_base backward] --> MALF[malf D/W/M 独立闭环]
+    MALF --> PL[pivot_ledger confirmed_at]
+    MALF --> WL[wave_ledger HH/HL/LL/LH]
+    MALF --> EP[extreme_progress_ledger]
+    MALF --> SS[malf_state_snapshot]
+    MALF --> SLS[same_level_stats sidecar]
+    MALF -. 排除 .-> EI[execution_interface/actions]
+```

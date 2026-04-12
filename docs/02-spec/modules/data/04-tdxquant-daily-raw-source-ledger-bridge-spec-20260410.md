@@ -189,3 +189,14 @@ TQ raw 日更成功后，runner 必须：
 ## 一句话收口
 
 卡 `19` 的正式合同是：把 `TdxQuant(dividend_type='none')` 代表的官方日更原始事实，按 request/checkpoint 账本语义正式接进 `raw_market`，并与现有 `raw/base` 增量机制并存。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    TQ[TdxQuant none] --> REQ[run/request 账本]
+    REQ --> CP[checkpoint 续跑]
+    CP --> RAW[raw_market stock_daily_bar none]
+    RAW --> DIRTY[base_dirty_instrument]
+    DIRTY --> BASE[market_base 可审计物化]
+```

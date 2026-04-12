@@ -12,3 +12,16 @@
 1. 基于 `market_base.stock_daily_adjusted(adjust_method='none')` 的日线 OHLC，逐日推进 open legs。
 2. 支持最小退出规则：快速失败、`1R` 半仓、`break_last_higher_low` 尾仓退出。
 3. 支持 checkpoint / dirty queue / resume。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    LEG[open legs] --> PROG[逐日推进 OHLC none]
+    PROG -->|1R half| HALF[半仓退出]
+    PROG -->|break_LHL| TAIL[尾仓退出]
+    PROG -->|fail fast| STOP[快速失败]
+    HALF --> EXIT[trade_exit_ledger]
+    TAIL --> EXIT
+    STOP --> EXIT
+```

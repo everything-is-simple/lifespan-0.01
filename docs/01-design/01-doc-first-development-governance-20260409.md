@@ -44,3 +44,15 @@
 3. 结论
 
 只要缺少收口件，任务就不能视为正式完成。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    REQ[需求] --> DES[设计]
+    DES --> TASK[任务分解]
+    TASK --> IMPL[正式实现]
+    IMPL --> EV[证据]
+    EV --> REC[记录]
+    REC --> CONC[结论]
+```

@@ -99,3 +99,14 @@
 2. 有明确的 bounded mainline 复核命令。
 3. 有正式 evidence / record / conclusion。
 4. 能裁决“下一张应该是主线卡、修复卡，还是 system 卡”。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    MALF[malf sidecar] --> STR[structure 复核]
+    STR --> FLT[filter 复核]
+    FLT --> ALPHA[alpha 复核]
+    ALPHA --> EV[evidence/record/conclusion]
+    EV -->|通过| NEXT[system 主线卡开工]
+```

@@ -191,3 +191,14 @@
 ## 一句话收口
 
 `structure` 当前最小正式目标不是更多兼容字段，而是一个可被 `filter / alpha` 稳定消费的官方 `snapshot` 事实层；bridge v1 兼容输入只允许过渡存在，不允许继续冒充 `malf core`。`
+
+## 流程图
+
+```mermaid
+flowchart LR
+    MALF[malf_state_snapshot canonical D] --> STR_RUN[structure runner]
+    STR_RUN --> SS[structure_snapshot]
+    STR_RUN --> SR[structure_run]
+    SS --> FLT[filter 消费]
+    SS --> ALPHA[alpha 消费]
+```

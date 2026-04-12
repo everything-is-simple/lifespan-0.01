@@ -299,3 +299,14 @@
 ## 10. 一句话收口
 
 `pivot-confirmed break` 是对 `break` 的机制层确认，不是新趋势确认；`same-timeframe stats sidecar` 是同级别位置读数，不是结构真相。两者都只能只读派生、只读消费。`
+
+## 流程图
+
+```mermaid
+flowchart LR
+    MALF[malf canonical 账本] --> MECH[mechanism runner]
+    MECH --> PCB[pivot_confirmed_break_ledger]
+    MECH --> STATS[same_timeframe_stats_sidecar]
+    PCB -. 只读消费 .-> STR[structure/filter]
+    STATS -. 只读消费 .-> STR
+```

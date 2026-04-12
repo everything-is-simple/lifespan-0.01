@@ -148,3 +148,15 @@
 ## 一句话收口
 
 `alpha` 在新仓的下一步不是继续让下游围着兼容合同打转，而是先把 `formal signal` 正式出口单独收口成历史事实层、run 审计层和最小 producer runner；这样 `position` 才能真正接上新仓官方上游。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    FLT[filter_snapshot] --> PROD[alpha formal signal producer]
+    STR[structure_snapshot] --> PROD
+    TRG[alpha trigger ledger] --> PROD
+    PROD --> EVT[alpha_formal_signal_event]
+    PROD --> RUN[alpha_formal_signal_run]
+    EVT --> POS[position]
+```

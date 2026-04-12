@@ -319,3 +319,14 @@
 ## 10. 一句话收口
 
 `25` 号卡的正式实现口径是：先基于 bridge v1 把机制层 sidecar 落成正式历史账本，并用最小只读字段把它们接入 `structure / filter`，同时保留未来切 pure semantic canonical runner 的升级空间。`
+
+## 流程图
+
+```mermaid
+flowchart LR
+    BV1[bridge v1 pas_context_snapshot] --> MECH[mechanism runner]
+    MECH --> PCB[pivot_confirmed_break_ledger]
+    MECH --> STS[same_timeframe_stats_snapshot]
+    PCB -. 只读 .-> STR[structure]
+    STS -. 只读 .-> FLT[filter]
+```

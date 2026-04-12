@@ -14,3 +14,12 @@
 1. 为 official runner 提供最小 orchestration 合同。
 2. 提供 step 级计划、执行、reuse、失败与 resume 审计。
 3. 把一次 bounded orchestration run 与最终 `system_mainline_snapshot` 正式关联起来。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    ORCH[orchestration run] --> STEP[step级计划/执行]
+    STEP --> REUSE[reuse/失败/resume]
+    REUSE --> SNAP[system_mainline_snapshot]
+```

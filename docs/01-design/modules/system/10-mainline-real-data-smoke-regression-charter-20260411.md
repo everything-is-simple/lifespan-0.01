@@ -12,3 +12,14 @@
 1. 选取 1-2 只真实股票做 bounded 主线 smoke。
 2. 覆盖 `alpha -> position -> trade -> system`。
 3. 生成可复验的 evidence 与导出摘要。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    REAL[真实股票 1-2只 bounded] --> ALPHA[alpha]
+    ALPHA --> POS[position]
+    POS --> TRADE[trade]
+    TRADE --> SYS[system readout]
+    SYS --> EV[evidence 导出摘要]
+```

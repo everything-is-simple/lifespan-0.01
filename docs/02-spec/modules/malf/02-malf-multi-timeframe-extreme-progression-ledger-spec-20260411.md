@@ -586,3 +586,16 @@
 ## 14. 一句话收口
 
 `malf` 的正式核心是：对月、周、日各自的生命过程分别记账，用 HH/HL/LL/LH 与 break 定义结构，用 HH(n+m)/LL(n+m) 定义推进，用同级别历史分布定义所处位置，再向 structure/filter/alpha 输出可执行的动作接口。`
+
+## 流程图
+
+```mermaid
+flowchart LR
+    BASE[market_base backward] --> D[D级别 极值推进账本]
+    BASE --> W[W级别 极值推进账本]
+    BASE --> M[M级别 极值推进账本]
+    D --> SNAP[malf_state_snapshot D]
+    W --> SNAP_W[malf_state_snapshot W]
+    M --> SNAP_M[malf_state_snapshot M]
+    SNAP --> STR[structure/filter/alpha]
+```

@@ -119,3 +119,13 @@
 ## 一句话收口
 
 `position` 当前只认 `alpha` 已冻结的 formal signal 最小字段组，不认 `alpha` 内部临时过程；上游负责“信号是否成立”，下游负责“这次能做多大”。`
+
+## 流程图
+
+```mermaid
+flowchart LR
+    ALPHA[alpha_formal_signal_event] --> BRIDGE[alpha->position 桥接]
+    BRIDGE --> POS[position 资金管理]
+    POS --> ALLOW[allowed position]
+    POS -. 不回读 .-> ALPHA
+```

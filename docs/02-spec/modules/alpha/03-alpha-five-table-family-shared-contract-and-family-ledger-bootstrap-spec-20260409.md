@@ -276,3 +276,13 @@ family ledger 的正式输入固定分成三类：
 ## 一句话收口
 
 `13` 的最小正式合同不是把五表族全部做完，而是先把共享 trigger 事实继续推进成可复用、可复物化、可审计的 family ledger 层，并先在一到两个 family 上证明这套合同站得住。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    TEV[alpha_trigger_event] --> FAM[alpha_family_run]
+    FAM --> FEV[alpha_family_event]
+    FEV --> REV[alpha_family_run_event]
+    FEV --> POS[position 消费]
+```

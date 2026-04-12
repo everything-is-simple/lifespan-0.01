@@ -106,3 +106,13 @@
 3. 有面向主链 acceptance 的 bounded 验证。
 4. 有正式 evidence / record / conclusion。
 5. 能明确裁决后续 `system` 应继续开哪一类 runtime / orchestration 卡。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    MAIN[主链 bounded runner] --> SYS_RUN[system_run]
+    SYS_RUN --> READOUT[system_mainline_snapshot]
+    READOUT --> AUD[audit/evidence 导出]
+    AUD --> GATE[acceptance 裁决]
+```

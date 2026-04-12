@@ -35,3 +35,14 @@
 1. `28` 能明确裁决所有本地库都必须以 data-grade 对齐。
 2. 自然数顺序下的后续卡 `29-34` 被正式写入执行索引。
 3. 入口文件与执行索引不再残留旧 `28/29` 口径。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    MOD[各模块 runner] --> WQ[work_queue/dirty_queue]
+    WQ --> CP[checkpoint ledger]
+    CP --> REPLAY[bounded replay/resume]
+    REPLAY --> SNAP[正式 snapshot/event]
+    SNAP --> AUD[run_id 审计只读]
+```

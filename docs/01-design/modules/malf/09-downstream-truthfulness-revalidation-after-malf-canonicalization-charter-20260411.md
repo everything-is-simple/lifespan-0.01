@@ -17,3 +17,14 @@
 
 1. 本卡不实现 trade exit/pnl。
 2. 本卡不实现 system orchestration。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    CANON[malf canonical v2] --> STR[structure]
+    STR --> FLT[filter]
+    FLT --> ALPHA[alpha]
+    ALPHA --> VAL[truthfulness revalidation bounded smoke]
+    VAL -->|通过| NEXT[trade/system 可恢复推进]
+```

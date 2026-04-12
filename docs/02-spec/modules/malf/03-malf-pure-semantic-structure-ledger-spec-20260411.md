@@ -377,3 +377,14 @@
 更短收口：
 
 `malf` 是一个按时间级别独立运行的纯语义走势账本系统，用 `pivot / wave` 组织生命周期，用 `HH/HL/LL/LH` 描述结构，用 `break` 标记旧结构失效，用当前 `wave` 内的极值累计刻画趋势推进；统计、背景和动作都只能在下游分层消费。`
+
+## 流程图
+
+```mermaid
+flowchart LR
+    BAR[price bar D/W/M] --> PIV[pivot_ledger]
+    PIV --> WAVE[wave_ledger]
+    WAVE --> PROG[extreme_progress_ledger]
+    PROG --> SNAP[malf_state_snapshot]
+    SNAP --> DOWN[structure/filter/alpha 下游]
+```

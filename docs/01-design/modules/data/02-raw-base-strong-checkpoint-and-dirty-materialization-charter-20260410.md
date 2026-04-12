@@ -111,3 +111,13 @@
 ## 一句话收口
 
 这轮增强的目标不是再换一套导入脚本，而是把 `raw` 补成真正的文件级运行账本，把 `base` 补成真正的脏标的增量账本，让全量建库和日常增量都既快又稳。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    FILE[TDX文件] --> RAW_RUN[raw_ingest_run 文件级账本]
+    RAW_RUN --> DIRTY[base_dirty_instrument 脏队列]
+    DIRTY --> BASE_RUN[base_build_run 增量物化]
+    BASE_RUN --> BASE[market_base]
+```

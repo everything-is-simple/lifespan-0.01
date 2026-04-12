@@ -31,3 +31,13 @@
 
 1. 老系统 `alpha 03` filter admission 边界冻结设计
 2. 老系统 `malf 31 / 32` 的 filter 分层与最小硬门重置章程
+
+## 流程图
+
+```mermaid
+flowchart LR
+    STR[structure_snapshot] --> FLT[filter pre-trigger准入]
+    CTX[execution_context] --> FLT
+    FLT -->|准入通过| ALPHA[alpha trigger检测]
+    FLT -. observation .-> OBS[研究观察 非硬门]
+```

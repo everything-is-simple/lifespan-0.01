@@ -127,3 +127,14 @@
 ## 七、模板规格
 
 `docs/03-execution/00-card-template-20260409.md` 必须同步携带 `## 历史账本约束` 段，避免未来新卡遗漏此项。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    NK[稳定自然键] --> BOOT[一次性 full bootstrap]
+    BOOT --> INC[每日增量 upsert]
+    INC --> CP[checkpoint/dirty queue]
+    CP --> AUD[run 审计账本]
+    AUD --> GOV[治理检查通过]
+```

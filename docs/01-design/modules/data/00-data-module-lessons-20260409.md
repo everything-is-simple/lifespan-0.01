@@ -31,3 +31,12 @@
 
 1. 老系统总表 `battle-tested-lessons-all-modules-and-mainline-bridging-20260408.md`
 2. 老系统 `data` 模块长期 selective rebuild / readiness 章程
+
+## 流程图
+
+```mermaid
+flowchart LR
+    SRC[本地离线来源 TDX] --> RAW[raw_market]
+    RAW --> BASE[market_base backward/none/forward]
+    BASE --> DS[malf/alpha/trade/system]
+```

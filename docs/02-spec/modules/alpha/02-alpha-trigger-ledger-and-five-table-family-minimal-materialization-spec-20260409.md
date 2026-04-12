@@ -234,3 +234,12 @@
 ## 一句话收口
 
 `12` 的最小正式合同不是“多一张 alpha 临时表”，而是把 `trigger ledger` 变成写入正式数据根、可复用、可复物化、可被 `formal signal` 稳定引用的历史账本层。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    DET[bounded detector] --> TR[alpha_trigger_run]
+    DET --> TEV[alpha_trigger_event]
+    TEV --> FEV[alpha_formal_signal_event]
+    TEV --> FAM[alpha_family_event 五表族]

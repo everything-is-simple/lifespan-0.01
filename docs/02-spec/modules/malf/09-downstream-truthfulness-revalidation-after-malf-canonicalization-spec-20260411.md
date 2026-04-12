@@ -14,3 +14,13 @@
 1. bounded revalidation 命令
 2. 关键账本摘要
 3. 对 canonical malf 是否已成为正式上游的结论裁决
+
+## 流程图
+
+```mermaid
+flowchart LR
+    CANON[canonical malf_state_snapshot] --> STR[structure revalidation]
+    STR --> FLT[filter revalidation]
+    FLT --> ALPHA[alpha revalidation]
+    ALPHA -->|通过| NEXT[trade/system 可恢复推进]
+```

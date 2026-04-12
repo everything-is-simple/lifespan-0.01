@@ -81,3 +81,16 @@
 - 增量更新：仅对 dirty scope 重放确认尾巴之后的数据
 - 断点续跑：依赖 `work_queue + checkpoint`
 - 审计账本：`malf_canonical_run` 与执行文档
+
+## 流程图
+
+```mermaid
+flowchart LR
+    MB[market_base backward] --> CR[canonical_runner D/W/M]
+    CR --> PL[malf_pivot_ledger]
+    CR --> WL[malf_wave_ledger]
+    CR --> EP[malf_extreme_progress_ledger]
+    CR --> SS[malf_state_snapshot]
+    CR --> SLS[malf_same_level_stats]
+    WQ[work_queue] --> CP[checkpoint 续跑]
+```

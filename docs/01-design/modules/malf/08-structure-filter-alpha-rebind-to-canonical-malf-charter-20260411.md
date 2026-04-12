@@ -24,3 +24,14 @@
 
 1. 本卡不直接进入 `position / trade / system`。
 2. 本卡不处理回测 exit/pnl。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    CANON[malf_state_snapshot canonical D] --> STR[structure]
+    CANON --> FLT[filter]
+    CANON --> ALPHA[alpha formal signal]
+    BV1[bridge v1] -. fallback only .-> STR
+    BV1 -. fallback only .-> FLT
+```

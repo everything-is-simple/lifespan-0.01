@@ -27,3 +27,18 @@
 8. `portfolio_plan/00-portfolio-plan-module-lessons-20260409.md`
 9. `trade/00-trade-module-lessons-20260409.md`
 10. `system/00-system-module-lessons-20260409.md`
+
+## 流程图
+
+```mermaid
+flowchart LR
+    CORE[core] --> DATA[data]
+    DATA --> MALF[malf]
+    MALF --> STR[structure]
+    STR --> FLT[filter]
+    FLT --> ALPHA[alpha]
+    ALPHA --> POS[position]
+    POS --> PP[portfolio_plan]
+    PP --> TRADE[trade]
+    TRADE --> SYS[system]
+```

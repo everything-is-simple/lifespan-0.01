@@ -137,3 +137,14 @@
 ## 一句话收口
 
 卡 `18` 的任务不是追求“更快读数据”，而是用正式账本标准比较 `.day + 补源` 与 `TdxQuant` 两条路线，选出更适合作为 `raw/base` 第二阶段每日复权增量更新源头的正式方案。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    A[候选A .day+补源] --> CMP[正式账本标准比较]
+    B[候选B TdxQuant] --> CMP
+    CMP -->|选型裁决| SEL[正式每日复权增量源]
+    SEL --> RAW[raw_market 每日增量]
+    RAW --> BASE[market_base 每日增量]
+```

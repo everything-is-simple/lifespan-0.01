@@ -38,3 +38,14 @@
 2. `structure / filter / alpha` 的正式输入边界完成重写。
 3. 新增单测证明：在只有 canonical `malf_state_snapshot`、没有 bridge-v1 表的前提下，`structure -> filter -> alpha` 默认主线仍可跑通。
 4. 为 `32` 的 truthfulness revalidation 提供正式前提。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    CANON[malf_state_snapshot canonical D] --> STR[structure]
+    CANON --> FLT[filter]
+    CANON --> ALPHA[alpha formal signal]
+    BV1[bridge v1] -. fallback only .-> STR
+    BV1 -. fallback only .-> FLT
+```

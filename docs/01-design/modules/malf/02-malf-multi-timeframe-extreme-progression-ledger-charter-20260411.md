@@ -138,4 +138,15 @@
 
 ## 一句话收口
 
-`malf` 的正式核心不是“市场语义分类”，而是“把每个级别自己的生命过程用 HH/HL/LL/LH、break、极值累计和同级别统计完整记成账本，并向执行层提供动作接口”。`
+`malf` 的正式核心不是“市场语义分类”，而是“把每个级别自己的生命过程用 HH/HL/LL/LH、break、极值累计和同级别统计完整记成账本，并向执行层提供动作接口”。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    MB[market_base backward] --> MALF[malf D/W/M 独立计算]
+    MALF --> PL[pivot_ledger]
+    MALF --> WL[wave_ledger]
+    MALF --> EL[extreme_progress_ledger]
+    MALF --> SS[state_snapshot]
+    MALF --> SLS[same_level_stats]

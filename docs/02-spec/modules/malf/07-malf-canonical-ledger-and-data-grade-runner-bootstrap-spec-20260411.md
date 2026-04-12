@@ -171,3 +171,14 @@ runner 先比较 source 最新 bar 日期与 checkpoint：
 2. `code + timeframe` dirty queue / checkpoint / resume 成立
 3. `D / W / M` 三个级别能各自独立产出结构结果
 4. 旧 bridge-v1 与 canonical v2 在同库并存但不混真值
+
+## 流程图
+
+```mermaid
+flowchart LR
+    BASE[market_base backward] --> CRUN[canonical runner D/W/M]
+    CRUN --> WQ[work_queue]
+    CRUN --> CP[checkpoint]
+    CRUN --> SNAP[malf_state_snapshot]
+    BV1[bridge v1] -. 并存不混 .-> SNAP
+```

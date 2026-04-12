@@ -126,3 +126,14 @@
 ## 一句话收口
 
 卡 `18` 的正式产出应是一个经过 bounded research 验证的源头选型结论，用来决定 `raw/base` 第二阶段每日复权增量更新究竟应以 `.day` 直读为主，还是以官方 `TdxQuant` 为主。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    A[候选A .day直读] --> PROBE[bounded probe 验证]
+    B[候选B TdxQuant] --> PROBE
+    PROBE --> SEL[选型裁决]
+    SEL --> RAW[raw_market 每日增量]
+    RAW --> BASE[market_base 每日增量]
+```

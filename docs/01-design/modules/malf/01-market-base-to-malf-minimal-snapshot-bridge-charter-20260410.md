@@ -101,3 +101,13 @@
 ## 一句话收口
 
 `malf` 当前不是先恢复旧系统全量语义，而是先把官方 `market_base(backward)` 稳定翻译成 `structure` 真能消费的最小语义层，同时把“信号后复权、执行不复权”的边界冻结清楚。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    MB[market_base backward] --> BRIDGE[malf bridge v1 runner]
+    BRIDGE --> PAS[pas_context_snapshot]
+    BRIDGE --> SC[structure_candidate_snapshot]
+    SC --> STR[structure runner]
+```

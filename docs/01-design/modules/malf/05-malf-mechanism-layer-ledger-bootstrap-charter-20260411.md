@@ -171,4 +171,16 @@ checkpoint 的正式职责固定为：
 
 ## 一句话收口
 
-`25` 号实现卡的目标不是提前宣布 pure semantic core 已落地，而是先把 bridge-era 的机制层能力正式物化成可增量、可续跑、可审计的 sidecar 历史账本，并把它们最小接入到 `structure / filter`。`
+`25` 号实现卡的目标不是提前宣布 pure semantic core 已落地，而是先把 bridge-era 的机制层能力正式物化成可增量、可续跑、可审计的 sidecar 历史账本，并把它们最小接入到 `structure / filter`。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    BV1[bridge v1 pas_context] --> MECH[mechanism runner checkpoint续跑]
+    MECH --> PCB[pivot_confirmed_break_ledger]
+    MECH --> STP[same_timeframe_stats_profile]
+    MECH --> STS[same_timeframe_stats_snapshot]
+    PCB --> STR[structure/filter 只读]
+    STS --> STR
+```

@@ -212,3 +212,14 @@
 ## 一句话收口
 
 `malf` 当前最小正式合同是：只消费官方 `market_base.stock_daily_adjusted(backward)`，稳定产出可被 `structure` 直接消费的上下文快照与结构候选快照，并把与执行层的价格边界分清。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    BASE[market_base backward] --> MALF[malf runner]
+    MALF --> CTX[pas_context_snapshot]
+    MALF --> CAND[structure_candidate_snapshot]
+    CTX --> STR[structure 消费]
+    CAND --> STR
+```

@@ -86,3 +86,13 @@
 ## 当前结论
 
 本规格不要求一次性解决所有历史执行卡质量问题，但要求从当前卡开始，正式代码实现必须经过 `doc-first gating` 硬门禁。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    SRC[src//scripts/ 改动] --> CHK[check_doc_first_gating]
+    CHK -->|缺需求/设计/分解| FAIL[阻止实现]
+    CHK -->|全部通过| IMPL[允许进入代码]
+    IMPL --> GOV[check_development_governance 串联]
+```

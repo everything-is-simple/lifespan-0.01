@@ -74,4 +74,15 @@
 
 1. 当前主线在 `25` 完成后不会直接跳 `system`，而是先进入整链 truthfulness 复核。
 2. `system` 模块的正式开工门槛被抬高到“整链 truthfulness 已裁决通过”。
-3. 后续任何声称“主链已经整体成立”的结论，都必须建立在 `26` 的 bounded 复核证据上，而不是建立在单模块成功之上。
+3. 后续任何声称"主链已经整体成立"的结论，都必须建立在 `26` 的 bounded 复核证据上，而不是建立在单模块成功之上。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    MALF[malf sidecar完成] --> REVAL[主链 truthfulness 复核]
+    REVAL --> STR[structure]
+    REVAL --> FLT[filter]
+    REVAL --> ALPHA[alpha]
+    REVAL -->|通过| SYS[system 正式开工门槛]
+```

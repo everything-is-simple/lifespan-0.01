@@ -183,4 +183,14 @@
 
 ## 一句话收口
 
-`position` 在新仓里不是“测试仓 / 主仓”的口头分层，而是以单标的允许仓位为主语、以公共账本 + 方法分表为结构、以动作角色吸收试探/加码/减仓经验的正式历史账本模块。`
+`position` 在新仓里不是“测试仓 / 主仓”的口头分层，而是以单标的允许仓位为主语、以公共账本 + 方法分表为结构、以动作角色吸收试探/加码/减仓经验的正式历史账本模块。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    SIG[alpha formal signal] --> FUND[funding management 资金管理]
+    FUND --> SIZE[position sizing none价]
+    SIZE --> EXIT[exit contract 退出合同]
+    EXIT --> PP[portfolio_plan]
+    SIZE --> AUDIT[blocked/trimmed audit]

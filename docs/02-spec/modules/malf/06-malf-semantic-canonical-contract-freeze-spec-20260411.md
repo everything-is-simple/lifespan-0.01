@@ -204,3 +204,15 @@
 - `same_timeframe_stats_*`
 
 只允许作为历史兼容件保留，不能替代 canonical `malf core`。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    BASE[market_base backward] --> CANON[canonical runner]
+    CANON --> PIV[pivot_ledger]
+    CANON --> WAVE[wave_ledger]
+    CANON --> SNAP[malf_state_snapshot]
+    BV1[bridge v1] -. 兼容只读 .-> DOWN[structure/filter/alpha]
+    SNAP --> DOWN
+```

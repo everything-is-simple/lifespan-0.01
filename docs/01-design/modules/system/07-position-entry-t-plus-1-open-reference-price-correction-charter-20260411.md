@@ -12,3 +12,12 @@
 1. 把 `position` 的入场参考价从 `T+1 close` 改为 `T+1 open`。
 2. 保持正式执行口径仍然是 `market_base.stock_daily_adjusted(adjust_method='none')`。
 3. 对缺失开盘价或无下一交易日的情况给出明确处理语义。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    SIG[alpha signal T日] --> REF[T+1 open 参考价 none]
+    REF --> SIZE[position sizing]
+    SIZE --> TRADE[trade_position_leg 入场]
+```

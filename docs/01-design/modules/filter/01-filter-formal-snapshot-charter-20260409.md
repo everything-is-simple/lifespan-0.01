@@ -80,4 +80,14 @@
 
 ## 一句话收口
 
-`filter` 下一步不是继续寄生在旧兼容上下文里，而是先成为独立、最小、可复查的 pre-trigger 官方准入层；任何 context/stats 都只能以下游 sidecar 或 bridge v1 兼容输入身份出现，不能回写成 `malf core`。`
+`filter` 下一步不是继续寄生在旧兼容上下文里，而是先成为独立、最小、可复查的 pre-trigger 官方准入层；任何 context/stats 都只能以下游 sidecar 或 bridge v1 兼容输入身份出现，不能回写成 `malf core`。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    MALF[malf_state_snapshot canonical] --> FLT[filter_snapshot]
+    SIDE[stats sidecar 只读] -. optional .-> FLT
+    FLT --> ALPHA[alpha trigger检测上游]
+    BV1[bridge v1 兼容] -. fallback .-> FLT
+```

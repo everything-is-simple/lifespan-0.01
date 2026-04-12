@@ -31,3 +31,13 @@
 
 1. 老系统总表 `battle-tested-lessons-all-modules-and-mainline-bridging-20260408.md`
 2. 老系统 `system` 主线冻结与组合 acceptance 章程
+
+## 流程图
+
+```mermaid
+flowchart LR
+    CHAIN[malf→structure→filter→alpha→position→portfolio_plan→trade] --> SYS[system]
+    SYS --> RPT[组合读数/报告]
+    SYS --> AUD[审计/冻结]
+    SYS --> GOV[治理入口]
+```

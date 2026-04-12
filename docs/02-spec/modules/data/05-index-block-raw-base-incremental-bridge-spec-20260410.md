@@ -160,3 +160,13 @@
 ## 一句话收口
 
 卡 `20` 的正式规格是：让 `index/block` 以与 `stock` 相同的 run/file ledger、dirty queue、断点续跑和增量物化规则进入独立的 `raw_market / market_base` 表族，并把共享审计账本升级为显式多 `asset_type` 契约。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    IDX[tdx_offline index] --> RAW_I[raw_market index_daily_bar]
+    BLK[tdx_offline block] --> RAW_B[raw_market block_daily_bar]
+    RAW_I --> BASE_I[market_base index_daily_adjusted]
+    RAW_B --> BASE_B[market_base block_daily_adjusted]
+```

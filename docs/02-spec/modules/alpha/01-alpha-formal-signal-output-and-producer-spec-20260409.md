@@ -250,3 +250,13 @@
 ## 一句话收口
 
 `alpha` 当前最小正式出口不是一张临时兼容表，而是 `run / event / run_event` 三表加一个 bounded producer runner；它先把新仓官方 `formal signal` 事实层站稳，再让 `position` 真正切到这个官方上游。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    PROD[bounded producer runner] --> RUN[alpha_formal_signal_run]
+    PROD --> EV[alpha_formal_signal_event]
+    PROD --> REV[alpha_formal_signal_run_event]
+    EV --> POS[position runner 直接读取]
+```

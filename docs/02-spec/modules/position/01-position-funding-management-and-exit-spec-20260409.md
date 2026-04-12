@@ -313,3 +313,14 @@
 ## 一句话收口
 
 `position` 的正式输出是模块级历史账本中的单标的允许仓位合同；公共账本负责共享事实，资金管理方法必须分表，blocked/trim/exit 都必须以自然键可追溯方式长期保留。`
+
+## 流程图
+
+```mermaid
+flowchart LR
+    SIG[alpha_formal_signal] --> FUND[funding management]
+    FUND --> ALLOW[allowed_position_weight]
+    FUND --> BLOCK[blocked_candidate 审计]
+    ALLOW --> EXIT[exit contract]
+    EXIT --> PP[portfolio_plan]
+```
