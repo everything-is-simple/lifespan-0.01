@@ -1,7 +1,9 @@
 # governance historical debt backlog burndown 规格
 
 日期：`2026-04-12`
-状态：`待执行`
+状态：`已完成`
+
+注：本规格已在 `37` 收口执行完毕，当前正式施工位已切换到 `100`。
 
 本规格适用于 `37-system-governance-historical-debt-backlog-burndown-card-20260412.md` 及其后续 evidence / record / conclusion。
 

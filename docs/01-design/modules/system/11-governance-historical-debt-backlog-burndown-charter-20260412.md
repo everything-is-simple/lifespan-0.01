@@ -1,7 +1,9 @@
 # governance historical debt backlog burndown 设计宪章
 
 日期：`2026-04-12`
-状态：`待执行`
+状态：`已完成`
+
+注：本宪章已在 `37` 收口执行完毕，当前正式施工位已切换到 `100`。
 
 ## 背景
 
@@ -26,8 +28,8 @@
 
 ## 核心裁决
 
-1. 新开 `37-system-governance-historical-debt-backlog-burndown-card-20260412.md` 作为当前待施工卡。
-2. `100-105` 继续保留为后续 trade/system 恢复卡组，但在 `37` 完成前暂不恢复为当前施工位。
+1. 本轮新开 `37-system-governance-historical-debt-backlog-burndown-card-20260412.md` 作为治理清账卡。
+2. `100-105` 继续保留为后续 trade/system 恢复卡组，`37` 收口后已恢复为当前施工位。
 3. `development_governance_legacy_backlog.py` 中只保留“尚未清零”的历史债务；已经解决的事项必须在 `37` 的 card / evidence / record / conclusion 中登记。
 4. 对本轮已完成的纠偏项，必须在 `37` 中明确登记，至少包括：
    - `wave_life_runner` 超长文件拆分

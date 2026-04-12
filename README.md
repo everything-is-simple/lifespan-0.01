@@ -122,7 +122,7 @@ flowchart LR
   - `malf -> structure -> filter -> alpha` 默认消费 `adjust_method='backward'`
   - `position -> trade` 默认消费 `adjust_method='none'`
   - `forward` 当前只作研究与展示保留
-- 当前最新生效结论锚点已推进到 `36-malf-wave-life-probability-sidecar-bootstrap-conclusion-20260412.md`：`malf` 寿命概率 sidecar 已正式落地；当前治理锚点仍是 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`，当前具体待施工卡已推进到 `37-system-governance-historical-debt-backlog-burndown-card-20260412.md`，自然数顺排后的后续卡依次为 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`，其中 `29-36` 已完成并生效，`37` 为系统治理清账卡；当前已清掉 `src/mlq/system/runner.py`、`src/mlq/trade/runner.py`、`src/mlq/alpha/trigger_runner.py`、`src/mlq/filter/runner.py`、`src/mlq/malf/mechanism_runner.py`、`src/mlq/malf/canonical_runner.py`、`src/mlq/structure/runner.py`、`src/mlq/alpha/runner.py`、`src/mlq/data/runner.py`、`tests/unit/data/test_data_runner.py`、`src/mlq/data/bootstrap.py`、`src/mlq/malf/runner.py`、`src/mlq/malf/bootstrap.py`、`src/mlq/alpha/family_runner.py` 与 `src/mlq/position/bootstrap.py`，历史硬超长 backlog 与 target backlog 均已清零，`100-105` 为恢复推进的 trade/system 卡组
+- 当前最新生效结论锚点已推进到 `37-system-governance-historical-debt-backlog-burndown-conclusion-20260412.md`：`37` 系统治理清账卡已正式收口；当前正式施工卡已切换到 `100-trade-signal-anchor-contract-freeze-card-20260411.md`，自然数顺排后的后续卡依次为 `100 -> 101 -> 102 -> 103 -> 104 -> 105`，其中 `29-37` 已完成并生效；当前已清掉 `src/mlq/system/runner.py`、`src/mlq/trade/runner.py`、`src/mlq/alpha/trigger_runner.py`、`src/mlq/filter/runner.py`、`src/mlq/malf/mechanism_runner.py`、`src/mlq/malf/canonical_runner.py`、`src/mlq/structure/runner.py`、`src/mlq/alpha/runner.py`、`src/mlq/data/runner.py`、`tests/unit/data/test_data_runner.py`、`src/mlq/data/bootstrap.py`、`src/mlq/malf/runner.py`、`src/mlq/malf/bootstrap.py`、`src/mlq/alpha/family_runner.py` 与 `src/mlq/position/bootstrap.py`，历史硬超长 backlog 与 target backlog 均已清零，`100-105` 为当前恢复推进的 trade/system 卡组
 - `txt -> raw_market -> market_base` 继续保留为正式 fallback
 
 ## 当前 malf 正式口径
@@ -179,8 +179,8 @@ flowchart LR
 5. 当前待施工卡必须显式填写 `历史账本约束` 六条声明：实体锚点、业务自然键、批量建仓、增量更新、断点续跑、审计账本
 6. 正式文档默认多用图：涉及模块边界、数据流、状态机、账本表族或施工顺序时，至少提供一张与正文一致的图，优先使用 Mermaid。
 7. 全仓 `python scripts/system/check_development_governance.py` 盘点允许通过 `scripts/system/development_governance_legacy_backlog.py` 登记历史债务；按改动路径触发的严格治理检查仍直接拦截新增违规。
-8. `37` 卡施工期间，每解决一项历史债务，都必须同步更新 `development_governance_legacy_backlog.py` 与 `37` 对应的 card / evidence / record / conclusion。
-9. 当前已完成的清债包括 `src/mlq/system/runner.py`、`src/mlq/trade/runner.py`、`src/mlq/alpha/trigger_runner.py`、`src/mlq/filter/runner.py`、`src/mlq/malf/mechanism_runner.py`、`src/mlq/malf/canonical_runner.py`、`src/mlq/structure/runner.py`、`src/mlq/alpha/runner.py`、`src/mlq/data/runner.py`、`tests/unit/data/test_data_runner.py`、`src/mlq/data/bootstrap.py`、`src/mlq/malf/runner.py`、`src/mlq/malf/bootstrap.py`、`src/mlq/alpha/family_runner.py` 与 `src/mlq/position/bootstrap.py`；当前 target backlog 已清零，本卡的 `pytest` 证据统一按串行命令登记，避免多个进程争用 `H:\Lifespan-temp\pytest-tmp`。
+8. `37` 卡收口时，每解决一项历史债务，都必须同步更新 `development_governance_legacy_backlog.py` 与 `37` 对应的 card / evidence / record / conclusion。
+9. 当前已完成的清债包括 `src/mlq/system/runner.py`、`src/mlq/trade/runner.py`、`src/mlq/alpha/trigger_runner.py`、`src/mlq/filter/runner.py`、`src/mlq/malf/mechanism_runner.py`、`src/mlq/malf/canonical_runner.py`、`src/mlq/structure/runner.py`、`src/mlq/alpha/runner.py`、`src/mlq/data/runner.py`、`tests/unit/data/test_data_runner.py`、`src/mlq/data/bootstrap.py`、`src/mlq/malf/runner.py`、`src/mlq/malf/bootstrap.py`、`src/mlq/alpha/family_runner.py` 与 `src/mlq/position/bootstrap.py`；当前 target backlog 已清零，`100-105` 已恢复为当前正式施工卡组，本卡的 `pytest` 证据统一按串行命令登记，避免多个进程争用 `H:\Lifespan-temp\pytest-tmp`。
 
 ## 建议阅读顺序
 

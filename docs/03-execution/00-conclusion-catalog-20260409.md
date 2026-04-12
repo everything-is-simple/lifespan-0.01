@@ -3,7 +3,7 @@
 日期：`2026-04-09`
 状态：`持续更新`
 
-当前最新生效结论锚点：`36-malf-wave-life-probability-sidecar-bootstrap-conclusion-20260412.md`
+当前最新生效结论锚点：`37-system-governance-historical-debt-backlog-burndown-conclusion-20260412.md`
 
 ## 正式结论目录
 
@@ -53,10 +53,10 @@
 
 ## 当前说明
 
-1. `36` 已成为当前最新生效结论锚点。
-2. `28` 仍是当前未收口的总治理主卡，当前待施工卡已推进到 `37`。
-3. `29-36` 已完成并生效，当前 `malf` downstream + sidecar 卡组已全部收口。
-4. `37` 先承担系统治理历史债务清账；`100-105` 顺延为后续 trade/system 卡组。
+1. `37` 已成为当前最新生效结论锚点。
+2. `37` 已完成收口，当前待施工卡已切换到 `100`。
+3. `29-37` 已完成并生效，`malf` downstream + sidecar 与系统治理清账卡组均已收口。
+4. `100-105` 顺延为后续 trade/system 卡组。
 
 ## 卡组进度图
 
