@@ -43,6 +43,7 @@
 34. `34-malf-multi-timeframe-downstream-consumption-conclusion-20260412.md`
 35. `35-downstream-data-grade-checkpoint-alignment-after-malf-conclusion-20260412.md`
 36. `36-malf-wave-life-probability-sidecar-bootstrap-conclusion-20260412.md`
+37. `37-system-governance-historical-debt-backlog-burndown-conclusion-20260412.md`
 100. `100-trade-signal-anchor-contract-freeze-conclusion-20260411.md`
 101. `101-position-entry-t-plus-1-open-reference-price-correction-conclusion-20260411.md`
 102. `102-trade-exit-pnl-ledger-bootstrap-conclusion-20260411.md`
@@ -53,9 +54,9 @@
 ## 当前说明
 
 1. `36` 已成为当前最新生效结论锚点。
-2. `28` 仍是当前未收口的总治理主卡，当前待施工卡已推进到 `100`。
+2. `28` 仍是当前未收口的总治理主卡，当前待施工卡已推进到 `37`。
 3. `29-36` 已完成并生效，当前 `malf` downstream + sidecar 卡组已全部收口。
-4. `100-105` 恢复为当前正式后续主线。
+4. `37` 先承担系统治理历史债务清账；`100-105` 顺延为后续 trade/system 卡组。
 
 ## 卡组进度图
 
@@ -76,8 +77,12 @@ flowchart LR
     subgraph malf下游主线
         C33[33-36 downstream+sidecar]
     end
+    subgraph 治理清账
+        C37[37 system governance]
+    end
     subgraph 后置恢复
         C100[100-105 trade/system]
     end
-    治理地基 --> 主链建立 --> data强化 --> malf收口 --> malf下游主线 --> 后置恢复
+    治理地基 --> 主链建立 --> data强化 --> malf收口 --> malf下游主线 --> 治理清账 --> 后置恢复
+```
 ```

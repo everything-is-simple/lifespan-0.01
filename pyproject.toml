@@ -30,6 +30,8 @@ addopts = "--basetemp=H:/Lifespan-temp/pytest-tmp"
 cache_dir = "H:/Lifespan-temp/pytest-cache"
 
 [tool.mlq.governance]
+# 全仓治理盘点允许通过 `scripts/system/development_governance_legacy_backlog.py` 显式登记历史债务，但按改动路径触发的严格检查不得豁免新增违规。
+# `scripts/malf/run_malf_wave_life_build.py` 的外部正式入口保持不变；实现可拆分为 `wave_life_runner.py` 与同目录 helper 模块。
 # 当前 malf 口径：`pivot-confirmed break` 与 `same-timeframe stats sidecar` 只属于只读机制层 sidecar，不得回写 `malf core`。
 execution_index_files = [
     "docs/03-execution/A-execution-reading-order-20260409.md",

@@ -1,4 +1,4 @@
-"""Cover minimal `trade_runtime` bootstrap contracts."""
+"""覆盖最小正式 `trade_runtime` bootstrap 契约。"""
 
 from __future__ import annotations
 

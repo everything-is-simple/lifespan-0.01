@@ -1,4 +1,4 @@
-"""Execute bounded official `position -> portfolio_plan` materialization."""
+"""执行正式 bounded 的 `position -> portfolio_plan` 物化。"""
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ DEFAULT_POSITION_SIZING_TABLE: Final[str] = "position_sizing_snapshot"
 
 @dataclass(frozen=True)
 class PortfolioPlanBuildSummary:
-    """Summarize one bounded `portfolio_plan` materialization run."""
+    """汇总一次 bounded `portfolio_plan` 物化运行。"""
 
     run_id: str
     runner_name: str
@@ -58,7 +58,7 @@ class PortfolioPlanBuildSummary:
     portfolio_plan_ledger_path: str
 
     def as_dict(self) -> dict[str, object]:
-        """Return a stable dictionary suitable for `summary_json`."""
+        """返回适合写入 `summary_json` 的稳定字典。"""
 
         return asdict(self)
 

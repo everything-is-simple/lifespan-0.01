@@ -1,4 +1,4 @@
-"""Freeze the minimal official `portfolio_plan` ledger tables and helpers."""
+"""冻结最小正式 `portfolio_plan` 账本表族与辅助入口。"""
 
 from __future__ import annotations
 

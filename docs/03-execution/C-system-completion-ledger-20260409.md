@@ -3,11 +3,11 @@
 日期：`2026-04-09`  
 状态：`持续更新`
 
-1. 当前下一锤：`100-trade-signal-anchor-contract-freeze-card-20260411.md`
-2. 当前待施工卡：`100-trade-signal-anchor-contract-freeze-card-20260411.md`
+1. 当前下一锤：`37-system-governance-historical-debt-backlog-burndown-card-20260412.md`
+2. 当前待施工卡：`37-system-governance-historical-debt-backlog-burndown-card-20260412.md`
 3. 正式主线剩余卡：`6`
 4. 可选 Sidecar 剩余卡：`0`
-5. 后置修复剩余卡：`0`
+5. 后置修复剩余卡：`1`
 
 ## 已完成主线
 
@@ -24,8 +24,8 @@
 
 1. 最新生效结论锚点已推进到 `36-malf-wave-life-probability-sidecar-bootstrap-conclusion-20260412.md`。
 2. 当前施工总卡仍是 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`，主题仍为“全模块 data-grade checkpoint + dirty queue 对齐”。
-3. `29-36` 已完成并生效；当前主线恢复到 `100-105` 的 trade/system 卡组。
-4. 当前主线待施工卡已调整为 `100-trade-signal-anchor-contract-freeze-card-20260411.md`。
+3. `29-36` 已完成并生效；当前由 `37` 作为系统治理清账卡承接，`100-105` 顺延为后续 trade/system 卡组。
+4. 当前主线待施工卡已调整为 `37-system-governance-historical-debt-backlog-burndown-card-20260412.md`。
 
 ## 完成阶段图
 
@@ -37,5 +37,7 @@ flowchart LR
     T14 --> D16["16-25 data/malf/system"]
     D16 --> M29["29-35 malf canonical downstream 已生效"]
     M29 --> M36["36 wave life sidecar 已生效"]
-    M36 --> NEXT["100 当前待施工"]
+    M36 --> NEXT["37 当前待施工"]
+    NEXT --> POST["100-105 后续恢复"]
+```
 ```

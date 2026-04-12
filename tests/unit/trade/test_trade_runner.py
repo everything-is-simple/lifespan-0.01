@@ -1,4 +1,4 @@
-"""Cover official bounded `portfolio_plan -> trade_runtime` materialization."""
+"""覆盖正式 bounded 的 `portfolio_plan -> trade_runtime` 物化。"""
 
 from __future__ import annotations
 

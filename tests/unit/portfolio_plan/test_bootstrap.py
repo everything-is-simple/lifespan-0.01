@@ -1,4 +1,4 @@
-"""Cover minimal `portfolio_plan` bootstrap contracts."""
+"""覆盖最小正式 `portfolio_plan` bootstrap 契约。"""
 
 from __future__ import annotations
 

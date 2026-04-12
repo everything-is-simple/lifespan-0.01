@@ -28,8 +28,8 @@
 ## 后续
 
 1. 当前最新生效结论锚点已推进到 `36-malf-wave-life-probability-sidecar-bootstrap-conclusion-20260412.md`。
-2. 当前待施工卡切换到 `100-trade-signal-anchor-contract-freeze-card-20260411.md`。
-3. `36` 已收口，`100-105` 的 trade/system 恢复卡组恢复为当前正式后续主线。
+2. 当前待施工卡切换到 `37-system-governance-historical-debt-backlog-burndown-card-20260412.md`。
+3. `36` 已收口，`37` 作为系统治理清账卡承接在后，`100-105` 的 trade/system 恢复卡组顺延为正式后续主线。
 
 ## 结论图
 
@@ -40,4 +40,5 @@ flowchart LR
     ST["same_level_stats fallback"] -. only if no completed sample .-> P
     P --> F["filter / alpha read-only input"]
     S --> F
+```
 ```

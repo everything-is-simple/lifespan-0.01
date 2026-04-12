@@ -1,4 +1,4 @@
-"""CLI entrypoint for bounded `portfolio_plan` materialization."""
+"""`portfolio_plan` 正式 bounded materialization 的 CLI 入口。"""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from mlq.portfolio_plan import (
 
 
 def build_argument_parser() -> argparse.ArgumentParser:
-    """Build the command-line parser."""
+    """构建命令行参数解析器。"""
 
     parser = argparse.ArgumentParser(
         description="Build official portfolio plan facts from bounded position inputs.",
@@ -40,7 +40,7 @@ def build_argument_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
-    """Parse CLI arguments and run the builder."""
+    """解析命令行参数并执行正式 builder。"""
 
     parser = build_argument_parser()
     args = parser.parse_args()

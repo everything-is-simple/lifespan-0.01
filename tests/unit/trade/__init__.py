@@ -1,1 +1,1 @@
-"""Unit tests for the official `trade` module."""
+"""`trade` 正式模块的单元测试包。"""

@@ -96,6 +96,7 @@ flowchart LR
 - `scripts/malf/run_malf_canonical_build.py`
 - `scripts/malf/run_malf_mechanism_build.py`
 - `scripts/malf/run_malf_wave_life_build.py`
+  - 正式脚本入口保持不变；实现允许拆分到 `src/mlq/malf/wave_life_runner.py` 与同目录 helper 模块 `wave_life_shared.py / wave_life_source.py / wave_life_materialization.py`，用于满足治理文件长度约束而不改变外部契约。
 - `scripts/structure/run_structure_snapshot_build.py`
 - `scripts/filter/run_filter_snapshot_build.py`
 - `scripts/alpha/run_alpha_trigger_ledger_build.py`
@@ -120,7 +121,7 @@ flowchart LR
   - `malf -> structure -> filter -> alpha` 默认消费 `adjust_method='backward'`
   - `position -> trade` 默认消费 `adjust_method='none'`
   - `forward` 当前只作研究与展示保留
-- 当前最新生效结论锚点已推进到 `36-malf-wave-life-probability-sidecar-bootstrap-conclusion-20260412.md`：`malf` 寿命概率 sidecar 已正式落地；当前治理锚点仍是 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`，当前具体待施工卡已推进到 `100-trade-signal-anchor-contract-freeze-card-20260411.md`，自然数顺排后的后续卡依次为 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`，其中 `29-36` 已完成并生效，`100-105` 为恢复推进的 trade/system 卡组
+- 当前最新生效结论锚点已推进到 `36-malf-wave-life-probability-sidecar-bootstrap-conclusion-20260412.md`：`malf` 寿命概率 sidecar 已正式落地；当前治理锚点仍是 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`，当前具体待施工卡已推进到 `37-system-governance-historical-debt-backlog-burndown-card-20260412.md`，自然数顺排后的后续卡依次为 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`，其中 `29-36` 已完成并生效，`37` 为系统治理清账卡，`100-105` 为恢复推进的 trade/system 卡组
 - `txt -> raw_market -> market_base` 继续保留为正式 fallback
 
 ## 当前 malf 正式口径
@@ -142,6 +143,7 @@ flowchart LR
   - 只读消费 `malf_wave_ledger / malf_state_snapshot / malf_same_level_stats`
   - 物化 `malf_wave_life_run / malf_wave_life_work_queue / malf_wave_life_checkpoint / malf_wave_life_snapshot / malf_wave_life_profile`
   - 默认无窗口调用走 canonical checkpoint 驱动的 queue/replay；显式窗口参数仍保留 bounded 补跑
+  - `wave life` 代码实现允许拆分为 runner + helper 模块，但脚本入口、表族命名与只读 sidecar 边界保持不变
 
 ## 当前 canonical downstream 默认绑定
 
@@ -171,6 +173,7 @@ flowchart LR
 4. 进入 `src/`、`scripts/`、`.codex/` 下的正式实现前，当前待施工卡必须通过 `python scripts/system/check_doc_first_gating_governance.py`
 5. 当前待施工卡必须显式填写 `历史账本约束` 六条声明：实体锚点、业务自然键、批量建仓、增量更新、断点续跑、审计账本
 6. 正式文档默认多用图：涉及模块边界、数据流、状态机、账本表族或施工顺序时，至少提供一张与正文一致的图，优先使用 Mermaid。
+7. 全仓 `python scripts/system/check_development_governance.py` 盘点允许通过 `scripts/system/development_governance_legacy_backlog.py` 登记历史债务；按改动路径触发的严格治理检查仍直接拦截新增违规。
 
 ## 建议阅读顺序
 

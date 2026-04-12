@@ -1,4 +1,4 @@
-"""`portfolio_plan` module owns minimal portfolio-level planning ledgers."""
+"""`portfolio_plan` 模块负责最小正式组合计划账本。"""
 
 from .bootstrap import (
     PORTFOLIO_PLAN_LEDGER_DDL,
