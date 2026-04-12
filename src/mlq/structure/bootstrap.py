@@ -11,12 +11,16 @@ from mlq.core.paths import WorkspaceRoots, default_settings
 
 
 STRUCTURE_RUN_TABLE: Final[str] = "structure_run"
+STRUCTURE_WORK_QUEUE_TABLE: Final[str] = "structure_work_queue"
+STRUCTURE_CHECKPOINT_TABLE: Final[str] = "structure_checkpoint"
 STRUCTURE_SNAPSHOT_TABLE: Final[str] = "structure_snapshot"
 STRUCTURE_RUN_SNAPSHOT_TABLE: Final[str] = "structure_run_snapshot"
 
 
 STRUCTURE_LEDGER_TABLE_NAMES: Final[tuple[str, ...]] = (
     STRUCTURE_RUN_TABLE,
+    STRUCTURE_WORK_QUEUE_TABLE,
+    STRUCTURE_CHECKPOINT_TABLE,
     STRUCTURE_SNAPSHOT_TABLE,
     STRUCTURE_RUN_SNAPSHOT_TABLE,
 )
@@ -38,6 +42,41 @@ STRUCTURE_LEDGER_DDL: Final[dict[str, str]] = {
             started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             completed_at TIMESTAMP,
             summary_json TEXT
+        )
+    """,
+    STRUCTURE_WORK_QUEUE_TABLE: """
+        CREATE TABLE IF NOT EXISTS structure_work_queue (
+            queue_nk TEXT PRIMARY KEY,
+            scope_nk TEXT NOT NULL,
+            asset_type TEXT NOT NULL,
+            code TEXT NOT NULL,
+            timeframe TEXT NOT NULL,
+            dirty_reason TEXT NOT NULL,
+            replay_start_bar_dt DATE,
+            replay_confirm_until_dt DATE,
+            source_fingerprint TEXT NOT NULL,
+            queue_status TEXT NOT NULL,
+            enqueued_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            claimed_at TIMESTAMP,
+            completed_at TIMESTAMP,
+            first_seen_run_id TEXT,
+            last_claimed_run_id TEXT,
+            last_materialized_run_id TEXT,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """,
+    STRUCTURE_CHECKPOINT_TABLE: """
+        CREATE TABLE IF NOT EXISTS structure_checkpoint (
+            asset_type TEXT NOT NULL,
+            code TEXT NOT NULL,
+            timeframe TEXT NOT NULL,
+            last_completed_bar_dt DATE,
+            tail_start_bar_dt DATE,
+            tail_confirm_until_dt DATE,
+            source_fingerprint TEXT NOT NULL,
+            last_run_id TEXT,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (asset_type, code, timeframe)
         )
     """,
     STRUCTURE_SNAPSHOT_TABLE: """
@@ -115,6 +154,36 @@ STRUCTURE_REQUIRED_COLUMNS: Final[dict[str, dict[str, str]]] = {
         "started_at": "TIMESTAMP",
         "completed_at": "TIMESTAMP",
         "summary_json": "TEXT",
+    },
+    STRUCTURE_WORK_QUEUE_TABLE: {
+        "queue_nk": "TEXT",
+        "scope_nk": "TEXT",
+        "asset_type": "TEXT",
+        "code": "TEXT",
+        "timeframe": "TEXT",
+        "dirty_reason": "TEXT",
+        "replay_start_bar_dt": "DATE",
+        "replay_confirm_until_dt": "DATE",
+        "source_fingerprint": "TEXT",
+        "queue_status": "TEXT",
+        "enqueued_at": "TIMESTAMP",
+        "claimed_at": "TIMESTAMP",
+        "completed_at": "TIMESTAMP",
+        "first_seen_run_id": "TEXT",
+        "last_claimed_run_id": "TEXT",
+        "last_materialized_run_id": "TEXT",
+        "updated_at": "TIMESTAMP",
+    },
+    STRUCTURE_CHECKPOINT_TABLE: {
+        "asset_type": "TEXT",
+        "code": "TEXT",
+        "timeframe": "TEXT",
+        "last_completed_bar_dt": "DATE",
+        "tail_start_bar_dt": "DATE",
+        "tail_confirm_until_dt": "DATE",
+        "source_fingerprint": "TEXT",
+        "last_run_id": "TEXT",
+        "updated_at": "TIMESTAMP",
     },
     STRUCTURE_SNAPSHOT_TABLE: {
         "structure_snapshot_nk": "TEXT",

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 
 import duckdb
@@ -153,6 +154,38 @@ def _seed_canonical_malf_state_rows(
             conn.execute(
                 """
                 INSERT INTO malf_state_snapshot VALUES (?, 'stock', ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                row,
+            )
+    finally:
+        conn.close()
+
+
+def _seed_canonical_malf_checkpoints(
+    malf_path: Path,
+    rows: list[tuple[object, ...]],
+) -> None:
+    conn = duckdb.connect(str(malf_path))
+    try:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS malf_canonical_checkpoint (
+                asset_type TEXT NOT NULL,
+                code TEXT NOT NULL,
+                timeframe TEXT NOT NULL,
+                last_completed_bar_dt DATE,
+                tail_start_bar_dt DATE,
+                tail_confirm_until_dt DATE,
+                last_wave_id BIGINT NOT NULL DEFAULT 0,
+                last_run_id TEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        for row in rows:
+            conn.execute(
+                """
+                INSERT INTO malf_canonical_checkpoint VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                 """,
                 row,
             )
@@ -440,3 +473,102 @@ def test_run_structure_snapshot_build_materializes_read_only_weekly_monthly_cont
         "state-m-001",
         "structure-snapshot-test-004b",
     )
+
+
+def test_run_structure_snapshot_build_uses_checkpoint_queue_by_default(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+    _seed_canonical_malf_state_rows(
+        settings.databases.malf,
+        [
+            ("state-d-q1", "000001.SZ", "D", "2026-04-08", "牛顺", "up", "none", 7, 2, 0),
+            ("state-w-q1", "000001.SZ", "W", "2026-04-04", "牛顺", "up", "expand", 3, 1, 0),
+            ("state-m-q1", "000001.SZ", "M", "2026-03-31", "牛逆", "down", "trigger", 1, 0, 1),
+        ],
+    )
+    _seed_canonical_malf_checkpoints(
+        settings.databases.malf,
+        [
+            ("stock", "000001.SZ", "D", "2026-04-08", "2026-04-08", "2026-04-08", 7, "malf-run-a"),
+            ("stock", "000001.SZ", "W", "2026-04-04", "2026-04-04", "2026-04-04", 3, "malf-run-a"),
+            ("stock", "000001.SZ", "M", "2026-03-31", "2026-03-31", "2026-03-31", 1, "malf-run-a"),
+        ],
+    )
+
+    first_summary = run_structure_snapshot_build(
+        settings=settings,
+        run_id="structure-snapshot-test-queue-001a",
+    )
+
+    assert first_summary.execution_mode == "checkpoint_queue"
+    assert first_summary.queue_claimed_count == 1
+    assert first_summary.checkpoint_upserted_count == 1
+
+    conn = duckdb.connect(str(settings.databases.malf))
+    try:
+        conn.execute(
+            """
+            UPDATE malf_state_snapshot
+            SET
+                major_state = '熊逆',
+                trend_direction = 'down',
+                reversal_stage = 'trigger',
+                current_hh_count = 0,
+                current_ll_count = 2
+            WHERE snapshot_nk = 'state-m-q1'
+            """
+        )
+        conn.execute(
+            """
+            UPDATE malf_canonical_checkpoint
+            SET last_run_id = 'malf-run-b', updated_at = CURRENT_TIMESTAMP
+            WHERE code = '000001.SZ' AND timeframe = 'M'
+            """
+        )
+    finally:
+        conn.close()
+
+    second_summary = run_structure_snapshot_build(
+        settings=settings,
+        run_id="structure-snapshot-test-queue-001b",
+    )
+
+    assert second_summary.execution_mode == "checkpoint_queue"
+    assert second_summary.queue_claimed_count == 1
+    assert second_summary.rematerialized_count == 1
+
+    conn = duckdb.connect(str(structure_ledger_path(settings)), read_only=True)
+    try:
+        queue_row = conn.execute(
+            """
+            SELECT queue_status
+            FROM structure_work_queue
+            WHERE code = '000001.SZ'
+            ORDER BY updated_at DESC
+            LIMIT 1
+            """
+        ).fetchone()
+        checkpoint_row = conn.execute(
+            """
+            SELECT last_run_id, tail_start_bar_dt, tail_confirm_until_dt
+            FROM structure_checkpoint
+            WHERE code = '000001.SZ' AND timeframe = 'D'
+            """
+        ).fetchone()
+        snapshot_row = conn.execute(
+            """
+            SELECT monthly_major_state, last_materialized_run_id
+            FROM structure_snapshot
+            WHERE instrument = '000001.SZ'
+            """
+        ).fetchone()
+    finally:
+        conn.close()
+
+    assert queue_row == ("completed",)
+    assert checkpoint_row == ("structure-snapshot-test-queue-001b", date(2026, 3, 31), date(2026, 4, 8))
+    assert snapshot_row == ("熊逆", "structure-snapshot-test-queue-001b")

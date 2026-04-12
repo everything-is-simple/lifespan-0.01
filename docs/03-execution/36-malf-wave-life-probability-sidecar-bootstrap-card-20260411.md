@@ -2,7 +2,7 @@
 
 卡片编号：`36`
 日期：`2026-04-11`
-状态：`待设计`
+状态：`待执行`
 
 ## 需求
 
@@ -20,7 +20,7 @@
 - 规格文档：
   - `docs/02-spec/modules/malf/13-malf-wave-life-probability-sidecar-spec-20260411.md`
 - 当前锚点结论：
-  - `docs/03-execution/32-downstream-truthfulness-revalidation-after-malf-canonicalization-conclusion-20260411.md`
+  - `docs/03-execution/35-downstream-data-grade-checkpoint-alignment-after-malf-conclusion-20260412.md`
 
 ## 分层图
 
@@ -57,25 +57,12 @@ flowchart LR
 
 ## 历史账本约束
 
-- 实体锚点：
-  - 明细快照以 `asset_type + code + timeframe` 为实体锚点。
-  - 聚合 profile 以 `timeframe + major_state + reversal_stage + sample_version` 为统计锚点。
-- 业务自然键：
-  - `malf_wave_life_snapshot` 建议使用 `asset_type + code + timeframe + asof_bar_dt`
-  - `malf_wave_life_profile` 建议使用 `timeframe + major_state + reversal_stage + metric_name + sample_version`
-- 批量建仓：
-  - 首次从 canonical `malf_wave_ledger / malf_state_snapshot / malf_same_level_stats` 全历史回放起建。
-  - 只读消费 canonical `malf` 正式表，不回读 bridge v1，不回写 `malf core`。
-- 增量更新：
-  - 每日仅对 source advanced 的 `asset_type + code + timeframe` 重算尾部。
-  - 已完成 wave 的统计样本只追加；活跃 wave 的寿命快照只更新最新窗口。
-- 断点续跑：
-  - 必须具备独立 `work_queue + checkpoint + tail replay`。
-  - checkpoint 至少声明 `last_completed_bar_dt / tail_start_bar_dt / tail_confirm_until_dt / last_sample_version`。
-- 审计账本：
-  - 至少落 `malf_wave_life_run / malf_wave_life_work_queue / malf_wave_life_checkpoint / malf_wave_life_snapshot`
-  - 如 profile 单独落表，再加 `malf_wave_life_profile`
-  - `run_id` 只做审计，不充当业务真值主键。
+- 实体锚点：明细快照以 `asset_type + code + timeframe` 为实体锚点；聚合 profile 以 `timeframe + major_state + reversal_stage + sample_version` 为统计锚点。
+- 业务自然键：`malf_wave_life_snapshot` 使用 `asset_type + code + timeframe + asof_bar_dt`；`malf_wave_life_profile` 使用 `timeframe + major_state + reversal_stage + metric_name + sample_version`。
+- 批量建仓：首次从 canonical `malf_wave_ledger / malf_state_snapshot / malf_same_level_stats` 全历史回放起建，只读消费 canonical `malf` 正式表，不回读 bridge v1，不回写 `malf core`。
+- 增量更新：每日仅对 source advanced 的 `asset_type + code + timeframe` 重算尾部；已完成 wave 的统计样本只追加，活跃 wave 的寿命快照只更新最新窗口。
+- 断点续跑：必须具备独立 `work_queue + checkpoint + tail replay`；checkpoint 至少声明 `last_completed_bar_dt / tail_start_bar_dt / tail_confirm_until_dt / last_sample_version`。
+- 审计账本：至少落 `malf_wave_life_run / malf_wave_life_work_queue / malf_wave_life_checkpoint / malf_wave_life_snapshot`；如 profile 单独落表，再加 `malf_wave_life_profile`；`run_id` 只做审计，不充当业务真值主键。
 
 ## 收口标准
 

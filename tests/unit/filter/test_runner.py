@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 
 import duckdb
@@ -126,6 +127,35 @@ def _seed_context_rows(malf_path: Path) -> None:
             ('state-001', 'stock', '000001.SZ', 'D', '2026-04-08', '牛顺', 'up', 'expand', 7, 2, 0)
             """
         )
+    finally:
+        conn.close()
+
+
+def _seed_structure_checkpoints(structure_path: Path, rows: list[tuple[object, ...]]) -> None:
+    conn = duckdb.connect(str(structure_path))
+    try:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS structure_checkpoint (
+                asset_type TEXT NOT NULL,
+                code TEXT NOT NULL,
+                timeframe TEXT NOT NULL,
+                last_completed_bar_dt DATE,
+                tail_start_bar_dt DATE,
+                tail_confirm_until_dt DATE,
+                source_fingerprint TEXT NOT NULL,
+                last_run_id TEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        for row in rows:
+            conn.execute(
+                """
+                INSERT INTO structure_checkpoint VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                """,
+                row,
+            )
     finally:
         conn.close()
 
@@ -328,3 +358,95 @@ def test_run_filter_snapshot_build_copies_read_only_multi_timeframe_context_with
         conn.close()
 
     assert second_row == (True, None, "熊逆", "ctx-m-002", "filter-snapshot-test-003b")
+
+
+def test_run_filter_snapshot_build_uses_checkpoint_queue_by_default(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+    _seed_structure_snapshots(settings)
+    _seed_context_rows(settings.databases.malf)
+    _seed_structure_checkpoints(
+        settings.databases.structure,
+        [
+            ("stock", "000001.SZ", "D", "2026-04-08", "2026-04-08", "2026-04-08", "structure-source-a", "structure-run-a"),
+            ("stock", "000002.SZ", "D", "2026-04-08", "2026-04-08", "2026-04-08", "structure-source-a", "structure-run-a"),
+        ],
+    )
+
+    first_summary = run_filter_snapshot_build(
+        settings=settings,
+        run_id="filter-snapshot-test-queue-001a",
+    )
+
+    assert first_summary.execution_mode == "checkpoint_queue"
+    assert first_summary.queue_claimed_count == 2
+    assert first_summary.checkpoint_upserted_count == 2
+
+    conn = duckdb.connect(str(settings.databases.structure))
+    try:
+        conn.execute(
+            """
+            UPDATE structure_snapshot
+            SET
+                monthly_major_state = '熊逆',
+                monthly_trend_direction = 'down',
+                monthly_reversal_stage = 'trigger',
+                monthly_source_context_nk = 'ctx-m-queue-002',
+                last_materialized_run_id = 'structure-run-b'
+            WHERE structure_snapshot_nk = 'ss-001'
+            """
+        )
+        conn.execute(
+            """
+            UPDATE structure_checkpoint
+            SET source_fingerprint = 'structure-source-b', last_run_id = 'structure-run-b', updated_at = CURRENT_TIMESTAMP
+            WHERE code = '000001.SZ'
+            """
+        )
+    finally:
+        conn.close()
+
+    second_summary = run_filter_snapshot_build(
+        settings=settings,
+        run_id="filter-snapshot-test-queue-001b",
+    )
+
+    assert second_summary.execution_mode == "checkpoint_queue"
+    assert second_summary.queue_claimed_count >= 1
+    assert second_summary.rematerialized_count >= 1
+
+    conn = duckdb.connect(str(filter_ledger_path(settings)), read_only=True)
+    try:
+        queue_row = conn.execute(
+            """
+            SELECT queue_status
+            FROM filter_work_queue
+            WHERE code = '000001.SZ'
+            ORDER BY updated_at DESC
+            LIMIT 1
+            """
+        ).fetchone()
+        checkpoint_row = conn.execute(
+            """
+            SELECT last_run_id, tail_start_bar_dt, tail_confirm_until_dt
+            FROM filter_checkpoint
+            WHERE code = '000001.SZ' AND timeframe = 'D'
+            """
+        ).fetchone()
+        snapshot_row = conn.execute(
+            """
+            SELECT monthly_major_state, last_materialized_run_id
+            FROM filter_snapshot
+            WHERE instrument = '000001.SZ'
+            """
+        ).fetchone()
+    finally:
+        conn.close()
+
+    assert queue_row == ("completed",)
+    assert checkpoint_row == ("filter-snapshot-test-queue-001b", date(2026, 4, 8), date(2026, 4, 8))
+    assert snapshot_row == ("熊逆", "filter-snapshot-test-queue-001b")

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 
 import duckdb
@@ -202,6 +203,35 @@ def _materialize_official_trigger(settings, *, suffix: str) -> None:
         signal_end_date="2026-04-08",
         run_id=f"alpha-trigger-upstream-test-{suffix}",
     )
+
+
+def _seed_filter_checkpoints(filter_path: Path, rows: list[tuple[object, ...]]) -> None:
+    conn = duckdb.connect(str(filter_path))
+    try:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS filter_checkpoint (
+                asset_type TEXT NOT NULL,
+                code TEXT NOT NULL,
+                timeframe TEXT NOT NULL,
+                last_completed_bar_dt DATE,
+                tail_start_bar_dt DATE,
+                tail_confirm_until_dt DATE,
+                source_fingerprint TEXT NOT NULL,
+                last_run_id TEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        for row in rows:
+            conn.execute(
+                """
+                INSERT INTO filter_checkpoint VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                """,
+                row,
+            )
+    finally:
+        conn.close()
 
 
 def test_run_alpha_trigger_build_materializes_run_event_and_official_context(
@@ -565,3 +595,130 @@ def test_run_alpha_formal_signal_build_outputs_event_consumable_by_position_runn
         conn.close()
 
     assert candidate_row == ("000001.SZ", "alpha-formal-signal-test-003")
+
+
+def test_run_alpha_trigger_and_formal_signal_use_checkpoint_queue_by_default(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+
+    _seed_trigger_source(
+        settings.databases.alpha,
+        [("000001.SZ", "2026-04-08", "2026-04-08", "PAS", "bof", "BOF")],
+    )
+    _seed_malf_sources(
+        settings.databases.malf,
+        context_rows=[
+            ("000001.SZ", "2026-04-08", "2026-04-08", "ctx-queue-001", "BULL_MAINSTREAM", 1, 4, "2026-04-08"),
+        ],
+        structure_rows=[
+            ("000001.SZ", "2026-04-08", "2026-04-08", 2, 0, 0.8, 0.7, False, None),
+        ],
+        higher_timeframe_rows=[
+            ("state-w-queue-001", "000001.SZ", "W", "2026-04-03", "牛顺", "up", "none", 3, 1, 0),
+            ("state-m-queue-001", "000001.SZ", "M", "2026-03-31", "牛逆", "down", "trigger", 1, 0, 1),
+        ],
+    )
+    _materialize_official_upstream(settings, suffix="queue-a")
+    _seed_filter_checkpoints(
+        settings.databases.filter,
+        [("stock", "000001.SZ", "D", "2026-04-08", "2026-04-08", "2026-04-08", "filter-source-a", "filter-run-a")],
+    )
+
+    trigger_summary = run_alpha_trigger_build(
+        settings=settings,
+        run_id="alpha-trigger-test-queue-001a",
+    )
+
+    assert trigger_summary.execution_mode == "checkpoint_queue"
+    assert trigger_summary.queue_claimed_count == 1
+    assert trigger_summary.checkpoint_upserted_count == 1
+
+    formal_summary = run_alpha_formal_signal_build(
+        settings=settings,
+        run_id="alpha-formal-signal-test-queue-001a",
+    )
+
+    assert formal_summary.execution_mode == "checkpoint_queue"
+    assert formal_summary.queue_claimed_count == 1
+    assert formal_summary.checkpoint_upserted_count == 1
+
+    conn = duckdb.connect(str(settings.databases.filter))
+    try:
+        conn.execute(
+            """
+            UPDATE filter_snapshot
+            SET
+                monthly_major_state = '熊逆',
+                monthly_reversal_stage = 'trigger',
+                monthly_source_context_nk = 'ctx-m-queue-002',
+                last_materialized_run_id = 'filter-run-b'
+            WHERE instrument = '000001.SZ'
+            """
+        )
+        conn.execute(
+            """
+            UPDATE filter_checkpoint
+            SET source_fingerprint = 'filter-source-b', last_run_id = 'filter-run-b', updated_at = CURRENT_TIMESTAMP
+            WHERE code = '000001.SZ'
+            """
+        )
+    finally:
+        conn.close()
+
+    second_trigger_summary = run_alpha_trigger_build(
+        settings=settings,
+        run_id="alpha-trigger-test-queue-001b",
+    )
+    second_formal_summary = run_alpha_formal_signal_build(
+        settings=settings,
+        run_id="alpha-formal-signal-test-queue-001b",
+    )
+
+    assert second_trigger_summary.rematerialized_count == 1
+    assert second_formal_summary.rematerialized_count == 1
+
+    conn = duckdb.connect(str(alpha_ledger_path(settings)), read_only=True)
+    try:
+        trigger_queue_row = conn.execute(
+            """
+            SELECT queue_status
+            FROM alpha_trigger_work_queue
+            WHERE code = '000001.SZ'
+            ORDER BY updated_at DESC
+            LIMIT 1
+            """
+        ).fetchone()
+        formal_queue_row = conn.execute(
+            """
+            SELECT queue_status
+            FROM alpha_formal_signal_work_queue
+            WHERE code = '000001.SZ'
+            ORDER BY updated_at DESC
+            LIMIT 1
+            """
+        ).fetchone()
+        trigger_checkpoint_row = conn.execute(
+            """
+            SELECT last_run_id, tail_start_bar_dt, tail_confirm_until_dt
+            FROM alpha_trigger_checkpoint
+            WHERE code = '000001.SZ' AND timeframe = 'D'
+            """
+        ).fetchone()
+        formal_checkpoint_row = conn.execute(
+            """
+            SELECT last_run_id, tail_start_bar_dt, tail_confirm_until_dt
+            FROM alpha_formal_signal_checkpoint
+            WHERE code = '000001.SZ' AND timeframe = 'D'
+            """
+        ).fetchone()
+    finally:
+        conn.close()
+
+    assert trigger_queue_row == ("completed",)
+    assert formal_queue_row == ("completed",)
+    assert trigger_checkpoint_row == ("alpha-trigger-test-queue-001b", date(2026, 4, 8), date(2026, 4, 8))
+    assert formal_checkpoint_row == ("alpha-formal-signal-test-queue-001b", date(2026, 4, 8), date(2026, 4, 8))

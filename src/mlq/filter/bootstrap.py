@@ -11,12 +11,16 @@ from mlq.core.paths import WorkspaceRoots, default_settings
 
 
 FILTER_RUN_TABLE: Final[str] = "filter_run"
+FILTER_WORK_QUEUE_TABLE: Final[str] = "filter_work_queue"
+FILTER_CHECKPOINT_TABLE: Final[str] = "filter_checkpoint"
 FILTER_SNAPSHOT_TABLE: Final[str] = "filter_snapshot"
 FILTER_RUN_SNAPSHOT_TABLE: Final[str] = "filter_run_snapshot"
 
 
 FILTER_LEDGER_TABLE_NAMES: Final[tuple[str, ...]] = (
     FILTER_RUN_TABLE,
+    FILTER_WORK_QUEUE_TABLE,
+    FILTER_CHECKPOINT_TABLE,
     FILTER_SNAPSHOT_TABLE,
     FILTER_RUN_SNAPSHOT_TABLE,
 )
@@ -38,6 +42,41 @@ FILTER_LEDGER_DDL: Final[dict[str, str]] = {
             started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             completed_at TIMESTAMP,
             summary_json TEXT
+        )
+    """,
+    FILTER_WORK_QUEUE_TABLE: """
+        CREATE TABLE IF NOT EXISTS filter_work_queue (
+            queue_nk TEXT PRIMARY KEY,
+            scope_nk TEXT NOT NULL,
+            asset_type TEXT NOT NULL,
+            code TEXT NOT NULL,
+            timeframe TEXT NOT NULL,
+            dirty_reason TEXT NOT NULL,
+            replay_start_bar_dt DATE,
+            replay_confirm_until_dt DATE,
+            source_fingerprint TEXT NOT NULL,
+            queue_status TEXT NOT NULL,
+            enqueued_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            claimed_at TIMESTAMP,
+            completed_at TIMESTAMP,
+            first_seen_run_id TEXT,
+            last_claimed_run_id TEXT,
+            last_materialized_run_id TEXT,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """,
+    FILTER_CHECKPOINT_TABLE: """
+        CREATE TABLE IF NOT EXISTS filter_checkpoint (
+            asset_type TEXT NOT NULL,
+            code TEXT NOT NULL,
+            timeframe TEXT NOT NULL,
+            last_completed_bar_dt DATE,
+            tail_start_bar_dt DATE,
+            tail_confirm_until_dt DATE,
+            source_fingerprint TEXT NOT NULL,
+            last_run_id TEXT,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (asset_type, code, timeframe)
         )
     """,
     FILTER_SNAPSHOT_TABLE: """
@@ -120,6 +159,36 @@ FILTER_REQUIRED_COLUMNS: Final[dict[str, dict[str, str]]] = {
         "started_at": "TIMESTAMP",
         "completed_at": "TIMESTAMP",
         "summary_json": "TEXT",
+    },
+    FILTER_WORK_QUEUE_TABLE: {
+        "queue_nk": "TEXT",
+        "scope_nk": "TEXT",
+        "asset_type": "TEXT",
+        "code": "TEXT",
+        "timeframe": "TEXT",
+        "dirty_reason": "TEXT",
+        "replay_start_bar_dt": "DATE",
+        "replay_confirm_until_dt": "DATE",
+        "source_fingerprint": "TEXT",
+        "queue_status": "TEXT",
+        "enqueued_at": "TIMESTAMP",
+        "claimed_at": "TIMESTAMP",
+        "completed_at": "TIMESTAMP",
+        "first_seen_run_id": "TEXT",
+        "last_claimed_run_id": "TEXT",
+        "last_materialized_run_id": "TEXT",
+        "updated_at": "TIMESTAMP",
+    },
+    FILTER_CHECKPOINT_TABLE: {
+        "asset_type": "TEXT",
+        "code": "TEXT",
+        "timeframe": "TEXT",
+        "last_completed_bar_dt": "DATE",
+        "tail_start_bar_dt": "DATE",
+        "tail_confirm_until_dt": "DATE",
+        "source_fingerprint": "TEXT",
+        "last_run_id": "TEXT",
+        "updated_at": "TIMESTAMP",
     },
     FILTER_SNAPSHOT_TABLE: {
         "filter_snapshot_nk": "TEXT",

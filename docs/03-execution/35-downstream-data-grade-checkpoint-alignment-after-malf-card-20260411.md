@@ -2,7 +2,7 @@
 
 卡片编号：`35`  
 日期：`2026-04-11`  
-状态：`待执行`
+状态：`已收口`
 
 ## 需求
 
@@ -60,6 +60,7 @@ flowchart LR
 
 ## 收口标准
 
-1. `structure / filter / alpha` 已具备正式 `queue / checkpoint / replay` 机制。
-2. 有证据证明下游增量范围服从 canonical `malf replay` 边界，而不是回退到全窗口重跑。
-3. `conclusion` 明确 `malf` 已升级为下游增量运转中心。
+1. `structure / filter / alpha` 已具备正式 `queue / checkpoint / replay` 机制，且默认无窗口运行已切到 data-grade queue 口径。
+2. 有证据证明下游增量范围服从 `malf -> structure -> filter -> alpha` 的 checkpoint/fingerprint 边界，而不是回退到全窗口重跑。
+3. `conclusion` 明确 `malf` 已升级为 downstream queue/fingerprint 的增量运转中心。
+4. 当前执行索引已推进到 `36-malf-wave-life-probability-sidecar-bootstrap-card-20260411.md`。

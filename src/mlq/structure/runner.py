@@ -13,14 +13,17 @@ import duckdb
 
 from mlq.core.paths import WorkspaceRoots, default_settings
 from mlq.malf.bootstrap import (
+    MALF_CANONICAL_CHECKPOINT_TABLE,
     MALF_STATE_SNAPSHOT_TABLE,
     PIVOT_CONFIRMED_BREAK_LEDGER_TABLE,
     SAME_TIMEFRAME_STATS_SNAPSHOT_TABLE,
 )
 from mlq.structure.bootstrap import (
+    STRUCTURE_CHECKPOINT_TABLE,
     STRUCTURE_RUN_SNAPSHOT_TABLE,
     STRUCTURE_RUN_TABLE,
     STRUCTURE_SNAPSHOT_TABLE,
+    STRUCTURE_WORK_QUEUE_TABLE,
     bootstrap_structure_snapshot_ledger,
     structure_ledger_path,
 )
@@ -36,15 +39,17 @@ DEFAULT_STRUCTURE_CONTRACT_VERSION: Final[str] = "structure-snapshot-v2"
 
 @dataclass(frozen=True)
 class StructureSnapshotBuildSummary:
-    """总结一次 `structure snapshot` producer 的 bounded 运行结果。"""
+    """总结一次 `structure snapshot` producer` 的运行结果。"""
 
     run_id: str
     runner_name: str
     runner_version: str
+    execution_mode: str
     structure_contract_version: str
     signal_start_date: str | None
     signal_end_date: str | None
     bounded_instrument_count: int
+    claimed_scope_count: int
     candidate_input_count: int
     materialized_snapshot_count: int
     inserted_count: int
@@ -55,6 +60,9 @@ class StructureSnapshotBuildSummary:
     stalled_count: int
     failed_count: int
     unknown_count: int
+    queue_enqueued_count: int
+    queue_claimed_count: int
+    checkpoint_upserted_count: int
     structure_ledger_path: str
     malf_ledger_path: str
     source_context_table: str
@@ -186,17 +194,89 @@ def run_structure_snapshot_build(
     runner_name: str = "structure_snapshot_builder",
     runner_version: str = "v1",
     summary_path: Path | None = None,
+    use_checkpoint_queue: bool | None = None,
 ) -> StructureSnapshotBuildSummary:
     """从官方 `malf` 上游物化 `structure snapshot`。"""
+
+    normalized_start_date = _coerce_date(signal_start_date)
+    normalized_end_date = _coerce_date(signal_end_date)
+    normalized_instruments = tuple(sorted({item for item in instruments or () if item}))
+    if _should_use_queue_execution(
+        use_checkpoint_queue=use_checkpoint_queue,
+        signal_start_date=normalized_start_date,
+        signal_end_date=normalized_end_date,
+        instruments=normalized_instruments,
+    ):
+        return _run_structure_queue_build(
+            settings=settings,
+            structure_path=structure_path,
+            malf_path=malf_path,
+            limit=limit,
+            batch_size=batch_size,
+            run_id=run_id,
+            source_context_table=source_context_table,
+            source_structure_input_table=source_structure_input_table,
+            source_break_confirmation_table=source_break_confirmation_table,
+            source_stats_table=source_stats_table,
+            source_timeframe=source_timeframe,
+            structure_contract_version=structure_contract_version,
+            runner_name=runner_name,
+            runner_version=runner_version,
+            summary_path=summary_path,
+        )
+    return _run_structure_bounded_build(
+        settings=settings,
+        structure_path=structure_path,
+        malf_path=malf_path,
+        signal_start_date=normalized_start_date,
+        signal_end_date=normalized_end_date,
+        instruments=normalized_instruments,
+        limit=limit,
+        batch_size=batch_size,
+        run_id=run_id,
+        source_context_table=source_context_table,
+        source_structure_input_table=source_structure_input_table,
+        source_break_confirmation_table=source_break_confirmation_table,
+        source_stats_table=source_stats_table,
+        source_timeframe=source_timeframe,
+        structure_contract_version=structure_contract_version,
+        runner_name=runner_name,
+        runner_version=runner_version,
+        summary_path=summary_path,
+    )
+
+
+def _run_structure_bounded_build(
+    *,
+    settings: WorkspaceRoots | None,
+    structure_path: Path | None,
+    malf_path: Path | None,
+    signal_start_date: date | None,
+    signal_end_date: date | None,
+    instruments: tuple[str, ...],
+    limit: int,
+    batch_size: int,
+    run_id: str | None,
+    source_context_table: str,
+    source_structure_input_table: str,
+    source_break_confirmation_table: str | None,
+    source_stats_table: str | None,
+    source_timeframe: str,
+    structure_contract_version: str,
+    runner_name: str,
+    runner_version: str,
+    summary_path: Path | None,
+) -> StructureSnapshotBuildSummary:
+    """执行显式 bounded window 物化。"""
 
     workspace = settings or default_settings()
     workspace.ensure_directories()
 
     resolved_structure_path = Path(structure_path or structure_ledger_path(workspace))
     resolved_malf_path = Path(malf_path or workspace.databases.malf)
-    normalized_start_date = _coerce_date(signal_start_date)
-    normalized_end_date = _coerce_date(signal_end_date)
-    normalized_instruments = tuple(sorted({item for item in instruments or () if item}))
+    normalized_start_date = signal_start_date
+    normalized_end_date = signal_end_date
+    normalized_instruments = instruments
     normalized_limit = max(int(limit), 1)
     normalized_batch_size = max(int(batch_size), 1)
     normalized_timeframe = _normalize_timeframe(source_timeframe)
@@ -325,6 +405,18 @@ def run_structure_snapshot_build(
         structure_connection.close()
 
 
+def _should_use_queue_execution(
+    *,
+    use_checkpoint_queue: bool | None,
+    signal_start_date: date | None,
+    signal_end_date: date | None,
+    instruments: tuple[str, ...],
+) -> bool:
+    if use_checkpoint_queue is not None:
+        return use_checkpoint_queue
+    return signal_start_date is None and signal_end_date is None and not instruments
+
+
 def _coerce_date(value: str | date | None) -> date | None:
     if value is None or value == "":
         return None
@@ -341,6 +433,604 @@ def _normalize_timeframe(value: str | None) -> str:
 def _build_structure_run_id() -> str:
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     return f"structure-snapshot-{timestamp}"
+
+
+def _run_structure_queue_build(
+    *,
+    settings: WorkspaceRoots | None,
+    structure_path: Path | None,
+    malf_path: Path | None,
+    limit: int,
+    batch_size: int,
+    run_id: str | None,
+    source_context_table: str,
+    source_structure_input_table: str,
+    source_break_confirmation_table: str | None,
+    source_stats_table: str | None,
+    source_timeframe: str,
+    structure_contract_version: str,
+    runner_name: str,
+    runner_version: str,
+    summary_path: Path | None,
+) -> StructureSnapshotBuildSummary:
+    """执行默认 data-grade queue/checkpoint 续跑。"""
+
+    workspace = settings or default_settings()
+    workspace.ensure_directories()
+
+    resolved_structure_path = Path(structure_path or structure_ledger_path(workspace))
+    resolved_malf_path = Path(malf_path or workspace.databases.malf)
+    normalized_limit = max(int(limit), 1)
+    normalized_batch_size = max(int(batch_size), 1)
+    normalized_timeframe = _normalize_timeframe(source_timeframe)
+    materialization_run_id = run_id or _build_structure_run_id()
+
+    _ensure_database_exists(resolved_malf_path, label="malf")
+    structure_connection = duckdb.connect(str(resolved_structure_path))
+    try:
+        bootstrap_structure_snapshot_ledger(workspace, connection=structure_connection)
+        dirty_scopes = _load_structure_dirty_scopes(
+            malf_path=resolved_malf_path,
+            limit=normalized_limit,
+            timeframe=normalized_timeframe,
+        )
+        enqueue_counts = _enqueue_structure_dirty_scopes(
+            connection=structure_connection,
+            scope_rows=dirty_scopes,
+            run_id=materialization_run_id,
+        )
+        claimed_scope_rows = _claim_structure_scopes(
+            connection=structure_connection,
+            run_id=materialization_run_id,
+            timeframe=normalized_timeframe,
+        )
+        actual_break_confirmation_table = _resolve_optional_sidecar_table(
+            malf_path=resolved_malf_path,
+            requested_table=source_break_confirmation_table,
+            fallback_table=None,
+        )
+        actual_stats_table = _resolve_optional_sidecar_table(
+            malf_path=resolved_malf_path,
+            requested_table=source_stats_table,
+            fallback_table=None,
+        )
+        _insert_run_row(
+            structure_connection,
+            run_id=materialization_run_id,
+            runner_name=runner_name,
+            runner_version=runner_version,
+            signal_start_date=None,
+            signal_end_date=None,
+            bounded_instrument_count=len({str(row["code"]) for row in claimed_scope_rows}),
+            source_context_table=source_context_table,
+            source_structure_input_table=source_structure_input_table,
+            structure_contract_version=structure_contract_version,
+        )
+
+        summary_counts = {
+            "candidate_input_count": 0,
+            "materialized_snapshot_count": 0,
+            "inserted_count": 0,
+            "reused_count": 0,
+            "rematerialized_count": 0,
+            "missing_context_count": 0,
+            "advancing_count": 0,
+            "stalled_count": 0,
+            "failed_count": 0,
+            "unknown_count": 0,
+        }
+        checkpoint_upserted_count = 0
+        for scope_row in claimed_scope_rows:
+            try:
+                scope_summary = _materialize_structure_scope(
+                    connection=structure_connection,
+                    run_id=materialization_run_id,
+                    malf_path=resolved_malf_path,
+                    instrument=str(scope_row["code"]),
+                    signal_start_date=_to_python_date(scope_row["replay_start_bar_dt"]),
+                    signal_end_date=_to_python_date(scope_row["replay_confirm_until_dt"]),
+                    limit=normalized_limit,
+                    batch_size=normalized_batch_size,
+                    source_context_table=source_context_table,
+                    source_structure_input_table=source_structure_input_table,
+                    source_break_confirmation_table=actual_break_confirmation_table,
+                    source_stats_table=actual_stats_table,
+                    source_timeframe=normalized_timeframe,
+                    structure_contract_version=structure_contract_version,
+                    runner_name=runner_name,
+                    runner_version=runner_version,
+                    structure_path=resolved_structure_path,
+                )
+                for key in summary_counts:
+                    summary_counts[key] += int(getattr(scope_summary, key))
+                _upsert_structure_checkpoint(
+                    structure_connection,
+                    asset_type=str(scope_row["asset_type"]),
+                    code=str(scope_row["code"]),
+                    timeframe=str(scope_row["timeframe"]),
+                    last_completed_bar_dt=_to_python_date(scope_row["replay_confirm_until_dt"]),
+                    tail_start_bar_dt=_to_python_date(scope_row["replay_start_bar_dt"]),
+                    tail_confirm_until_dt=_to_python_date(scope_row["replay_confirm_until_dt"]),
+                    source_fingerprint=str(scope_row["source_fingerprint"]),
+                    last_run_id=materialization_run_id,
+                )
+                checkpoint_upserted_count += 1
+                _mark_structure_queue_completed(
+                    structure_connection,
+                    queue_nk=str(scope_row["queue_nk"]),
+                    run_id=materialization_run_id,
+                )
+            except Exception:
+                _mark_structure_queue_failed(
+                    structure_connection,
+                    queue_nk=str(scope_row["queue_nk"]),
+                    run_id=materialization_run_id,
+                )
+                raise
+
+        summary = StructureSnapshotBuildSummary(
+            run_id=materialization_run_id,
+            runner_name=runner_name,
+            runner_version=runner_version,
+            execution_mode="checkpoint_queue",
+            structure_contract_version=structure_contract_version,
+            signal_start_date=None,
+            signal_end_date=None,
+            bounded_instrument_count=len({str(row["code"]) for row in claimed_scope_rows}),
+            claimed_scope_count=len(claimed_scope_rows),
+            candidate_input_count=summary_counts["candidate_input_count"],
+            materialized_snapshot_count=summary_counts["materialized_snapshot_count"],
+            inserted_count=summary_counts["inserted_count"],
+            reused_count=summary_counts["reused_count"],
+            rematerialized_count=summary_counts["rematerialized_count"],
+            missing_context_count=summary_counts["missing_context_count"],
+            advancing_count=summary_counts["advancing_count"],
+            stalled_count=summary_counts["stalled_count"],
+            failed_count=summary_counts["failed_count"],
+            unknown_count=summary_counts["unknown_count"],
+            queue_enqueued_count=enqueue_counts["queue_enqueued_count"],
+            queue_claimed_count=len(claimed_scope_rows),
+            checkpoint_upserted_count=checkpoint_upserted_count,
+            structure_ledger_path=str(resolved_structure_path),
+            malf_ledger_path=str(resolved_malf_path),
+            source_context_table=source_context_table,
+            source_structure_input_table=source_structure_input_table,
+            source_break_confirmation_table=actual_break_confirmation_table,
+            source_stats_table=actual_stats_table,
+            source_timeframe=normalized_timeframe,
+        )
+        _mark_run_completed(structure_connection, run_id=materialization_run_id, summary=summary)
+        _write_summary(summary, summary_path)
+        return summary
+    except Exception:
+        _update_run_summary(
+            structure_connection,
+            run_id=materialization_run_id,
+            run_status="failed",
+            summary_payload={"run_status": "failed"},
+        )
+        raise
+    finally:
+        structure_connection.close()
+
+
+def _load_structure_dirty_scopes(
+    *,
+    malf_path: Path,
+    limit: int,
+    timeframe: str,
+) -> list[dict[str, object]]:
+    connection = duckdb.connect(str(malf_path), read_only=True)
+    try:
+        rows = connection.execute(
+            f"""
+            SELECT asset_type, code, timeframe, last_completed_bar_dt, tail_start_bar_dt, tail_confirm_until_dt, last_run_id
+            FROM {MALF_CANONICAL_CHECKPOINT_TABLE}
+            WHERE timeframe IN ('D', 'W', 'M')
+            ORDER BY code, timeframe
+            """
+        ).fetchall()
+    finally:
+        connection.close()
+    grouped: dict[tuple[str, str], list[tuple[object, ...]]] = {}
+    for row in rows:
+        grouped.setdefault((str(row[0]), str(row[1])), []).append(row)
+    scope_rows: list[dict[str, object]] = []
+    for (asset_type, code), checkpoint_rows in sorted(grouped.items())[:limit]:
+        checkpoint_map = {str(row[2]): row for row in checkpoint_rows}
+        daily_row = checkpoint_map.get(timeframe)
+        if daily_row is None:
+            continue
+        replay_start_candidates = [
+            _to_python_date(row[4])
+            for row in checkpoint_rows
+            if _to_python_date(row[4]) is not None
+        ]
+        replay_end = _to_python_date(daily_row[3]) or max(
+            (_to_python_date(row[3]) for row in checkpoint_rows if _to_python_date(row[3]) is not None),
+            default=None,
+        )
+        if replay_end is None:
+            continue
+        source_fingerprint = _build_structure_source_fingerprint(checkpoint_rows)
+        scope_rows.append(
+            {
+                "scope_nk": _build_scope_nk(asset_type=asset_type, code=code, timeframe=timeframe),
+                "asset_type": asset_type,
+                "code": code,
+                "timeframe": timeframe,
+                "replay_start_bar_dt": min(replay_start_candidates) if replay_start_candidates else replay_end,
+                "replay_confirm_until_dt": replay_end,
+                "source_fingerprint": source_fingerprint,
+            }
+        )
+    return scope_rows
+
+
+def _build_structure_source_fingerprint(checkpoint_rows: list[tuple[object, ...]]) -> str:
+    payload = [
+        {
+            "timeframe": str(row[2]),
+            "last_completed_bar_dt": None if _to_python_date(row[3]) is None else _to_python_date(row[3]).isoformat(),
+            "tail_start_bar_dt": None if _to_python_date(row[4]) is None else _to_python_date(row[4]).isoformat(),
+            "tail_confirm_until_dt": None if _to_python_date(row[5]) is None else _to_python_date(row[5]).isoformat(),
+            "last_run_id": None if row[6] is None else str(row[6]),
+        }
+        for row in sorted(checkpoint_rows, key=lambda item: str(item[2]))
+    ]
+    return json.dumps(payload, ensure_ascii=False, sort_keys=True)
+
+
+def _enqueue_structure_dirty_scopes(
+    connection: duckdb.DuckDBPyConnection,
+    *,
+    scope_rows: list[dict[str, object]],
+    run_id: str,
+) -> dict[str, int]:
+    queue_enqueued_count = 0
+    for scope_row in scope_rows:
+        checkpoint_row = connection.execute(
+            f"""
+            SELECT last_completed_bar_dt, tail_start_bar_dt, tail_confirm_until_dt, source_fingerprint
+            FROM {STRUCTURE_CHECKPOINT_TABLE}
+            WHERE asset_type = ?
+              AND code = ?
+              AND timeframe = ?
+            """,
+            [scope_row["asset_type"], scope_row["code"], scope_row["timeframe"]],
+        ).fetchone()
+        replay_start = _to_python_date(scope_row["replay_start_bar_dt"])
+        replay_end = _to_python_date(scope_row["replay_confirm_until_dt"])
+        dirty_reason = _derive_structure_dirty_reason(
+            checkpoint_row=checkpoint_row,
+            replay_start_bar_dt=replay_start,
+            replay_confirm_until_dt=replay_end,
+            source_fingerprint=str(scope_row["source_fingerprint"]),
+        )
+        if dirty_reason is None:
+            continue
+        queue_nk = _build_queue_nk(scope_nk=str(scope_row["scope_nk"]), dirty_reason=dirty_reason)
+        existing = connection.execute(
+            f"SELECT queue_nk FROM {STRUCTURE_WORK_QUEUE_TABLE} WHERE queue_nk = ?",
+            [queue_nk],
+        ).fetchone()
+        if existing is None:
+            connection.execute(
+                f"""
+                INSERT INTO {STRUCTURE_WORK_QUEUE_TABLE} (
+                    queue_nk, scope_nk, asset_type, code, timeframe, dirty_reason,
+                    replay_start_bar_dt, replay_confirm_until_dt, source_fingerprint,
+                    queue_status, first_seen_run_id, last_materialized_run_id, updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, CURRENT_TIMESTAMP)
+                """,
+                [
+                    queue_nk,
+                    scope_row["scope_nk"],
+                    scope_row["asset_type"],
+                    scope_row["code"],
+                    scope_row["timeframe"],
+                    dirty_reason,
+                    replay_start,
+                    replay_end,
+                    scope_row["source_fingerprint"],
+                    run_id,
+                    run_id,
+                ],
+            )
+            queue_enqueued_count += 1
+            continue
+        connection.execute(
+            f"""
+            UPDATE {STRUCTURE_WORK_QUEUE_TABLE}
+            SET replay_start_bar_dt = ?,
+                replay_confirm_until_dt = ?,
+                source_fingerprint = ?,
+                queue_status = 'pending',
+                updated_at = CURRENT_TIMESTAMP
+            WHERE queue_nk = ?
+            """,
+            [replay_start, replay_end, scope_row["source_fingerprint"], queue_nk],
+        )
+    return {"queue_enqueued_count": queue_enqueued_count}
+
+
+def _derive_structure_dirty_reason(
+    *,
+    checkpoint_row: tuple[object, ...] | None,
+    replay_start_bar_dt: date | None,
+    replay_confirm_until_dt: date | None,
+    source_fingerprint: str,
+) -> str | None:
+    if checkpoint_row is None:
+        return "bootstrap_missing_checkpoint"
+    last_completed_bar_dt = _to_python_date(checkpoint_row[0])
+    tail_start_bar_dt = _to_python_date(checkpoint_row[1])
+    tail_confirm_until_dt = _to_python_date(checkpoint_row[2])
+    checkpoint_fingerprint = "" if checkpoint_row[3] is None else str(checkpoint_row[3])
+    if checkpoint_fingerprint != source_fingerprint:
+        return "source_fingerprint_changed"
+    if last_completed_bar_dt is None or (replay_confirm_until_dt is not None and replay_confirm_until_dt > last_completed_bar_dt):
+        return "source_advanced"
+    if tail_start_bar_dt is None or (replay_start_bar_dt is not None and replay_start_bar_dt < tail_start_bar_dt):
+        return "source_replayed"
+    if tail_confirm_until_dt is None or (replay_confirm_until_dt is not None and replay_confirm_until_dt > tail_confirm_until_dt):
+        return "tail_confirm_advanced"
+    return None
+
+
+def _claim_structure_scopes(
+    connection: duckdb.DuckDBPyConnection,
+    *,
+    run_id: str,
+    timeframe: str,
+) -> list[dict[str, object]]:
+    rows = connection.execute(
+        f"""
+        SELECT queue_nk, scope_nk, asset_type, code, timeframe, dirty_reason,
+               replay_start_bar_dt, replay_confirm_until_dt, source_fingerprint
+        FROM {STRUCTURE_WORK_QUEUE_TABLE}
+        WHERE timeframe = ?
+          AND queue_status IN ('pending', 'claimed', 'failed')
+        ORDER BY code, enqueued_at
+        """,
+        [timeframe],
+    ).fetchall()
+    claimed_rows: list[dict[str, object]] = []
+    for row in rows:
+        connection.execute(
+            f"""
+            UPDATE {STRUCTURE_WORK_QUEUE_TABLE}
+            SET queue_status = 'claimed',
+                claimed_at = CURRENT_TIMESTAMP,
+                last_claimed_run_id = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE queue_nk = ?
+            """,
+            [run_id, str(row[0])],
+        )
+        claimed_rows.append(
+            {
+                "queue_nk": str(row[0]),
+                "scope_nk": str(row[1]),
+                "asset_type": str(row[2]),
+                "code": str(row[3]),
+                "timeframe": str(row[4]),
+                "dirty_reason": str(row[5]),
+                "replay_start_bar_dt": _to_python_date(row[6]),
+                "replay_confirm_until_dt": _to_python_date(row[7]),
+                "source_fingerprint": str(row[8]),
+            }
+        )
+    return claimed_rows
+
+
+def _mark_structure_queue_completed(
+    connection: duckdb.DuckDBPyConnection,
+    *,
+    queue_nk: str,
+    run_id: str,
+) -> None:
+    connection.execute(
+        f"""
+        UPDATE {STRUCTURE_WORK_QUEUE_TABLE}
+        SET queue_status = 'completed',
+            completed_at = CURRENT_TIMESTAMP,
+            last_materialized_run_id = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE queue_nk = ?
+        """,
+        [run_id, queue_nk],
+    )
+
+
+def _mark_structure_queue_failed(
+    connection: duckdb.DuckDBPyConnection,
+    *,
+    queue_nk: str,
+    run_id: str,
+) -> None:
+    connection.execute(
+        f"""
+        UPDATE {STRUCTURE_WORK_QUEUE_TABLE}
+        SET queue_status = 'failed',
+            last_claimed_run_id = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE queue_nk = ?
+        """,
+        [run_id, queue_nk],
+    )
+
+
+def _upsert_structure_checkpoint(
+    connection: duckdb.DuckDBPyConnection,
+    *,
+    asset_type: str,
+    code: str,
+    timeframe: str,
+    last_completed_bar_dt: date | None,
+    tail_start_bar_dt: date | None,
+    tail_confirm_until_dt: date | None,
+    source_fingerprint: str,
+    last_run_id: str,
+) -> None:
+    existing = connection.execute(
+        f"""
+        SELECT asset_type
+        FROM {STRUCTURE_CHECKPOINT_TABLE}
+        WHERE asset_type = ?
+          AND code = ?
+          AND timeframe = ?
+        """,
+        [asset_type, code, timeframe],
+    ).fetchone()
+    if existing is None:
+        connection.execute(
+            f"""
+            INSERT INTO {STRUCTURE_CHECKPOINT_TABLE} (
+                asset_type, code, timeframe, last_completed_bar_dt, tail_start_bar_dt,
+                tail_confirm_until_dt, source_fingerprint, last_run_id, updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            """,
+            [asset_type, code, timeframe, last_completed_bar_dt, tail_start_bar_dt, tail_confirm_until_dt, source_fingerprint, last_run_id],
+        )
+        return
+    connection.execute(
+        f"""
+        UPDATE {STRUCTURE_CHECKPOINT_TABLE}
+        SET last_completed_bar_dt = ?,
+            tail_start_bar_dt = ?,
+            tail_confirm_until_dt = ?,
+            source_fingerprint = ?,
+            last_run_id = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE asset_type = ?
+          AND code = ?
+          AND timeframe = ?
+        """,
+        [last_completed_bar_dt, tail_start_bar_dt, tail_confirm_until_dt, source_fingerprint, last_run_id, asset_type, code, timeframe],
+    )
+
+
+def _materialize_structure_scope(
+    *,
+    connection: duckdb.DuckDBPyConnection,
+    run_id: str,
+    malf_path: Path,
+    instrument: str,
+    signal_start_date: date | None,
+    signal_end_date: date | None,
+    limit: int,
+    batch_size: int,
+    source_context_table: str,
+    source_structure_input_table: str,
+    source_break_confirmation_table: str | None,
+    source_stats_table: str | None,
+    source_timeframe: str,
+    structure_contract_version: str,
+    runner_name: str,
+    runner_version: str,
+    structure_path: Path,
+) -> StructureSnapshotBuildSummary:
+    actual_source_context_table = source_context_table
+    actual_source_input_table = source_structure_input_table
+    actual_break_confirmation_table = _resolve_optional_sidecar_table(
+        malf_path=malf_path,
+        requested_table=source_break_confirmation_table,
+        fallback_table=None,
+    )
+    actual_stats_table = _resolve_optional_sidecar_table(
+        malf_path=malf_path,
+        requested_table=source_stats_table,
+        fallback_table=None,
+    )
+    input_rows = _load_structure_input_rows(
+        malf_path=malf_path,
+        table_name=actual_source_input_table,
+        signal_start_date=signal_start_date,
+        signal_end_date=signal_end_date,
+        instruments=(instrument,),
+        limit=limit,
+        timeframe=source_timeframe,
+    )
+    context_rows = _load_context_rows(
+        malf_path=malf_path,
+        table_name=actual_source_context_table,
+        signal_start_date=signal_start_date,
+        signal_end_date=signal_end_date,
+        instruments=tuple(sorted({row.instrument for row in input_rows})),
+        timeframe=source_timeframe,
+    )
+    daily_context_map = {
+        (row.instrument, row.signal_date, row.asof_date): row
+        for row in context_rows
+    }
+    weekly_context_index = _build_context_series_index(
+        _load_read_only_context_rows(
+            malf_path=malf_path,
+            table_name=actual_source_context_table,
+            signal_end_date=signal_end_date,
+            instruments=tuple(sorted({row.instrument for row in input_rows})),
+            timeframe="W",
+        )
+    )
+    monthly_context_index = _build_context_series_index(
+        _load_read_only_context_rows(
+            malf_path=malf_path,
+            table_name=actual_source_context_table,
+            signal_end_date=signal_end_date,
+            instruments=tuple(sorted({row.instrument for row in input_rows})),
+            timeframe="M",
+        )
+    )
+    break_confirmation_map = _load_break_confirmation_rows(
+        malf_path=malf_path,
+        table_name=actual_break_confirmation_table,
+        signal_start_date=signal_start_date,
+        signal_end_date=signal_end_date,
+        instruments=tuple(sorted({row.instrument for row in input_rows})),
+        timeframe=source_timeframe,
+    )
+    stats_snapshot_map = _load_stats_snapshot_rows(
+        malf_path=malf_path,
+        table_name=actual_stats_table,
+        signal_start_date=signal_start_date,
+        signal_end_date=signal_end_date,
+        instruments=tuple(sorted({row.instrument for row in input_rows})),
+        timeframe=source_timeframe,
+    )
+    return _materialize_structure_rows(
+        connection=connection,
+        run_id=run_id,
+        input_rows=input_rows,
+        daily_context_map=daily_context_map,
+        weekly_context_index=weekly_context_index,
+        monthly_context_index=monthly_context_index,
+        break_confirmation_map=break_confirmation_map,
+        stats_snapshot_map=stats_snapshot_map,
+        structure_contract_version=structure_contract_version,
+        runner_name=runner_name,
+        runner_version=runner_version,
+        signal_start_date=signal_start_date,
+        signal_end_date=signal_end_date,
+        structure_path=structure_path,
+        malf_path=malf_path,
+        source_context_table=actual_source_context_table,
+        source_structure_input_table=actual_source_input_table,
+        source_break_confirmation_table=actual_break_confirmation_table,
+        source_stats_table=actual_stats_table,
+        source_timeframe=source_timeframe,
+        batch_size=batch_size,
+    )
+
+
+def _build_scope_nk(*, asset_type: str, code: str, timeframe: str) -> str:
+    return "|".join([asset_type, code, timeframe])
+
+
+def _build_queue_nk(*, scope_nk: str, dirty_reason: str) -> str:
+    return f"{scope_nk}|{dirty_reason}"
 
 
 def _ensure_database_exists(path: Path, *, label: str) -> None:
@@ -1127,10 +1817,12 @@ def _materialize_structure_rows(
         run_id=run_id,
         runner_name=runner_name,
         runner_version=runner_version,
+        execution_mode="bounded",
         structure_contract_version=structure_contract_version,
         signal_start_date=None if signal_start_date is None else signal_start_date.isoformat(),
         signal_end_date=None if signal_end_date is None else signal_end_date.isoformat(),
         bounded_instrument_count=len({row.instrument for row in input_rows}),
+        claimed_scope_count=len({row.instrument for row in input_rows}),
         candidate_input_count=len(input_rows),
         materialized_snapshot_count=materialized_snapshot_count,
         inserted_count=inserted_count,
@@ -1141,6 +1833,9 @@ def _materialize_structure_rows(
         stalled_count=stalled_count,
         failed_count=failed_count,
         unknown_count=unknown_count,
+        queue_enqueued_count=0,
+        queue_claimed_count=len({row.instrument for row in input_rows}),
+        checkpoint_upserted_count=0,
         structure_ledger_path=str(structure_path),
         malf_ledger_path=str(malf_path),
         source_context_table=source_context_table,
@@ -1695,6 +2390,16 @@ def _resolve_optional_column(available_columns: set[str], candidates: tuple[str,
 def _normalize_date_value(value: object, *, field_name: str) -> date:
     if value is None:
         raise ValueError(f"Missing required date field: {field_name}")
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    return datetime.fromisoformat(str(value)).date()
+
+
+def _to_python_date(value: object) -> date | None:
+    if value is None or value == "":
+        return None
     if isinstance(value, datetime):
         return value.date()
     if isinstance(value, date):

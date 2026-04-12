@@ -11,10 +11,14 @@ from mlq.core.paths import WorkspaceRoots, default_settings
 
 
 ALPHA_TRIGGER_RUN_TABLE: Final[str] = "alpha_trigger_run"
+ALPHA_TRIGGER_WORK_QUEUE_TABLE: Final[str] = "alpha_trigger_work_queue"
+ALPHA_TRIGGER_CHECKPOINT_TABLE: Final[str] = "alpha_trigger_checkpoint"
 ALPHA_TRIGGER_EVENT_TABLE: Final[str] = "alpha_trigger_event"
 ALPHA_TRIGGER_RUN_EVENT_TABLE: Final[str] = "alpha_trigger_run_event"
 
 ALPHA_FORMAL_SIGNAL_RUN_TABLE: Final[str] = "alpha_formal_signal_run"
+ALPHA_FORMAL_SIGNAL_WORK_QUEUE_TABLE: Final[str] = "alpha_formal_signal_work_queue"
+ALPHA_FORMAL_SIGNAL_CHECKPOINT_TABLE: Final[str] = "alpha_formal_signal_checkpoint"
 ALPHA_FORMAL_SIGNAL_EVENT_TABLE: Final[str] = "alpha_formal_signal_event"
 ALPHA_FORMAL_SIGNAL_RUN_EVENT_TABLE: Final[str] = "alpha_formal_signal_run_event"
 ALPHA_FAMILY_RUN_TABLE: Final[str] = "alpha_family_run"
@@ -24,6 +28,8 @@ ALPHA_FAMILY_RUN_EVENT_TABLE: Final[str] = "alpha_family_run_event"
 
 ALPHA_TRIGGER_LEDGER_TABLE_NAMES: Final[tuple[str, ...]] = (
     ALPHA_TRIGGER_RUN_TABLE,
+    ALPHA_TRIGGER_WORK_QUEUE_TABLE,
+    ALPHA_TRIGGER_CHECKPOINT_TABLE,
     ALPHA_TRIGGER_EVENT_TABLE,
     ALPHA_TRIGGER_RUN_EVENT_TABLE,
 )
@@ -31,6 +37,8 @@ ALPHA_TRIGGER_LEDGER_TABLE_NAMES: Final[tuple[str, ...]] = (
 
 ALPHA_FORMAL_SIGNAL_LEDGER_TABLE_NAMES: Final[tuple[str, ...]] = (
     ALPHA_FORMAL_SIGNAL_RUN_TABLE,
+    ALPHA_FORMAL_SIGNAL_WORK_QUEUE_TABLE,
+    ALPHA_FORMAL_SIGNAL_CHECKPOINT_TABLE,
     ALPHA_FORMAL_SIGNAL_EVENT_TABLE,
     ALPHA_FORMAL_SIGNAL_RUN_EVENT_TABLE,
 )
@@ -69,6 +77,41 @@ ALPHA_LEDGER_DDL: Final[dict[str, str]] = {
             completed_at TIMESTAMP,
             summary_json TEXT,
             notes TEXT
+        )
+    """,
+    ALPHA_TRIGGER_WORK_QUEUE_TABLE: """
+        CREATE TABLE IF NOT EXISTS alpha_trigger_work_queue (
+            queue_nk TEXT PRIMARY KEY,
+            scope_nk TEXT NOT NULL,
+            asset_type TEXT NOT NULL,
+            code TEXT NOT NULL,
+            timeframe TEXT NOT NULL,
+            dirty_reason TEXT NOT NULL,
+            replay_start_bar_dt DATE,
+            replay_confirm_until_dt DATE,
+            source_fingerprint TEXT NOT NULL,
+            queue_status TEXT NOT NULL,
+            enqueued_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            claimed_at TIMESTAMP,
+            completed_at TIMESTAMP,
+            first_seen_run_id TEXT,
+            last_claimed_run_id TEXT,
+            last_materialized_run_id TEXT,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """,
+    ALPHA_TRIGGER_CHECKPOINT_TABLE: """
+        CREATE TABLE IF NOT EXISTS alpha_trigger_checkpoint (
+            asset_type TEXT NOT NULL,
+            code TEXT NOT NULL,
+            timeframe TEXT NOT NULL,
+            last_completed_bar_dt DATE,
+            tail_start_bar_dt DATE,
+            tail_confirm_until_dt DATE,
+            source_fingerprint TEXT NOT NULL,
+            last_run_id TEXT,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (asset_type, code, timeframe)
         )
     """,
     ALPHA_TRIGGER_EVENT_TABLE: """
@@ -125,6 +168,41 @@ ALPHA_LEDGER_DDL: Final[dict[str, str]] = {
             completed_at TIMESTAMP,
             summary_json TEXT,
             notes TEXT
+        )
+    """,
+    ALPHA_FORMAL_SIGNAL_WORK_QUEUE_TABLE: """
+        CREATE TABLE IF NOT EXISTS alpha_formal_signal_work_queue (
+            queue_nk TEXT PRIMARY KEY,
+            scope_nk TEXT NOT NULL,
+            asset_type TEXT NOT NULL,
+            code TEXT NOT NULL,
+            timeframe TEXT NOT NULL,
+            dirty_reason TEXT NOT NULL,
+            replay_start_bar_dt DATE,
+            replay_confirm_until_dt DATE,
+            source_fingerprint TEXT NOT NULL,
+            queue_status TEXT NOT NULL,
+            enqueued_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            claimed_at TIMESTAMP,
+            completed_at TIMESTAMP,
+            first_seen_run_id TEXT,
+            last_claimed_run_id TEXT,
+            last_materialized_run_id TEXT,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """,
+    ALPHA_FORMAL_SIGNAL_CHECKPOINT_TABLE: """
+        CREATE TABLE IF NOT EXISTS alpha_formal_signal_checkpoint (
+            asset_type TEXT NOT NULL,
+            code TEXT NOT NULL,
+            timeframe TEXT NOT NULL,
+            last_completed_bar_dt DATE,
+            tail_start_bar_dt DATE,
+            tail_confirm_until_dt DATE,
+            source_fingerprint TEXT NOT NULL,
+            last_run_id TEXT,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (asset_type, code, timeframe)
         )
     """,
     ALPHA_FORMAL_SIGNAL_EVENT_TABLE: """
@@ -247,6 +325,36 @@ ALPHA_FORMAL_SIGNAL_REQUIRED_COLUMNS: Final[dict[str, dict[str, str]]] = {
         "summary_json": "TEXT",
         "notes": "TEXT",
     },
+    ALPHA_TRIGGER_WORK_QUEUE_TABLE: {
+        "queue_nk": "TEXT",
+        "scope_nk": "TEXT",
+        "asset_type": "TEXT",
+        "code": "TEXT",
+        "timeframe": "TEXT",
+        "dirty_reason": "TEXT",
+        "replay_start_bar_dt": "DATE",
+        "replay_confirm_until_dt": "DATE",
+        "source_fingerprint": "TEXT",
+        "queue_status": "TEXT",
+        "enqueued_at": "TIMESTAMP",
+        "claimed_at": "TIMESTAMP",
+        "completed_at": "TIMESTAMP",
+        "first_seen_run_id": "TEXT",
+        "last_claimed_run_id": "TEXT",
+        "last_materialized_run_id": "TEXT",
+        "updated_at": "TIMESTAMP",
+    },
+    ALPHA_TRIGGER_CHECKPOINT_TABLE: {
+        "asset_type": "TEXT",
+        "code": "TEXT",
+        "timeframe": "TEXT",
+        "last_completed_bar_dt": "DATE",
+        "tail_start_bar_dt": "DATE",
+        "tail_confirm_until_dt": "DATE",
+        "source_fingerprint": "TEXT",
+        "last_run_id": "TEXT",
+        "updated_at": "TIMESTAMP",
+    },
     ALPHA_TRIGGER_EVENT_TABLE: {
         "trigger_event_nk": "TEXT",
         "instrument": "TEXT",
@@ -295,6 +403,36 @@ ALPHA_FORMAL_SIGNAL_REQUIRED_COLUMNS: Final[dict[str, dict[str, str]]] = {
         "completed_at": "TIMESTAMP",
         "summary_json": "TEXT",
         "notes": "TEXT",
+    },
+    ALPHA_FORMAL_SIGNAL_WORK_QUEUE_TABLE: {
+        "queue_nk": "TEXT",
+        "scope_nk": "TEXT",
+        "asset_type": "TEXT",
+        "code": "TEXT",
+        "timeframe": "TEXT",
+        "dirty_reason": "TEXT",
+        "replay_start_bar_dt": "DATE",
+        "replay_confirm_until_dt": "DATE",
+        "source_fingerprint": "TEXT",
+        "queue_status": "TEXT",
+        "enqueued_at": "TIMESTAMP",
+        "claimed_at": "TIMESTAMP",
+        "completed_at": "TIMESTAMP",
+        "first_seen_run_id": "TEXT",
+        "last_claimed_run_id": "TEXT",
+        "last_materialized_run_id": "TEXT",
+        "updated_at": "TIMESTAMP",
+    },
+    ALPHA_FORMAL_SIGNAL_CHECKPOINT_TABLE: {
+        "asset_type": "TEXT",
+        "code": "TEXT",
+        "timeframe": "TEXT",
+        "last_completed_bar_dt": "DATE",
+        "tail_start_bar_dt": "DATE",
+        "tail_confirm_until_dt": "DATE",
+        "source_fingerprint": "TEXT",
+        "last_run_id": "TEXT",
+        "updated_at": "TIMESTAMP",
     },
     ALPHA_FORMAL_SIGNAL_EVENT_TABLE: {
         "signal_nk": "TEXT",
