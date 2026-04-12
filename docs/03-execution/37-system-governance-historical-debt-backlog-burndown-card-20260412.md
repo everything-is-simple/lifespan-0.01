@@ -41,6 +41,7 @@
 14. `src/mlq/data/runner.py` 已拆分为 formal orchestrator + `data_shared / data_common / data_raw_support / data_raw_runner / data_tdxquant / data_market_base_scope / data_market_base_materialization / data_market_base_runner`。
 15. `tests/unit/data/test_data_runner.py` 已拆分为 `test_raw_ingest_runner.py / test_tdxquant_runner.py / test_market_base_runner.py`。
 16. `src/mlq/data/bootstrap.py` 已抽出 `data_bootstrap_maintenance.py`，正式入口、路径契约、DDL 和 cleanup 行为保持不变，并已跌回目标线内。
+17. `src/mlq/malf/runner.py` 已拆分为 bridge v1 bounded orchestrator + `snapshot_shared / snapshot_source / snapshot_materialization`，外部脚本入口与 bridge v1 表族契约保持不变。
 
 ## 当前债务台账
 1. `LEGACY_HARD_OVERSIZE_BACKLOG`
@@ -48,7 +49,6 @@
 2. `LEGACY_TARGET_OVERSIZE_BACKLOG`
 - `src/mlq/alpha/family_runner.py`
 - `src/mlq/malf/bootstrap.py`
-- `src/mlq/malf/runner.py`
 - `src/mlq/position/bootstrap.py`
 
 ## 实现边界
@@ -84,8 +84,8 @@
 
 ## 当前进度
 1. 基线登记、工具纠偏、hard backlog 清零已经完成。
-2. 当前剩余治理债务仅为 `LEGACY_TARGET_OVERSIZE_BACKLOG` 四项。
-3. 下一步按顺序进入 `src/mlq/malf/runner.py` 或 `src/mlq/malf/bootstrap.py` 的 target backlog 收敛。
+2. 当前剩余治理债务仅为 `LEGACY_TARGET_OVERSIZE_BACKLOG` 三项。
+3. 下一步按顺序进入 `src/mlq/malf/bootstrap.py` 或 `src/mlq/alpha/family_runner.py` 的 target backlog 收敛。
 
 ## 卡片结构图
 ```mermaid

@@ -45,7 +45,7 @@ system_tracker_files = [
     "docs/02-spec/β-system-roadmap-and-progress-tracker-spec-20260409.md",
     "docs/02-spec/Ω-system-delivery-roadmap-20260409.md",
 ]
-# 当前最新生效结论已推进到 36；当前待施工卡已推进到 37，且已清掉 `src/mlq/system/runner.py`、`src/mlq/trade/runner.py`、`src/mlq/alpha/trigger_runner.py`、`src/mlq/filter/runner.py`、`src/mlq/malf/mechanism_runner.py`、`src/mlq/malf/canonical_runner.py`、`src/mlq/structure/runner.py`、`src/mlq/alpha/runner.py`、`src/mlq/data/runner.py` 与 `tests/unit/data/test_data_runner.py` 十项历史硬超长债务；`structure / filter / alpha` 已对齐 canonical `malf` 与寿命 sidecar，`100-105` 仍作为后续 trade/system 卡组，`position / trade` 的正式执行口径固定为 `adjust_method='none'`。
+# 当前最新生效结论已推进到 36；当前待施工卡已推进到 37，且已清掉 `src/mlq/system/runner.py`、`src/mlq/trade/runner.py`、`src/mlq/alpha/trigger_runner.py`、`src/mlq/filter/runner.py`、`src/mlq/malf/mechanism_runner.py`、`src/mlq/malf/canonical_runner.py`、`src/mlq/structure/runner.py`、`src/mlq/alpha/runner.py`、`src/mlq/data/runner.py`、`tests/unit/data/test_data_runner.py`、`src/mlq/data/bootstrap.py` 与 `src/mlq/malf/runner.py`；当前 `LEGACY_TARGET_OVERSIZE_BACKLOG` 剩 `3` 项。`structure / filter / alpha` 已对齐 canonical `malf` 与寿命 sidecar，`100-105` 仍作为后续 trade/system 卡组，`position / trade` 的正式执行口径固定为 `adjust_method='none'`。
 # `37` 卡的 pytest 证据统一按串行命令执行，避免多个进程争用 `H:/Lifespan-temp/pytest-tmp`。
 formal_runner_scripts = [
     "scripts/data/run_tdx_asset_raw_ingest.py",

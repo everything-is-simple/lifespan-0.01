@@ -18,4 +18,7 @@
 14. 通过 `py_compile`、改动路径治理检查与 `data` 串行单测，确认 `src/mlq/data/runner.py` 与 `tests/unit/data/test_data_runner.py` 可从历史 hard backlog 移除。
 15. 将 `src/mlq/data/bootstrap.py` 的 cleanup / deduplicate / constraint repair helper 抽到 `src/mlq/data/data_bootstrap_maintenance.py`，保持正式入口与表族契约不变。
 16. 通过 `py_compile`、按路径治理检查与 `data` 串行单测，确认 `src/mlq/data/bootstrap.py` 可从 `LEGACY_TARGET_OVERSIZE_BACKLOG` 移除。
-17. 回填 `37` 的 card / evidence / record / conclusion、入口文件与 backlog 台账，使当前正式口径回到“hard backlog 已清零、target backlog 剩余 4 项”。
+17. 将 `src/mlq/malf/runner.py` 拆分为 bridge v1 bounded orchestrator + `snapshot_shared / snapshot_source / snapshot_materialization`，保持 `run_malf_snapshot_build` 外部入口、bridge v1 表族契约与兼容输出语义不变。
+18. 通过 `py_compile` 确认 `src/mlq/malf/runner.py` 与新增 helper 模块可稳定落盘并通过基础语法门禁。
+19. 通过按路径治理检查、全仓治理检查、doc-first gating、执行索引检查与 `tests/unit/malf/test_malf_runner.py` 串行单测，确认 `src/mlq/malf/runner.py` 可从 `LEGACY_TARGET_OVERSIZE_BACKLOG` 移除。
+20. 回填 `37` 的 card / evidence / record / conclusion、入口文件与 backlog 台账，使当前正式口径回到“hard backlog 已清零、target backlog 剩余 3 项”。

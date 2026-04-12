@@ -9,7 +9,6 @@ LEGACY_HARD_OVERSIZE_BACKLOG: tuple[str, ...] = ()
 LEGACY_TARGET_OVERSIZE_BACKLOG: tuple[str, ...] = (
     "src/mlq/alpha/family_runner.py",
     "src/mlq/malf/bootstrap.py",
-    "src/mlq/malf/runner.py",
     "src/mlq/position/bootstrap.py",
 )
 
