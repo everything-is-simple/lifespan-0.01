@@ -31,6 +31,8 @@ python -m py_compile src/mlq/structure/runner.py src/mlq/structure/structure_sha
 python scripts/system/check_development_governance.py src/mlq/structure/runner.py src/mlq/structure/structure_shared.py src/mlq/structure/structure_source.py src/mlq/structure/structure_query.py src/mlq/structure/structure_materialization.py tests/unit/structure/test_runner.py
 pytest tests/unit/structure/test_runner.py -q
 pytest tests/unit/alpha/test_runner.py tests/unit/structure/test_runner.py -q
+python -m py_compile src/mlq/alpha/runner.py src/mlq/alpha/formal_signal_shared.py src/mlq/alpha/formal_signal_source.py src/mlq/alpha/formal_signal_materialization.py
+pytest tests/unit/alpha/test_runner.py -q
 ```
 
 ## 关键结果
@@ -45,7 +47,8 @@ pytest tests/unit/alpha/test_runner.py tests/unit/structure/test_runner.py -q
 - `canonical runner` 已拆成 `runner + canonical_shared + canonical_source + canonical_materialization` 四段，`src/mlq/malf/canonical_runner.py` 收缩到 237 行，现有 `malf canonical` 单测 `2 passed`。
 - `structure runner` 已拆成 `runner + structure_shared + structure_source + structure_query + structure_materialization` 五段，`src/mlq/structure/runner.py` 收缩到 434 行，现有 `structure` 单测 `5 passed`。
 - `structure` 拆分后继续通过下游联动验证：`pytest tests/unit/alpha/test_runner.py tests/unit/structure/test_runner.py -q` 串行 `11 passed`。
-- 当前 `LEGACY_HARD_OVERSIZE_BACKLOG` 已累计减少 7 项；`src/mlq/system/runner.py`、`src/mlq/trade/runner.py`、`src/mlq/alpha/trigger_runner.py`、`src/mlq/filter/runner.py`、`src/mlq/malf/mechanism_runner.py`、`src/mlq/malf/canonical_runner.py` 与 `src/mlq/structure/runner.py` 均可从历史硬超长 backlog 移除。
+- `alpha formal signal runner` 已拆成 `runner + formal_signal_shared + formal_signal_source + formal_signal_materialization` 四段，`src/mlq/alpha/runner.py` 收缩到 363 行，现有 `alpha` 单测 `6 passed`。
+- 当前 `LEGACY_HARD_OVERSIZE_BACKLOG` 已累计减少 8 项；`src/mlq/system/runner.py`、`src/mlq/trade/runner.py`、`src/mlq/alpha/trigger_runner.py`、`src/mlq/filter/runner.py`、`src/mlq/malf/mechanism_runner.py`、`src/mlq/malf/canonical_runner.py`、`src/mlq/structure/runner.py` 与 `src/mlq/alpha/runner.py` 均可从历史硬超长 backlog 移除。
 - `37` 卡的 `pytest` 证据统一按串行口径执行，避免多个进程争用 `H:\Lifespan-temp\pytest-tmp`。
 
 ## 产物

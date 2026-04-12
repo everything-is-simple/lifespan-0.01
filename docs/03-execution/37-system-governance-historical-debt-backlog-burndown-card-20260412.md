@@ -45,11 +45,12 @@
 9. `src/mlq/filter/runner.py` 已拆分为 bounded/queue orchestrator + `filter_shared / filter_source / filter_materialization` helper 模块，并通过现有 `filter` 单测验证，可以从历史超长白名单移除。
 10. `src/mlq/malf/mechanism_runner.py` 已拆分为 bounded orchestrator + `mechanism_shared / mechanism_source / mechanism_materialization` helper 模块，并通过现有 `malf mechanism` 单测验证，可以从历史超长白名单移除。
 11. `src/mlq/malf/canonical_runner.py` 已拆分为 bounded orchestrator + `canonical_shared / canonical_source / canonical_materialization` helper 模块，并通过现有 `malf canonical` 单测验证，可以从历史超长白名单移除。
+12. `src/mlq/structure/runner.py` 已拆分为 bounded/queue orchestrator + `structure_shared / structure_source / structure_query / structure_materialization` helper 模块，并通过现有 `structure` 单测验证，可以从历史超长白名单移除。
+13. `src/mlq/alpha/runner.py` 已拆分为 bounded/queue orchestrator + `formal_signal_shared / formal_signal_source / formal_signal_materialization` helper 模块，并通过现有 `alpha` 单测验证，可以从历史超长白名单移除。
 
 ### 待解决历史债务
 
 1. `LEGACY_HARD_OVERSIZE_BACKLOG`
-   - `src/mlq/alpha/runner.py`
    - `src/mlq/data/runner.py`
    - `tests/unit/data/test_data_runner.py`
 2. `LEGACY_TARGET_OVERSIZE_BACKLOG`
@@ -107,7 +108,8 @@
 6. 已完成 `src/mlq/malf/mechanism_runner.py` 拆分，当前正式入口仍保持不变，新增 `mechanism_shared / mechanism_source / mechanism_materialization` 三个 helper 模块承接共享结构、桥接输入读取与 sidecar 落表职责。
 7. 已完成 `src/mlq/malf/canonical_runner.py` 拆分，当前正式入口仍保持不变，新增 `canonical_shared / canonical_source / canonical_materialization` 三个 helper 模块承接共享结构、上游行情读取与 canonical 物化职责。
 8. 已完成 `src/mlq/structure/runner.py` 拆分，当前正式入口仍保持不变，新增 `structure_shared / structure_source / structure_query / structure_materialization` 四个 helper 模块承接共享结构、上游读取、列解析与 sidecar 查询、脏队列/checkpoint 与落表物化职责。
-9. 后续继续按 `LEGACY_HARD_OVERSIZE_BACKLOG` 顺序清理剩余历史债务。
+9. 已完成 `src/mlq/alpha/runner.py` 拆分，当前正式入口仍保持不变，新增 `formal_signal_shared / formal_signal_source / formal_signal_materialization` 三个 helper 模块承接共享结构、官方上游读取、脏队列/checkpoint 与落表物化职责。
+10. 后续继续按 `LEGACY_HARD_OVERSIZE_BACKLOG` 顺序清理剩余历史债务。
 
 ## 卡片结构图
 

@@ -5,7 +5,6 @@
 """
 
 LEGACY_HARD_OVERSIZE_BACKLOG: tuple[str, ...] = (
-    "src/mlq/alpha/runner.py",
     "src/mlq/data/runner.py",
     "tests/unit/data/test_data_runner.py",
 )
