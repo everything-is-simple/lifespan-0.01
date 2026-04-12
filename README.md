@@ -95,6 +95,7 @@ flowchart LR
 - `scripts/malf/run_malf_snapshot_build.py`
 - `scripts/malf/run_malf_canonical_build.py`
 - `scripts/malf/run_malf_mechanism_build.py`
+- `scripts/malf/run_malf_wave_life_build.py`
 - `scripts/structure/run_structure_snapshot_build.py`
 - `scripts/filter/run_filter_snapshot_build.py`
 - `scripts/alpha/run_alpha_trigger_ledger_build.py`
@@ -119,7 +120,7 @@ flowchart LR
   - `malf -> structure -> filter -> alpha` 默认消费 `adjust_method='backward'`
   - `position -> trade` 默认消费 `adjust_method='none'`
   - `forward` 当前只作研究与展示保留
-- 当前最新生效结论锚点已推进到 `32-downstream-truthfulness-revalidation-after-malf-canonicalization-conclusion-20260411.md`：canonical `malf` 已完成下游真值复核；当前治理锚点仍是 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`，当前具体待施工卡已推进到 `33-malf-downstream-canonical-contract-purge-card-20260411.md`，自然数顺排后的后续卡依次为 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`，其中 `29-35` 是让 `malf` 成为运转中心的卡组，`36` 是寿命 sidecar 卡
+- 当前最新生效结论锚点已推进到 `36-malf-wave-life-probability-sidecar-bootstrap-conclusion-20260412.md`：`malf` 寿命概率 sidecar 已正式落地；当前治理锚点仍是 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`，当前具体待施工卡已推进到 `100-trade-signal-anchor-contract-freeze-card-20260411.md`，自然数顺排后的后续卡依次为 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`，其中 `29-36` 已完成并生效，`100-105` 为恢复推进的 trade/system 卡组
 - `txt -> raw_market -> market_base` 继续保留为正式 fallback
 
 ## 当前 malf 正式口径
@@ -137,6 +138,10 @@ flowchart LR
   - 消费 `pas_context_snapshot / structure_candidate_snapshot`
   - 物化 `pivot_confirmed_break_ledger / same_timeframe_stats_profile / same_timeframe_stats_snapshot`
   - 维护 `malf_mechanism_checkpoint`，支持按 `instrument + timeframe` 增量续跑
+- 当前 `scripts/malf/run_malf_wave_life_build.py` 正式负责 canonical 波段寿命概率 sidecar：
+  - 只读消费 `malf_wave_ledger / malf_state_snapshot / malf_same_level_stats`
+  - 物化 `malf_wave_life_run / malf_wave_life_work_queue / malf_wave_life_checkpoint / malf_wave_life_snapshot / malf_wave_life_profile`
+  - 默认无窗口调用走 canonical checkpoint 驱动的 queue/replay；显式窗口参数仍保留 bounded 补跑
 
 ## 当前 canonical downstream 默认绑定
 

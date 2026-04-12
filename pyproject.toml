@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "lifespan-0.01"
 version = "0.1.0"
-description = "Local-first historical ledger system with pure-semantic malf core, read-only mechanism sidecars, and official system readout audit ledgers."
+description = "Local-first historical ledger system with pure-semantic malf core, read-only mechanism and wave-life sidecars, and official system readout audit ledgers."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -42,7 +42,7 @@ system_tracker_files = [
     "docs/02-spec/β-system-roadmap-and-progress-tracker-spec-20260409.md",
     "docs/02-spec/Ω-system-delivery-roadmap-20260409.md",
 ]
-# 当前最新生效结论已推进到 32；当前待施工卡已推进到 33；`structure / filter / alpha` 默认已改绑到 canonical `malf_state_snapshot(D)`，后续 `33-35` 负责让 `malf` 成为下游运转中心，`36` 负责寿命 sidecar，`position / trade` 的正式执行口径固定为 `adjust_method='none'`。
+# 当前最新生效结论已推进到 36；当前待施工卡已推进到 100；`structure / filter / alpha` 已对齐 canonical `malf` 与寿命 sidecar，`100-105` 恢复推进 trade/system 卡组，`position / trade` 的正式执行口径固定为 `adjust_method='none'`。
 formal_runner_scripts = [
     "scripts/data/run_tdx_asset_raw_ingest.py",
     "scripts/data/run_tdx_stock_raw_ingest.py",
@@ -51,6 +51,7 @@ formal_runner_scripts = [
     "scripts/malf/run_malf_canonical_build.py",
     "scripts/malf/run_malf_snapshot_build.py",
     "scripts/malf/run_malf_mechanism_build.py",
+    "scripts/malf/run_malf_wave_life_build.py",
     "scripts/alpha/run_alpha_trigger_ledger_build.py",
     "scripts/alpha/run_alpha_family_build.py",
     "scripts/structure/run_structure_snapshot_build.py",

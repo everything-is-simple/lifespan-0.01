@@ -377,7 +377,7 @@ def test_mainline_truthfulness_revalidation_runs_to_trade_with_sidecar_read_only
     assert filter_row[3] is None
     assert filter_row[5] == "confirmed"
     assert filter_row[6] == "high"
-    assert "break_confirmation=confirmed 仅作 sidecar 提示" in str(filter_row[4])
+    assert "break_confirmation=confirmed 仅 sidecar 提示" in str(filter_row[4])
     assert "exhaustion_risk=high" in str(filter_row[4])
     assert trigger_row == (filter_row[0], filter_row[1])
     assert signal_row[0:2] == ("admitted", True)

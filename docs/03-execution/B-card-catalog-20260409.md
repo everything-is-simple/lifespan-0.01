@@ -3,10 +3,10 @@
 日期：`2026-04-09`  
 状态：`持续更新`
 
-1. 当前下一锚：`36-malf-wave-life-probability-sidecar-bootstrap-card-20260411.md`
-2. 当前待施工卡：`36-malf-wave-life-probability-sidecar-bootstrap-card-20260411.md`
+1. 当前下一锚：`100-trade-signal-anchor-contract-freeze-card-20260411.md`
+2. 当前待施工卡：`100-trade-signal-anchor-contract-freeze-card-20260411.md`
 3. 正式主线剩余卡：`6`
-4. 可选 Sidecar 剩余卡：`1`
+4. 可选 Sidecar 剩余卡：`0`
 5. 后置修复剩余卡：`0`
 
 ## 正式卡目录
@@ -56,10 +56,10 @@
 
 ## 当前说明
 
-1. 最新生效结论锚点已推进到 `35-downstream-data-grade-checkpoint-alignment-after-malf-conclusion-20260412.md`。
-2. 当前治理锚点仍是 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`，但当前具体待施工卡已推进到 `36-malf-wave-life-probability-sidecar-bootstrap-card-20260411.md`。
-3. `29-35` 已完成并生效；`36` 是当前剩余的 malf sidecar 卡；`100-105` 顺延为其后的 trade/system 恢复卡组。
-4. 当前卡组排序调整后，`100-105` 不再紧接 `33`，而是在 `36` 收口后再恢复推进。
+1. 最新生效结论锚点已推进到 `36-malf-wave-life-probability-sidecar-bootstrap-conclusion-20260412.md`。
+2. 当前治理锚点仍是 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`，但当前具体待施工卡已推进到 `100-trade-signal-anchor-contract-freeze-card-20260411.md`。
+3. `29-36` 已完成并生效；`100-105` 恢复为当前 trade/system 恢复卡组。
+4. 当前卡组排序保持 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`，其中 `36` 已从当前卡切换为已完成锚点。
 
 ## 卡组顺序图
 
@@ -70,6 +70,6 @@ flowchart LR
     A10 --> T14["14-15 portfolio_plan/trade"]
     T14 --> D16["16-25 data/malf/system"]
     D16 --> M29["29-35 malf canonical downstream"]
-    M29 --> M35["36 malf sidecar"]
+    M29 --> M35["36 malf sidecar 已完成"]
     M35 --> POST["100-105 trade/system 恢复"]
 ```
