@@ -21,4 +21,6 @@
 17. 将 `src/mlq/malf/runner.py` 拆分为 bridge v1 bounded orchestrator + `snapshot_shared / snapshot_source / snapshot_materialization`，保持 `run_malf_snapshot_build` 外部入口、bridge v1 表族契约与兼容输出语义不变。
 18. 通过 `py_compile` 确认 `src/mlq/malf/runner.py` 与新增 helper 模块可稳定落盘并通过基础语法门禁。
 19. 通过按路径治理检查、全仓治理检查、doc-first gating、执行索引检查与 `tests/unit/malf/test_malf_runner.py` 串行单测，确认 `src/mlq/malf/runner.py` 可从 `LEGACY_TARGET_OVERSIZE_BACKLOG` 移除。
-20. 回填 `37` 的 card / evidence / record / conclusion、入口文件与 backlog 台账，使当前正式口径回到“hard backlog 已清零、target backlog 剩余 3 项”。
+20. 将 `src/mlq/malf/bootstrap.py` 拆分为 facade + `bootstrap_tables / bootstrap_columns`，保持对外导出的表名常量、bootstrap/连接/path 入口与表族语义不变。
+21. 通过 `py_compile`、按路径治理检查与 `tests/unit/malf/test_malf_runner.py tests/unit/malf/test_mechanism_runner.py tests/unit/malf/test_wave_life_runner.py tests/unit/malf/test_canonical_runner.py -q` 串行单测，确认 `src/mlq/malf/bootstrap.py` 可从 `LEGACY_TARGET_OVERSIZE_BACKLOG` 移除。
+22. 回填 `37` 的 card / evidence / record / conclusion、入口文件与 backlog 台账，使当前正式口径回到“hard backlog 已清零、target backlog 剩余 2 项”。

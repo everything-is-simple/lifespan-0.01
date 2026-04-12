@@ -102,6 +102,7 @@ flowchart LR
   - 当前 `malf` 的正式 canonical bounded runner 入口为 `scripts/malf/run_malf_canonical_build.py`，只允许消费官方 `market_base.stock_daily_adjusted(adjust_method='backward')`，并物化 `malf_canonical_run / malf_canonical_work_queue / malf_canonical_checkpoint / malf_pivot_ledger / malf_wave_ledger / malf_extreme_progress_ledger / malf_state_snapshot / malf_same_level_stats`；其中 `D / W / M` 必须独立计算，且 queue/checkpoint 只允许用于续跑，不允许反写结构语义。
   - 当前 `malf` 的 `scripts/malf/run_malf_snapshot_build.py` 只保留 bridge v1 兼容输出职责：它可以继续物化 `malf_run / pas_context_snapshot / structure_candidate_snapshot / malf_run_context_snapshot / malf_run_structure_snapshot` 供 `31` 之前的下游过渡消费，但不再代表 `malf` 正式真值，也不允许回读离线文本或 `raw_market`。
   - `malf snapshot` 的实现允许拆分为 `src/mlq/malf/runner.py` 与同目录 helper 模块 `snapshot_shared.py / snapshot_source.py / snapshot_materialization.py`；拆分只服务治理文件长度与职责收敛，外部正式脚本入口、bridge v1 表族契约与兼容输出语义不得变化。
+  - `malf bootstrap` 的实现允许拆分为 `src/mlq/malf/bootstrap.py` 与同目录 helper 模块 `bootstrap_tables.py / bootstrap_columns.py`；拆分只服务 DDL/补列映射的职责收敛与治理文件长度控制，对外导出的表名常量、bootstrap/连接/path 入口与表族语义不得变化。
    - 当前 `malf` 的正式 bounded runner 入口为 `scripts/malf/run_malf_mechanism_build.py`，只允许消费官方 bridge v1 `pas_context_snapshot / structure_candidate_snapshot`，物化 `malf_mechanism_run / malf_mechanism_checkpoint / pivot_confirmed_break_ledger / same_timeframe_stats_profile / same_timeframe_stats_snapshot`，并按 `instrument + timeframe` checkpoint 续跑，不允许反写 `malf core`。
   - 当前 `malf` 的正式 bounded runner 入口为 `scripts/malf/run_malf_wave_life_build.py`，只允许只读消费 canonical `malf_wave_ledger / malf_state_snapshot / malf_same_level_stats`，物化 `malf_wave_life_run / malf_wave_life_work_queue / malf_wave_life_checkpoint / malf_wave_life_snapshot / malf_wave_life_profile`；已完成 wave 样本与活跃 wave 快照必须分开建模，默认无窗口调用走 canonical checkpoint 驱动的 queue/replay，不允许把寿命概率反写回 `malf core`。
   - `wave life` 的实现允许拆分为 `src/mlq/malf/wave_life_runner.py` 与同目录 helper 模块 `wave_life_shared.py / wave_life_source.py / wave_life_materialization.py`；拆分只服务治理文件长度与职责收敛，外部正式脚本入口、表族契约与只读 sidecar 边界不得变化。
@@ -189,8 +190,8 @@ flowchart LR
 只要治理规则、环境脚手架、路径契约、测试入口、执行入口发生变化，就必须同步刷新这三个入口文件。
 其中 `docs/01-design/`、`docs/02-spec/` 与 `src/mlq/core/paths.py` 的正式口径变化，也视为入口变化。
 全仓 `python scripts/system/check_development_governance.py` 盘点允许通过 `scripts/system/development_governance_legacy_backlog.py` 显式登记历史债务；但按改动路径触发的严格治理检查，不得豁免新增违规。
-当前 `37` 施工期间，历史硬超长 backlog 已清零，目标超长 backlog 仍为 `3` 项；每解决一项都必须同步回填 card / evidence / record / conclusion，并从 backlog 台账移除。
-当前已完成的清债包括 `src/mlq/system/runner.py`、`src/mlq/trade/runner.py`、`src/mlq/alpha/trigger_runner.py`、`src/mlq/filter/runner.py`、`src/mlq/malf/mechanism_runner.py`、`src/mlq/malf/canonical_runner.py`、`src/mlq/structure/runner.py`、`src/mlq/alpha/runner.py`、`src/mlq/data/runner.py`、`tests/unit/data/test_data_runner.py`、`src/mlq/data/bootstrap.py` 与 `src/mlq/malf/runner.py`；本卡后续 `pytest` 证据统一按串行口径执行，避免多个进程争用 `H:\Lifespan-temp\pytest-tmp`。
+当前 `37` 施工期间，历史硬超长 backlog 已清零，目标超长 backlog 仍为 `2` 项；每解决一项都必须同步回填 card / evidence / record / conclusion，并从 backlog 台账移除。
+当前已完成的清债包括 `src/mlq/system/runner.py`、`src/mlq/trade/runner.py`、`src/mlq/alpha/trigger_runner.py`、`src/mlq/filter/runner.py`、`src/mlq/malf/mechanism_runner.py`、`src/mlq/malf/canonical_runner.py`、`src/mlq/structure/runner.py`、`src/mlq/alpha/runner.py`、`src/mlq/data/runner.py`、`tests/unit/data/test_data_runner.py`、`src/mlq/data/bootstrap.py`、`src/mlq/malf/runner.py` 与 `src/mlq/malf/bootstrap.py`；本卡后续 `pytest` 证据统一按串行口径执行，避免多个进程争用 `H:\Lifespan-temp\pytest-tmp`。
 
 ## 8. 文档规则
 

@@ -8,7 +8,7 @@
 - 接受：
   `src/mlq/data/runner.py` 与 `tests/unit/data/test_data_runner.py` 已完成拆分并通过治理校验与串行单测，可以从 `LEGACY_HARD_OVERSIZE_BACKLOG` 移除。
 - 保留：
-  `src/mlq/data/bootstrap.py` 与 `src/mlq/malf/runner.py` 已通过 helper 拆分跌回目标线内，可以从 `LEGACY_TARGET_OVERSIZE_BACKLOG` 移除；当前 target backlog 还剩 `3` 项，`37` 继续作为系统治理清账卡推进。
+  `src/mlq/data/bootstrap.py`、`src/mlq/malf/runner.py` 与 `src/mlq/malf/bootstrap.py` 已通过 helper 拆分跌回目标线内，可以从 `LEGACY_TARGET_OVERSIZE_BACKLOG` 移除；当前 target backlog 还剩 `2` 项，`37` 继续作为系统治理清账卡推进。
 
 ## 原因
 - `data` 这轮拆分保持了外部正式入口、账本表族契约与测试行为不变，只把内部职责按 raw ingest / TdxQuant / market_base / test suites 收敛进 helper 模块。
@@ -16,8 +16,8 @@
 
 ## 影响
 - 历史 hard oversize backlog 已从 `10` 项降为 `0` 项。
-- 当前只剩 `LEGACY_TARGET_OVERSIZE_BACKLOG` 三项：
-  `src/mlq/alpha/family_runner.py`、`src/mlq/malf/bootstrap.py`、`src/mlq/position/bootstrap.py`。
+- 当前只剩 `LEGACY_TARGET_OVERSIZE_BACKLOG` 两项：
+  `src/mlq/alpha/family_runner.py`、`src/mlq/position/bootstrap.py`。
 - `100-105` 仍维持为治理清债之后恢复推进的 trade/system 卡组。
 
 ## 结论结构图
