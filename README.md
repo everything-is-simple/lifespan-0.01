@@ -122,7 +122,7 @@ flowchart LR
   - `malf -> structure -> filter -> alpha` 默认消费 `adjust_method='backward'`
   - `position -> trade` 默认消费 `adjust_method='none'`
   - `forward` 当前只作研究与展示保留
-- 当前最新生效结论锚点已推进到 `36-malf-wave-life-probability-sidecar-bootstrap-conclusion-20260412.md`：`malf` 寿命概率 sidecar 已正式落地；当前治理锚点仍是 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`，当前具体待施工卡已推进到 `37-system-governance-historical-debt-backlog-burndown-card-20260412.md`，自然数顺排后的后续卡依次为 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`，其中 `29-36` 已完成并生效，`37` 为系统治理清账卡；当前已清掉 `src/mlq/system/runner.py`、`src/mlq/trade/runner.py`、`src/mlq/alpha/trigger_runner.py`、`src/mlq/filter/runner.py` 与 `src/mlq/malf/mechanism_runner.py`，剩余历史硬超长 backlog 为 `5` 项，`100-105` 为恢复推进的 trade/system 卡组
+- 当前最新生效结论锚点已推进到 `36-malf-wave-life-probability-sidecar-bootstrap-conclusion-20260412.md`：`malf` 寿命概率 sidecar 已正式落地；当前治理锚点仍是 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`，当前具体待施工卡已推进到 `37-system-governance-historical-debt-backlog-burndown-card-20260412.md`，自然数顺排后的后续卡依次为 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`，其中 `29-36` 已完成并生效，`37` 为系统治理清账卡；当前已清掉 `src/mlq/system/runner.py`、`src/mlq/trade/runner.py`、`src/mlq/alpha/trigger_runner.py`、`src/mlq/filter/runner.py`、`src/mlq/malf/mechanism_runner.py` 与 `src/mlq/malf/canonical_runner.py`，剩余历史硬超长 backlog 为 `4` 项，`100-105` 为恢复推进的 trade/system 卡组
 - `txt -> raw_market -> market_base` 继续保留为正式 fallback
 
 ## 当前 malf 正式口径

@@ -20,6 +20,8 @@
 13. 通过 `py_compile`、按路径治理检查与 `filter` 单测，确认 `src/mlq/filter/runner.py` 可从历史硬超长 backlog 移除。
 14. 拆分 `src/mlq/malf/mechanism_runner.py`，把共享结构、桥接输入读取与 sidecar 物化逻辑拆到独立 helper 模块，保留 `run_malf_mechanism_build` 外部入口不变。
 15. 通过 `py_compile`、按路径治理检查与 `malf mechanism` 单测，确认 `src/mlq/malf/mechanism_runner.py` 可从历史硬超长 backlog 移除。
+16. 拆分 `src/mlq/malf/canonical_runner.py`，把共享结构、上游行情读取与 canonical 物化逻辑拆到独立 helper 模块，保留 `run_malf_canonical_build` 外部入口不变。
+17. 通过 `py_compile`、按路径治理检查与 `malf canonical` 单测，确认 `src/mlq/malf/canonical_runner.py` 可从历史硬超长 backlog 移除。
 
 ## 偏离项
 
@@ -30,7 +32,7 @@
 
 - 当前最新生效结论锚点仍保持为 `36`；`37` 只是新的治理清债施工卡，不代表新的生效业务结论。
 - `100-105` 未取消，只是暂时后移到 `37` 之后。
-- 当前 `37` 已开始清账，已完成的前五项是 `src/mlq/system/runner.py`、`src/mlq/trade/runner.py`、`src/mlq/alpha/trigger_runner.py`、`src/mlq/filter/runner.py` 与 `src/mlq/malf/mechanism_runner.py`。
+- 当前 `37` 已开始清账，已完成的前六项是 `src/mlq/system/runner.py`、`src/mlq/trade/runner.py`、`src/mlq/alpha/trigger_runner.py`、`src/mlq/filter/runner.py`、`src/mlq/malf/mechanism_runner.py` 与 `src/mlq/malf/canonical_runner.py`。
 
 ## 记录结构图
 

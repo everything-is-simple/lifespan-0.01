@@ -7,7 +7,6 @@
 LEGACY_HARD_OVERSIZE_BACKLOG: tuple[str, ...] = (
     "src/mlq/alpha/runner.py",
     "src/mlq/data/runner.py",
-    "src/mlq/malf/canonical_runner.py",
     "src/mlq/structure/runner.py",
     "tests/unit/data/test_data_runner.py",
 )
