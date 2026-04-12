@@ -639,7 +639,9 @@ def _build_payload(
             "trigger_event_nk": trigger_row.trigger_event_nk,
             "source_filter_snapshot_nk": trigger_row.source_filter_snapshot_nk,
             "source_structure_snapshot_nk": trigger_row.source_structure_snapshot_nk,
-            "upstream_context_fingerprint": trigger_row.upstream_context_fingerprint,
+            "upstream_context_fingerprint": _normalize_upstream_context_fingerprint(
+                trigger_row.upstream_context_fingerprint
+            ),
         },
         "candidate_payload": _normalize_candidate_payload(candidate_payload),
     }
@@ -662,6 +664,15 @@ def _normalize_json_value(value: object) -> object:
     if isinstance(value, date):
         return value.isoformat()
     return value
+
+
+def _normalize_upstream_context_fingerprint(value: object) -> object:
+    normalized = _normalize_optional_str(value, default="{}")
+    try:
+        parsed = json.loads(normalized)
+    except json.JSONDecodeError:
+        return normalized
+    return parsed if isinstance(parsed, dict) else normalized
 
 
 def _upsert_family_event(

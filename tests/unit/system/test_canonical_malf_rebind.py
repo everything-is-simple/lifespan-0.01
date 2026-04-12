@@ -138,13 +138,12 @@ def test_canonical_malf_defaults_drive_structure_filter_and_alpha(tmp_path: Path
     assert filter_summary.materialized_snapshot_count == 2
     assert trigger_summary.materialized_trigger_count == 2
     assert alpha_summary.materialized_signal_count == 2
-    assert alpha_summary.fallback_context_table is None
 
     structure_conn = duckdb.connect(str(structure_ledger_path(settings)), read_only=True)
     try:
         structure_rows = structure_conn.execute(
             """
-            SELECT instrument, malf_context_4, lifecycle_rank_high, structure_progress_state, failure_type
+            SELECT instrument, major_state, trend_direction, reversal_stage, current_hh_count, structure_progress_state
             FROM structure_snapshot
             ORDER BY instrument
             """
@@ -168,7 +167,7 @@ def test_canonical_malf_defaults_drive_structure_filter_and_alpha(tmp_path: Path
     try:
         signal_rows = alpha_conn.execute(
             """
-            SELECT instrument, formal_signal_status, trigger_admissible, malf_context_4
+            SELECT instrument, formal_signal_status, trigger_admissible, major_state, reversal_stage
             FROM alpha_formal_signal_event
             ORDER BY instrument
             """
@@ -177,14 +176,14 @@ def test_canonical_malf_defaults_drive_structure_filter_and_alpha(tmp_path: Path
         alpha_conn.close()
 
     assert structure_rows == [
-        ("000001.SZ", "BULL_MAINSTREAM", 2, "advancing", None),
-        ("000002.SZ", "BEAR_MAINSTREAM", 1, "failed", "failed_breakdown"),
+        ("000001.SZ", "牛顺", "up", "expand", 2, "advancing"),
+        ("000002.SZ", "熊顺", "down", "expand", 0, "failed"),
     ]
     assert filter_rows == [
         ("000001.SZ", True, None),
-        ("000002.SZ", False, "failed_extreme"),
+        ("000002.SZ", False, "structure_progress_failed"),
     ]
     assert signal_rows == [
-        ("000001.SZ", "admitted", True, "BULL_MAINSTREAM"),
-        ("000002.SZ", "blocked", False, "BEAR_MAINSTREAM"),
+        ("000001.SZ", "admitted", True, "牛顺", "expand"),
+        ("000002.SZ", "blocked", False, "熊顺", "expand"),
     ]

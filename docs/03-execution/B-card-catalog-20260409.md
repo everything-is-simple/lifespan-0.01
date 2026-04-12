@@ -3,11 +3,11 @@
 日期：`2026-04-09`
 状态：`持续更新`
 
-1. 当前下一锤：`33-malf-downstream-canonical-contract-purge-card-20260411.md`
-2. 当前待施工卡：`33-malf-downstream-canonical-contract-purge-card-20260411.md`
-3. 当前正式主线剩余卡：`9`
-4. 当前 sidecar 卡：`1`
-5. 当前修复卡：`0`
+1. 当前下一锚：`34-malf-multi-timeframe-downstream-consumption-card-20260411.md`
+2. 当前待施工卡：`34-malf-multi-timeframe-downstream-consumption-card-20260411.md`
+3. 正式主线剩余卡：`8`
+4. 可选 Sidecar 剩余卡：`1`
+5. 后置修复剩余卡：`0`
 
 ## 正式卡目录
 
@@ -53,22 +53,23 @@
 103. `103-trade-backtest-progression-runner-card-20260411.md`
 104. `104-mainline-real-data-smoke-regression-card-20260411.md`
 105. `105-system-runtime-orchestration-bootstrap-card-20260411.md`
+
 ## 当前说明
 
-1. 最新生效结论锚点已推进到 `32-downstream-truthfulness-revalidation-after-malf-canonicalization-conclusion-20260411.md`。
-2. 当前治理锚点仍是 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`，但当前具体待施工卡已推进到 `33-malf-downstream-canonical-contract-purge-card-20260411.md`。
-3. `29-32` 已完成并生效；`33-35` 是让 `malf` 成为下游运转中心的主线卡组；`36` 是其后的寿命概率 sidecar 卡；`100-105` 顺延为其后的 trade/system 恢复卡组。
-4. 当前卡组排序调整后，`100-105` 不再紧接 `32`，而是在 `33-36` 收口后再恢复推进。
+1. 最新生效结论锚点已推进到 `33-malf-downstream-canonical-contract-purge-conclusion-20260412.md`。
+2. 当前治理锚点仍是 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`，但当前具体待施工卡已推进到 `34-malf-multi-timeframe-downstream-consumption-card-20260411.md`。
+3. `29-33` 已完成并生效，`34-35` 是让 `malf` 成为下游多级别运转中心的主线卡组；`36` 是其后的寿命概率 sidecar 卡；`100-105` 顺延为其后的 trade/system 恢复卡组。
+4. 当前卡组排序调整后，`100-105` 不再紧接 `33`，而是在 `34-36` 收口后再恢复推进。
 
 ## 卡组顺序图
 
 ```mermaid
 flowchart LR
-    G01[01-06 治理入口] --> P07[07-09 position]
-    P07 --> A10[10-13 alpha/structure/filter]
-    A10 --> T14[14-15 portfolio_plan/trade]
-    T14 --> D16[16-25 data/malf/system]
-    D16 --> M29[29-32 malf canonical]
-    M29 --> M33[33-36 malf下游主线]
-    M33 --> POST[100-105 trade/system恢复]
+    G01["01-06 治理入口"] --> P07["07-09 position"]
+    P07 --> A10["10-13 alpha/structure/filter"]
+    A10 --> T14["14-15 portfolio_plan/trade"]
+    T14 --> D16["16-25 data/malf/system"]
+    D16 --> M29["29-33 malf canonical downstream"]
+    M29 --> M34["34-36 malf 多级别与 sidecar"]
+    M34 --> POST["100-105 trade/system 恢复"]
 ```

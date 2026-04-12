@@ -161,4 +161,4 @@ def test_run_alpha_family_build_marks_reused_and_rematerialized_when_trigger_con
         conn.close()
 
     assert event_row[0] == "alpha-family-test-002c"
-    assert "failed_extreme" in event_row[1]
+    assert '"structure_progress_state": "failed"' in event_row[1]

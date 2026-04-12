@@ -27,12 +27,10 @@ from mlq.structure.bootstrap import (
 
 DEFAULT_STRUCTURE_CONTEXT_TABLE: Final[str] = MALF_STATE_SNAPSHOT_TABLE
 DEFAULT_STRUCTURE_INPUT_TABLE: Final[str] = MALF_STATE_SNAPSHOT_TABLE
-DEFAULT_STRUCTURE_BREAK_CONFIRMATION_TABLE: Final[str | None] = None
-DEFAULT_STRUCTURE_STATS_TABLE: Final[str | None] = None
+DEFAULT_STRUCTURE_BREAK_CONFIRMATION_TABLE: Final[str | None] = PIVOT_CONFIRMED_BREAK_LEDGER_TABLE
+DEFAULT_STRUCTURE_STATS_TABLE: Final[str | None] = SAME_TIMEFRAME_STATS_SNAPSHOT_TABLE
 DEFAULT_STRUCTURE_SOURCE_TIMEFRAME: Final[str] = "D"
-DEFAULT_STRUCTURE_CONTRACT_VERSION: Final[str] = "structure-snapshot-v1"
-LEGACY_STRUCTURE_CONTEXT_TABLE: Final[str] = "pas_context_snapshot"
-LEGACY_STRUCTURE_INPUT_TABLE: Final[str] = "structure_candidate_snapshot"
+DEFAULT_STRUCTURE_CONTRACT_VERSION: Final[str] = "structure-snapshot-v2"
 
 
 @dataclass(frozen=True)
@@ -88,9 +86,12 @@ class _StructureContextRow:
     instrument: str
     signal_date: date
     asof_date: date
-    malf_context_4: str
-    lifecycle_rank_high: int
-    lifecycle_rank_total: int
+    major_state: str
+    trend_direction: str
+    reversal_stage: str
+    wave_id: int
+    current_hh_count: int
+    current_ll_count: int
     source_context_nk: str
 
 
@@ -118,15 +119,12 @@ class _StructureSnapshotRow:
     instrument: str
     signal_date: date
     asof_date: date
-    malf_context_4: str
-    lifecycle_rank_high: int
-    lifecycle_rank_total: int
-    new_high_count: int
-    new_low_count: int
-    refresh_density: float
-    advancement_density: float
-    is_failed_extreme: bool
-    failure_type: str | None
+    major_state: str
+    trend_direction: str
+    reversal_stage: str
+    wave_id: int
+    current_hh_count: int
+    current_ll_count: int
     structure_progress_state: str
     break_confirmation_status: str | None
     break_confirmation_ref: str | None
@@ -176,25 +174,17 @@ def run_structure_snapshot_build(
     materialization_run_id = run_id or _build_structure_run_id()
 
     _ensure_database_exists(resolved_malf_path, label="malf")
-    actual_source_context_table = _resolve_structure_source_table(
-        malf_path=resolved_malf_path,
-        requested_table=source_context_table,
-        fallback_table=LEGACY_STRUCTURE_CONTEXT_TABLE,
-    )
-    actual_source_input_table = _resolve_structure_source_table(
-        malf_path=resolved_malf_path,
-        requested_table=source_structure_input_table,
-        fallback_table=LEGACY_STRUCTURE_INPUT_TABLE,
-    )
+    actual_source_context_table = source_context_table
+    actual_source_input_table = source_structure_input_table
     actual_break_confirmation_table = _resolve_optional_sidecar_table(
         malf_path=resolved_malf_path,
         requested_table=source_break_confirmation_table,
-        fallback_table=PIVOT_CONFIRMED_BREAK_LEDGER_TABLE if actual_source_input_table == LEGACY_STRUCTURE_INPUT_TABLE else None,
+        fallback_table=None,
     )
     actual_stats_table = _resolve_optional_sidecar_table(
         malf_path=resolved_malf_path,
         requested_table=source_stats_table,
-        fallback_table=SAME_TIMEFRAME_STATS_SNAPSHOT_TABLE if actual_source_input_table == LEGACY_STRUCTURE_INPUT_TABLE else None,
+        fallback_table=None,
     )
     input_rows = _load_structure_input_rows(
         malf_path=resolved_malf_path,
@@ -307,17 +297,6 @@ def _build_structure_run_id() -> str:
 def _ensure_database_exists(path: Path, *, label: str) -> None:
     if not path.exists():
         raise FileNotFoundError(f"Missing {label} database: {path}")
-
-
-def _resolve_structure_source_table(
-    *,
-    malf_path: Path,
-    requested_table: str,
-    fallback_table: str,
-) -> str:
-    if _database_table_exists(malf_path, requested_table):
-        return requested_table
-    return fallback_table if _database_table_exists(malf_path, fallback_table) else requested_table
 
 
 def _resolve_optional_sidecar_table(
@@ -554,7 +533,8 @@ def _load_canonical_input_rows(
             COALESCE(current_hh_count, 0) AS current_hh_count,
             COALESCE(current_ll_count, 0) AS current_ll_count,
             major_state,
-            trend_direction
+            trend_direction,
+            reversal_stage
         FROM {table_name}
         {where_sql}
         ORDER BY {asof_date_column}, {code_column}
@@ -566,11 +546,12 @@ def _load_canonical_input_rows(
     for row in rows:
         major_state = _normalize_optional_str(row[5], default="牛逆")
         trend_direction = _normalize_optional_str(row[6], default="down").lower()
+        reversal_stage = _normalize_optional_str(row[7], default="none").lower()
         bullish_context = _map_major_state_to_context_code(major_state).startswith("BULL_")
         new_high_count = _normalize_optional_int(row[3]) if bullish_context else 0
         new_low_count = _normalize_optional_int(row[4]) if not bullish_context else 0
         refresh_density = min(float(new_high_count) / 4.0, 1.0) if new_high_count > 0 else 0.0
-        advancement_density = 1.0 if trend_direction == "up" else 0.0
+        advancement_density = 1.0 if trend_direction == "up" and reversal_stage in {"none", "expand"} else 0.0
         failure_type = _derive_failure_type_from_major_state(major_state)
         input_rows.append(
             _StructureInputRow(
@@ -640,7 +621,6 @@ def _load_bridge_context_rows(
                 {asof_date_column} AS asof_date,
                 COALESCE({_resolve_optional_column(available_columns, ("malf_context_4",)) or "'UNKNOWN'"}, 'UNKNOWN') AS malf_context_4,
                 COALESCE({_resolve_optional_column(available_columns, ("lifecycle_rank_high",)) or "0"}, 0) AS lifecycle_rank_high,
-                COALESCE({_resolve_optional_column(available_columns, ("lifecycle_rank_total",)) or "0"}, 0) AS lifecycle_rank_total,
                 {source_context_column if source_context_column is not None else "NULL"} AS source_context_nk,
                 ROW_NUMBER() OVER (
                     PARTITION BY {instrument_column}, {signal_date_column}, {asof_date_column}
@@ -655,7 +635,6 @@ def _load_bridge_context_rows(
             asof_date,
             malf_context_4,
             lifecycle_rank_high,
-            lifecycle_rank_total,
             source_context_nk
         FROM ranked_context
         WHERE row_rank = 1
@@ -668,8 +647,10 @@ def _load_bridge_context_rows(
         asof_date_value = _normalize_date_value(row[2], field_name="asof_date")
         instrument_value = str(row[0])
         malf_context_4 = _normalize_optional_str(row[3], default="UNKNOWN")
+        lifecycle_rank_high = _normalize_optional_int(row[4])
+        major_state = _map_legacy_context_code_to_major_state(malf_context_4)
         source_context_nk = _normalize_optional_str(
-            row[6],
+            row[5],
             default=_build_source_context_nk(
                 instrument=instrument_value,
                 signal_date=signal_date_value,
@@ -682,9 +663,12 @@ def _load_bridge_context_rows(
                 instrument=instrument_value,
                 signal_date=signal_date_value,
                 asof_date=asof_date_value,
-                malf_context_4=malf_context_4,
-                lifecycle_rank_high=_normalize_optional_int(row[4]),
-                lifecycle_rank_total=_normalize_optional_int(row[5]),
+                major_state=major_state,
+                trend_direction=_derive_trend_direction_from_major_state(major_state),
+                reversal_stage="trigger" if "COUNTERTREND" in malf_context_4 else "none",
+                wave_id=0,
+                current_hh_count=lifecycle_rank_high if malf_context_4.startswith("BULL_") else 0,
+                current_ll_count=lifecycle_rank_high if malf_context_4.startswith("BEAR_") else 0,
                 source_context_nk=source_context_nk,
             )
         )
@@ -742,6 +726,9 @@ def _load_canonical_context_rows(
             {asof_date_column} AS signal_date,
             {asof_date_column} AS asof_date,
             major_state,
+            trend_direction,
+            reversal_stage,
+            COALESCE(wave_id, 0) AS wave_id,
             COALESCE(current_hh_count, 0) AS current_hh_count,
             COALESCE(current_ll_count, 0) AS current_ll_count,
             {snapshot_nk_column if snapshot_nk_column is not None else "NULL"} AS snapshot_nk
@@ -756,19 +743,21 @@ def _load_canonical_context_rows(
         signal_date_value = _normalize_date_value(row[1], field_name="signal_date")
         asof_date_value = _normalize_date_value(row[2], field_name="asof_date")
         major_state = _normalize_optional_str(row[3], default="牛逆")
-        malf_context_4 = _map_major_state_to_context_code(major_state)
-        lifecycle_rank_high = _derive_lifecycle_rank_high(
-            malf_context_4=malf_context_4,
-            current_hh_count=_normalize_optional_int(row[4]),
-            current_ll_count=_normalize_optional_int(row[5]),
-        )
+        trend_direction = _normalize_optional_str(row[4], default="down").lower()
+        reversal_stage = _normalize_optional_str(row[5], default="none").lower()
+        wave_id = _normalize_optional_int(row[6])
+        current_hh_count = _normalize_optional_int(row[7])
+        current_ll_count = _normalize_optional_int(row[8])
         source_context_nk = _normalize_optional_str(
-            row[6],
-            default=_build_source_context_nk(
+            row[9],
+            default=_build_canonical_context_nk(
                 instrument=str(row[0]),
                 signal_date=signal_date_value,
                 asof_date=asof_date_value,
-                malf_context_4=malf_context_4,
+                major_state=major_state,
+                trend_direction=trend_direction,
+                reversal_stage=reversal_stage,
+                wave_id=wave_id,
             ),
         )
         context_rows.append(
@@ -776,9 +765,12 @@ def _load_canonical_context_rows(
                 instrument=str(row[0]),
                 signal_date=signal_date_value,
                 asof_date=asof_date_value,
-                malf_context_4=malf_context_4,
-                lifecycle_rank_high=lifecycle_rank_high,
-                lifecycle_rank_total=4,
+                major_state=major_state,
+                trend_direction=trend_direction,
+                reversal_stage=reversal_stage,
+                wave_id=wave_id,
+                current_hh_count=current_hh_count,
+                current_ll_count=current_ll_count,
                 source_context_nk=source_context_nk,
             )
         )
@@ -1127,15 +1119,12 @@ def _build_structure_snapshot_row(
         instrument=input_row.instrument,
         signal_date=input_row.signal_date,
         asof_date=input_row.asof_date,
-        malf_context_4=context_row.malf_context_4,
-        lifecycle_rank_high=context_row.lifecycle_rank_high,
-        lifecycle_rank_total=context_row.lifecycle_rank_total,
-        new_high_count=input_row.new_high_count,
-        new_low_count=input_row.new_low_count,
-        refresh_density=input_row.refresh_density,
-        advancement_density=input_row.advancement_density,
-        is_failed_extreme=input_row.is_failed_extreme,
-        failure_type=input_row.failure_type,
+        major_state=context_row.major_state,
+        trend_direction=context_row.trend_direction,
+        reversal_stage=context_row.reversal_stage,
+        wave_id=context_row.wave_id,
+        current_hh_count=context_row.current_hh_count,
+        current_ll_count=context_row.current_ll_count,
         structure_progress_state=structure_progress_state,
         break_confirmation_status=None if break_confirmation_row is None else break_confirmation_row.confirmation_status,
         break_confirmation_ref=None if break_confirmation_row is None else break_confirmation_row.break_event_nk,
@@ -1167,6 +1156,24 @@ def _map_major_state_to_context_code(major_state: str) -> str:
         "熊顺": "BEAR_MAINSTREAM",
     }
     return mapping.get(major_state, "UNKNOWN")
+
+
+def _map_legacy_context_code_to_major_state(malf_context_4: str) -> str:
+    mapping = {
+        "BULL_MAINSTREAM": "牛顺",
+        "BULL_COUNTERTREND": "熊逆",
+        "BEAR_COUNTERTREND": "牛逆",
+        "BEAR_MAINSTREAM": "熊顺",
+    }
+    return mapping.get(malf_context_4, "牛逆")
+
+
+def _derive_trend_direction_from_major_state(major_state: str) -> str:
+    if major_state in {"牛顺", "熊逆"}:
+        return "up"
+    if major_state in {"牛逆", "熊顺"}:
+        return "down"
+    return "down"
 
 
 def _derive_lifecycle_rank_high(
@@ -1204,6 +1211,29 @@ def _build_source_context_nk(
     )
 
 
+def _build_canonical_context_nk(
+    *,
+    instrument: str,
+    signal_date: date,
+    asof_date: date,
+    major_state: str,
+    trend_direction: str,
+    reversal_stage: str,
+    wave_id: int,
+) -> str:
+    return "|".join(
+        [
+            instrument,
+            signal_date.isoformat(),
+            asof_date.isoformat(),
+            major_state,
+            trend_direction,
+            reversal_stage,
+            str(wave_id),
+        ]
+    )
+
+
 def _build_structure_snapshot_nk(
     *,
     instrument: str,
@@ -1231,15 +1261,12 @@ def _upsert_structure_snapshot(
     existing_row = connection.execute(
         f"""
         SELECT
-            malf_context_4,
-            lifecycle_rank_high,
-            lifecycle_rank_total,
-            new_high_count,
-            new_low_count,
-            refresh_density,
-            advancement_density,
-            is_failed_extreme,
-            failure_type,
+            major_state,
+            trend_direction,
+            reversal_stage,
+            wave_id,
+            current_hh_count,
+            current_ll_count,
             structure_progress_state,
             break_confirmation_status,
             break_confirmation_ref,
@@ -1260,15 +1287,12 @@ def _upsert_structure_snapshot(
                 instrument,
                 signal_date,
                 asof_date,
-                malf_context_4,
-                lifecycle_rank_high,
-                lifecycle_rank_total,
-                new_high_count,
-                new_low_count,
-                refresh_density,
-                advancement_density,
-                is_failed_extreme,
-                failure_type,
+                major_state,
+                trend_direction,
+                reversal_stage,
+                wave_id,
+                current_hh_count,
+                current_ll_count,
                 structure_progress_state,
                 break_confirmation_status,
                 break_confirmation_ref,
@@ -1280,22 +1304,19 @@ def _upsert_structure_snapshot(
                 first_seen_run_id,
                 last_materialized_run_id
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 snapshot_row.structure_snapshot_nk,
                 snapshot_row.instrument,
                 snapshot_row.signal_date,
                 snapshot_row.asof_date,
-                snapshot_row.malf_context_4,
-                snapshot_row.lifecycle_rank_high,
-                snapshot_row.lifecycle_rank_total,
-                snapshot_row.new_high_count,
-                snapshot_row.new_low_count,
-                snapshot_row.refresh_density,
-                snapshot_row.advancement_density,
-                snapshot_row.is_failed_extreme,
-                snapshot_row.failure_type,
+                snapshot_row.major_state,
+                snapshot_row.trend_direction,
+                snapshot_row.reversal_stage,
+                snapshot_row.wave_id,
+                snapshot_row.current_hh_count,
+                snapshot_row.current_ll_count,
                 snapshot_row.structure_progress_state,
                 snapshot_row.break_confirmation_status,
                 snapshot_row.break_confirmation_ref,
@@ -1311,32 +1332,26 @@ def _upsert_structure_snapshot(
         return "inserted"
 
     existing_fingerprint = (
-        _normalize_optional_str(existing_row[0], default="UNKNOWN"),
-        _normalize_optional_int(existing_row[1]),
-        _normalize_optional_int(existing_row[2]),
+        _normalize_optional_str(existing_row[0], default="牛逆"),
+        _normalize_optional_str(existing_row[1], default="down"),
+        _normalize_optional_str(existing_row[2], default="none"),
         _normalize_optional_int(existing_row[3]),
         _normalize_optional_int(existing_row[4]),
-        _normalize_optional_float(existing_row[5]),
-        _normalize_optional_float(existing_row[6]),
-        bool(existing_row[7]),
+        _normalize_optional_int(existing_row[5]),
+        _normalize_optional_str(existing_row[6], default="unknown"),
+        _normalize_optional_nullable_str(existing_row[7]),
         _normalize_optional_nullable_str(existing_row[8]),
-        _normalize_optional_str(existing_row[9], default="unknown"),
+        _normalize_optional_nullable_str(existing_row[9]),
         _normalize_optional_nullable_str(existing_row[10]),
         _normalize_optional_nullable_str(existing_row[11]),
-        _normalize_optional_nullable_str(existing_row[12]),
-        _normalize_optional_nullable_str(existing_row[13]),
-        _normalize_optional_nullable_str(existing_row[14]),
     )
     new_fingerprint = (
-        snapshot_row.malf_context_4,
-        snapshot_row.lifecycle_rank_high,
-        snapshot_row.lifecycle_rank_total,
-        snapshot_row.new_high_count,
-        snapshot_row.new_low_count,
-        snapshot_row.refresh_density,
-        snapshot_row.advancement_density,
-        snapshot_row.is_failed_extreme,
-        snapshot_row.failure_type,
+        snapshot_row.major_state,
+        snapshot_row.trend_direction,
+        snapshot_row.reversal_stage,
+        snapshot_row.wave_id,
+        snapshot_row.current_hh_count,
+        snapshot_row.current_ll_count,
         snapshot_row.structure_progress_state,
         snapshot_row.break_confirmation_status,
         snapshot_row.break_confirmation_ref,
@@ -1344,20 +1359,17 @@ def _upsert_structure_snapshot(
         snapshot_row.exhaustion_risk_bucket,
         snapshot_row.reversal_probability_bucket,
     )
-    first_seen_run_id = str(existing_row[15]) if existing_row[15] is not None else snapshot_row.first_seen_run_id
+    first_seen_run_id = str(existing_row[12]) if existing_row[12] is not None else snapshot_row.first_seen_run_id
     connection.execute(
         f"""
         UPDATE {STRUCTURE_SNAPSHOT_TABLE}
         SET
-            malf_context_4 = ?,
-            lifecycle_rank_high = ?,
-            lifecycle_rank_total = ?,
-            new_high_count = ?,
-            new_low_count = ?,
-            refresh_density = ?,
-            advancement_density = ?,
-            is_failed_extreme = ?,
-            failure_type = ?,
+            major_state = ?,
+            trend_direction = ?,
+            reversal_stage = ?,
+            wave_id = ?,
+            current_hh_count = ?,
+            current_ll_count = ?,
             structure_progress_state = ?,
             break_confirmation_status = ?,
             break_confirmation_ref = ?,
@@ -1370,15 +1382,12 @@ def _upsert_structure_snapshot(
         WHERE structure_snapshot_nk = ?
         """,
         [
-            snapshot_row.malf_context_4,
-            snapshot_row.lifecycle_rank_high,
-            snapshot_row.lifecycle_rank_total,
-            snapshot_row.new_high_count,
-            snapshot_row.new_low_count,
-            snapshot_row.refresh_density,
-            snapshot_row.advancement_density,
-            snapshot_row.is_failed_extreme,
-            snapshot_row.failure_type,
+            snapshot_row.major_state,
+            snapshot_row.trend_direction,
+            snapshot_row.reversal_stage,
+            snapshot_row.wave_id,
+            snapshot_row.current_hh_count,
+            snapshot_row.current_ll_count,
             snapshot_row.structure_progress_state,
             snapshot_row.break_confirmation_status,
             snapshot_row.break_confirmation_ref,

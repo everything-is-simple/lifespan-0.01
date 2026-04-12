@@ -23,8 +23,7 @@ from mlq.core.paths import WorkspaceRoots, default_settings
 DEFAULT_ALPHA_FORMAL_SIGNAL_TRIGGER_TABLE: Final[str] = "alpha_trigger_event"
 DEFAULT_ALPHA_FORMAL_SIGNAL_FILTER_TABLE: Final[str] = "filter_snapshot"
 DEFAULT_ALPHA_FORMAL_SIGNAL_STRUCTURE_TABLE: Final[str] = "structure_snapshot"
-DEFAULT_ALPHA_FORMAL_SIGNAL_FALLBACK_CONTEXT_TABLE: Final[str | None] = None
-DEFAULT_ALPHA_FORMAL_SIGNAL_CONTRACT_VERSION: Final[str] = "alpha-formal-signal-v1"
+DEFAULT_ALPHA_FORMAL_SIGNAL_CONTRACT_VERSION: Final[str] = "alpha-formal-signal-v2"
 
 
 @dataclass(frozen=True)
@@ -50,11 +49,9 @@ class AlphaFormalSignalBuildSummary:
     alpha_ledger_path: str
     filter_ledger_path: str
     structure_ledger_path: str
-    legacy_context_path: str | None
     source_trigger_table: str
     source_filter_table: str
     source_structure_table: str
-    fallback_context_table: str | None
 
     def as_dict(self) -> dict[str, object]:
         """返回适合写入 summary JSON 的稳定字典。"""
@@ -80,6 +77,12 @@ class _ContextRow:
     asof_date: date
     formal_signal_status: str
     trigger_admissible: bool
+    major_state: str
+    trend_direction: str
+    reversal_stage: str
+    wave_id: int
+    current_hh_count: int
+    current_ll_count: int
     malf_context_4: str
     lifecycle_rank_high: int
     lifecycle_rank_total: int
@@ -96,6 +99,12 @@ class _FormalSignalEventRow:
     pattern_code: str
     formal_signal_status: str
     trigger_admissible: bool
+    major_state: str
+    trend_direction: str
+    reversal_stage: str
+    wave_id: int
+    current_hh_count: int
+    current_ll_count: int
     malf_context_4: str
     lifecycle_rank_high: int
     lifecycle_rank_total: int
@@ -121,7 +130,6 @@ def run_alpha_formal_signal_build(
     source_trigger_table: str = DEFAULT_ALPHA_FORMAL_SIGNAL_TRIGGER_TABLE,
     source_filter_table: str = DEFAULT_ALPHA_FORMAL_SIGNAL_FILTER_TABLE,
     source_structure_table: str = DEFAULT_ALPHA_FORMAL_SIGNAL_STRUCTURE_TABLE,
-    source_context_table: str | None = DEFAULT_ALPHA_FORMAL_SIGNAL_FALLBACK_CONTEXT_TABLE,
     signal_contract_version: str = DEFAULT_ALPHA_FORMAL_SIGNAL_CONTRACT_VERSION,
     producer_name: str = "alpha_formal_signal_producer",
     producer_version: str = "v1",
@@ -135,7 +143,6 @@ def run_alpha_formal_signal_build(
     resolved_alpha_path = Path(alpha_path or alpha_ledger_path(workspace))
     resolved_filter_path = Path(filter_path or workspace.databases.filter)
     resolved_structure_path = Path(structure_path or workspace.databases.structure)
-    resolved_malf_path = Path(malf_path or workspace.databases.malf)
     normalized_start_date = _coerce_date(signal_start_date)
     normalized_end_date = _coerce_date(signal_end_date)
     normalized_instruments = tuple(sorted({item for item in instruments or () if item}))
@@ -164,8 +171,6 @@ def run_alpha_formal_signal_build(
             signal_start_date=normalized_start_date,
             signal_end_date=normalized_end_date,
             instruments=tuple(sorted({row.instrument for row in trigger_rows})),
-            legacy_context_path=resolved_malf_path,
-            legacy_context_table=source_context_table,
         )
         context_map = {
             (row.instrument, row.signal_date, row.asof_date): row
@@ -199,11 +204,9 @@ def run_alpha_formal_signal_build(
             alpha_path=resolved_alpha_path,
             filter_path=resolved_filter_path,
             structure_path=resolved_structure_path,
-            legacy_context_path=resolved_malf_path if source_context_table else None,
             source_trigger_table=source_trigger_table,
             source_filter_table=source_filter_table,
             source_structure_table=source_structure_table,
-            fallback_context_table=source_context_table,
             batch_size=normalized_batch_size,
         )
         _mark_run_completed(
@@ -357,8 +360,6 @@ def _load_official_context_rows(
     signal_start_date: date | None,
     signal_end_date: date | None,
     instruments: tuple[str, ...],
-    legacy_context_path: Path | None,
-    legacy_context_table: str | None,
 ) -> list[_ContextRow]:
     if not instruments:
         return []
@@ -397,9 +398,12 @@ def _load_official_context_rows(
                 rf.asof_date,
                 CASE WHEN rf.trigger_admissible THEN 'admitted' ELSE 'blocked' END AS formal_signal_status,
                 rf.trigger_admissible,
-                s.malf_context_4,
-                s.lifecycle_rank_high,
-                s.lifecycle_rank_total
+                s.major_state,
+                s.trend_direction,
+                s.reversal_stage,
+                s.wave_id,
+                s.current_hh_count,
+                s.current_ll_count
             FROM ranked_filter AS rf
             INNER JOIN structure_db.main.{structure_table_name} AS s
                 ON s.structure_snapshot_nk = rf.structure_snapshot_nk
@@ -407,89 +411,19 @@ def _load_official_context_rows(
             """,
             parameters,
         ).fetchall()
-        if rows:
-            return [
-                _ContextRow(
-                    instrument=str(row[0]),
-                    signal_date=_normalize_date_value(row[1], field_name="signal_date"),
-                    asof_date=_normalize_date_value(row[2], field_name="asof_date"),
-                    formal_signal_status=_normalize_formal_signal_status(row[3]),
-                    trigger_admissible=bool(row[4]),
-                    malf_context_4=_normalize_optional_str(row[5], default="UNKNOWN"),
-                    lifecycle_rank_high=_normalize_optional_int(row[6]),
-                    lifecycle_rank_total=_normalize_optional_int(row[7]),
-                )
-                for row in rows
-            ]
-    except duckdb.Error:
-        if legacy_context_table is None or legacy_context_path is None or not legacy_context_path.exists():
-            raise
-    finally:
-        connection.close()
-    return _load_context_rows(
-        malf_path=legacy_context_path,
-        table_name=legacy_context_table,
-        signal_start_date=signal_start_date,
-        signal_end_date=signal_end_date,
-        instruments=instruments,
-    )
-
-
-def _load_context_rows(
-    *,
-    malf_path: Path,
-    table_name: str,
-    signal_start_date: date | None,
-    signal_end_date: date | None,
-    instruments: tuple[str, ...],
-) -> list[_ContextRow]:
-    if not instruments:
-        return []
-    connection = duckdb.connect(str(malf_path), read_only=True)
-    try:
-        available_columns = _load_table_columns(connection, table_name)
-        signal_date_column = _resolve_existing_column(
-            available_columns,
-            ("signal_date",),
-            field_name="signal_date",
-            table_name=table_name,
-        )
-        instrument_column = _resolve_existing_column(
-            available_columns,
-            ("instrument", "entity_code", "code"),
-            field_name="instrument",
-            table_name=table_name,
-        )
-        parameters: list[object] = []
-        where_clauses: list[str] = []
-        placeholders = ", ".join("?" for _ in instruments)
-        where_clauses.append(f"{instrument_column} IN ({placeholders})")
-        parameters.extend(instruments)
-        if signal_start_date is not None:
-            where_clauses.append(f"{signal_date_column} >= ?")
-            parameters.append(signal_start_date)
-        if signal_end_date is not None:
-            where_clauses.append(f"{signal_date_column} <= ?")
-            parameters.append(signal_end_date)
-        where_sql = f"WHERE {' AND '.join(where_clauses)}"
-        select_sql = _build_context_select_sql(
-            table_name=table_name,
-            available_columns=available_columns,
-            instrument_column=instrument_column,
-            signal_date_column=signal_date_column,
-            filter_sql=where_sql,
-        )
-        rows = connection.execute(select_sql, parameters).fetchall()
         return [
-            _ContextRow(
+            _build_context_row(
                 instrument=str(row[0]),
                 signal_date=_normalize_date_value(row[1], field_name="signal_date"),
                 asof_date=_normalize_date_value(row[2], field_name="asof_date"),
                 formal_signal_status=_normalize_formal_signal_status(row[3]),
                 trigger_admissible=bool(row[4]),
-                malf_context_4=_normalize_optional_str(row[5], default="UNKNOWN"),
-                lifecycle_rank_high=_normalize_optional_int(row[6]),
-                lifecycle_rank_total=_normalize_optional_int(row[7]),
+                major_state=_normalize_optional_str(row[5], default="牛逆"),
+                trend_direction=_normalize_optional_str(row[6], default="down").lower(),
+                reversal_stage=_normalize_optional_str(row[7], default="none").lower(),
+                wave_id=_normalize_optional_int(row[8]),
+                current_hh_count=_normalize_optional_int(row[9]),
+                current_ll_count=_normalize_optional_int(row[10]),
             )
             for row in rows
         ]
@@ -497,95 +431,42 @@ def _load_context_rows(
         connection.close()
 
 
-def _build_context_select_sql(
+def _build_context_row(
     *,
-    table_name: str,
-    available_columns: set[str],
-    instrument_column: str,
-    signal_date_column: str,
-    filter_sql: str,
-) -> str:
-    formal_signal_status_column = _resolve_optional_column(
-        available_columns,
-        ("formal_signal_status", "admission_status"),
+    instrument: str,
+    signal_date: date,
+    asof_date: date,
+    formal_signal_status: str,
+    trigger_admissible: bool,
+    major_state: str,
+    trend_direction: str,
+    reversal_stage: str,
+    wave_id: int,
+    current_hh_count: int,
+    current_ll_count: int,
+) -> _ContextRow:
+    malf_context_4 = _map_major_state_to_context_code(major_state)
+    lifecycle_rank_high = _derive_lifecycle_rank_high(
+        malf_context_4=malf_context_4,
+        current_hh_count=current_hh_count,
+        current_ll_count=current_ll_count,
     )
-    trigger_admissible_column = _resolve_optional_column(
-        available_columns,
-        ("trigger_admissible", "filter_trigger_admissible"),
+    return _ContextRow(
+        instrument=instrument,
+        signal_date=signal_date,
+        asof_date=asof_date,
+        formal_signal_status=formal_signal_status,
+        trigger_admissible=trigger_admissible,
+        major_state=major_state,
+        trend_direction=trend_direction,
+        reversal_stage=reversal_stage,
+        wave_id=wave_id,
+        current_hh_count=current_hh_count,
+        current_ll_count=current_ll_count,
+        malf_context_4=malf_context_4,
+        lifecycle_rank_high=lifecycle_rank_high,
+        lifecycle_rank_total=4,
     )
-    malf_context_4_column = _resolve_optional_column(available_columns, ("malf_context_4",))
-    lifecycle_rank_high_column = _resolve_optional_column(available_columns, ("lifecycle_rank_high",))
-    lifecycle_rank_total_column = _resolve_optional_column(available_columns, ("lifecycle_rank_total",))
-    order_columns = [
-        column_name
-        for column_name in (
-            _resolve_optional_column(available_columns, ("asof_date",)),
-            _resolve_optional_column(available_columns, ("calc_date",)),
-            _resolve_optional_column(available_columns, ("created_at",)),
-        )
-        if column_name is not None
-    ]
-    order_sql = ", ".join(f"{column_name} DESC" for column_name in order_columns) or "1"
-    asof_date_column = _resolve_optional_column(available_columns, ("asof_date", "calc_date")) or signal_date_column
-    status_sql = (
-        f"{formal_signal_status_column} AS formal_signal_status"
-        if formal_signal_status_column is not None
-        else (
-            f"CASE WHEN {trigger_admissible_column} THEN 'admitted' ELSE 'blocked' END AS formal_signal_status"
-            if trigger_admissible_column is not None
-            else "'blocked' AS formal_signal_status"
-        )
-    )
-    admissible_sql = (
-        f"COALESCE({trigger_admissible_column}, FALSE) AS trigger_admissible"
-        if trigger_admissible_column is not None
-        else "FALSE AS trigger_admissible"
-    )
-    malf_context_sql = (
-        f"COALESCE({malf_context_4_column}, 'UNKNOWN') AS malf_context_4"
-        if malf_context_4_column is not None
-        else "'UNKNOWN' AS malf_context_4"
-    )
-    lifecycle_high_sql = (
-        f"COALESCE({lifecycle_rank_high_column}, 0) AS lifecycle_rank_high"
-        if lifecycle_rank_high_column is not None
-        else "0 AS lifecycle_rank_high"
-    )
-    lifecycle_total_sql = (
-        f"COALESCE({lifecycle_rank_total_column}, 0) AS lifecycle_rank_total"
-        if lifecycle_rank_total_column is not None
-        else "0 AS lifecycle_rank_total"
-    )
-    return f"""
-        WITH ranked_context AS (
-            SELECT
-                {instrument_column} AS instrument,
-                {signal_date_column} AS signal_date,
-                {asof_date_column} AS asof_date,
-                {status_sql},
-                {admissible_sql},
-                {malf_context_sql},
-                {lifecycle_high_sql},
-                {lifecycle_total_sql},
-                ROW_NUMBER() OVER (
-                    PARTITION BY {instrument_column}, {signal_date_column}, {asof_date_column}
-                    ORDER BY {order_sql}
-                ) AS row_rank
-            FROM {table_name}
-            {filter_sql}
-        )
-        SELECT
-            instrument,
-            signal_date,
-            asof_date,
-            formal_signal_status,
-            trigger_admissible,
-            malf_context_4,
-            lifecycle_rank_high,
-            lifecycle_rank_total
-        FROM ranked_context
-        WHERE row_rank = 1
-    """
 
 
 def _materialize_formal_signal_rows(
@@ -602,11 +483,9 @@ def _materialize_formal_signal_rows(
     alpha_path: Path,
     filter_path: Path,
     structure_path: Path,
-    legacy_context_path: Path | None,
     source_trigger_table: str,
     source_filter_table: str,
     source_structure_table: str,
-    fallback_context_table: str | None,
     batch_size: int,
 ) -> AlphaFormalSignalBuildSummary:
     inserted_count = 0
@@ -687,11 +566,9 @@ def _materialize_formal_signal_rows(
         alpha_ledger_path=str(alpha_path),
         filter_ledger_path=str(filter_path),
         structure_ledger_path=str(structure_path),
-        legacy_context_path=None if legacy_context_path is None else str(legacy_context_path),
         source_trigger_table=source_trigger_table,
         source_filter_table=source_filter_table,
         source_structure_table=source_structure_table,
-        fallback_context_table=fallback_context_table,
     )
 
 
@@ -790,6 +667,12 @@ def _build_formal_signal_event_row(
         pattern_code=trigger_row.pattern_code,
         formal_signal_status=context_row.formal_signal_status,
         trigger_admissible=context_row.trigger_admissible,
+        major_state=context_row.major_state,
+        trend_direction=context_row.trend_direction,
+        reversal_stage=context_row.reversal_stage,
+        wave_id=context_row.wave_id,
+        current_hh_count=context_row.current_hh_count,
+        current_ll_count=context_row.current_ll_count,
         malf_context_4=context_row.malf_context_4,
         lifecycle_rank_high=context_row.lifecycle_rank_high,
         lifecycle_rank_total=context_row.lifecycle_rank_total,
@@ -835,6 +718,12 @@ def _upsert_formal_signal_event(
         SELECT
             formal_signal_status,
             trigger_admissible,
+            major_state,
+            trend_direction,
+            reversal_stage,
+            wave_id,
+            current_hh_count,
+            current_ll_count,
             malf_context_4,
             lifecycle_rank_high,
             lifecycle_rank_total,
@@ -857,6 +746,12 @@ def _upsert_formal_signal_event(
                 pattern_code,
                 formal_signal_status,
                 trigger_admissible,
+                major_state,
+                trend_direction,
+                reversal_stage,
+                wave_id,
+                current_hh_count,
+                current_ll_count,
                 malf_context_4,
                 lifecycle_rank_high,
                 lifecycle_rank_total,
@@ -865,7 +760,7 @@ def _upsert_formal_signal_event(
                 first_seen_run_id,
                 last_materialized_run_id
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 event_row.signal_nk,
@@ -877,6 +772,12 @@ def _upsert_formal_signal_event(
                 event_row.pattern_code,
                 event_row.formal_signal_status,
                 event_row.trigger_admissible,
+                event_row.major_state,
+                event_row.trend_direction,
+                event_row.reversal_stage,
+                event_row.wave_id,
+                event_row.current_hh_count,
+                event_row.current_ll_count,
                 event_row.malf_context_4,
                 event_row.lifecycle_rank_high,
                 event_row.lifecycle_rank_total,
@@ -891,24 +792,42 @@ def _upsert_formal_signal_event(
     existing_fingerprint = (
         _normalize_formal_signal_status(existing_row[0]),
         bool(existing_row[1]),
-        _normalize_optional_str(existing_row[2], default="UNKNOWN"),
-        _normalize_optional_int(existing_row[3]),
-        _normalize_optional_int(existing_row[4]),
+        _normalize_optional_str(existing_row[2], default="牛逆"),
+        _normalize_optional_str(existing_row[3], default="down"),
+        _normalize_optional_str(existing_row[4], default="none"),
+        _normalize_optional_int(existing_row[5]),
+        _normalize_optional_int(existing_row[6]),
+        _normalize_optional_int(existing_row[7]),
+        _normalize_optional_str(existing_row[8], default="UNKNOWN"),
+        _normalize_optional_int(existing_row[9]),
+        _normalize_optional_int(existing_row[10]),
     )
     new_fingerprint = (
         event_row.formal_signal_status,
         event_row.trigger_admissible,
+        event_row.major_state,
+        event_row.trend_direction,
+        event_row.reversal_stage,
+        event_row.wave_id,
+        event_row.current_hh_count,
+        event_row.current_ll_count,
         event_row.malf_context_4,
         event_row.lifecycle_rank_high,
         event_row.lifecycle_rank_total,
     )
-    first_seen_run_id = str(existing_row[5]) if existing_row[5] is not None else event_row.first_seen_run_id
+    first_seen_run_id = str(existing_row[11]) if existing_row[11] is not None else event_row.first_seen_run_id
     connection.execute(
         f"""
         UPDATE {ALPHA_FORMAL_SIGNAL_EVENT_TABLE}
         SET
             formal_signal_status = ?,
             trigger_admissible = ?,
+            major_state = ?,
+            trend_direction = ?,
+            reversal_stage = ?,
+            wave_id = ?,
+            current_hh_count = ?,
+            current_ll_count = ?,
             malf_context_4 = ?,
             lifecycle_rank_high = ?,
             lifecycle_rank_total = ?,
@@ -920,6 +839,12 @@ def _upsert_formal_signal_event(
         [
             event_row.formal_signal_status,
             event_row.trigger_admissible,
+            event_row.major_state,
+            event_row.trend_direction,
+            event_row.reversal_stage,
+            event_row.wave_id,
+            event_row.current_hh_count,
+            event_row.current_ll_count,
             event_row.malf_context_4,
             event_row.lifecycle_rank_high,
             event_row.lifecycle_rank_total,
@@ -1004,6 +929,26 @@ def _resolve_optional_column(available_columns: set[str], candidates: tuple[str,
         if candidate in available_columns:
             return candidate
     return None
+
+
+def _map_major_state_to_context_code(major_state: str) -> str:
+    mapping = {
+        "牛顺": "BULL_MAINSTREAM",
+        "熊逆": "BULL_COUNTERTREND",
+        "牛逆": "BEAR_COUNTERTREND",
+        "熊顺": "BEAR_MAINSTREAM",
+    }
+    return mapping.get(major_state, "UNKNOWN")
+
+
+def _derive_lifecycle_rank_high(
+    *,
+    malf_context_4: str,
+    current_hh_count: int,
+    current_ll_count: int,
+) -> int:
+    raw_rank = current_hh_count if malf_context_4.startswith("BULL_") else current_ll_count
+    return max(0, min(raw_rank, 4))
 
 
 def _normalize_formal_signal_status(value: object) -> str:

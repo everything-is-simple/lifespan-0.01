@@ -40,15 +40,12 @@ def _seed_structure_snapshots(settings) -> None:
                 instrument,
                 signal_date,
                 asof_date,
-                malf_context_4,
-                lifecycle_rank_high,
-                lifecycle_rank_total,
-                new_high_count,
-                new_low_count,
-                refresh_density,
-                advancement_density,
-                is_failed_extreme,
-                failure_type,
+                major_state,
+                trend_direction,
+                reversal_stage,
+                wave_id,
+                current_hh_count,
+                current_ll_count,
                 structure_progress_state,
                 break_confirmation_status,
                 break_confirmation_ref,
@@ -61,8 +58,8 @@ def _seed_structure_snapshots(settings) -> None:
                 last_materialized_run_id
             )
             VALUES
-                ('ss-001', '000001.SZ', '2026-04-08', '2026-04-08', 'BULL_MAINSTREAM', 1, 4, 2, 0, 0.8, 0.7, FALSE, NULL, 'advancing', 'confirmed', 'break-001', 'stats-001', 'high', 'elevated', 'ctx-001', 'structure-snapshot-v1', 'run-a', 'run-a'),
-                ('ss-002', '000002.SZ', '2026-04-08', '2026-04-08', 'BEAR_MAINSTREAM', 0, 4, 0, 1, 0.0, 0.0, TRUE, 'failed_extreme', 'failed', NULL, NULL, NULL, NULL, NULL, 'ctx-002', 'structure-snapshot-v1', 'run-a', 'run-a')
+                ('ss-001', '000001.SZ', '2026-04-08', '2026-04-08', '牛顺', 'up', 'expand', 7, 2, 0, 'advancing', 'confirmed', 'break-001', 'stats-001', 'high', 'elevated', 'ctx-001', 'structure-snapshot-v2', 'run-a', 'run-a'),
+                ('ss-002', '000002.SZ', '2026-04-08', '2026-04-08', '熊顺', 'down', 'expand', 9, 0, 1, 'failed', NULL, NULL, NULL, NULL, NULL, 'ctx-002', 'structure-snapshot-v2', 'run-a', 'run-a')
             """
         )
     finally:
@@ -75,13 +72,27 @@ def _seed_context_rows(malf_path: Path) -> None:
     try:
         conn.execute(
             """
-            CREATE TABLE pas_context_snapshot (
-                entity_code TEXT NOT NULL,
-                signal_date DATE NOT NULL
+            CREATE TABLE malf_state_snapshot (
+                snapshot_nk TEXT NOT NULL,
+                asset_type TEXT NOT NULL,
+                code TEXT NOT NULL,
+                timeframe TEXT NOT NULL,
+                asof_bar_dt DATE NOT NULL,
+                major_state TEXT NOT NULL,
+                trend_direction TEXT NOT NULL,
+                reversal_stage TEXT NOT NULL,
+                wave_id BIGINT NOT NULL,
+                current_hh_count BIGINT NOT NULL,
+                current_ll_count BIGINT NOT NULL
             )
             """
         )
-        conn.execute("INSERT INTO pas_context_snapshot VALUES ('000001.SZ', '2026-04-08')")
+        conn.execute(
+            """
+            INSERT INTO malf_state_snapshot VALUES
+            ('state-001', 'stock', '000001.SZ', 'D', '2026-04-08', '牛顺', 'up', 'expand', 7, 2, 0)
+            """
+        )
     finally:
         conn.close()
 
@@ -134,7 +145,7 @@ def test_run_filter_snapshot_build_materializes_minimal_admission_layer(
     assert run_row == ("completed", 2)
     assert snapshot_rows == [
         ("000001.SZ", True, None, "confirmed", "high"),
-        ("000002.SZ", False, "failed_extreme", None, None),
+        ("000002.SZ", False, "structure_progress_failed", None, None),
     ]
 
 
@@ -163,8 +174,8 @@ def test_run_filter_snapshot_build_marks_rematerialized_when_structure_turns_fai
             UPDATE structure_snapshot
             SET
                 structure_progress_state = 'failed',
-                is_failed_extreme = TRUE,
-                failure_type = 'failed_extreme',
+                major_state = '熊顺',
+                trend_direction = 'down',
                 last_materialized_run_id = 'run-b'
             WHERE structure_snapshot_nk = 'ss-001'
             """
@@ -193,4 +204,4 @@ def test_run_filter_snapshot_build_marks_rematerialized_when_structure_turns_fai
     finally:
         conn.close()
 
-    assert snapshot_row == (False, "failed_extreme", "filter-snapshot-test-002b")
+    assert snapshot_row == (False, "structure_progress_failed", "filter-snapshot-test-002b")

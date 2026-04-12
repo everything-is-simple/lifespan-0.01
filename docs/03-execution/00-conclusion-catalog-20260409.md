@@ -3,7 +3,7 @@
 日期：`2026-04-09`
 状态：`持续更新`
 
-当前最新生效结论锚点：`32-downstream-truthfulness-revalidation-after-malf-canonicalization-conclusion-20260411.md`
+当前最新生效结论锚点：`33-malf-downstream-canonical-contract-purge-conclusion-20260412.md`
 
 ## 正式结论目录
 
@@ -39,6 +39,7 @@
 30. `30-malf-canonical-ledger-and-data-grade-runner-bootstrap-conclusion-20260411.md`
 31. `31-structure-filter-alpha-rebind-to-canonical-malf-conclusion-20260411.md`
 32. `32-downstream-truthfulness-revalidation-after-malf-canonicalization-conclusion-20260411.md`
+33. `33-malf-downstream-canonical-contract-purge-conclusion-20260412.md`
 100. `100-trade-signal-anchor-contract-freeze-conclusion-20260411.md`
 101. `101-position-entry-t-plus-1-open-reference-price-correction-conclusion-20260411.md`
 102. `102-trade-exit-pnl-ledger-bootstrap-conclusion-20260411.md`
@@ -48,10 +49,10 @@
 
 ## 当前说明
 
-1. `32` 已成为当前最新生效结论锚点。
-2. `28` 仍是当前未收口的总治理主卡，当前待施工卡已推进到 `33`。
-3. `29-32` 已完成并生效，当前 malf 后续主线卡组为 `33-35`，sidecar 卡为 `36`。
-4. `100-105` 为 `33-36` 全部收口后的 trade/system 后置恢复卡组，**不得在 33-36 完成前提前推进**。
+1. `33` 已成为当前最新生效结论锚点。
+2. `28` 仍是当前未收口的总治理主卡，当前待施工卡已推进到 `34`。
+3. `29-33` 已完成并生效，当前 malf 后续主线卡组为 `34-35`，sidecar 卡为 `36`。
+4. `100-105` 为 `34-36` 全部收口后的 trade/system 后置恢复卡组，**不得在 34-36 完成前提前推进**。
 
 ## 卡组进度图
 

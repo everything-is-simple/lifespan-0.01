@@ -23,7 +23,7 @@ from mlq.core.paths import WorkspaceRoots, default_settings
 DEFAULT_ALPHA_TRIGGER_INPUT_TABLE: Final[str] = "alpha_trigger_candidate"
 DEFAULT_ALPHA_TRIGGER_FILTER_TABLE: Final[str] = "filter_snapshot"
 DEFAULT_ALPHA_TRIGGER_STRUCTURE_TABLE: Final[str] = "structure_snapshot"
-DEFAULT_ALPHA_TRIGGER_CONTRACT_VERSION: Final[str] = "alpha-trigger-v1"
+DEFAULT_ALPHA_TRIGGER_CONTRACT_VERSION: Final[str] = "alpha-trigger-v2"
 
 
 @dataclass(frozen=True)
@@ -358,8 +358,12 @@ def _load_official_context_rows(
                 rf.blocking_conditions_json,
                 rf.admission_notes,
                 s.structure_progress_state,
-                s.is_failed_extreme,
-                s.failure_type
+                s.major_state,
+                s.trend_direction,
+                s.reversal_stage,
+                s.wave_id,
+                s.current_hh_count,
+                s.current_ll_count
             FROM ranked_filter AS rf
             INNER JOIN structure_db.main.{structure_table_name} AS s
                 ON s.structure_snapshot_nk = rf.structure_snapshot_nk
@@ -378,8 +382,12 @@ def _load_official_context_rows(
                     "blocking_conditions_json": _normalize_optional_str(row[7], default="[]"),
                     "admission_notes": _normalize_optional_nullable_str(row[8]),
                     "structure_progress_state": _normalize_optional_str(row[9], default="unknown"),
-                    "is_failed_extreme": bool(row[10]),
-                    "failure_type": _normalize_optional_nullable_str(row[11]),
+                    "major_state": _normalize_optional_str(row[10], default="牛逆"),
+                    "trend_direction": _normalize_optional_str(row[11], default="down"),
+                    "reversal_stage": _normalize_optional_str(row[12], default="none"),
+                    "wave_id": _normalize_optional_int(row[13]),
+                    "current_hh_count": _normalize_optional_int(row[14]),
+                    "current_ll_count": _normalize_optional_int(row[15]),
                 },
                 ensure_ascii=False,
                 sort_keys=True,
@@ -801,6 +809,12 @@ def _normalize_optional_nullable_str(value: object) -> str | None:
         return None
     candidate = str(value).strip()
     return candidate or None
+
+
+def _normalize_optional_int(value: object) -> int:
+    if value is None or value == "":
+        return 0
+    return int(value)
 
 
 def _write_summary(summary: AlphaTriggerBuildSummary, summary_path: Path | None) -> None:

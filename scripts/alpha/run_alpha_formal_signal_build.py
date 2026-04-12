@@ -8,7 +8,6 @@ from pathlib import Path
 
 from mlq.alpha import (
     DEFAULT_ALPHA_FORMAL_SIGNAL_CONTRACT_VERSION,
-    DEFAULT_ALPHA_FORMAL_SIGNAL_FALLBACK_CONTEXT_TABLE,
     DEFAULT_ALPHA_FORMAL_SIGNAL_FILTER_TABLE,
     DEFAULT_ALPHA_FORMAL_SIGNAL_STRUCTURE_TABLE,
     DEFAULT_ALPHA_FORMAL_SIGNAL_TRIGGER_TABLE,
@@ -41,10 +40,6 @@ def build_argument_parser() -> argparse.ArgumentParser:
         default=DEFAULT_ALPHA_FORMAL_SIGNAL_STRUCTURE_TABLE,
     )
     parser.add_argument(
-        "--fallback-context-table",
-        default=DEFAULT_ALPHA_FORMAL_SIGNAL_FALLBACK_CONTEXT_TABLE,
-    )
-    parser.add_argument(
         "--signal-contract-version",
         default=DEFAULT_ALPHA_FORMAL_SIGNAL_CONTRACT_VERSION,
     )
@@ -67,7 +62,6 @@ def main() -> None:
         source_trigger_table=args.source_trigger_table,
         source_filter_table=args.source_filter_table,
         source_structure_table=args.source_structure_table,
-        source_context_table=args.fallback_context_table,
         signal_contract_version=args.signal_contract_version,
         summary_path=args.summary_path,
     )

@@ -151,6 +151,8 @@ def test_run_structure_snapshot_build_materializes_run_snapshot_and_bridge(
         limit=10,
         batch_size=1,
         run_id="structure-snapshot-test-001",
+        source_context_table="pas_context_snapshot",
+        source_structure_input_table="structure_candidate_snapshot",
     )
 
     assert summary.candidate_input_count == 2
@@ -170,7 +172,15 @@ def test_run_structure_snapshot_build_materializes_run_snapshot_and_bridge(
         ).fetchone()
         snapshot_rows = conn.execute(
             """
-            SELECT instrument, structure_progress_state, source_context_nk
+            SELECT
+                instrument,
+                major_state,
+                trend_direction,
+                reversal_stage,
+                current_hh_count,
+                current_ll_count,
+                structure_progress_state,
+                source_context_nk
             FROM structure_snapshot
             ORDER BY instrument
             """
@@ -188,8 +198,8 @@ def test_run_structure_snapshot_build_materializes_run_snapshot_and_bridge(
 
     assert run_row == ("completed", 2)
     assert snapshot_rows == [
-        ("000001.SZ", "advancing", "ctx-001"),
-        ("000002.SZ", "failed", "ctx-002"),
+        ("000001.SZ", "牛顺", "up", "none", 1, 0, "advancing", "ctx-001"),
+        ("000002.SZ", "熊顺", "down", "none", 0, 0, "failed", "ctx-002"),
     ]
     assert len(bridge_rows) == 2
     assert {row[1] for row in bridge_rows} == {"inserted"}
@@ -217,6 +227,8 @@ def test_run_structure_snapshot_build_marks_rematerialized_when_structure_change
         signal_start_date="2026-04-08",
         signal_end_date="2026-04-08",
         run_id="structure-snapshot-test-002a",
+        source_context_table="pas_context_snapshot",
+        source_structure_input_table="structure_candidate_snapshot",
     )
     assert first_summary.inserted_count == 1
 
@@ -229,6 +241,8 @@ def test_run_structure_snapshot_build_marks_rematerialized_when_structure_change
         signal_start_date="2026-04-08",
         signal_end_date="2026-04-08",
         run_id="structure-snapshot-test-002b",
+        source_context_table="pas_context_snapshot",
+        source_structure_input_table="structure_candidate_snapshot",
     )
 
     assert second_summary.rematerialized_count == 1
@@ -238,7 +252,7 @@ def test_run_structure_snapshot_build_marks_rematerialized_when_structure_change
     try:
         snapshot_row = conn.execute(
             """
-            SELECT structure_progress_state, failure_type, last_materialized_run_id
+            SELECT structure_progress_state, major_state, last_materialized_run_id
             FROM structure_snapshot
             WHERE instrument = '000001.SZ'
             """
@@ -253,7 +267,7 @@ def test_run_structure_snapshot_build_marks_rematerialized_when_structure_change
     finally:
         conn.close()
 
-    assert snapshot_row == ("failed", "failed_extreme", "structure-snapshot-test-002b")
+    assert snapshot_row == ("failed", "牛顺", "structure-snapshot-test-002b")
     assert bridge_row == ("rematerialized",)
 
 
@@ -280,6 +294,8 @@ def test_run_structure_snapshot_build_attaches_sidecar_fields_without_rewriting_
         signal_start_date="2026-04-08",
         signal_end_date="2026-04-08",
         run_id="structure-snapshot-test-003",
+        source_context_table="pas_context_snapshot",
+        source_structure_input_table="structure_candidate_snapshot",
     )
 
     assert summary.materialized_snapshot_count == 1

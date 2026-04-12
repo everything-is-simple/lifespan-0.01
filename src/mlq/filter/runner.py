@@ -24,8 +24,7 @@ from mlq.filter.bootstrap import (
 DEFAULT_FILTER_STRUCTURE_TABLE: Final[str] = "structure_snapshot"
 DEFAULT_FILTER_CONTEXT_TABLE: Final[str] = MALF_STATE_SNAPSHOT_TABLE
 DEFAULT_FILTER_SOURCE_TIMEFRAME: Final[str] = "D"
-DEFAULT_FILTER_CONTRACT_VERSION: Final[str] = "filter-snapshot-v1"
-LEGACY_FILTER_CONTEXT_TABLE: Final[str] = "pas_context_snapshot"
+DEFAULT_FILTER_CONTRACT_VERSION: Final[str] = "filter-snapshot-v2"
 
 
 @dataclass(frozen=True)
@@ -66,9 +65,13 @@ class _StructureSnapshotInputRow:
     instrument: str
     signal_date: date
     asof_date: date
+    major_state: str
+    trend_direction: str
+    reversal_stage: str
+    wave_id: int
+    current_hh_count: int
+    current_ll_count: int
     structure_progress_state: str
-    is_failed_extreme: bool
-    failure_type: str | None
     break_confirmation_status: str | None
     break_confirmation_ref: str | None
     stats_snapshot_nk: str | None
@@ -84,6 +87,12 @@ class _FilterSnapshotRow:
     instrument: str
     signal_date: date
     asof_date: date
+    major_state: str
+    trend_direction: str
+    reversal_stage: str
+    wave_id: int
+    current_hh_count: int
+    current_ll_count: int
     trigger_admissible: bool
     primary_blocking_condition: str | None
     blocking_conditions_json: str
@@ -136,10 +145,7 @@ def run_filter_snapshot_build(
     materialization_run_id = run_id or _build_filter_run_id()
 
     _ensure_database_exists(resolved_structure_path, label="structure")
-    actual_source_context_table = _resolve_filter_context_table(
-        malf_path=resolved_malf_path,
-        requested_table=source_context_table,
-    )
+    actual_source_context_table = source_context_table
     structure_rows = _load_structure_snapshot_rows(
         structure_path=resolved_structure_path,
         table_name=source_structure_table,
@@ -229,14 +235,6 @@ def _ensure_database_exists(path: Path, *, label: str) -> None:
         raise FileNotFoundError(f"Missing {label} database: {path}")
 
 
-def _resolve_filter_context_table(*, malf_path: Path, requested_table: str) -> str:
-    if _database_table_exists(malf_path, requested_table):
-        return requested_table
-    if _database_table_exists(malf_path, LEGACY_FILTER_CONTEXT_TABLE):
-        return LEGACY_FILTER_CONTEXT_TABLE
-    return requested_table
-
-
 def _database_table_exists(path: Path, table_name: str | None) -> bool:
     if table_name is None or table_name == "" or not path.exists():
         return False
@@ -301,9 +299,13 @@ def _load_structure_snapshot_rows(
                 {instrument_column} AS instrument,
                 {signal_date_column} AS signal_date,
                 {_resolve_optional_column(available_columns, ("asof_date",)) or signal_date_column} AS asof_date,
+                {_resolve_existing_column(available_columns, ("major_state",), field_name="major_state", table_name=table_name)} AS major_state,
+                {_resolve_existing_column(available_columns, ("trend_direction",), field_name="trend_direction", table_name=table_name)} AS trend_direction,
+                COALESCE({_resolve_optional_column(available_columns, ("reversal_stage",)) or "'none'"}, 'none') AS reversal_stage,
+                COALESCE({_resolve_optional_column(available_columns, ("wave_id",)) or "0"}, 0) AS wave_id,
+                COALESCE({_resolve_optional_column(available_columns, ("current_hh_count",)) or "0"}, 0) AS current_hh_count,
+                COALESCE({_resolve_optional_column(available_columns, ("current_ll_count",)) or "0"}, 0) AS current_ll_count,
                 {_resolve_optional_column(available_columns, ("structure_progress_state",)) or "'unknown'"} AS structure_progress_state,
-                COALESCE({_resolve_optional_column(available_columns, ("is_failed_extreme",)) or "FALSE"}, FALSE) AS is_failed_extreme,
-                {_resolve_optional_column(available_columns, ("failure_type",)) or "NULL"} AS failure_type,
                 {_resolve_optional_column(available_columns, ("break_confirmation_status",)) or "NULL"} AS break_confirmation_status,
                 {_resolve_optional_column(available_columns, ("break_confirmation_ref",)) or "NULL"} AS break_confirmation_ref,
                 {_resolve_optional_column(available_columns, ("stats_snapshot_nk",)) or "NULL"} AS stats_snapshot_nk,
@@ -323,15 +325,19 @@ def _load_structure_snapshot_rows(
                 instrument=str(row[1]),
                 signal_date=_normalize_date_value(row[2], field_name="signal_date"),
                 asof_date=_normalize_date_value(row[3], field_name="asof_date"),
-                structure_progress_state=_normalize_progress_state(row[4]),
-                is_failed_extreme=bool(row[5]),
-                failure_type=_normalize_optional_nullable_str(row[6]),
-                break_confirmation_status=_normalize_optional_nullable_str(row[7]),
-                break_confirmation_ref=_normalize_optional_nullable_str(row[8]),
-                stats_snapshot_nk=_normalize_optional_nullable_str(row[9]),
-                exhaustion_risk_bucket=_normalize_optional_nullable_str(row[10]),
-                reversal_probability_bucket=_normalize_optional_nullable_str(row[11]),
-                source_context_nk=str(row[12]),
+                major_state=_normalize_optional_str(row[4], default="牛逆"),
+                trend_direction=_normalize_optional_str(row[5], default="down").lower(),
+                reversal_stage=_normalize_optional_str(row[6], default="none").lower(),
+                wave_id=_normalize_optional_int(row[7]),
+                current_hh_count=_normalize_optional_int(row[8]),
+                current_ll_count=_normalize_optional_int(row[9]),
+                structure_progress_state=_normalize_progress_state(row[10]),
+                break_confirmation_status=_normalize_optional_nullable_str(row[11]),
+                break_confirmation_ref=_normalize_optional_nullable_str(row[12]),
+                stats_snapshot_nk=_normalize_optional_nullable_str(row[13]),
+                exhaustion_risk_bucket=_normalize_optional_nullable_str(row[14]),
+                reversal_probability_bucket=_normalize_optional_nullable_str(row[15]),
+                source_context_nk=str(row[16]),
             )
             for row in rows
         ]
@@ -571,19 +577,20 @@ def _build_filter_snapshot_row(
     filter_contract_version: str,
 ) -> _FilterSnapshotRow:
     blocking_conditions: list[str] = []
-    if structure_row.is_failed_extreme:
-        blocking_conditions.append("failed_extreme")
-    elif structure_row.structure_progress_state == "failed":
-        blocking_conditions.append("structure_failed")
+    if structure_row.structure_progress_state == "failed":
+        blocking_conditions.append("structure_progress_failed")
+    elif structure_row.reversal_stage in {"trigger", "hold"} and structure_row.trend_direction == "down":
+        blocking_conditions.append("reversal_stage_pending")
 
     admission_notes: list[str] = []
     if structure_row.structure_progress_state in {"stalled", "unknown"} and not blocking_conditions:
         # 这里明确保守放行，避免 filter 把研究观察误升成正式硬门。
         admission_notes.append(f"非阻断结构状态保留放行:{structure_row.structure_progress_state}")
+    admission_notes.append(
+        f"canonical_context={structure_row.major_state}/{structure_row.trend_direction}/{structure_row.reversal_stage}"
+    )
     if not has_context:
         admission_notes.append("缺少 execution_context，当前最小合同保持不阻断")
-    if structure_row.failure_type is not None and blocking_conditions:
-        admission_notes.append(f"failure_type={structure_row.failure_type}")
     if structure_row.break_confirmation_status == "confirmed":
         admission_notes.append("break_confirmation=confirmed 仅作 sidecar 提示")
     if structure_row.exhaustion_risk_bucket in {"elevated", "high"}:
@@ -602,6 +609,12 @@ def _build_filter_snapshot_row(
         instrument=structure_row.instrument,
         signal_date=structure_row.signal_date,
         asof_date=structure_row.asof_date,
+        major_state=structure_row.major_state,
+        trend_direction=structure_row.trend_direction,
+        reversal_stage=structure_row.reversal_stage,
+        wave_id=structure_row.wave_id,
+        current_hh_count=structure_row.current_hh_count,
+        current_ll_count=structure_row.current_ll_count,
         trigger_admissible=not blocking_conditions,
         primary_blocking_condition=primary_blocking_condition,
         blocking_conditions_json=blocking_conditions_json,
@@ -641,6 +654,12 @@ def _upsert_filter_snapshot(
     existing_row = connection.execute(
         f"""
         SELECT
+            major_state,
+            trend_direction,
+            reversal_stage,
+            wave_id,
+            current_hh_count,
+            current_ll_count,
             trigger_admissible,
             primary_blocking_condition,
             blocking_conditions_json,
@@ -665,6 +684,12 @@ def _upsert_filter_snapshot(
                 instrument,
                 signal_date,
                 asof_date,
+                major_state,
+                trend_direction,
+                reversal_stage,
+                wave_id,
+                current_hh_count,
+                current_ll_count,
                 trigger_admissible,
                 primary_blocking_condition,
                 blocking_conditions_json,
@@ -679,7 +704,7 @@ def _upsert_filter_snapshot(
                 first_seen_run_id,
                 last_materialized_run_id
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 filter_row.filter_snapshot_nk,
@@ -687,6 +712,12 @@ def _upsert_filter_snapshot(
                 filter_row.instrument,
                 filter_row.signal_date,
                 filter_row.asof_date,
+                filter_row.major_state,
+                filter_row.trend_direction,
+                filter_row.reversal_stage,
+                filter_row.wave_id,
+                filter_row.current_hh_count,
+                filter_row.current_ll_count,
                 filter_row.trigger_admissible,
                 filter_row.primary_blocking_condition,
                 filter_row.blocking_conditions_json,
@@ -705,17 +736,29 @@ def _upsert_filter_snapshot(
         return "inserted"
 
     existing_fingerprint = (
-        bool(existing_row[0]),
-        _normalize_optional_nullable_str(existing_row[1]),
-        _normalize_optional_str(existing_row[2], default="[]"),
-        _normalize_optional_nullable_str(existing_row[3]),
-        _normalize_optional_nullable_str(existing_row[4]),
-        _normalize_optional_nullable_str(existing_row[5]),
-        _normalize_optional_nullable_str(existing_row[6]),
+        _normalize_optional_str(existing_row[0], default="牛逆"),
+        _normalize_optional_str(existing_row[1], default="down"),
+        _normalize_optional_str(existing_row[2], default="none"),
+        _normalize_optional_int(existing_row[3]),
+        _normalize_optional_int(existing_row[4]),
+        _normalize_optional_int(existing_row[5]),
+        bool(existing_row[6]),
         _normalize_optional_nullable_str(existing_row[7]),
-        _normalize_optional_nullable_str(existing_row[8]),
+        _normalize_optional_str(existing_row[8], default="[]"),
+        _normalize_optional_nullable_str(existing_row[9]),
+        _normalize_optional_nullable_str(existing_row[10]),
+        _normalize_optional_nullable_str(existing_row[11]),
+        _normalize_optional_nullable_str(existing_row[12]),
+        _normalize_optional_nullable_str(existing_row[13]),
+        _normalize_optional_nullable_str(existing_row[14]),
     )
     new_fingerprint = (
+        filter_row.major_state,
+        filter_row.trend_direction,
+        filter_row.reversal_stage,
+        filter_row.wave_id,
+        filter_row.current_hh_count,
+        filter_row.current_ll_count,
         filter_row.trigger_admissible,
         filter_row.primary_blocking_condition,
         filter_row.blocking_conditions_json,
@@ -726,11 +769,17 @@ def _upsert_filter_snapshot(
         filter_row.exhaustion_risk_bucket,
         filter_row.reversal_probability_bucket,
     )
-    first_seen_run_id = str(existing_row[9]) if existing_row[9] is not None else filter_row.first_seen_run_id
+    first_seen_run_id = str(existing_row[15]) if existing_row[15] is not None else filter_row.first_seen_run_id
     connection.execute(
         f"""
         UPDATE {FILTER_SNAPSHOT_TABLE}
         SET
+            major_state = ?,
+            trend_direction = ?,
+            reversal_stage = ?,
+            wave_id = ?,
+            current_hh_count = ?,
+            current_ll_count = ?,
             trigger_admissible = ?,
             primary_blocking_condition = ?,
             blocking_conditions_json = ?,
@@ -746,6 +795,12 @@ def _upsert_filter_snapshot(
         WHERE filter_snapshot_nk = ?
         """,
         [
+            filter_row.major_state,
+            filter_row.trend_direction,
+            filter_row.reversal_stage,
+            filter_row.wave_id,
+            filter_row.current_hh_count,
+            filter_row.current_ll_count,
             filter_row.trigger_admissible,
             filter_row.primary_blocking_condition,
             filter_row.blocking_conditions_json,
@@ -867,6 +922,12 @@ def _normalize_optional_nullable_str(value: object) -> str | None:
         return None
     candidate = str(value).strip()
     return candidate or None
+
+
+def _normalize_optional_int(value: object) -> int:
+    if value is None or value == "":
+        return 0
+    return int(value)
 
 
 def _write_summary(summary: FilterSnapshotBuildSummary, summary_path: Path | None) -> None:

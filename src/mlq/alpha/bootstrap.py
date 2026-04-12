@@ -129,6 +129,12 @@ ALPHA_LEDGER_DDL: Final[dict[str, str]] = {
             pattern_code TEXT NOT NULL,
             formal_signal_status TEXT NOT NULL,
             trigger_admissible BOOLEAN NOT NULL,
+            major_state TEXT NOT NULL,
+            trend_direction TEXT NOT NULL,
+            reversal_stage TEXT NOT NULL,
+            wave_id BIGINT NOT NULL,
+            current_hh_count BIGINT NOT NULL,
+            current_ll_count BIGINT NOT NULL,
             malf_context_4 TEXT NOT NULL,
             lifecycle_rank_high BIGINT NOT NULL,
             lifecycle_rank_total BIGINT NOT NULL,
@@ -204,6 +210,60 @@ ALPHA_LEDGER_DDL: Final[dict[str, str]] = {
 }
 
 
+ALPHA_FORMAL_SIGNAL_REQUIRED_COLUMNS: Final[dict[str, dict[str, str]]] = {
+    ALPHA_FORMAL_SIGNAL_RUN_TABLE: {
+        "run_id": "TEXT",
+        "producer_name": "TEXT",
+        "producer_version": "TEXT",
+        "run_status": "TEXT",
+        "signal_start_date": "DATE",
+        "signal_end_date": "DATE",
+        "bounded_instrument_count": "BIGINT",
+        "source_trigger_table": "TEXT",
+        "source_context_table": "TEXT",
+        "signal_contract_version": "TEXT",
+        "started_at": "TIMESTAMP",
+        "completed_at": "TIMESTAMP",
+        "summary_json": "TEXT",
+        "notes": "TEXT",
+    },
+    ALPHA_FORMAL_SIGNAL_EVENT_TABLE: {
+        "signal_nk": "TEXT",
+        "instrument": "TEXT",
+        "signal_date": "DATE",
+        "asof_date": "DATE",
+        "trigger_family": "TEXT",
+        "trigger_type": "TEXT",
+        "pattern_code": "TEXT",
+        "formal_signal_status": "TEXT",
+        "trigger_admissible": "BOOLEAN",
+        "major_state": "TEXT",
+        "trend_direction": "TEXT",
+        "reversal_stage": "TEXT",
+        "wave_id": "BIGINT",
+        "current_hh_count": "BIGINT",
+        "current_ll_count": "BIGINT",
+        "malf_context_4": "TEXT",
+        "lifecycle_rank_high": "BIGINT",
+        "lifecycle_rank_total": "BIGINT",
+        "source_trigger_event_nk": "TEXT",
+        "signal_contract_version": "TEXT",
+        "first_seen_run_id": "TEXT",
+        "last_materialized_run_id": "TEXT",
+        "created_at": "TIMESTAMP",
+        "updated_at": "TIMESTAMP",
+    },
+    ALPHA_FORMAL_SIGNAL_RUN_EVENT_TABLE: {
+        "run_id": "TEXT",
+        "signal_nk": "TEXT",
+        "materialization_action": "TEXT",
+        "formal_signal_status": "TEXT",
+        "source_trigger_event_nk": "TEXT",
+        "recorded_at": "TIMESTAMP",
+    },
+}
+
+
 def connect_alpha_ledger(
     settings: WorkspaceRoots | None = None,
     *,
@@ -249,6 +309,8 @@ def bootstrap_alpha_formal_signal_ledger(
     try:
         for table_name in ALPHA_FORMAL_SIGNAL_LEDGER_TABLE_NAMES:
             conn.execute(ALPHA_LEDGER_DDL[table_name])
+        for table_name, column_map in ALPHA_FORMAL_SIGNAL_REQUIRED_COLUMNS.items():
+            _ensure_columns(conn, table_name=table_name, required_columns=column_map)
         return ALPHA_FORMAL_SIGNAL_LEDGER_TABLE_NAMES
     finally:
         if owns_connection:
@@ -279,3 +341,25 @@ def alpha_ledger_path(settings: WorkspaceRoots | None = None) -> Path:
 
     workspace = settings or default_settings()
     return workspace.databases.alpha
+
+
+def _ensure_columns(
+    connection: duckdb.DuckDBPyConnection,
+    *,
+    table_name: str,
+    required_columns: dict[str, str],
+) -> None:
+    existing_rows = connection.execute(
+        """
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_schema = 'main'
+          AND table_name = ?
+        """,
+        [table_name],
+    ).fetchall()
+    existing_columns = {str(row[0]) for row in existing_rows}
+    for column_name, column_type in required_columns.items():
+        if column_name in existing_columns:
+            continue
+        connection.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}")

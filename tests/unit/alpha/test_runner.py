@@ -78,6 +78,23 @@ def _seed_malf_sources(
         )
         conn.execute(
             """
+            CREATE TABLE malf_state_snapshot (
+                snapshot_nk TEXT NOT NULL,
+                asset_type TEXT NOT NULL,
+                code TEXT NOT NULL,
+                timeframe TEXT NOT NULL,
+                asof_bar_dt DATE NOT NULL,
+                major_state TEXT NOT NULL,
+                trend_direction TEXT NOT NULL,
+                reversal_stage TEXT NOT NULL,
+                wave_id BIGINT NOT NULL,
+                current_hh_count BIGINT NOT NULL,
+                current_ll_count BIGINT NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            """
             CREATE TABLE structure_candidate_snapshot (
                 instrument TEXT NOT NULL,
                 signal_date DATE NOT NULL,
@@ -93,6 +110,31 @@ def _seed_malf_sources(
         )
         for row in context_rows:
             conn.execute("INSERT INTO pas_context_snapshot VALUES (?, ?, ?, ?, ?, ?, ?, ?)", row)
+            context_code = str(row[4])
+            lifecycle_rank_high = int(row[5])
+            if context_code == "BULL_MAINSTREAM":
+                major_state, trend_direction, reversal_stage, current_hh_count, current_ll_count = "牛顺", "up", "none", lifecycle_rank_high, 0
+            elif context_code == "BEAR_MAINSTREAM":
+                major_state, trend_direction, reversal_stage, current_hh_count, current_ll_count = "熊顺", "down", "none", 0, lifecycle_rank_high
+            elif context_code == "BULL_COUNTERTREND":
+                major_state, trend_direction, reversal_stage, current_hh_count, current_ll_count = "熊逆", "up", "trigger", lifecycle_rank_high, 0
+            else:
+                major_state, trend_direction, reversal_stage, current_hh_count, current_ll_count = "牛逆", "down", "trigger", 0, lifecycle_rank_high
+            conn.execute(
+                """
+                INSERT INTO malf_state_snapshot VALUES (?, 'stock', ?, 'D', ?, ?, ?, ?, 0, ?, ?)
+                """,
+                [
+                    f"state-{row[0]}-{row[1]}",
+                    row[0],
+                    row[2],
+                    major_state,
+                    trend_direction,
+                    reversal_stage,
+                    current_hh_count,
+                    current_ll_count,
+                ],
+            )
         for row in structure_rows:
             conn.execute("INSERT INTO structure_candidate_snapshot VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", row)
     finally:
@@ -135,6 +177,7 @@ def _materialize_official_upstream(settings, *, suffix: str) -> None:
         signal_start_date="2026-04-08",
         signal_end_date="2026-04-08",
         run_id=f"structure-upstream-alpha-test-{suffix}",
+        source_structure_input_table="structure_candidate_snapshot",
     )
     run_filter_snapshot_build(
         settings=settings,
@@ -287,7 +330,7 @@ def test_run_alpha_trigger_build_marks_reused_and_rematerialized_when_upstream_c
         conn.close()
 
     assert event_row[0] == "alpha-trigger-test-002c"
-    assert "failed_extreme" in event_row[1]
+    assert '"structure_progress_state": "failed"' in event_row[1]
 
 
 def test_run_alpha_formal_signal_build_materializes_run_event_and_run_bridge(
@@ -345,7 +388,7 @@ def test_run_alpha_formal_signal_build_materializes_run_event_and_run_bridge(
         ).fetchone()
         event_rows = conn.execute(
             """
-            SELECT instrument, pattern_code, formal_signal_status, trigger_admissible
+            SELECT instrument, pattern_code, formal_signal_status, trigger_admissible, major_state, reversal_stage
             FROM alpha_formal_signal_event
             ORDER BY instrument
             """
@@ -355,8 +398,8 @@ def test_run_alpha_formal_signal_build_materializes_run_event_and_run_bridge(
 
     assert run_row == ("completed", 2)
     assert event_rows == [
-        ("000001.SZ", "BOF", "admitted", True),
-        ("000002.SZ", "PB", "blocked", False),
+        ("000001.SZ", "BOF", "admitted", True, "牛顺", "none"),
+        ("000002.SZ", "PB", "blocked", False, "熊顺", "none"),
     ]
 
 

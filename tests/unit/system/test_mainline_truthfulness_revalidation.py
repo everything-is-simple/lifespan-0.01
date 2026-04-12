@@ -55,6 +55,23 @@ def _seed_malf_sources(settings) -> None:
         )
         conn.execute(
             """
+            CREATE TABLE malf_state_snapshot (
+                snapshot_nk TEXT NOT NULL,
+                asset_type TEXT NOT NULL,
+                code TEXT NOT NULL,
+                timeframe TEXT NOT NULL,
+                asof_bar_dt DATE NOT NULL,
+                major_state TEXT NOT NULL,
+                trend_direction TEXT NOT NULL,
+                reversal_stage TEXT NOT NULL,
+                wave_id BIGINT NOT NULL,
+                current_hh_count BIGINT NOT NULL,
+                current_ll_count BIGINT NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            """
             CREATE TABLE structure_candidate_snapshot (
                 instrument TEXT NOT NULL,
                 signal_date DATE NOT NULL,
@@ -95,6 +112,12 @@ def _seed_malf_sources(settings) -> None:
             """
             INSERT INTO pas_context_snapshot VALUES
             ('000001.SZ', '2026-04-08', '2026-04-08', 'ctx-001', 'BULL_MAINSTREAM', 1, 4, '2026-04-08')
+            """
+        )
+        conn.execute(
+            """
+            INSERT INTO malf_state_snapshot VALUES
+            ('state-001', 'stock', '000001.SZ', 'D', '2026-04-08', '牛顺', 'up', 'none', 0, 1, 0)
             """
         )
         conn.execute(
@@ -195,6 +218,7 @@ def test_mainline_truthfulness_revalidation_runs_to_trade_with_sidecar_read_only
         signal_start_date="2026-04-08",
         signal_end_date="2026-04-08",
         run_id="structure-mainline-truthfulness-001",
+        source_structure_input_table="structure_candidate_snapshot",
     )
     filter_summary = run_filter_snapshot_build(
         settings=settings,

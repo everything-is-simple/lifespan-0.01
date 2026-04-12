@@ -11,7 +11,7 @@
 - 目标结果：
   冻结 `W/M` 作为下游只读 canonical context 的正式消费合同。
 - 为什么现在做：
-  如果 `malf` 要成为运转中心，多级别真值必须正式进入下游，而不是只存在于 `malf` 内部。
+  如果 `malf` 要成为下游运转中心，多级别真值必须正式进入下游，而不是只停留在 `malf` 内部。
 
 ## 设计输入
 
@@ -20,16 +20,16 @@
 - 规格文档：
   - `docs/02-spec/modules/malf/11-malf-multi-timeframe-downstream-consumption-spec-20260411.md`
 - 当前锚点结论：
-  - `docs/03-execution/32-downstream-truthfulness-revalidation-after-malf-canonicalization-conclusion-20260411.md`
+  - `docs/03-execution/33-malf-downstream-canonical-contract-purge-conclusion-20260412.md`
 
 ## 消费图
 
 ```mermaid
 flowchart TD
-    M[M state] --> X[read-only context]
-    W[W state] --> X
-    D[D state] --> X
-    X --> S[structure/filter/alpha]
+    M["M state"] --> X["read-only context"]
+    W["W state"] --> X
+    D["D state"] --> X
+    X --> S["structure/filter/alpha"]
 ```
 
 ## 任务分解
@@ -56,20 +56,20 @@ flowchart TD
 ## 历史账本约束
 
 - 实体锚点：
-  - `asset_type + code + base_timeframe`
+  `asset_type + code + base_timeframe`，并通过 `source_context_nk` 关联 `W/M` 只读上下文。
 - 业务自然键：
-  - 继续使用下游正式 `snapshot_nk / signal_nk`，并附带 `weekly/monthly source_context_nk`
+  继续使用下游正式 `snapshot_nk / signal_nk` 作为自然键，并附带 `weekly/monthly source_context_nk`。
 - 批量建仓：
-  - 对历史窗口回填 `W/M` 只读上下文字段。
+  对历史 bounded 窗口回填 `W/M` 只读上下文字段，不改写既有 `D` 级别正式真值。
 - 增量更新：
-  - 新窗口按 `D` 主窗口同步挂接最近可用 `W/M` canonical 快照。
+  新窗口按 `D` 主窗口同步挂接最近可用 `W/M` canonical 快照。
 - 断点续跑：
-  - 本卡先保持 bounded 幂等补写；queue/checkpoint 对齐在 `35` 处理。
+  本卡先保持 bounded 幂等补写；queue/checkpoint 对齐在 `35` 处理。
 - 审计账本：
-  - 审计落在各模块 run 表与 `34` execution 闭环文档。
+  审计落在各模块 run 表与 `34` execution 闭环文档。
 
 ## 收口标准
 
 1. `W/M` 已正式进入下游只读消费合同。
-2. 测试证明高周期 context 不反向改变 `D` 级别 `malf core` 真值。
+2. 测试证明高周期 context 不反向改写 `D` 级别 `malf core` 真值。
 3. `conclusion` 明确 `W/M` 是只读背景，不是状态机输入。
