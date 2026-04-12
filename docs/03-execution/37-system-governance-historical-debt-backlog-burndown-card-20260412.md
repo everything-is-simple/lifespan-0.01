@@ -2,7 +2,7 @@
 
 卡片编号：`37`
 日期：`2026-04-12`
-状态：`待执行`
+状态：`执行中`
 
 ## 需求
 
@@ -25,7 +25,7 @@
 ## 任务分解
 
 1. 登记 2026-04-12 已解决的首批治理纠偏项，补齐 `37` 的基线台账。
-2. 修正治理工具和执行脚手架，使新开卡、索引回填、全仓盘点与当前执行目录口径一致。
+2. 修正治理工具和执行脚手架，使开卡、索引回填、全仓盘点与当前执行目录口径一致。
 3. 逐项清零 `LEGACY_HARD_OVERSIZE_BACKLOG`。
 4. 逐项清零 `LEGACY_TARGET_OVERSIZE_BACKLOG`。
 5. 回填 `37` 的 evidence / record / conclusion，并把 `100-105` 恢复为下一阶段 trade/system 卡组。
@@ -39,20 +39,20 @@
 3. `scripts/system/development_governance_legacy_backlog.py` 已从空白占位改为正式历史债务登记表。
 4. `AGENTS.md / README.md / pyproject.toml` 已同步 wave life 拆分约束和 backlog 登记口径。
 5. `.codex/skills/lifespan-execution-discipline/scripts/new_execution_bundle.py` 已修正模板编号渲染与目录分栏标题错误。
+6. `src/mlq/system/runner.py` 已拆分为 bounded orchestrator + readout helper 模块，并通过现有 `system` 单测验证，可以从历史超长白名单移除。
+7. `src/mlq/trade/runner.py` 已拆分为 bounded orchestrator + runtime helper 模块，并通过现有 `trade` 单测验证，可以从历史超长白名单移除。
+8. `src/mlq/alpha/trigger_runner.py` 已拆分为 queue/bounded orchestrator + trigger helper 模块，并通过现有 `alpha` 单测验证，可以从历史超长白名单移除。
+9. `src/mlq/filter/runner.py` 已拆分为 bounded/queue orchestrator + `filter_shared / filter_source / filter_materialization` helper 模块，并通过现有 `filter` 单测验证，可以从历史超长白名单移除。
+10. `src/mlq/malf/mechanism_runner.py` 已拆分为 bounded orchestrator + `mechanism_shared / mechanism_source / mechanism_materialization` helper 模块，并通过现有 `malf mechanism` 单测验证，可以从历史超长白名单移除。
 
 ### 待解决历史债务
 
 1. `LEGACY_HARD_OVERSIZE_BACKLOG`
-   - `src/mlq/alpha/runner.py`
-   - `src/mlq/alpha/trigger_runner.py`
-   - `src/mlq/data/runner.py`
-   - `src/mlq/filter/runner.py`
-   - `src/mlq/malf/canonical_runner.py`
-   - `src/mlq/malf/mechanism_runner.py`
-   - `src/mlq/structure/runner.py`
-   - `src/mlq/system/runner.py`
-   - `src/mlq/trade/runner.py`
-   - `tests/unit/data/test_data_runner.py`
+  - `src/mlq/alpha/runner.py`
+  - `src/mlq/data/runner.py`
+  - `src/mlq/malf/canonical_runner.py`
+  - `src/mlq/structure/runner.py`
+  - `tests/unit/data/test_data_runner.py`
 2. `LEGACY_TARGET_OVERSIZE_BACKLOG`
    - `src/mlq/alpha/family_runner.py`
    - `src/mlq/data/bootstrap.py`
@@ -97,6 +97,16 @@
 2. 全仓 `python scripts/system/check_development_governance.py` 不再依赖历史债务条目掩盖旧问题。
 3. `37` 完整回填 evidence / record / conclusion，并明确登记本轮已解决项。
 4. `100-105` 恢复为治理清债后的后续 trade/system 卡组。
+
+## 当前进度
+
+1. 已完成首批基线登记与工具纠偏。
+2. 已完成 `src/mlq/system/runner.py` 拆分，当前正式入口仍保持不变，新增 `readout_shared / readout_children / readout_snapshot / readout_materialization` 四个 helper 模块承接子职责。
+3. 已完成 `src/mlq/trade/runner.py` 拆分，当前正式入口仍保持不变，新增 `runtime_shared / runtime_source / runtime_execution / runtime_materialization` 四个 helper 模块承接共享结构、上游读取、执行聚合与落表写回职责。
+4. 已完成 `src/mlq/alpha/trigger_runner.py` 拆分，当前正式入口仍保持不变，新增 `trigger_shared / trigger_sources / trigger_materialization` 三个 helper 模块承接共享结构、上游读取与事件物化职责。
+5. 已完成 `src/mlq/filter/runner.py` 拆分，当前正式入口仍保持不变，新增 `filter_shared / filter_source / filter_materialization` 三个 helper 模块承接共享结构、上游读取与落表物化职责。
+6. 已完成 `src/mlq/malf/mechanism_runner.py` 拆分，当前正式入口仍保持不变，新增 `mechanism_shared / mechanism_source / mechanism_materialization` 三个 helper 模块承接共享结构、桥接输入读取与 sidecar 落表职责。
+7. 后续继续按 `LEGACY_HARD_OVERSIZE_BACKLOG` 顺序清理剩余历史债务。
 
 ## 卡片结构图
 

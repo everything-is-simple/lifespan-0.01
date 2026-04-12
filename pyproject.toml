@@ -32,6 +32,7 @@ cache_dir = "H:/Lifespan-temp/pytest-cache"
 [tool.mlq.governance]
 # 全仓治理盘点允许通过 `scripts/system/development_governance_legacy_backlog.py` 显式登记历史债务，但按改动路径触发的严格检查不得豁免新增违规。
 # `scripts/malf/run_malf_wave_life_build.py` 的外部正式入口保持不变；实现可拆分为 `wave_life_runner.py` 与同目录 helper 模块。
+# `scripts/system/run_system_mainline_readout_build.py` 的外部正式入口保持不变；实现可拆分为 `runner.py` 与同目录 readout helper 模块。
 # 当前 malf 口径：`pivot-confirmed break` 与 `same-timeframe stats sidecar` 只属于只读机制层 sidecar，不得回写 `malf core`。
 execution_index_files = [
     "docs/03-execution/A-execution-reading-order-20260409.md",
@@ -44,7 +45,8 @@ system_tracker_files = [
     "docs/02-spec/β-system-roadmap-and-progress-tracker-spec-20260409.md",
     "docs/02-spec/Ω-system-delivery-roadmap-20260409.md",
 ]
-# 当前最新生效结论已推进到 36；当前待施工卡已推进到 100；`structure / filter / alpha` 已对齐 canonical `malf` 与寿命 sidecar，`100-105` 恢复推进 trade/system 卡组，`position / trade` 的正式执行口径固定为 `adjust_method='none'`。
+# 当前最新生效结论已推进到 36；当前待施工卡已推进到 37，且已清掉 `src/mlq/system/runner.py`、`src/mlq/trade/runner.py`、`src/mlq/alpha/trigger_runner.py`、`src/mlq/filter/runner.py` 与 `src/mlq/malf/mechanism_runner.py` 五项历史硬超长债务；`structure / filter / alpha` 已对齐 canonical `malf` 与寿命 sidecar，`100-105` 仍作为后续 trade/system 卡组，`position / trade` 的正式执行口径固定为 `adjust_method='none'`。
+# `37` 卡的 pytest 证据统一按串行命令执行，避免多个进程争用 `H:/Lifespan-temp/pytest-tmp`。
 formal_runner_scripts = [
     "scripts/data/run_tdx_asset_raw_ingest.py",
     "scripts/data/run_tdx_stock_raw_ingest.py",

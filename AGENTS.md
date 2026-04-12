@@ -122,13 +122,14 @@ flowchart LR
    - 当前 `trade` 的正式 bounded runner 入口为 `scripts/trade/run_trade_runtime_build.py`，只允许消费官方 `portfolio_plan_snapshot`、上一轮 `trade_carry_snapshot` 与 `market_base.stock_daily_adjusted(adjust_method='none')`，不允许改回复权价计算成交股数。
 10. `system` 负责编排、治理、审计、冻结，不保存策略事实主数据。
    - 当前 `system` 的正式 bounded runner 入口为 `scripts/system/run_system_mainline_readout_build.py`，只允许消费官方 `structure / filter / alpha / position / portfolio_plan / trade` 账本与 `trade_*` 正式落表事实，物化 `system_run / system_child_run_readout / system_mainline_snapshot / system_run_snapshot`，不允许回读私有中间过程，也不允许越界扩成 live orchestration / broker runtime。
+   - `system readout` 的实现允许拆分为 `src/mlq/system/runner.py` 与同目录 helper 模块 `readout_shared.py / readout_children.py / readout_snapshot.py / readout_materialization.py`；拆分只服务治理文件长度与职责收敛，外部正式脚本入口、表族契约与 bounded readout 语义不得变化。
 
 补充价格口径：
 
 1. `malf -> structure -> filter -> alpha` 默认使用 `adjust_method = backward`
 2. `position -> trade` 默认使用 `adjust_method = none`
 3. `adjust_method = forward` 当前只作为研究与展示保留，不作为正式执行口径
-4. 当前最新生效结论锚点已推进到 `36-malf-wave-life-probability-sidecar-bootstrap-conclusion-20260412.md`；它已裁决 canonical `malf` 寿命概率 sidecar 已完成收口。当前治理锚点仍是 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`，但当前具体待施工卡已推进到 `37-system-governance-historical-debt-backlog-burndown-card-20260412.md`；自然数顺排后的后续卡依次是 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。其中 `29-36` 已完成并生效，`37` 是系统治理清账卡，`100-105` 是恢复推进的 trade/system 卡组。
+4. 当前最新生效结论锚点已推进到 `36-malf-wave-life-probability-sidecar-bootstrap-conclusion-20260412.md`；它已裁决 canonical `malf` 寿命概率 sidecar 已完成收口。当前治理锚点仍是 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`，但当前具体待施工卡已推进到 `37-system-governance-historical-debt-backlog-burndown-card-20260412.md`；自然数顺排后的后续卡依次是 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。其中 `29-36` 已完成并生效，`37` 是系统治理清账卡，当前已清掉 `src/mlq/system/runner.py`、`src/mlq/trade/runner.py`、`src/mlq/alpha/trigger_runner.py`、`src/mlq/filter/runner.py` 与 `src/mlq/malf/mechanism_runner.py` 五项历史硬超长债务，`100-105` 是恢复推进的 trade/system 卡组。
 
 ## 5. 历史账本原则
 
@@ -187,6 +188,8 @@ flowchart LR
 只要治理规则、环境脚手架、路径契约、测试入口、执行入口发生变化，就必须同步刷新这三个入口文件。
 其中 `docs/01-design/`、`docs/02-spec/` 与 `src/mlq/core/paths.py` 的正式口径变化，也视为入口变化。
 全仓 `python scripts/system/check_development_governance.py` 盘点允许通过 `scripts/system/development_governance_legacy_backlog.py` 显式登记历史债务；但按改动路径触发的严格治理检查，不得豁免新增违规。
+当前 `37` 施工期间，历史硬超长 backlog 已降为 `5` 项，目标超长 backlog 仍为 `5` 项；每解决一项都必须同步回填 card / evidence / record / conclusion，并从 backlog 台账移除。
+当前已完成的前三项清债是 `src/mlq/system/runner.py`、`src/mlq/trade/runner.py` 与 `src/mlq/alpha/trigger_runner.py` 拆分；本卡后续 `pytest` 证据统一按串行口径执行，避免多个进程争用 `H:\Lifespan-temp\pytest-tmp`。
 
 ## 8. 文档规则
 

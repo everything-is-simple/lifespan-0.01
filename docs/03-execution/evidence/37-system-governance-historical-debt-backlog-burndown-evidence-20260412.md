@@ -7,18 +7,36 @@
 
 ```text
 python scripts/system/check_development_governance.py
-python scripts/system/check_development_governance.py AGENTS.md README.md pyproject.toml scripts/portfolio_plan/run_portfolio_plan_build.py scripts/system/development_governance_legacy_backlog.py scripts/system/run_system_mainline_readout_build.py scripts/trade/run_trade_runtime_build.py src/mlq/malf/wave_life_runner.py src/mlq/malf/wave_life_materialization.py src/mlq/malf/wave_life_shared.py src/mlq/malf/wave_life_source.py src/mlq/portfolio_plan/__init__.py src/mlq/portfolio_plan/bootstrap.py src/mlq/portfolio_plan/runner.py tests/unit/portfolio_plan/__init__.py tests/unit/portfolio_plan/test_bootstrap.py tests/unit/portfolio_plan/test_runner.py tests/unit/trade/__init__.py tests/unit/trade/test_bootstrap.py tests/unit/trade/test_trade_runner.py
 python .codex/skills/lifespan-execution-discipline/scripts/check_execution_indexes.py --include-untracked
-python -m py_compile src/mlq/malf/wave_life_runner.py src/mlq/malf/wave_life_shared.py src/mlq/malf/wave_life_source.py src/mlq/malf/wave_life_materialization.py scripts/portfolio_plan/run_portfolio_plan_build.py scripts/trade/run_trade_runtime_build.py scripts/system/run_system_mainline_readout_build.py src/mlq/portfolio_plan/__init__.py src/mlq/portfolio_plan/bootstrap.py src/mlq/portfolio_plan/runner.py tests/unit/portfolio_plan/__init__.py tests/unit/portfolio_plan/test_bootstrap.py tests/unit/portfolio_plan/test_runner.py tests/unit/trade/__init__.py tests/unit/trade/test_bootstrap.py tests/unit/trade/test_trade_runner.py
-python .codex/skills/lifespan-execution-discipline/scripts/new_execution_bundle.py --number 37 --slug system-governance-historical-debt-backlog-burndown --title "system governance historical debt backlog burndown" --date 20260412 --status 待执行 --register --set-current-card
-pytest tests/unit/malf/test_wave_life_runner.py tests/unit/system/test_mainline_truthfulness_revalidation.py -q
+python scripts/system/check_doc_first_gating_governance.py
+python -m py_compile src/mlq/system/runner.py src/mlq/system/readout_shared.py src/mlq/system/readout_children.py src/mlq/system/readout_snapshot.py src/mlq/system/readout_materialization.py
+python scripts/system/check_development_governance.py src/mlq/system/runner.py src/mlq/system/readout_shared.py src/mlq/system/readout_children.py src/mlq/system/readout_snapshot.py src/mlq/system/readout_materialization.py tests/unit/system/test_system_runner.py
+pytest tests/unit/system/test_system_runner.py -q
+pytest tests/unit/system/test_mainline_truthfulness_revalidation.py -q
+python -m py_compile src/mlq/trade/runner.py src/mlq/trade/runtime_shared.py src/mlq/trade/runtime_source.py src/mlq/trade/runtime_execution.py src/mlq/trade/runtime_materialization.py
+pytest tests/unit/trade/test_trade_runner.py -q
+python -m py_compile src/mlq/alpha/trigger_runner.py src/mlq/alpha/trigger_shared.py src/mlq/alpha/trigger_sources.py src/mlq/alpha/trigger_materialization.py
+python scripts/system/check_development_governance.py src/mlq/alpha/trigger_runner.py src/mlq/alpha/trigger_shared.py src/mlq/alpha/trigger_sources.py src/mlq/alpha/trigger_materialization.py tests/unit/alpha/test_runner.py
+pytest tests/unit/alpha/test_runner.py -q
+python -m py_compile src/mlq/filter/runner.py src/mlq/filter/filter_shared.py src/mlq/filter/filter_source.py src/mlq/filter/filter_materialization.py
+python scripts/system/check_development_governance.py src/mlq/filter/runner.py src/mlq/filter/filter_shared.py src/mlq/filter/filter_source.py src/mlq/filter/filter_materialization.py tests/unit/filter/test_runner.py
+pytest tests/unit/filter/test_runner.py -q
+python -m py_compile src/mlq/malf/mechanism_runner.py src/mlq/malf/mechanism_shared.py src/mlq/malf/mechanism_source.py src/mlq/malf/mechanism_materialization.py
+python scripts/system/check_development_governance.py src/mlq/malf/mechanism_runner.py src/mlq/malf/mechanism_shared.py src/mlq/malf/mechanism_source.py src/mlq/malf/mechanism_materialization.py tests/unit/malf/test_mechanism_runner.py
+pytest tests/unit/malf/test_mechanism_runner.py -q
 ```
 
 ## 关键结果
 
 - 全仓治理扫描通过，剩余历史债务已经显式收敛为 `LEGACY_HARD_OVERSIZE_BACKLOG` 与 `LEGACY_TARGET_OVERSIZE_BACKLOG`。
-- 新开卡脚本暴露出“目录分栏标题写死错误 + 模板编号重复插入”问题，已被纳入 `37` 的已解决项登记。
-- `wave_life` 拆分后的回归测试通过，当前为 `3 passed`。
+- `check_doc_first_gating_governance.py`、`check_execution_indexes.py --include-untracked` 与按路径治理检查通过。
+- `system runner` 已拆成 `runner + readout_shared + readout_children + readout_snapshot + readout_materialization` 五段，`src/mlq/system/runner.py` 收缩到 244 行，可从历史硬超长 backlog 移除。
+- `trade runner` 已拆成 `runner + runtime_shared + runtime_source + runtime_execution + runtime_materialization` 五段，`src/mlq/trade/runner.py` 收缩到 117 行，现有 `trade` 单测 `2 passed`。
+- `alpha trigger runner` 已拆成 `trigger_runner + trigger_shared + trigger_sources + trigger_materialization` 四段，`src/mlq/alpha/trigger_runner.py` 收缩到 708 行，现有 `alpha` 单测 `6 passed`。
+- `filter runner` 已拆成 `runner + filter_shared + filter_source + filter_materialization` 四段，`src/mlq/filter/runner.py` 收缩到 707 行，现有 `filter` 单测 `4 passed`。
+- `mechanism runner` 已拆成 `runner + mechanism_shared + mechanism_source + mechanism_materialization` 四段，`src/mlq/malf/mechanism_runner.py` 收缩到 165 行，现有 `malf mechanism` 单测 `2 passed`。
+- 当前 `LEGACY_HARD_OVERSIZE_BACKLOG` 已累计减少 5 项；`src/mlq/system/runner.py`、`src/mlq/trade/runner.py`、`src/mlq/alpha/trigger_runner.py`、`src/mlq/filter/runner.py` 与 `src/mlq/malf/mechanism_runner.py` 均可从历史硬超长 backlog 移除。
+- `37` 卡的 `pytest` 证据统一按串行口径执行，避免多个进程争用 `H:\Lifespan-temp\pytest-tmp`。
 
 ## 产物
 
@@ -33,7 +51,7 @@ pytest tests/unit/malf/test_wave_life_runner.py tests/unit/system/test_mainline_
 
 ```mermaid
 flowchart LR
-    CMD[命令执行] --> OUT[关键结果]
-    OUT --> ART[产物落地]
-    ART --> REF[结论引用]
+    CMD["命令执行"] --> OUT["关键结果"]
+    OUT --> ART["产物落地"]
+    ART --> REF["结论引用"]
 ```
