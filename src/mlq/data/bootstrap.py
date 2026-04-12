@@ -620,6 +620,14 @@ MARKET_BASE_UNIQUE_INDEXES: Final[dict[str, tuple[tuple[str, tuple[str, ...]], .
     BASE_DIRTY_INSTRUMENT_TABLE: (("ux_base_dirty_instrument_dirty_nk", ("dirty_nk",)),),
 }
 
+from mlq.data.data_bootstrap_maintenance import (
+    cleanup_market_base_ledger,
+    cleanup_raw_market_ledger,
+    ensure_columns,
+    ensure_not_null_columns,
+    ensure_unique_index,
+)
+
 
 def raw_market_ledger_path(settings: WorkspaceRoots | None = None) -> Path:
     """返回正式 `raw_market` 账本路径。"""
@@ -676,13 +684,13 @@ def bootstrap_raw_market_ledger(
         for ddl in RAW_MARKET_LEDGER_TABLES.values():
             conn.execute(ddl)
         for table_name, required_columns in RAW_MARKET_REQUIRED_COLUMNS.items():
-            _ensure_columns(conn, table_name=table_name, required_columns=required_columns)
-        _cleanup_raw_market_ledger(conn)
+            ensure_columns(conn, table_name=table_name, required_columns=required_columns)
+        cleanup_raw_market_ledger(conn)
         for table_name, columns in RAW_MARKET_NOT_NULL_COLUMNS.items():
-            _ensure_not_null_columns(conn, table_name=table_name, column_names=columns)
+            ensure_not_null_columns(conn, table_name=table_name, column_names=columns)
         for table_name, index_specs in RAW_MARKET_UNIQUE_INDEXES.items():
             for index_name, column_names in index_specs:
-                _ensure_unique_index(conn, table_name=table_name, index_name=index_name, column_names=column_names)
+                ensure_unique_index(conn, table_name=table_name, index_name=index_name, column_names=column_names)
         return raw_market_ledger_path(workspace)
     finally:
         if owns_connection:
@@ -704,187 +712,14 @@ def bootstrap_market_base_ledger(
         for ddl in MARKET_BASE_LEDGER_TABLES.values():
             conn.execute(ddl)
         for table_name, required_columns in MARKET_BASE_REQUIRED_COLUMNS.items():
-            _ensure_columns(conn, table_name=table_name, required_columns=required_columns)
-        _cleanup_market_base_ledger(conn)
+            ensure_columns(conn, table_name=table_name, required_columns=required_columns)
+        cleanup_market_base_ledger(conn)
         for table_name, columns in MARKET_BASE_NOT_NULL_COLUMNS.items():
-            _ensure_not_null_columns(conn, table_name=table_name, column_names=columns)
+            ensure_not_null_columns(conn, table_name=table_name, column_names=columns)
         for table_name, index_specs in MARKET_BASE_UNIQUE_INDEXES.items():
             for index_name, column_names in index_specs:
-                _ensure_unique_index(conn, table_name=table_name, index_name=index_name, column_names=column_names)
+                ensure_unique_index(conn, table_name=table_name, index_name=index_name, column_names=column_names)
         return market_base_ledger_path(workspace)
     finally:
         if owns_connection:
             conn.close()
-
-
-def _ensure_columns(
-    connection: duckdb.DuckDBPyConnection,
-    *,
-    table_name: str,
-    required_columns: dict[str, str],
-) -> None:
-    existing_rows = connection.execute(f"PRAGMA table_info('{table_name}')").fetchall()
-    existing_columns = {str(row[1]) for row in existing_rows}
-    for column_name, column_type in required_columns.items():
-        if column_name in existing_columns:
-            continue
-        connection.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}")
-
-
-def _cleanup_raw_market_ledger(connection: duckdb.DuckDBPyConnection) -> None:
-    for table_name in RAW_FILE_REGISTRY_TABLE_BY_ASSET_TYPE.values():
-        _delete_rows_with_nulls(
-            connection,
-            table_name=table_name,
-            required_columns=RAW_MARKET_NOT_NULL_COLUMNS[table_name],
-        )
-        _deduplicate_table(
-            connection,
-            table_name=table_name,
-            key_columns=("file_nk",),
-            order_columns=("last_ingested_at", "source_mtime_utc"),
-        )
-    for table_name in RAW_DAILY_BAR_TABLE_BY_ASSET_TYPE.values():
-        _delete_rows_with_nulls(
-            connection,
-            table_name=table_name,
-            required_columns=RAW_MARKET_NOT_NULL_COLUMNS[table_name],
-        )
-        _deduplicate_table(
-            connection,
-            table_name=table_name,
-            key_columns=("bar_nk",),
-            order_columns=("updated_at", "created_at"),
-        )
-    _delete_rows_with_nulls(
-        connection,
-        table_name=RAW_TDXQUANT_RUN_TABLE,
-        required_columns=RAW_MARKET_NOT_NULL_COLUMNS[RAW_TDXQUANT_RUN_TABLE],
-    )
-    _deduplicate_table(
-        connection,
-        table_name=RAW_TDXQUANT_RUN_TABLE,
-        key_columns=("run_id",),
-        order_columns=("finished_at_utc", "started_at_utc"),
-    )
-    _delete_rows_with_nulls(
-        connection,
-        table_name=RAW_TDXQUANT_REQUEST_TABLE,
-        required_columns=RAW_MARKET_NOT_NULL_COLUMNS[RAW_TDXQUANT_REQUEST_TABLE],
-    )
-    _deduplicate_table(
-        connection,
-        table_name=RAW_TDXQUANT_REQUEST_TABLE,
-        key_columns=("request_nk",),
-        order_columns=("recorded_at",),
-    )
-    _delete_rows_with_nulls(
-        connection,
-        table_name=RAW_TDXQUANT_INSTRUMENT_CHECKPOINT_TABLE,
-        required_columns=RAW_MARKET_NOT_NULL_COLUMNS[RAW_TDXQUANT_INSTRUMENT_CHECKPOINT_TABLE],
-    )
-    _deduplicate_table(
-        connection,
-        table_name=RAW_TDXQUANT_INSTRUMENT_CHECKPOINT_TABLE,
-        key_columns=("checkpoint_nk",),
-        order_columns=("updated_at_utc", "last_success_trade_date"),
-    )
-
-
-def _cleanup_market_base_ledger(connection: duckdb.DuckDBPyConnection) -> None:
-    for table_name in MARKET_BASE_DAILY_TABLE_BY_ASSET_TYPE.values():
-        _delete_rows_with_nulls(
-            connection,
-            table_name=table_name,
-            required_columns=MARKET_BASE_NOT_NULL_COLUMNS[table_name],
-        )
-        _deduplicate_table(
-            connection,
-            table_name=table_name,
-            key_columns=("code", "trade_date", "adjust_method"),
-            order_columns=("updated_at", "created_at"),
-        )
-    _delete_rows_with_nulls(
-        connection,
-        table_name=BASE_DIRTY_INSTRUMENT_TABLE,
-        required_columns=MARKET_BASE_NOT_NULL_COLUMNS[BASE_DIRTY_INSTRUMENT_TABLE],
-    )
-    _deduplicate_table(
-        connection,
-        table_name=BASE_DIRTY_INSTRUMENT_TABLE,
-        key_columns=("dirty_nk",),
-        order_columns=("last_marked_at", "first_marked_at"),
-    )
-
-
-def _delete_rows_with_nulls(
-    connection: duckdb.DuckDBPyConnection,
-    *,
-    table_name: str,
-    required_columns: tuple[str, ...],
-) -> None:
-    if not required_columns:
-        return
-    predicate = " OR ".join(f"{column_name} IS NULL" for column_name in required_columns)
-    connection.execute(f"DELETE FROM {table_name} WHERE {predicate}")
-
-
-def _deduplicate_table(
-    connection: duckdb.DuckDBPyConnection,
-    *,
-    table_name: str,
-    key_columns: tuple[str, ...],
-    order_columns: tuple[str, ...],
-) -> None:
-    if not key_columns:
-        return
-    partition_sql = ", ".join(key_columns)
-    order_sql = ", ".join(f"{column_name} DESC NULLS LAST" for column_name in order_columns) or "1"
-    connection.execute(
-        f"""
-        DELETE FROM {table_name}
-        USING (
-            SELECT rowid
-            FROM (
-                SELECT
-                    rowid,
-                    ROW_NUMBER() OVER (
-                        PARTITION BY {partition_sql}
-                        ORDER BY {order_sql}
-                    ) AS duplicate_rank
-                FROM {table_name}
-            )
-            WHERE duplicate_rank > 1
-        ) AS duplicated_rows
-        WHERE {table_name}.rowid = duplicated_rows.rowid
-        """
-    )
-
-
-def _ensure_not_null_columns(
-    connection: duckdb.DuckDBPyConnection,
-    *,
-    table_name: str,
-    column_names: tuple[str, ...],
-) -> None:
-    if not column_names:
-        return
-    existing_rows = connection.execute(f"PRAGMA table_info('{table_name}')").fetchall()
-    nullable_by_column = {str(row[1]): bool(row[3] == 0) for row in existing_rows}
-    for column_name in column_names:
-        if column_name not in nullable_by_column:
-            continue
-        if not nullable_by_column[column_name]:
-            continue
-        connection.execute(f"ALTER TABLE {table_name} ALTER COLUMN {column_name} SET NOT NULL")
-
-
-def _ensure_unique_index(
-    connection: duckdb.DuckDBPyConnection,
-    *,
-    table_name: str,
-    index_name: str,
-    column_names: tuple[str, ...],
-) -> None:
-    columns_sql = ", ".join(column_names)
-    connection.execute(f"CREATE UNIQUE INDEX IF NOT EXISTS {index_name} ON {table_name} ({columns_sql})")

@@ -16,4 +16,6 @@
 12. 将 `tests/unit/data/test_data_runner.py` 拆为 `test_raw_ingest_runner.py / test_tdxquant_runner.py / test_market_base_runner.py`。
 13. 修正 `data_shared.py`、`data_tdxquant.py`、`data_market_base_scope.py` 的切片边界与中文治理锚点，消除机械拆分带来的语法与治理误差。
 14. 通过 `py_compile`、改动路径治理检查与 `data` 串行单测，确认 `src/mlq/data/runner.py` 与 `tests/unit/data/test_data_runner.py` 可从历史 hard backlog 移除。
-15. 回填 `37` 的 card / evidence / record / conclusion、入口文件与 backlog 台账，使当前正式口径回到“hard backlog 已清零”。
+15. 将 `src/mlq/data/bootstrap.py` 的 cleanup / deduplicate / constraint repair helper 抽到 `src/mlq/data/data_bootstrap_maintenance.py`，保持正式入口与表族契约不变。
+16. 通过 `py_compile`、按路径治理检查与 `data` 串行单测，确认 `src/mlq/data/bootstrap.py` 可从 `LEGACY_TARGET_OVERSIZE_BACKLOG` 移除。
+17. 回填 `37` 的 card / evidence / record / conclusion、入口文件与 backlog 台账，使当前正式口径回到“hard backlog 已清零、target backlog 剩余 4 项”。

@@ -188,7 +188,7 @@ flowchart LR
 只要治理规则、环境脚手架、路径契约、测试入口、执行入口发生变化，就必须同步刷新这三个入口文件。
 其中 `docs/01-design/`、`docs/02-spec/` 与 `src/mlq/core/paths.py` 的正式口径变化，也视为入口变化。
 全仓 `python scripts/system/check_development_governance.py` 盘点允许通过 `scripts/system/development_governance_legacy_backlog.py` 显式登记历史债务；但按改动路径触发的严格治理检查，不得豁免新增违规。
-当前 `37` 施工期间，历史硬超长 backlog 已清零，目标超长 backlog 仍为 `5` 项；每解决一项都必须同步回填 card / evidence / record / conclusion，并从 backlog 台账移除。
+当前 `37` 施工期间，历史硬超长 backlog 已清零，目标超长 backlog 仍为 `4` 项；每解决一项都必须同步回填 card / evidence / record / conclusion，并从 backlog 台账移除。
 当前已完成的前八项清债是 `src/mlq/system/runner.py`、`src/mlq/trade/runner.py`、`src/mlq/alpha/trigger_runner.py`、`src/mlq/filter/runner.py`、`src/mlq/malf/mechanism_runner.py`、`src/mlq/malf/canonical_runner.py`、`src/mlq/structure/runner.py` 与 `src/mlq/alpha/runner.py` 拆分；本卡后续 `pytest` 证据统一按串行口径执行，避免多个进程争用 `H:\Lifespan-temp\pytest-tmp`。
 
 ## 8. 文档规则
