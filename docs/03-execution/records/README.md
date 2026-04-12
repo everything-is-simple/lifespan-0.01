@@ -9,3 +9,15 @@
 - 收口说明
 - 执行过程中形成的边界决策
 
+## 流程图
+
+```mermaid
+flowchart LR
+    EV[evidence 证据] --> REC_TRACE[实现轨迹]
+    EV --> REC_MIG[迁移说明]
+    EV --> REC_CLOSE[收口说明]
+    REC_TRACE --> RECORD[record 正式记录]
+    REC_MIG --> RECORD
+    REC_CLOSE --> RECORD
+```
+

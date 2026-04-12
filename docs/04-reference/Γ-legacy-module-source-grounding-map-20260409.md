@@ -103,3 +103,13 @@
 更准确的说法是：
 
 `position / alpha / malf` 有最扎实的历史实验资产可吸收，`data / system` 有大量桥接经验可沿袭，`trade / core` 只有部分合同经验，`structure / filter / portfolio_plan` 则必须在吸收旧边界想法的基础上重新建立正式模块。`
+
+## 流程图
+
+```mermaid
+flowchart LR
+    L1[核心已验证 position/alpha/malf] -->|沿袭结论| NEW[lifespan-0.01 新系统]
+    L2[支持性较强 data/system] -->|沿袭桥接经验| NEW
+    L3[研究偏少 trade/core] -. 部分经验 .-> NEW
+    L4[新边界 structure/filter/portfolio_plan] -. 重新建立 .-> NEW
+```

@@ -58,3 +58,15 @@
 2. `evidence`
 3. `record`
 4. `conclusion`
+
+## 流程图
+
+```mermaid
+flowchart LR
+    REQ[需求] --> DES[设计] --> TASK[任务分解]
+    TASK --> CARD[卡片]
+    CARD --> IMPL[实现]
+    IMPL --> EV[evidence 证据]
+    EV --> REC[record 记录]
+    REC --> CON[conclusion 结论]
+```

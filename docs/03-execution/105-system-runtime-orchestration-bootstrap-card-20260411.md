@@ -21,3 +21,13 @@
   - `docs/02-spec/modules/system/04-system-runtime-orchestration-bootstrap-spec-20260411.md`
 - 当前锚点结论：
   - `docs/03-execution/104-mainline-real-data-smoke-regression-conclusion-20260411.md`
+
+## 流程图
+
+```mermaid
+flowchart LR
+    ORCH[orchestration run] --> STEP[step ledger]
+    STEP --> CP[checkpoint]
+    CP --> RESUME[resume/retry]
+    RESUME --> SNAP[system_mainline_snapshot]
+```

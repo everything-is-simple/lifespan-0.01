@@ -21,3 +21,16 @@
   - `docs/02-spec/modules/system/09-trade-backtest-progression-runner-spec-20260411.md`
 - 当前锚点结论：
   - `docs/03-execution/102-trade-exit-pnl-ledger-bootstrap-conclusion-20260411.md`
+
+## 流程图
+
+```mermaid
+flowchart LR
+    LEG[open legs] --> PROG[逐日推进 OHLC none]
+    PROG -->|1R half| HALF[半仓退出]
+    PROG -->|break_LHL| TAIL[尾仓退出]
+    PROG -->|fail fast| STOP[快速失败]
+    HALF --> EXIT[trade_exit_ledger]
+    TAIL --> EXIT
+    STOP --> EXIT
+```

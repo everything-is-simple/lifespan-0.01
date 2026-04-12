@@ -20,3 +20,13 @@
 
 1. `legacy-review-opinion-reconciliation-20260409.md`
 2. `Γ-legacy-module-source-grounding-map-20260409.md`
+
+## 流程图
+
+```mermaid
+flowchart LR
+    OLD[旧系统笔记/书籍/外部资料] --> REF[04-reference 参考层]
+    REF -. 只是输入 .-> DES[01-design]
+    DES --> SPEC[02-spec]
+    SPEC --> EXEC[03-execution conclusion]
+```

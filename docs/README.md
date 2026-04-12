@@ -81,3 +81,13 @@
 3. 任务分解
 
 只有满足这些前置文档后，任务才可以进入 `03-execution` 并产出代码。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    DES[01-design 为什么这样设计] --> SPEC[02-spec 正式契约]
+    SPEC --> EXEC[03-execution 执行闭环]
+    EXEC --> CARD[card] --> IMPL[实现] --> EV[evidence] --> REC[record] --> CON[conclusion]
+    REF[04-reference 外部输入] -. 只是输入 .-> DES
+```

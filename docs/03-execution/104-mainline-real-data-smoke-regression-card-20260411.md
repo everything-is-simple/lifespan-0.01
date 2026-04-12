@@ -21,3 +21,14 @@
   - `docs/02-spec/modules/system/10-mainline-real-data-smoke-regression-spec-20260411.md`
 - 当前锚点结论：
   - `docs/03-execution/103-trade-backtest-progression-runner-conclusion-20260411.md`
+
+## 流程图
+
+```mermaid
+flowchart LR
+    REAL[真实股票 1-2只 bounded] --> ALPHA[alpha]
+    ALPHA --> POS[position]
+    POS --> TRADE[trade]
+    TRADE --> SYS[system readout]
+    SYS --> EV[evidence 导出摘要]
+```

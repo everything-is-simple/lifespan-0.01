@@ -78,3 +78,16 @@
 2. 路线图文档记录当前系统现实进度和下一步顺序
 
 这样你以后既能快速看全局，又不会把状态定义搞飘。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    ROADMAP[系统级路线图] --> PROGRESS[当前进度]
+    ROADMAP --> STATUS[各模块状态]
+    ROADMAP --> NEXT[下一锤]
+    ROADMAP --> BLOCK[阻塞项]
+    ROADMAP --> SRC[模块来源分层]
+    SPEC[进度跟踪规格] --> DEF[状态字段/枚举]
+    SPEC --> DISC[更新纪律]
+```
