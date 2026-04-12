@@ -51,7 +51,6 @@
 1. `LEGACY_HARD_OVERSIZE_BACKLOG`
    - `src/mlq/alpha/runner.py`
    - `src/mlq/data/runner.py`
-   - `src/mlq/structure/runner.py`
    - `tests/unit/data/test_data_runner.py`
 2. `LEGACY_TARGET_OVERSIZE_BACKLOG`
    - `src/mlq/alpha/family_runner.py`
@@ -107,7 +106,8 @@
 5. 已完成 `src/mlq/filter/runner.py` 拆分，当前正式入口仍保持不变，新增 `filter_shared / filter_source / filter_materialization` 三个 helper 模块承接共享结构、上游读取与落表物化职责。
 6. 已完成 `src/mlq/malf/mechanism_runner.py` 拆分，当前正式入口仍保持不变，新增 `mechanism_shared / mechanism_source / mechanism_materialization` 三个 helper 模块承接共享结构、桥接输入读取与 sidecar 落表职责。
 7. 已完成 `src/mlq/malf/canonical_runner.py` 拆分，当前正式入口仍保持不变，新增 `canonical_shared / canonical_source / canonical_materialization` 三个 helper 模块承接共享结构、上游行情读取与 canonical 物化职责。
-8. 后续继续按 `LEGACY_HARD_OVERSIZE_BACKLOG` 顺序清理剩余历史债务。
+8. 已完成 `src/mlq/structure/runner.py` 拆分，当前正式入口仍保持不变，新增 `structure_shared / structure_source / structure_query / structure_materialization` 四个 helper 模块承接共享结构、上游读取、列解析与 sidecar 查询、脏队列/checkpoint 与落表物化职责。
+9. 后续继续按 `LEGACY_HARD_OVERSIZE_BACKLOG` 顺序清理剩余历史债务。
 
 ## 卡片结构图
 
