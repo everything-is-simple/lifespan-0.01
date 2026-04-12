@@ -48,7 +48,7 @@
 1. `LEGACY_HARD_OVERSIZE_BACKLOG`
 - 已清零。
 2. `LEGACY_TARGET_OVERSIZE_BACKLOG`
-- `src/mlq/position/bootstrap.py`
+- 已清零。
 
 ## 实现边界
 - 范围内：
@@ -79,12 +79,12 @@
 1. `LEGACY_HARD_OVERSIZE_BACKLOG` 清零并保持为零。
 2. 全仓 `python scripts/system/check_development_governance.py` 不再依赖历史 hard backlog 掩盖旧问题。
 3. `37` 完整回填 evidence / record / conclusion，并持续登记每一轮清债结果。
-4. 后续只剩 `LEGACY_TARGET_OVERSIZE_BACKLOG` 作为专项治理队列。
+4. `LEGACY_TARGET_OVERSIZE_BACKLOG` 已清零，`37` 的历史超长治理目标已全部收口。
 
 ## 当前进度
 1. 基线登记、工具纠偏、hard backlog 清零已经完成。
-2. 当前剩余治理债务仅为 `LEGACY_TARGET_OVERSIZE_BACKLOG` 一项。
-3. 下一步按顺序进入 `src/mlq/position/bootstrap.py` 的 target backlog 收敛。
+2. 当前剩余治理债务已清零。
+3. 下一步应从 `37` 切回 `100-105` 的 trade/system 主线推进。
 
 ## 卡片结构图
 ```mermaid

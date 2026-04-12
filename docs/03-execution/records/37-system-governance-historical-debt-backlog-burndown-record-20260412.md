@@ -27,3 +27,6 @@
 23. 将 `src/mlq/alpha/family_runner.py` 拆分为 bounded orchestrator + `family_shared / family_source / family_materialization`，保持 `run_alpha_family_build` 外部入口、family ledger 表族契约与 bounded 语义不变。
 24. 通过 `py_compile`、按路径治理检查、doc-first gating、执行索引检查与 `tests/unit/alpha/test_family_runner.py -q` 串行单测，确认 `src/mlq/alpha/family_runner.py` 可从 `LEGACY_TARGET_OVERSIZE_BACKLOG` 移除。
 25. 回填 `37` 的 card / evidence / record / conclusion、入口文件与 backlog 台账，使当前正式口径更新为“hard backlog 已清零、target backlog 剩余 1 项”。
+26. 将 `src/mlq/position/bootstrap.py` 拆分为 facade + `position_shared / position_bootstrap_schema / position_materialization`，保持对外导出的表名常量、输入/输出数据结构、bootstrap/连接/path 入口与 position materialization 语义不变。
+27. 通过 `py_compile`、按路径治理检查与 `tests/unit/position/test_bootstrap.py tests/unit/position/test_position_runner.py -q` 串行单测，确认 `src/mlq/position/bootstrap.py` 可从 `LEGACY_TARGET_OVERSIZE_BACKLOG` 移除。
+28. 回填 `37` 的 card / evidence / record / conclusion、入口文件与 backlog 台账，使当前正式口径更新为“hard backlog 与 target backlog 均已清零”。

@@ -6,8 +6,6 @@
 
 LEGACY_HARD_OVERSIZE_BACKLOG: tuple[str, ...] = ()
 
-LEGACY_TARGET_OVERSIZE_BACKLOG: tuple[str, ...] = (
-    "src/mlq/position/bootstrap.py",
-)
+LEGACY_TARGET_OVERSIZE_BACKLOG: tuple[str, ...] = ()
 
 LEGACY_CHINESE_PYTHON_BACKLOG: tuple[str, ...] = ()

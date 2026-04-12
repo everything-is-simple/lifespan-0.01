@@ -27,6 +27,8 @@
 - 新增 `src/mlq/malf/bootstrap_tables.py`、`src/mlq/malf/bootstrap_columns.py`，分别承接表名常量与 required-column 补列映射。
 - `src/mlq/alpha/family_runner.py` 已收缩到 `134` 行。
 - 新增 `src/mlq/alpha/family_shared.py`、`src/mlq/alpha/family_source.py`、`src/mlq/alpha/family_materialization.py`，分别承接共享常量、上游读取与 family ledger 落表职责。
+- `src/mlq/position/bootstrap.py` 已收缩到 `119` 行。
+- 新增 `src/mlq/position/position_shared.py`、`src/mlq/position/position_bootstrap_schema.py`、`src/mlq/position/position_materialization.py`，分别承接输入/输出数据结构、正式表族 DDL 与 bounded materialization 逻辑。
 
 ## 验证命令
 - `python -m py_compile src/mlq/data/data_shared.py src/mlq/data/data_common.py src/mlq/data/data_raw_support.py src/mlq/data/data_raw_runner.py src/mlq/data/data_tdxquant.py src/mlq/data/data_market_base_scope.py src/mlq/data/data_market_base_materialization.py src/mlq/data/data_market_base_runner.py src/mlq/data/runner.py tests/unit/data/test_raw_ingest_runner.py tests/unit/data/test_tdxquant_runner.py tests/unit/data/test_market_base_runner.py`
@@ -50,12 +52,16 @@
 - `python -m py_compile src/mlq/alpha/family_runner.py src/mlq/alpha/family_shared.py src/mlq/alpha/family_source.py src/mlq/alpha/family_materialization.py`
 - `python scripts/system/check_development_governance.py src/mlq/alpha/family_runner.py src/mlq/alpha/family_shared.py src/mlq/alpha/family_source.py src/mlq/alpha/family_materialization.py`
 - `python -m pytest -p no:cacheprovider --basetemp H:\Lifespan-temp\pytest\card37_alpha_family_20260412 tests/unit/alpha/test_family_runner.py -q`
+- `python -m py_compile src/mlq/position/bootstrap.py src/mlq/position/position_shared.py src/mlq/position/position_bootstrap_schema.py src/mlq/position/position_materialization.py src/mlq/position/runner.py`
+- `python scripts/system/check_development_governance.py src/mlq/position/bootstrap.py src/mlq/position/position_shared.py src/mlq/position/position_bootstrap_schema.py src/mlq/position/position_materialization.py`
+- `python -m pytest -p no:cacheprovider --basetemp H:\Lifespan-temp\pytest\card37_position_bootstrap_20260412 tests/unit/position/test_bootstrap.py tests/unit/position/test_position_runner.py -q`
 
 ## 验证补充
 - `py_compile`、按路径治理检查、全仓治理检查、doc-first gating 与执行索引检查均通过。
 - `tests/unit/malf/test_malf_runner.py` 串行通过，结果为 `2 passed`。
 - `malf bootstrap` 相关串行 pytest 通过，结果为 `8 passed`。
 - `alpha family` 相关串行 pytest 通过，结果为 `2 passed`。
+- `position bootstrap` 与 `position runner` 相关串行 pytest 通过，结果为 `8 passed`。
 - `Unknown config option: cache_dir` 警告来自 `-p no:cacheprovider`，不是仓库配置漂移。
 
 ## 验证结果摘要
@@ -67,4 +73,4 @@
 
 ## 治理台账状态
 - `LEGACY_HARD_OVERSIZE_BACKLOG`：已清零。
-- `LEGACY_TARGET_OVERSIZE_BACKLOG`：剩余 `1` 项。
+- `LEGACY_TARGET_OVERSIZE_BACKLOG`：已清零。
