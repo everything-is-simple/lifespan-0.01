@@ -125,6 +125,41 @@ def _seed_malf_sidecars(malf_path: Path) -> None:
         conn.close()
 
 
+def _seed_canonical_malf_state_rows(
+    malf_path: Path,
+    rows: list[tuple[object, ...]],
+) -> None:
+    malf_path.parent.mkdir(parents=True, exist_ok=True)
+    conn = duckdb.connect(str(malf_path))
+    try:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS malf_state_snapshot (
+                snapshot_nk TEXT NOT NULL,
+                asset_type TEXT NOT NULL,
+                code TEXT NOT NULL,
+                timeframe TEXT NOT NULL,
+                asof_bar_dt DATE NOT NULL,
+                major_state TEXT NOT NULL,
+                trend_direction TEXT NOT NULL,
+                reversal_stage TEXT NOT NULL,
+                wave_id BIGINT NOT NULL,
+                current_hh_count BIGINT NOT NULL,
+                current_ll_count BIGINT NOT NULL
+            )
+            """
+        )
+        for row in rows:
+            conn.execute(
+                """
+                INSERT INTO malf_state_snapshot VALUES (?, 'stock', ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                row,
+            )
+    finally:
+        conn.close()
+
+
 def test_run_structure_snapshot_build_materializes_run_snapshot_and_bridge(
     tmp_path: Path,
     monkeypatch,
@@ -319,3 +354,89 @@ def test_run_structure_snapshot_build_attaches_sidecar_fields_without_rewriting_
         conn.close()
 
     assert snapshot_row == ("advancing", "confirmed", "break-001", "stats-001", "high", "elevated")
+
+
+def test_run_structure_snapshot_build_materializes_read_only_weekly_monthly_context(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+    _seed_canonical_malf_state_rows(
+        settings.databases.malf,
+        [
+            ("state-d-001", "000001.SZ", "D", "2026-04-08", "牛顺", "up", "none", 7, 2, 0),
+            ("state-w-001", "000001.SZ", "W", "2026-04-04", "牛顺", "up", "expand", 3, 1, 0),
+            ("state-m-001", "000001.SZ", "M", "2026-03-31", "牛逆", "down", "trigger", 1, 0, 1),
+        ],
+    )
+
+    first_summary = run_structure_snapshot_build(
+        settings=settings,
+        signal_start_date="2026-04-08",
+        signal_end_date="2026-04-08",
+        run_id="structure-snapshot-test-004a",
+    )
+    assert first_summary.inserted_count == 1
+
+    conn = duckdb.connect(str(settings.databases.malf))
+    try:
+        conn.execute(
+            """
+            UPDATE malf_state_snapshot
+            SET
+                major_state = '熊逆',
+                trend_direction = 'down',
+                reversal_stage = 'trigger',
+                current_hh_count = 0,
+                current_ll_count = 2
+            WHERE snapshot_nk = 'state-m-001'
+            """
+        )
+    finally:
+        conn.close()
+
+    second_summary = run_structure_snapshot_build(
+        settings=settings,
+        signal_start_date="2026-04-08",
+        signal_end_date="2026-04-08",
+        run_id="structure-snapshot-test-004b",
+    )
+
+    assert second_summary.rematerialized_count == 1
+
+    conn = duckdb.connect(str(structure_ledger_path(settings)), read_only=True)
+    try:
+        snapshot_row = conn.execute(
+            """
+            SELECT
+                major_state,
+                daily_major_state,
+                daily_source_context_nk,
+                weekly_major_state,
+                weekly_reversal_stage,
+                weekly_source_context_nk,
+                monthly_major_state,
+                monthly_reversal_stage,
+                monthly_source_context_nk,
+                last_materialized_run_id
+            FROM structure_snapshot
+            WHERE instrument = '000001.SZ'
+            """
+        ).fetchone()
+    finally:
+        conn.close()
+
+    assert snapshot_row == (
+        "牛顺",
+        "牛顺",
+        "state-d-001",
+        "牛顺",
+        "expand",
+        "state-w-001",
+        "熊逆",
+        "trigger",
+        "state-m-001",
+        "structure-snapshot-test-004b",
+    )

@@ -38,6 +38,7 @@
 31. `31-structure-filter-alpha-rebind-to-canonical-malf-evidence-20260411.md`
 32. `32-downstream-truthfulness-revalidation-after-malf-canonicalization-evidence-20260411.md`
 33. `33-malf-downstream-canonical-contract-purge-evidence-20260412.md`
+34. `34-malf-multi-timeframe-downstream-consumption-evidence-20260412.md`
 100. `100-trade-signal-anchor-contract-freeze-evidence-20260411.md`
 101. `101-position-entry-t-plus-1-open-reference-price-correction-evidence-20260411.md`
 102. `102-trade-exit-pnl-ledger-bootstrap-evidence-20260411.md`

@@ -46,6 +46,27 @@ def _seed_structure_snapshots(settings) -> None:
                 wave_id,
                 current_hh_count,
                 current_ll_count,
+                daily_major_state,
+                daily_trend_direction,
+                daily_reversal_stage,
+                daily_wave_id,
+                daily_current_hh_count,
+                daily_current_ll_count,
+                daily_source_context_nk,
+                weekly_major_state,
+                weekly_trend_direction,
+                weekly_reversal_stage,
+                weekly_wave_id,
+                weekly_current_hh_count,
+                weekly_current_ll_count,
+                weekly_source_context_nk,
+                monthly_major_state,
+                monthly_trend_direction,
+                monthly_reversal_stage,
+                monthly_wave_id,
+                monthly_current_hh_count,
+                monthly_current_ll_count,
+                monthly_source_context_nk,
                 structure_progress_state,
                 break_confirmation_status,
                 break_confirmation_ref,
@@ -58,8 +79,20 @@ def _seed_structure_snapshots(settings) -> None:
                 last_materialized_run_id
             )
             VALUES
-                ('ss-001', '000001.SZ', '2026-04-08', '2026-04-08', '牛顺', 'up', 'expand', 7, 2, 0, 'advancing', 'confirmed', 'break-001', 'stats-001', 'high', 'elevated', 'ctx-001', 'structure-snapshot-v2', 'run-a', 'run-a'),
-                ('ss-002', '000002.SZ', '2026-04-08', '2026-04-08', '熊顺', 'down', 'expand', 9, 0, 1, 'failed', NULL, NULL, NULL, NULL, NULL, 'ctx-002', 'structure-snapshot-v2', 'run-a', 'run-a')
+                (
+                    'ss-001', '000001.SZ', '2026-04-08', '2026-04-08', '牛顺', 'up', 'expand', 7, 2, 0,
+                    '牛顺', 'up', 'expand', 7, 2, 0, 'ctx-d-001',
+                    '牛顺', 'up', 'none', 3, 1, 0, 'ctx-w-001',
+                    '牛逆', 'down', 'trigger', 1, 0, 1, 'ctx-m-001',
+                    'advancing', 'confirmed', 'break-001', 'stats-001', 'high', 'elevated', 'ctx-001', 'structure-snapshot-v2', 'run-a', 'run-a'
+                ),
+                (
+                    'ss-002', '000002.SZ', '2026-04-08', '2026-04-08', '熊顺', 'down', 'expand', 9, 0, 1,
+                    '熊顺', 'down', 'expand', 9, 0, 1, 'ctx-d-002',
+                    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+                    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+                    'failed', NULL, NULL, NULL, NULL, NULL, 'ctx-002', 'structure-snapshot-v2', 'run-a', 'run-a'
+                )
             """
         )
     finally:
@@ -205,3 +238,93 @@ def test_run_filter_snapshot_build_marks_rematerialized_when_structure_turns_fai
         conn.close()
 
     assert snapshot_row == (False, "structure_progress_failed", "filter-snapshot-test-002b")
+
+
+def test_run_filter_snapshot_build_copies_read_only_multi_timeframe_context_without_blocking(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+    _seed_structure_snapshots(settings)
+    _seed_context_rows(settings.databases.malf)
+
+    first_summary = run_filter_snapshot_build(
+        settings=settings,
+        signal_start_date="2026-04-08",
+        signal_end_date="2026-04-08",
+        run_id="filter-snapshot-test-003a",
+    )
+    assert first_summary.inserted_count == 2
+
+    conn = duckdb.connect(str(filter_ledger_path(settings)), read_only=True)
+    try:
+        first_row = conn.execute(
+            """
+            SELECT
+                trigger_admissible,
+                daily_source_context_nk,
+                weekly_major_state,
+                monthly_major_state,
+                admission_notes
+            FROM filter_snapshot
+            WHERE instrument = '000001.SZ'
+            """
+        ).fetchone()
+    finally:
+        conn.close()
+
+    assert first_row == (
+        True,
+        "ctx-d-001",
+        "牛顺",
+        "牛逆",
+        "canonical_context=牛顺/up/expand; read_only_context=W:牛顺/none;M:牛逆/trigger; break_confirmation=confirmed 仅 sidecar 提示; exhaustion_risk=high",
+    )
+
+    conn = connect_structure_ledger(settings)
+    try:
+        conn.execute(
+            """
+            UPDATE structure_snapshot
+            SET
+                monthly_major_state = '熊逆',
+                monthly_trend_direction = 'down',
+                monthly_reversal_stage = 'trigger',
+                monthly_source_context_nk = 'ctx-m-002',
+                last_materialized_run_id = 'run-c'
+            WHERE structure_snapshot_nk = 'ss-001'
+            """
+        )
+    finally:
+        conn.close()
+
+    second_summary = run_filter_snapshot_build(
+        settings=settings,
+        signal_start_date="2026-04-08",
+        signal_end_date="2026-04-08",
+        run_id="filter-snapshot-test-003b",
+    )
+
+    assert second_summary.rematerialized_count == 1
+    assert second_summary.admissible_count == 1
+
+    conn = duckdb.connect(str(filter_ledger_path(settings)), read_only=True)
+    try:
+        second_row = conn.execute(
+            """
+            SELECT
+                trigger_admissible,
+                primary_blocking_condition,
+                monthly_major_state,
+                monthly_source_context_nk,
+                last_materialized_run_id
+            FROM filter_snapshot
+            WHERE instrument = '000001.SZ'
+            """
+        ).fetchone()
+    finally:
+        conn.close()
+
+    assert second_row == (True, None, "熊逆", "ctx-m-002", "filter-snapshot-test-003b")

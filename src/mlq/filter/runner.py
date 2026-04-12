@@ -71,6 +71,27 @@ class _StructureSnapshotInputRow:
     wave_id: int
     current_hh_count: int
     current_ll_count: int
+    daily_major_state: str | None
+    daily_trend_direction: str | None
+    daily_reversal_stage: str | None
+    daily_wave_id: int | None
+    daily_current_hh_count: int | None
+    daily_current_ll_count: int | None
+    daily_source_context_nk: str | None
+    weekly_major_state: str | None
+    weekly_trend_direction: str | None
+    weekly_reversal_stage: str | None
+    weekly_wave_id: int | None
+    weekly_current_hh_count: int | None
+    weekly_current_ll_count: int | None
+    weekly_source_context_nk: str | None
+    monthly_major_state: str | None
+    monthly_trend_direction: str | None
+    monthly_reversal_stage: str | None
+    monthly_wave_id: int | None
+    monthly_current_hh_count: int | None
+    monthly_current_ll_count: int | None
+    monthly_source_context_nk: str | None
     structure_progress_state: str
     break_confirmation_status: str | None
     break_confirmation_ref: str | None
@@ -93,6 +114,27 @@ class _FilterSnapshotRow:
     wave_id: int
     current_hh_count: int
     current_ll_count: int
+    daily_major_state: str | None
+    daily_trend_direction: str | None
+    daily_reversal_stage: str | None
+    daily_wave_id: int | None
+    daily_current_hh_count: int | None
+    daily_current_ll_count: int | None
+    daily_source_context_nk: str | None
+    weekly_major_state: str | None
+    weekly_trend_direction: str | None
+    weekly_reversal_stage: str | None
+    weekly_wave_id: int | None
+    weekly_current_hh_count: int | None
+    weekly_current_ll_count: int | None
+    weekly_source_context_nk: str | None
+    monthly_major_state: str | None
+    monthly_trend_direction: str | None
+    monthly_reversal_stage: str | None
+    monthly_wave_id: int | None
+    monthly_current_hh_count: int | None
+    monthly_current_ll_count: int | None
+    monthly_source_context_nk: str | None
     trigger_admissible: bool
     primary_blocking_condition: str | None
     blocking_conditions_json: str
@@ -305,6 +347,27 @@ def _load_structure_snapshot_rows(
                 COALESCE({_resolve_optional_column(available_columns, ("wave_id",)) or "0"}, 0) AS wave_id,
                 COALESCE({_resolve_optional_column(available_columns, ("current_hh_count",)) or "0"}, 0) AS current_hh_count,
                 COALESCE({_resolve_optional_column(available_columns, ("current_ll_count",)) or "0"}, 0) AS current_ll_count,
+                {_resolve_optional_column(available_columns, ("daily_major_state",)) or "NULL"} AS daily_major_state,
+                {_resolve_optional_column(available_columns, ("daily_trend_direction",)) or "NULL"} AS daily_trend_direction,
+                {_resolve_optional_column(available_columns, ("daily_reversal_stage",)) or "NULL"} AS daily_reversal_stage,
+                {_resolve_optional_column(available_columns, ("daily_wave_id",)) or "NULL"} AS daily_wave_id,
+                {_resolve_optional_column(available_columns, ("daily_current_hh_count",)) or "NULL"} AS daily_current_hh_count,
+                {_resolve_optional_column(available_columns, ("daily_current_ll_count",)) or "NULL"} AS daily_current_ll_count,
+                {_resolve_optional_column(available_columns, ("daily_source_context_nk",)) or "NULL"} AS daily_source_context_nk,
+                {_resolve_optional_column(available_columns, ("weekly_major_state",)) or "NULL"} AS weekly_major_state,
+                {_resolve_optional_column(available_columns, ("weekly_trend_direction",)) or "NULL"} AS weekly_trend_direction,
+                {_resolve_optional_column(available_columns, ("weekly_reversal_stage",)) or "NULL"} AS weekly_reversal_stage,
+                {_resolve_optional_column(available_columns, ("weekly_wave_id",)) or "NULL"} AS weekly_wave_id,
+                {_resolve_optional_column(available_columns, ("weekly_current_hh_count",)) or "NULL"} AS weekly_current_hh_count,
+                {_resolve_optional_column(available_columns, ("weekly_current_ll_count",)) or "NULL"} AS weekly_current_ll_count,
+                {_resolve_optional_column(available_columns, ("weekly_source_context_nk",)) or "NULL"} AS weekly_source_context_nk,
+                {_resolve_optional_column(available_columns, ("monthly_major_state",)) or "NULL"} AS monthly_major_state,
+                {_resolve_optional_column(available_columns, ("monthly_trend_direction",)) or "NULL"} AS monthly_trend_direction,
+                {_resolve_optional_column(available_columns, ("monthly_reversal_stage",)) or "NULL"} AS monthly_reversal_stage,
+                {_resolve_optional_column(available_columns, ("monthly_wave_id",)) or "NULL"} AS monthly_wave_id,
+                {_resolve_optional_column(available_columns, ("monthly_current_hh_count",)) or "NULL"} AS monthly_current_hh_count,
+                {_resolve_optional_column(available_columns, ("monthly_current_ll_count",)) or "NULL"} AS monthly_current_ll_count,
+                {_resolve_optional_column(available_columns, ("monthly_source_context_nk",)) or "NULL"} AS monthly_source_context_nk,
                 {_resolve_optional_column(available_columns, ("structure_progress_state",)) or "'unknown'"} AS structure_progress_state,
                 {_resolve_optional_column(available_columns, ("break_confirmation_status",)) or "NULL"} AS break_confirmation_status,
                 {_resolve_optional_column(available_columns, ("break_confirmation_ref",)) or "NULL"} AS break_confirmation_ref,
@@ -325,19 +388,40 @@ def _load_structure_snapshot_rows(
                 instrument=str(row[1]),
                 signal_date=_normalize_date_value(row[2], field_name="signal_date"),
                 asof_date=_normalize_date_value(row[3], field_name="asof_date"),
-                major_state=_normalize_optional_str(row[4], default="牛逆"),
+                major_state=_normalize_optional_str(row[4], default="??"),
                 trend_direction=_normalize_optional_str(row[5], default="down").lower(),
                 reversal_stage=_normalize_optional_str(row[6], default="none").lower(),
                 wave_id=_normalize_optional_int(row[7]),
                 current_hh_count=_normalize_optional_int(row[8]),
                 current_ll_count=_normalize_optional_int(row[9]),
-                structure_progress_state=_normalize_progress_state(row[10]),
-                break_confirmation_status=_normalize_optional_nullable_str(row[11]),
-                break_confirmation_ref=_normalize_optional_nullable_str(row[12]),
-                stats_snapshot_nk=_normalize_optional_nullable_str(row[13]),
-                exhaustion_risk_bucket=_normalize_optional_nullable_str(row[14]),
-                reversal_probability_bucket=_normalize_optional_nullable_str(row[15]),
-                source_context_nk=str(row[16]),
+                daily_major_state=_normalize_optional_nullable_str(row[10]),
+                daily_trend_direction=_normalize_optional_nullable_str(row[11]),
+                daily_reversal_stage=_normalize_optional_nullable_str(row[12]),
+                daily_wave_id=_normalize_optional_nullable_int(row[13]),
+                daily_current_hh_count=_normalize_optional_nullable_int(row[14]),
+                daily_current_ll_count=_normalize_optional_nullable_int(row[15]),
+                daily_source_context_nk=_normalize_optional_nullable_str(row[16]),
+                weekly_major_state=_normalize_optional_nullable_str(row[17]),
+                weekly_trend_direction=_normalize_optional_nullable_str(row[18]),
+                weekly_reversal_stage=_normalize_optional_nullable_str(row[19]),
+                weekly_wave_id=_normalize_optional_nullable_int(row[20]),
+                weekly_current_hh_count=_normalize_optional_nullable_int(row[21]),
+                weekly_current_ll_count=_normalize_optional_nullable_int(row[22]),
+                weekly_source_context_nk=_normalize_optional_nullable_str(row[23]),
+                monthly_major_state=_normalize_optional_nullable_str(row[24]),
+                monthly_trend_direction=_normalize_optional_nullable_str(row[25]),
+                monthly_reversal_stage=_normalize_optional_nullable_str(row[26]),
+                monthly_wave_id=_normalize_optional_nullable_int(row[27]),
+                monthly_current_hh_count=_normalize_optional_nullable_int(row[28]),
+                monthly_current_ll_count=_normalize_optional_nullable_int(row[29]),
+                monthly_source_context_nk=_normalize_optional_nullable_str(row[30]),
+                structure_progress_state=_normalize_progress_state(row[31]),
+                break_confirmation_status=_normalize_optional_nullable_str(row[32]),
+                break_confirmation_ref=_normalize_optional_nullable_str(row[33]),
+                stats_snapshot_nk=_normalize_optional_nullable_str(row[34]),
+                exhaustion_risk_bucket=_normalize_optional_nullable_str(row[35]),
+                reversal_probability_bucket=_normalize_optional_nullable_str(row[36]),
+                source_context_nk=str(row[37]),
             )
             for row in rows
         ]
@@ -584,15 +668,20 @@ def _build_filter_snapshot_row(
 
     admission_notes: list[str] = []
     if structure_row.structure_progress_state in {"stalled", "unknown"} and not blocking_conditions:
-        # 这里明确保守放行，避免 filter 把研究观察误升成正式硬门。
-        admission_notes.append(f"非阻断结构状态保留放行:{structure_row.structure_progress_state}")
+        admission_notes.append(f"???????????:{structure_row.structure_progress_state}")
     admission_notes.append(
         f"canonical_context={structure_row.major_state}/{structure_row.trend_direction}/{structure_row.reversal_stage}"
     )
+    if structure_row.weekly_major_state or structure_row.monthly_major_state:
+        admission_notes.append(
+            "read_only_context="
+            f"W:{structure_row.weekly_major_state}/{structure_row.weekly_reversal_stage};"
+            f"M:{structure_row.monthly_major_state}/{structure_row.monthly_reversal_stage}"
+        )
     if not has_context:
-        admission_notes.append("缺少 execution_context，当前最小合同保持不阻断")
+        admission_notes.append("?? execution_context????????????")
     if structure_row.break_confirmation_status == "confirmed":
-        admission_notes.append("break_confirmation=confirmed 仅作 sidecar 提示")
+        admission_notes.append("break_confirmation=confirmed 仅 sidecar 提示")
     if structure_row.exhaustion_risk_bucket in {"elevated", "high"}:
         admission_notes.append(f"exhaustion_risk={structure_row.exhaustion_risk_bucket}")
 
@@ -615,6 +704,27 @@ def _build_filter_snapshot_row(
         wave_id=structure_row.wave_id,
         current_hh_count=structure_row.current_hh_count,
         current_ll_count=structure_row.current_ll_count,
+        daily_major_state=structure_row.daily_major_state,
+        daily_trend_direction=structure_row.daily_trend_direction,
+        daily_reversal_stage=structure_row.daily_reversal_stage,
+        daily_wave_id=structure_row.daily_wave_id,
+        daily_current_hh_count=structure_row.daily_current_hh_count,
+        daily_current_ll_count=structure_row.daily_current_ll_count,
+        daily_source_context_nk=structure_row.daily_source_context_nk,
+        weekly_major_state=structure_row.weekly_major_state,
+        weekly_trend_direction=structure_row.weekly_trend_direction,
+        weekly_reversal_stage=structure_row.weekly_reversal_stage,
+        weekly_wave_id=structure_row.weekly_wave_id,
+        weekly_current_hh_count=structure_row.weekly_current_hh_count,
+        weekly_current_ll_count=structure_row.weekly_current_ll_count,
+        weekly_source_context_nk=structure_row.weekly_source_context_nk,
+        monthly_major_state=structure_row.monthly_major_state,
+        monthly_trend_direction=structure_row.monthly_trend_direction,
+        monthly_reversal_stage=structure_row.monthly_reversal_stage,
+        monthly_wave_id=structure_row.monthly_wave_id,
+        monthly_current_hh_count=structure_row.monthly_current_hh_count,
+        monthly_current_ll_count=structure_row.monthly_current_ll_count,
+        monthly_source_context_nk=structure_row.monthly_source_context_nk,
         trigger_admissible=not blocking_conditions,
         primary_blocking_condition=primary_blocking_condition,
         blocking_conditions_json=blocking_conditions_json,
@@ -654,170 +764,72 @@ def _upsert_filter_snapshot(
     existing_row = connection.execute(
         f"""
         SELECT
-            major_state,
-            trend_direction,
-            reversal_stage,
-            wave_id,
-            current_hh_count,
-            current_ll_count,
-            trigger_admissible,
-            primary_blocking_condition,
-            blocking_conditions_json,
-            admission_notes,
-            break_confirmation_status,
-            break_confirmation_ref,
-            stats_snapshot_nk,
-            exhaustion_risk_bucket,
-            reversal_probability_bucket,
+            major_state, trend_direction, reversal_stage, wave_id, current_hh_count, current_ll_count,
+            daily_major_state, daily_trend_direction, daily_reversal_stage, daily_wave_id, daily_current_hh_count, daily_current_ll_count, daily_source_context_nk,
+            weekly_major_state, weekly_trend_direction, weekly_reversal_stage, weekly_wave_id, weekly_current_hh_count, weekly_current_ll_count, weekly_source_context_nk,
+            monthly_major_state, monthly_trend_direction, monthly_reversal_stage, monthly_wave_id, monthly_current_hh_count, monthly_current_ll_count, monthly_source_context_nk,
+            trigger_admissible, primary_blocking_condition, blocking_conditions_json, admission_notes,
+            break_confirmation_status, break_confirmation_ref, stats_snapshot_nk, exhaustion_risk_bucket, reversal_probability_bucket,
             first_seen_run_id
         FROM {FILTER_SNAPSHOT_TABLE}
         WHERE filter_snapshot_nk = ?
         """,
         [filter_row.filter_snapshot_nk],
     ).fetchone()
+    new_fingerprint = (
+        filter_row.major_state, filter_row.trend_direction, filter_row.reversal_stage, filter_row.wave_id, filter_row.current_hh_count, filter_row.current_ll_count,
+        filter_row.daily_major_state, filter_row.daily_trend_direction, filter_row.daily_reversal_stage, filter_row.daily_wave_id, filter_row.daily_current_hh_count, filter_row.daily_current_ll_count, filter_row.daily_source_context_nk,
+        filter_row.weekly_major_state, filter_row.weekly_trend_direction, filter_row.weekly_reversal_stage, filter_row.weekly_wave_id, filter_row.weekly_current_hh_count, filter_row.weekly_current_ll_count, filter_row.weekly_source_context_nk,
+        filter_row.monthly_major_state, filter_row.monthly_trend_direction, filter_row.monthly_reversal_stage, filter_row.monthly_wave_id, filter_row.monthly_current_hh_count, filter_row.monthly_current_ll_count, filter_row.monthly_source_context_nk,
+        filter_row.trigger_admissible, filter_row.primary_blocking_condition, filter_row.blocking_conditions_json, filter_row.admission_notes,
+        filter_row.break_confirmation_status, filter_row.break_confirmation_ref, filter_row.stats_snapshot_nk, filter_row.exhaustion_risk_bucket, filter_row.reversal_probability_bucket,
+    )
+    insert_values = [
+        filter_row.filter_snapshot_nk, filter_row.structure_snapshot_nk, filter_row.instrument, filter_row.signal_date, filter_row.asof_date,
+        filter_row.major_state, filter_row.trend_direction, filter_row.reversal_stage, filter_row.wave_id, filter_row.current_hh_count, filter_row.current_ll_count,
+        filter_row.daily_major_state, filter_row.daily_trend_direction, filter_row.daily_reversal_stage, filter_row.daily_wave_id, filter_row.daily_current_hh_count, filter_row.daily_current_ll_count, filter_row.daily_source_context_nk,
+        filter_row.weekly_major_state, filter_row.weekly_trend_direction, filter_row.weekly_reversal_stage, filter_row.weekly_wave_id, filter_row.weekly_current_hh_count, filter_row.weekly_current_ll_count, filter_row.weekly_source_context_nk,
+        filter_row.monthly_major_state, filter_row.monthly_trend_direction, filter_row.monthly_reversal_stage, filter_row.monthly_wave_id, filter_row.monthly_current_hh_count, filter_row.monthly_current_ll_count, filter_row.monthly_source_context_nk,
+        filter_row.trigger_admissible, filter_row.primary_blocking_condition, filter_row.blocking_conditions_json, filter_row.admission_notes,
+        filter_row.break_confirmation_status, filter_row.break_confirmation_ref, filter_row.stats_snapshot_nk, filter_row.exhaustion_risk_bucket, filter_row.reversal_probability_bucket,
+        filter_row.source_context_nk, filter_row.filter_contract_version, filter_row.first_seen_run_id, filter_row.last_materialized_run_id,
+    ]
     if existing_row is None:
+        placeholders = ", ".join("?" for _ in insert_values)
         connection.execute(
             f"""
             INSERT INTO {FILTER_SNAPSHOT_TABLE} (
-                filter_snapshot_nk,
-                structure_snapshot_nk,
-                instrument,
-                signal_date,
-                asof_date,
-                major_state,
-                trend_direction,
-                reversal_stage,
-                wave_id,
-                current_hh_count,
-                current_ll_count,
-                trigger_admissible,
-                primary_blocking_condition,
-                blocking_conditions_json,
-                admission_notes,
-                break_confirmation_status,
-                break_confirmation_ref,
-                stats_snapshot_nk,
-                exhaustion_risk_bucket,
-                reversal_probability_bucket,
-                source_context_nk,
-                filter_contract_version,
-                first_seen_run_id,
-                last_materialized_run_id
+                filter_snapshot_nk, structure_snapshot_nk, instrument, signal_date, asof_date,
+                major_state, trend_direction, reversal_stage, wave_id, current_hh_count, current_ll_count,
+                daily_major_state, daily_trend_direction, daily_reversal_stage, daily_wave_id, daily_current_hh_count, daily_current_ll_count, daily_source_context_nk,
+                weekly_major_state, weekly_trend_direction, weekly_reversal_stage, weekly_wave_id, weekly_current_hh_count, weekly_current_ll_count, weekly_source_context_nk,
+                monthly_major_state, monthly_trend_direction, monthly_reversal_stage, monthly_wave_id, monthly_current_hh_count, monthly_current_ll_count, monthly_source_context_nk,
+                trigger_admissible, primary_blocking_condition, blocking_conditions_json, admission_notes,
+                break_confirmation_status, break_confirmation_ref, stats_snapshot_nk, exhaustion_risk_bucket, reversal_probability_bucket,
+                source_context_nk, filter_contract_version, first_seen_run_id, last_materialized_run_id
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES ({placeholders})
             """,
-            [
-                filter_row.filter_snapshot_nk,
-                filter_row.structure_snapshot_nk,
-                filter_row.instrument,
-                filter_row.signal_date,
-                filter_row.asof_date,
-                filter_row.major_state,
-                filter_row.trend_direction,
-                filter_row.reversal_stage,
-                filter_row.wave_id,
-                filter_row.current_hh_count,
-                filter_row.current_ll_count,
-                filter_row.trigger_admissible,
-                filter_row.primary_blocking_condition,
-                filter_row.blocking_conditions_json,
-                filter_row.admission_notes,
-                filter_row.break_confirmation_status,
-                filter_row.break_confirmation_ref,
-                filter_row.stats_snapshot_nk,
-                filter_row.exhaustion_risk_bucket,
-                filter_row.reversal_probability_bucket,
-                filter_row.source_context_nk,
-                filter_row.filter_contract_version,
-                filter_row.first_seen_run_id,
-                filter_row.last_materialized_run_id,
-            ],
+            insert_values,
         )
         return "inserted"
-
-    existing_fingerprint = (
-        _normalize_optional_str(existing_row[0], default="牛逆"),
-        _normalize_optional_str(existing_row[1], default="down"),
-        _normalize_optional_str(existing_row[2], default="none"),
-        _normalize_optional_int(existing_row[3]),
-        _normalize_optional_int(existing_row[4]),
-        _normalize_optional_int(existing_row[5]),
-        bool(existing_row[6]),
-        _normalize_optional_nullable_str(existing_row[7]),
-        _normalize_optional_str(existing_row[8], default="[]"),
-        _normalize_optional_nullable_str(existing_row[9]),
-        _normalize_optional_nullable_str(existing_row[10]),
-        _normalize_optional_nullable_str(existing_row[11]),
-        _normalize_optional_nullable_str(existing_row[12]),
-        _normalize_optional_nullable_str(existing_row[13]),
-        _normalize_optional_nullable_str(existing_row[14]),
-    )
-    new_fingerprint = (
-        filter_row.major_state,
-        filter_row.trend_direction,
-        filter_row.reversal_stage,
-        filter_row.wave_id,
-        filter_row.current_hh_count,
-        filter_row.current_ll_count,
-        filter_row.trigger_admissible,
-        filter_row.primary_blocking_condition,
-        filter_row.blocking_conditions_json,
-        filter_row.admission_notes,
-        filter_row.break_confirmation_status,
-        filter_row.break_confirmation_ref,
-        filter_row.stats_snapshot_nk,
-        filter_row.exhaustion_risk_bucket,
-        filter_row.reversal_probability_bucket,
-    )
-    first_seen_run_id = str(existing_row[15]) if existing_row[15] is not None else filter_row.first_seen_run_id
+    first_seen_run_id = str(existing_row[-1]) if existing_row[-1] is not None else filter_row.first_seen_run_id
     connection.execute(
         f"""
         UPDATE {FILTER_SNAPSHOT_TABLE}
         SET
-            major_state = ?,
-            trend_direction = ?,
-            reversal_stage = ?,
-            wave_id = ?,
-            current_hh_count = ?,
-            current_ll_count = ?,
-            trigger_admissible = ?,
-            primary_blocking_condition = ?,
-            blocking_conditions_json = ?,
-            admission_notes = ?,
-            break_confirmation_status = ?,
-            break_confirmation_ref = ?,
-            stats_snapshot_nk = ?,
-            exhaustion_risk_bucket = ?,
-            reversal_probability_bucket = ?,
-            first_seen_run_id = ?,
-            last_materialized_run_id = ?,
-            updated_at = CURRENT_TIMESTAMP
+            major_state = ?, trend_direction = ?, reversal_stage = ?, wave_id = ?, current_hh_count = ?, current_ll_count = ?,
+            daily_major_state = ?, daily_trend_direction = ?, daily_reversal_stage = ?, daily_wave_id = ?, daily_current_hh_count = ?, daily_current_ll_count = ?, daily_source_context_nk = ?,
+            weekly_major_state = ?, weekly_trend_direction = ?, weekly_reversal_stage = ?, weekly_wave_id = ?, weekly_current_hh_count = ?, weekly_current_ll_count = ?, weekly_source_context_nk = ?,
+            monthly_major_state = ?, monthly_trend_direction = ?, monthly_reversal_stage = ?, monthly_wave_id = ?, monthly_current_hh_count = ?, monthly_current_ll_count = ?, monthly_source_context_nk = ?,
+            trigger_admissible = ?, primary_blocking_condition = ?, blocking_conditions_json = ?, admission_notes = ?,
+            break_confirmation_status = ?, break_confirmation_ref = ?, stats_snapshot_nk = ?, exhaustion_risk_bucket = ?, reversal_probability_bucket = ?,
+            first_seen_run_id = ?, last_materialized_run_id = ?, updated_at = CURRENT_TIMESTAMP
         WHERE filter_snapshot_nk = ?
         """,
-        [
-            filter_row.major_state,
-            filter_row.trend_direction,
-            filter_row.reversal_stage,
-            filter_row.wave_id,
-            filter_row.current_hh_count,
-            filter_row.current_ll_count,
-            filter_row.trigger_admissible,
-            filter_row.primary_blocking_condition,
-            filter_row.blocking_conditions_json,
-            filter_row.admission_notes,
-            filter_row.break_confirmation_status,
-            filter_row.break_confirmation_ref,
-            filter_row.stats_snapshot_nk,
-            filter_row.exhaustion_risk_bucket,
-            filter_row.reversal_probability_bucket,
-            first_seen_run_id,
-            filter_row.last_materialized_run_id,
-            filter_row.filter_snapshot_nk,
-        ],
+        [*new_fingerprint, first_seen_run_id, filter_row.last_materialized_run_id, filter_row.filter_snapshot_nk],
     )
-    if existing_fingerprint == new_fingerprint:
-        return "reused"
-    return "rematerialized"
+    return "reused" if tuple(existing_row[:-1]) == new_fingerprint else "rematerialized"
 
 
 def _mark_run_completed(
@@ -922,6 +934,12 @@ def _normalize_optional_nullable_str(value: object) -> str | None:
         return None
     candidate = str(value).strip()
     return candidate or None
+
+
+def _normalize_optional_nullable_int(value: object) -> int | None:
+    if value is None or value == "":
+        return None
+    return int(value)
 
 
 def _normalize_optional_int(value: object) -> int:

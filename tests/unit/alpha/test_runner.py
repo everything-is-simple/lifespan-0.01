@@ -1,4 +1,4 @@
-"""覆盖 `alpha formal signal` 官方 producer 与 `position` 对接。"""
+"""覆盖 `alpha trigger / formal signal` 官方 producer 与 `position` 对接。"""
 
 from __future__ import annotations
 
@@ -58,6 +58,7 @@ def _seed_malf_sources(
     *,
     context_rows: list[tuple[object, ...]],
     structure_rows: list[tuple[object, ...]],
+    higher_timeframe_rows: list[tuple[object, ...]] | None = None,
 ) -> None:
     malf_path.parent.mkdir(parents=True, exist_ok=True)
     conn = duckdb.connect(str(malf_path))
@@ -134,6 +135,13 @@ def _seed_malf_sources(
                     current_hh_count,
                     current_ll_count,
                 ],
+            )
+        for row in higher_timeframe_rows or []:
+            conn.execute(
+                """
+                INSERT INTO malf_state_snapshot VALUES (?, 'stock', ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                row,
             )
         for row in structure_rows:
             conn.execute("INSERT INTO structure_candidate_snapshot VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", row)
@@ -221,6 +229,10 @@ def test_run_alpha_trigger_build_materializes_run_event_and_official_context(
             ("000001.SZ", "2026-04-08", "2026-04-08", 2, 0, 0.7, 0.6, False, None),
             ("000002.SZ", "2026-04-08", "2026-04-08", 0, 1, 0.0, 0.0, True, "failed_extreme"),
         ],
+        higher_timeframe_rows=[
+            ("state-w-001", "000001.SZ", "W", "2026-04-03", "牛顺", "up", "none", 3, 1, 0),
+            ("state-m-001", "000001.SZ", "M", "2026-03-31", "牛逆", "down", "trigger", 1, 0, 1),
+        ],
     )
     _materialize_official_upstream(settings, suffix="trigger-001")
 
@@ -248,7 +260,14 @@ def test_run_alpha_trigger_build_materializes_run_event_and_official_context(
         ).fetchone()
         event_rows = conn.execute(
             """
-            SELECT instrument, trigger_type, source_filter_snapshot_nk, source_structure_snapshot_nk
+            SELECT
+                instrument,
+                trigger_type,
+                daily_source_context_nk,
+                weekly_major_state,
+                monthly_major_state,
+                source_filter_snapshot_nk,
+                source_structure_snapshot_nk
             FROM alpha_trigger_event
             ORDER BY instrument
             """
@@ -257,9 +276,11 @@ def test_run_alpha_trigger_build_materializes_run_event_and_official_context(
         conn.close()
 
     assert run_row == ("completed", 2, 2)
-    assert event_rows[0][0:2] == ("000001.SZ", "bof")
-    assert event_rows[1][0:2] == ("000002.SZ", "pb")
-    assert all(row[2] and row[3] for row in event_rows)
+    assert event_rows == [
+        ("000001.SZ", "bof", "state-000001.SZ-2026-04-08", "牛顺", "牛逆", event_rows[0][5], event_rows[0][6]),
+        ("000002.SZ", "pb", "state-000002.SZ-2026-04-08", None, None, event_rows[1][5], event_rows[1][6]),
+    ]
+    assert all(row[5] and row[6] for row in event_rows)
 
 
 def test_run_alpha_trigger_build_marks_reused_and_rematerialized_when_upstream_changes(
@@ -358,6 +379,10 @@ def test_run_alpha_formal_signal_build_materializes_run_event_and_run_bridge(
             ("000001.SZ", "2026-04-08", "2026-04-08", 2, 0, 0.7, 0.6, False, None),
             ("000002.SZ", "2026-04-08", "2026-04-08", 0, 1, 0.0, 0.0, True, "failed_extreme"),
         ],
+        higher_timeframe_rows=[
+            ("state-w-101", "000001.SZ", "W", "2026-04-03", "牛顺", "up", "none", 3, 1, 0),
+            ("state-m-101", "000001.SZ", "M", "2026-03-31", "牛逆", "down", "trigger", 1, 0, 1),
+        ],
     )
     _materialize_official_upstream(settings, suffix="001")
     _materialize_official_trigger(settings, suffix="001")
@@ -388,7 +413,16 @@ def test_run_alpha_formal_signal_build_materializes_run_event_and_run_bridge(
         ).fetchone()
         event_rows = conn.execute(
             """
-            SELECT instrument, pattern_code, formal_signal_status, trigger_admissible, major_state, reversal_stage
+            SELECT
+                instrument,
+                pattern_code,
+                formal_signal_status,
+                trigger_admissible,
+                major_state,
+                reversal_stage,
+                daily_source_context_nk,
+                weekly_major_state,
+                monthly_major_state
             FROM alpha_formal_signal_event
             ORDER BY instrument
             """
@@ -398,8 +432,8 @@ def test_run_alpha_formal_signal_build_materializes_run_event_and_run_bridge(
 
     assert run_row == ("completed", 2)
     assert event_rows == [
-        ("000001.SZ", "BOF", "admitted", True, "牛顺", "none"),
-        ("000002.SZ", "PB", "blocked", False, "熊顺", "none"),
+        ("000001.SZ", "BOF", "admitted", True, "牛顺", "none", "state-000001.SZ-2026-04-08", "牛顺", "牛逆"),
+        ("000002.SZ", "PB", "blocked", False, "熊顺", "none", "state-000002.SZ-2026-04-08", None, None),
     ]
 
 

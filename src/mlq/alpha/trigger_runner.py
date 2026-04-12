@@ -73,6 +73,15 @@ class _OfficialContextRow:
     asof_date: date
     filter_snapshot_nk: str
     structure_snapshot_nk: str
+    daily_source_context_nk: str | None
+    weekly_major_state: str | None
+    weekly_trend_direction: str | None
+    weekly_reversal_stage: str | None
+    weekly_source_context_nk: str | None
+    monthly_major_state: str | None
+    monthly_trend_direction: str | None
+    monthly_reversal_stage: str | None
+    monthly_source_context_nk: str | None
     upstream_context_fingerprint: str
 
 
@@ -87,6 +96,15 @@ class _TriggerEventRow:
     pattern_code: str
     source_filter_snapshot_nk: str
     source_structure_snapshot_nk: str
+    daily_source_context_nk: str | None
+    weekly_major_state: str | None
+    weekly_trend_direction: str | None
+    weekly_reversal_stage: str | None
+    weekly_source_context_nk: str | None
+    monthly_major_state: str | None
+    monthly_trend_direction: str | None
+    monthly_reversal_stage: str | None
+    monthly_source_context_nk: str | None
     upstream_context_fingerprint: str
     trigger_contract_version: str
     first_seen_run_id: str
@@ -340,6 +358,15 @@ def _load_official_context_rows(
                     f.primary_blocking_condition,
                     f.blocking_conditions_json,
                     f.admission_notes,
+                    f.daily_source_context_nk,
+                    f.weekly_major_state,
+                    f.weekly_trend_direction,
+                    f.weekly_reversal_stage,
+                    f.weekly_source_context_nk,
+                    f.monthly_major_state,
+                    f.monthly_trend_direction,
+                    f.monthly_reversal_stage,
+                    f.monthly_source_context_nk,
                     ROW_NUMBER() OVER (
                         PARTITION BY f.instrument, f.signal_date, f.asof_date
                         ORDER BY f.updated_at DESC, f.last_materialized_run_id DESC
@@ -357,6 +384,15 @@ def _load_official_context_rows(
                 rf.primary_blocking_condition,
                 rf.blocking_conditions_json,
                 rf.admission_notes,
+                rf.daily_source_context_nk,
+                rf.weekly_major_state,
+                rf.weekly_trend_direction,
+                rf.weekly_reversal_stage,
+                rf.weekly_source_context_nk,
+                rf.monthly_major_state,
+                rf.monthly_trend_direction,
+                rf.monthly_reversal_stage,
+                rf.monthly_source_context_nk,
                 s.structure_progress_state,
                 s.major_state,
                 s.trend_direction,
@@ -381,13 +417,22 @@ def _load_official_context_rows(
                     "primary_blocking_condition": _normalize_optional_nullable_str(row[6]),
                     "blocking_conditions_json": _normalize_optional_str(row[7], default="[]"),
                     "admission_notes": _normalize_optional_nullable_str(row[8]),
-                    "structure_progress_state": _normalize_optional_str(row[9], default="unknown"),
-                    "major_state": _normalize_optional_str(row[10], default="牛逆"),
-                    "trend_direction": _normalize_optional_str(row[11], default="down"),
-                    "reversal_stage": _normalize_optional_str(row[12], default="none"),
-                    "wave_id": _normalize_optional_int(row[13]),
-                    "current_hh_count": _normalize_optional_int(row[14]),
-                    "current_ll_count": _normalize_optional_int(row[15]),
+                    "daily_source_context_nk": _normalize_optional_nullable_str(row[9]),
+                    "weekly_major_state": _normalize_optional_nullable_str(row[10]),
+                    "weekly_trend_direction": _normalize_optional_nullable_str(row[11]),
+                    "weekly_reversal_stage": _normalize_optional_nullable_str(row[12]),
+                    "weekly_source_context_nk": _normalize_optional_nullable_str(row[13]),
+                    "monthly_major_state": _normalize_optional_nullable_str(row[14]),
+                    "monthly_trend_direction": _normalize_optional_nullable_str(row[15]),
+                    "monthly_reversal_stage": _normalize_optional_nullable_str(row[16]),
+                    "monthly_source_context_nk": _normalize_optional_nullable_str(row[17]),
+                    "structure_progress_state": _normalize_optional_str(row[18], default="unknown"),
+                    "major_state": _normalize_optional_str(row[19], default="牛逆"),
+                    "trend_direction": _normalize_optional_str(row[20], default="down"),
+                    "reversal_stage": _normalize_optional_str(row[21], default="none"),
+                    "wave_id": _normalize_optional_int(row[22]),
+                    "current_hh_count": _normalize_optional_int(row[23]),
+                    "current_ll_count": _normalize_optional_int(row[24]),
                 },
                 ensure_ascii=False,
                 sort_keys=True,
@@ -399,6 +444,15 @@ def _load_official_context_rows(
                     asof_date=_normalize_date_value(row[2], field_name="asof_date"),
                     filter_snapshot_nk=str(row[3]),
                     structure_snapshot_nk=str(row[4]),
+                    daily_source_context_nk=_normalize_optional_nullable_str(row[9]),
+                    weekly_major_state=_normalize_optional_nullable_str(row[10]),
+                    weekly_trend_direction=_normalize_optional_nullable_str(row[11]),
+                    weekly_reversal_stage=_normalize_optional_nullable_str(row[12]),
+                    weekly_source_context_nk=_normalize_optional_nullable_str(row[13]),
+                    monthly_major_state=_normalize_optional_nullable_str(row[14]),
+                    monthly_trend_direction=_normalize_optional_nullable_str(row[15]),
+                    monthly_reversal_stage=_normalize_optional_nullable_str(row[16]),
+                    monthly_source_context_nk=_normalize_optional_nullable_str(row[17]),
                     upstream_context_fingerprint=fingerprint,
                 )
             )
@@ -592,6 +646,15 @@ def _build_trigger_event_row(
         pattern_code=input_row.pattern_code,
         source_filter_snapshot_nk=context_row.filter_snapshot_nk,
         source_structure_snapshot_nk=context_row.structure_snapshot_nk,
+        daily_source_context_nk=context_row.daily_source_context_nk,
+        weekly_major_state=context_row.weekly_major_state,
+        weekly_trend_direction=context_row.weekly_trend_direction,
+        weekly_reversal_stage=context_row.weekly_reversal_stage,
+        weekly_source_context_nk=context_row.weekly_source_context_nk,
+        monthly_major_state=context_row.monthly_major_state,
+        monthly_trend_direction=context_row.monthly_trend_direction,
+        monthly_reversal_stage=context_row.monthly_reversal_stage,
+        monthly_source_context_nk=context_row.monthly_source_context_nk,
         upstream_context_fingerprint=context_row.upstream_context_fingerprint,
         trigger_contract_version=trigger_contract_version,
         first_seen_run_id=run_id,
@@ -632,6 +695,15 @@ def _upsert_trigger_event(
         SELECT
             source_filter_snapshot_nk,
             source_structure_snapshot_nk,
+            daily_source_context_nk,
+            weekly_major_state,
+            weekly_trend_direction,
+            weekly_reversal_stage,
+            weekly_source_context_nk,
+            monthly_major_state,
+            monthly_trend_direction,
+            monthly_reversal_stage,
+            monthly_source_context_nk,
             upstream_context_fingerprint,
             first_seen_run_id
         FROM {ALPHA_TRIGGER_EVENT_TABLE}
@@ -652,12 +724,21 @@ def _upsert_trigger_event(
                 pattern_code,
                 source_filter_snapshot_nk,
                 source_structure_snapshot_nk,
+                daily_source_context_nk,
+                weekly_major_state,
+                weekly_trend_direction,
+                weekly_reversal_stage,
+                weekly_source_context_nk,
+                monthly_major_state,
+                monthly_trend_direction,
+                monthly_reversal_stage,
+                monthly_source_context_nk,
                 upstream_context_fingerprint,
                 trigger_contract_version,
                 first_seen_run_id,
                 last_materialized_run_id
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 event_row.trigger_event_nk,
@@ -669,6 +750,15 @@ def _upsert_trigger_event(
                 event_row.pattern_code,
                 event_row.source_filter_snapshot_nk,
                 event_row.source_structure_snapshot_nk,
+                event_row.daily_source_context_nk,
+                event_row.weekly_major_state,
+                event_row.weekly_trend_direction,
+                event_row.weekly_reversal_stage,
+                event_row.weekly_source_context_nk,
+                event_row.monthly_major_state,
+                event_row.monthly_trend_direction,
+                event_row.monthly_reversal_stage,
+                event_row.monthly_source_context_nk,
                 event_row.upstream_context_fingerprint,
                 event_row.trigger_contract_version,
                 event_row.first_seen_run_id,
@@ -680,20 +770,47 @@ def _upsert_trigger_event(
     existing_fingerprint = (
         _normalize_optional_str(existing_row[0]),
         _normalize_optional_str(existing_row[1]),
-        _normalize_optional_str(existing_row[2]),
+        _normalize_optional_nullable_str(existing_row[2]),
+        _normalize_optional_nullable_str(existing_row[3]),
+        _normalize_optional_nullable_str(existing_row[4]),
+        _normalize_optional_nullable_str(existing_row[5]),
+        _normalize_optional_nullable_str(existing_row[6]),
+        _normalize_optional_nullable_str(existing_row[7]),
+        _normalize_optional_nullable_str(existing_row[8]),
+        _normalize_optional_nullable_str(existing_row[9]),
+        _normalize_optional_nullable_str(existing_row[10]),
+        _normalize_optional_str(existing_row[11]),
     )
     new_fingerprint = (
         event_row.source_filter_snapshot_nk,
         event_row.source_structure_snapshot_nk,
+        event_row.daily_source_context_nk,
+        event_row.weekly_major_state,
+        event_row.weekly_trend_direction,
+        event_row.weekly_reversal_stage,
+        event_row.weekly_source_context_nk,
+        event_row.monthly_major_state,
+        event_row.monthly_trend_direction,
+        event_row.monthly_reversal_stage,
+        event_row.monthly_source_context_nk,
         event_row.upstream_context_fingerprint,
     )
-    first_seen_run_id = str(existing_row[3]) if existing_row[3] is not None else event_row.first_seen_run_id
+    first_seen_run_id = str(existing_row[12]) if existing_row[12] is not None else event_row.first_seen_run_id
     connection.execute(
         f"""
         UPDATE {ALPHA_TRIGGER_EVENT_TABLE}
         SET
             source_filter_snapshot_nk = ?,
             source_structure_snapshot_nk = ?,
+            daily_source_context_nk = ?,
+            weekly_major_state = ?,
+            weekly_trend_direction = ?,
+            weekly_reversal_stage = ?,
+            weekly_source_context_nk = ?,
+            monthly_major_state = ?,
+            monthly_trend_direction = ?,
+            monthly_reversal_stage = ?,
+            monthly_source_context_nk = ?,
             upstream_context_fingerprint = ?,
             first_seen_run_id = ?,
             last_materialized_run_id = ?,
@@ -703,6 +820,15 @@ def _upsert_trigger_event(
         [
             event_row.source_filter_snapshot_nk,
             event_row.source_structure_snapshot_nk,
+            event_row.daily_source_context_nk,
+            event_row.weekly_major_state,
+            event_row.weekly_trend_direction,
+            event_row.weekly_reversal_stage,
+            event_row.weekly_source_context_nk,
+            event_row.monthly_major_state,
+            event_row.monthly_trend_direction,
+            event_row.monthly_reversal_stage,
+            event_row.monthly_source_context_nk,
             event_row.upstream_context_fingerprint,
             first_seen_run_id,
             event_row.last_materialized_run_id,

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from bisect import bisect_right
 import json
 from dataclasses import asdict, dataclass
 from datetime import date, datetime, timezone
@@ -96,6 +97,13 @@ class _StructureContextRow:
 
 
 @dataclass(frozen=True)
+class _MultiTimeframeContextRow:
+    daily: _StructureContextRow
+    weekly: _StructureContextRow | None
+    monthly: _StructureContextRow | None
+
+
+@dataclass(frozen=True)
 class _BreakConfirmationRow:
     instrument: str
     trigger_bar_dt: date
@@ -125,6 +133,27 @@ class _StructureSnapshotRow:
     wave_id: int
     current_hh_count: int
     current_ll_count: int
+    daily_major_state: str
+    daily_trend_direction: str
+    daily_reversal_stage: str
+    daily_wave_id: int
+    daily_current_hh_count: int
+    daily_current_ll_count: int
+    daily_source_context_nk: str
+    weekly_major_state: str | None
+    weekly_trend_direction: str | None
+    weekly_reversal_stage: str | None
+    weekly_wave_id: int | None
+    weekly_current_hh_count: int | None
+    weekly_current_ll_count: int | None
+    weekly_source_context_nk: str | None
+    monthly_major_state: str | None
+    monthly_trend_direction: str | None
+    monthly_reversal_stage: str | None
+    monthly_wave_id: int | None
+    monthly_current_hh_count: int | None
+    monthly_current_ll_count: int | None
+    monthly_source_context_nk: str | None
     structure_progress_state: str
     break_confirmation_status: str | None
     break_confirmation_ref: str | None
@@ -203,10 +232,28 @@ def run_structure_snapshot_build(
         instruments=tuple(sorted({row.instrument for row in input_rows})),
         timeframe=normalized_timeframe,
     )
-    context_map = {
+    daily_context_map = {
         (row.instrument, row.signal_date, row.asof_date): row
         for row in context_rows
     }
+    weekly_context_index = _build_context_series_index(
+        _load_read_only_context_rows(
+            malf_path=resolved_malf_path,
+            table_name=actual_source_context_table,
+            signal_end_date=normalized_end_date,
+            instruments=tuple(sorted({row.instrument for row in input_rows})),
+            timeframe="W",
+        )
+    )
+    monthly_context_index = _build_context_series_index(
+        _load_read_only_context_rows(
+            malf_path=resolved_malf_path,
+            table_name=actual_source_context_table,
+            signal_end_date=normalized_end_date,
+            instruments=tuple(sorted({row.instrument for row in input_rows})),
+            timeframe="M",
+        )
+    )
     break_confirmation_map = _load_break_confirmation_rows(
         malf_path=resolved_malf_path,
         table_name=actual_break_confirmation_table,
@@ -244,7 +291,9 @@ def run_structure_snapshot_build(
             connection=structure_connection,
             run_id=materialization_run_id,
             input_rows=input_rows,
-            context_map=context_map,
+            daily_context_map=daily_context_map,
+            weekly_context_index=weekly_context_index,
+            monthly_context_index=monthly_context_index,
             break_confirmation_map=break_confirmation_map,
             stats_snapshot_map=stats_snapshot_map,
             structure_contract_version=structure_contract_version,
@@ -403,6 +452,62 @@ def _load_context_rows(
         )
     finally:
         connection.close()
+
+
+def _load_read_only_context_rows(
+    *,
+    malf_path: Path,
+    table_name: str,
+    signal_end_date: date | None,
+    instruments: tuple[str, ...],
+    timeframe: str,
+) -> list[_StructureContextRow]:
+    if not instruments:
+        return []
+    connection = duckdb.connect(str(malf_path), read_only=True)
+    try:
+        available_columns = _load_table_columns(connection, table_name)
+        if not _is_canonical_state_table(available_columns):
+            return []
+        return _load_canonical_context_rows(
+            connection,
+            table_name=table_name,
+            signal_start_date=None,
+            signal_end_date=signal_end_date,
+            instruments=instruments,
+            timeframe=timeframe,
+        )
+    finally:
+        connection.close()
+
+
+def _build_context_series_index(
+    context_rows: list[_StructureContextRow],
+) -> dict[str, tuple[list[date], list[_StructureContextRow]]]:
+    index: dict[str, tuple[list[date], list[_StructureContextRow]]] = {}
+    grouped_rows: dict[str, list[_StructureContextRow]] = {}
+    for row in context_rows:
+        grouped_rows.setdefault(row.instrument, []).append(row)
+    for instrument, rows in grouped_rows.items():
+        ordered_rows = sorted(rows, key=lambda item: item.asof_date)
+        index[instrument] = ([row.asof_date for row in ordered_rows], ordered_rows)
+    return index
+
+
+def _lookup_latest_context_row(
+    context_index: dict[str, tuple[list[date], list[_StructureContextRow]]],
+    *,
+    instrument: str,
+    asof_date: date,
+) -> _StructureContextRow | None:
+    instrument_context = context_index.get(instrument)
+    if instrument_context is None:
+        return None
+    asof_dates, rows = instrument_context
+    matched_index = bisect_right(asof_dates, asof_date) - 1
+    if matched_index < 0:
+        return None
+    return rows[matched_index]
 
 
 def _is_canonical_state_table(available_columns: set[str]) -> bool:
@@ -927,7 +1032,9 @@ def _materialize_structure_rows(
     connection: duckdb.DuckDBPyConnection,
     run_id: str,
     input_rows: list[_StructureInputRow],
-    context_map: dict[tuple[str, date, date], _StructureContextRow],
+    daily_context_map: dict[tuple[str, date, date], _StructureContextRow],
+    weekly_context_index: dict[str, tuple[list[date], list[_StructureContextRow]]],
+    monthly_context_index: dict[str, tuple[list[date], list[_StructureContextRow]]],
     break_confirmation_map: dict[tuple[str, date], _BreakConfirmationRow],
     stats_snapshot_map: dict[tuple[str, date, date], _StatsSnapshotRow],
     structure_contract_version: str,
@@ -955,11 +1062,24 @@ def _materialize_structure_rows(
 
     for input_batch in _bounded_by_instrument_batches(input_rows, batch_size=batch_size):
         for input_row in input_batch:
-            context_row = context_map.get((input_row.instrument, input_row.signal_date, input_row.asof_date))
-            if context_row is None:
+            daily_context_row = daily_context_map.get((input_row.instrument, input_row.signal_date, input_row.asof_date))
+            if daily_context_row is None:
                 # `structure` 必须挂在正式上下文上，缺上下文时宁可跳过，也不伪造自然键。
                 missing_context_count += 1
                 continue
+            context_row = _MultiTimeframeContextRow(
+                daily=daily_context_row,
+                weekly=_lookup_latest_context_row(
+                    weekly_context_index,
+                    instrument=input_row.instrument,
+                    asof_date=input_row.asof_date,
+                ),
+                monthly=_lookup_latest_context_row(
+                    monthly_context_index,
+                    instrument=input_row.instrument,
+                    asof_date=input_row.asof_date,
+                ),
+            )
             snapshot_row = _build_structure_snapshot_row(
                 run_id=run_id,
                 input_row=input_row,
@@ -1101,7 +1221,7 @@ def _build_structure_snapshot_row(
     *,
     run_id: str,
     input_row: _StructureInputRow,
-    context_row: _StructureContextRow,
+    context_row: _MultiTimeframeContextRow,
     break_confirmation_row: _BreakConfirmationRow | None,
     stats_snapshot_row: _StatsSnapshotRow | None,
     structure_contract_version: str,
@@ -1111,7 +1231,7 @@ def _build_structure_snapshot_row(
         instrument=input_row.instrument,
         signal_date=input_row.signal_date,
         asof_date=input_row.asof_date,
-        source_context_nk=context_row.source_context_nk,
+        source_context_nk=context_row.daily.source_context_nk,
         structure_contract_version=structure_contract_version,
     )
     return _StructureSnapshotRow(
@@ -1119,19 +1239,40 @@ def _build_structure_snapshot_row(
         instrument=input_row.instrument,
         signal_date=input_row.signal_date,
         asof_date=input_row.asof_date,
-        major_state=context_row.major_state,
-        trend_direction=context_row.trend_direction,
-        reversal_stage=context_row.reversal_stage,
-        wave_id=context_row.wave_id,
-        current_hh_count=context_row.current_hh_count,
-        current_ll_count=context_row.current_ll_count,
+        major_state=context_row.daily.major_state,
+        trend_direction=context_row.daily.trend_direction,
+        reversal_stage=context_row.daily.reversal_stage,
+        wave_id=context_row.daily.wave_id,
+        current_hh_count=context_row.daily.current_hh_count,
+        current_ll_count=context_row.daily.current_ll_count,
+        daily_major_state=context_row.daily.major_state,
+        daily_trend_direction=context_row.daily.trend_direction,
+        daily_reversal_stage=context_row.daily.reversal_stage,
+        daily_wave_id=context_row.daily.wave_id,
+        daily_current_hh_count=context_row.daily.current_hh_count,
+        daily_current_ll_count=context_row.daily.current_ll_count,
+        daily_source_context_nk=context_row.daily.source_context_nk,
+        weekly_major_state=None if context_row.weekly is None else context_row.weekly.major_state,
+        weekly_trend_direction=None if context_row.weekly is None else context_row.weekly.trend_direction,
+        weekly_reversal_stage=None if context_row.weekly is None else context_row.weekly.reversal_stage,
+        weekly_wave_id=None if context_row.weekly is None else context_row.weekly.wave_id,
+        weekly_current_hh_count=None if context_row.weekly is None else context_row.weekly.current_hh_count,
+        weekly_current_ll_count=None if context_row.weekly is None else context_row.weekly.current_ll_count,
+        weekly_source_context_nk=None if context_row.weekly is None else context_row.weekly.source_context_nk,
+        monthly_major_state=None if context_row.monthly is None else context_row.monthly.major_state,
+        monthly_trend_direction=None if context_row.monthly is None else context_row.monthly.trend_direction,
+        monthly_reversal_stage=None if context_row.monthly is None else context_row.monthly.reversal_stage,
+        monthly_wave_id=None if context_row.monthly is None else context_row.monthly.wave_id,
+        monthly_current_hh_count=None if context_row.monthly is None else context_row.monthly.current_hh_count,
+        monthly_current_ll_count=None if context_row.monthly is None else context_row.monthly.current_ll_count,
+        monthly_source_context_nk=None if context_row.monthly is None else context_row.monthly.source_context_nk,
         structure_progress_state=structure_progress_state,
         break_confirmation_status=None if break_confirmation_row is None else break_confirmation_row.confirmation_status,
         break_confirmation_ref=None if break_confirmation_row is None else break_confirmation_row.break_event_nk,
         stats_snapshot_nk=None if stats_snapshot_row is None else stats_snapshot_row.stats_snapshot_nk,
         exhaustion_risk_bucket=None if stats_snapshot_row is None else stats_snapshot_row.exhaustion_risk_bucket,
         reversal_probability_bucket=None if stats_snapshot_row is None else stats_snapshot_row.reversal_probability_bucket,
-        source_context_nk=context_row.source_context_nk,
+        source_context_nk=context_row.daily.source_context_nk,
         structure_contract_version=structure_contract_version,
         first_seen_run_id=run_id,
         last_materialized_run_id=run_id,
@@ -1267,6 +1408,27 @@ def _upsert_structure_snapshot(
             wave_id,
             current_hh_count,
             current_ll_count,
+            daily_major_state,
+            daily_trend_direction,
+            daily_reversal_stage,
+            daily_wave_id,
+            daily_current_hh_count,
+            daily_current_ll_count,
+            daily_source_context_nk,
+            weekly_major_state,
+            weekly_trend_direction,
+            weekly_reversal_stage,
+            weekly_wave_id,
+            weekly_current_hh_count,
+            weekly_current_ll_count,
+            weekly_source_context_nk,
+            monthly_major_state,
+            monthly_trend_direction,
+            monthly_reversal_stage,
+            monthly_wave_id,
+            monthly_current_hh_count,
+            monthly_current_ll_count,
+            monthly_source_context_nk,
             structure_progress_state,
             break_confirmation_status,
             break_confirmation_ref,
@@ -1279,7 +1441,86 @@ def _upsert_structure_snapshot(
         """,
         [snapshot_row.structure_snapshot_nk],
     ).fetchone()
+    new_fingerprint = (
+        snapshot_row.major_state,
+        snapshot_row.trend_direction,
+        snapshot_row.reversal_stage,
+        snapshot_row.wave_id,
+        snapshot_row.current_hh_count,
+        snapshot_row.current_ll_count,
+        snapshot_row.daily_major_state,
+        snapshot_row.daily_trend_direction,
+        snapshot_row.daily_reversal_stage,
+        snapshot_row.daily_wave_id,
+        snapshot_row.daily_current_hh_count,
+        snapshot_row.daily_current_ll_count,
+        snapshot_row.daily_source_context_nk,
+        snapshot_row.weekly_major_state,
+        snapshot_row.weekly_trend_direction,
+        snapshot_row.weekly_reversal_stage,
+        snapshot_row.weekly_wave_id,
+        snapshot_row.weekly_current_hh_count,
+        snapshot_row.weekly_current_ll_count,
+        snapshot_row.weekly_source_context_nk,
+        snapshot_row.monthly_major_state,
+        snapshot_row.monthly_trend_direction,
+        snapshot_row.monthly_reversal_stage,
+        snapshot_row.monthly_wave_id,
+        snapshot_row.monthly_current_hh_count,
+        snapshot_row.monthly_current_ll_count,
+        snapshot_row.monthly_source_context_nk,
+        snapshot_row.structure_progress_state,
+        snapshot_row.break_confirmation_status,
+        snapshot_row.break_confirmation_ref,
+        snapshot_row.stats_snapshot_nk,
+        snapshot_row.exhaustion_risk_bucket,
+        snapshot_row.reversal_probability_bucket,
+    )
+    insert_values = [
+        snapshot_row.structure_snapshot_nk,
+        snapshot_row.instrument,
+        snapshot_row.signal_date,
+        snapshot_row.asof_date,
+        snapshot_row.major_state,
+        snapshot_row.trend_direction,
+        snapshot_row.reversal_stage,
+        snapshot_row.wave_id,
+        snapshot_row.current_hh_count,
+        snapshot_row.current_ll_count,
+        snapshot_row.daily_major_state,
+        snapshot_row.daily_trend_direction,
+        snapshot_row.daily_reversal_stage,
+        snapshot_row.daily_wave_id,
+        snapshot_row.daily_current_hh_count,
+        snapshot_row.daily_current_ll_count,
+        snapshot_row.daily_source_context_nk,
+        snapshot_row.weekly_major_state,
+        snapshot_row.weekly_trend_direction,
+        snapshot_row.weekly_reversal_stage,
+        snapshot_row.weekly_wave_id,
+        snapshot_row.weekly_current_hh_count,
+        snapshot_row.weekly_current_ll_count,
+        snapshot_row.weekly_source_context_nk,
+        snapshot_row.monthly_major_state,
+        snapshot_row.monthly_trend_direction,
+        snapshot_row.monthly_reversal_stage,
+        snapshot_row.monthly_wave_id,
+        snapshot_row.monthly_current_hh_count,
+        snapshot_row.monthly_current_ll_count,
+        snapshot_row.monthly_source_context_nk,
+        snapshot_row.structure_progress_state,
+        snapshot_row.break_confirmation_status,
+        snapshot_row.break_confirmation_ref,
+        snapshot_row.stats_snapshot_nk,
+        snapshot_row.exhaustion_risk_bucket,
+        snapshot_row.reversal_probability_bucket,
+        snapshot_row.source_context_nk,
+        snapshot_row.structure_contract_version,
+        snapshot_row.first_seen_run_id,
+        snapshot_row.last_materialized_run_id,
+    ]
     if existing_row is None:
+        placeholders = ", ".join("?" for _ in insert_values)
         connection.execute(
             f"""
             INSERT INTO {STRUCTURE_SNAPSHOT_TABLE} (
@@ -1293,6 +1534,27 @@ def _upsert_structure_snapshot(
                 wave_id,
                 current_hh_count,
                 current_ll_count,
+                daily_major_state,
+                daily_trend_direction,
+                daily_reversal_stage,
+                daily_wave_id,
+                daily_current_hh_count,
+                daily_current_ll_count,
+                daily_source_context_nk,
+                weekly_major_state,
+                weekly_trend_direction,
+                weekly_reversal_stage,
+                weekly_wave_id,
+                weekly_current_hh_count,
+                weekly_current_ll_count,
+                weekly_source_context_nk,
+                monthly_major_state,
+                monthly_trend_direction,
+                monthly_reversal_stage,
+                monthly_wave_id,
+                monthly_current_hh_count,
+                monthly_current_ll_count,
+                monthly_source_context_nk,
                 structure_progress_state,
                 break_confirmation_status,
                 break_confirmation_ref,
@@ -1304,62 +1566,12 @@ def _upsert_structure_snapshot(
                 first_seen_run_id,
                 last_materialized_run_id
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES ({placeholders})
             """,
-            [
-                snapshot_row.structure_snapshot_nk,
-                snapshot_row.instrument,
-                snapshot_row.signal_date,
-                snapshot_row.asof_date,
-                snapshot_row.major_state,
-                snapshot_row.trend_direction,
-                snapshot_row.reversal_stage,
-                snapshot_row.wave_id,
-                snapshot_row.current_hh_count,
-                snapshot_row.current_ll_count,
-                snapshot_row.structure_progress_state,
-                snapshot_row.break_confirmation_status,
-                snapshot_row.break_confirmation_ref,
-                snapshot_row.stats_snapshot_nk,
-                snapshot_row.exhaustion_risk_bucket,
-                snapshot_row.reversal_probability_bucket,
-                snapshot_row.source_context_nk,
-                snapshot_row.structure_contract_version,
-                snapshot_row.first_seen_run_id,
-                snapshot_row.last_materialized_run_id,
-            ],
+            insert_values,
         )
         return "inserted"
-
-    existing_fingerprint = (
-        _normalize_optional_str(existing_row[0], default="牛逆"),
-        _normalize_optional_str(existing_row[1], default="down"),
-        _normalize_optional_str(existing_row[2], default="none"),
-        _normalize_optional_int(existing_row[3]),
-        _normalize_optional_int(existing_row[4]),
-        _normalize_optional_int(existing_row[5]),
-        _normalize_optional_str(existing_row[6], default="unknown"),
-        _normalize_optional_nullable_str(existing_row[7]),
-        _normalize_optional_nullable_str(existing_row[8]),
-        _normalize_optional_nullable_str(existing_row[9]),
-        _normalize_optional_nullable_str(existing_row[10]),
-        _normalize_optional_nullable_str(existing_row[11]),
-    )
-    new_fingerprint = (
-        snapshot_row.major_state,
-        snapshot_row.trend_direction,
-        snapshot_row.reversal_stage,
-        snapshot_row.wave_id,
-        snapshot_row.current_hh_count,
-        snapshot_row.current_ll_count,
-        snapshot_row.structure_progress_state,
-        snapshot_row.break_confirmation_status,
-        snapshot_row.break_confirmation_ref,
-        snapshot_row.stats_snapshot_nk,
-        snapshot_row.exhaustion_risk_bucket,
-        snapshot_row.reversal_probability_bucket,
-    )
-    first_seen_run_id = str(existing_row[12]) if existing_row[12] is not None else snapshot_row.first_seen_run_id
+    first_seen_run_id = str(existing_row[-1]) if existing_row[-1] is not None else snapshot_row.first_seen_run_id
     connection.execute(
         f"""
         UPDATE {STRUCTURE_SNAPSHOT_TABLE}
@@ -1370,6 +1582,27 @@ def _upsert_structure_snapshot(
             wave_id = ?,
             current_hh_count = ?,
             current_ll_count = ?,
+            daily_major_state = ?,
+            daily_trend_direction = ?,
+            daily_reversal_stage = ?,
+            daily_wave_id = ?,
+            daily_current_hh_count = ?,
+            daily_current_ll_count = ?,
+            daily_source_context_nk = ?,
+            weekly_major_state = ?,
+            weekly_trend_direction = ?,
+            weekly_reversal_stage = ?,
+            weekly_wave_id = ?,
+            weekly_current_hh_count = ?,
+            weekly_current_ll_count = ?,
+            weekly_source_context_nk = ?,
+            monthly_major_state = ?,
+            monthly_trend_direction = ?,
+            monthly_reversal_stage = ?,
+            monthly_wave_id = ?,
+            monthly_current_hh_count = ?,
+            monthly_current_ll_count = ?,
+            monthly_source_context_nk = ?,
             structure_progress_state = ?,
             break_confirmation_status = ?,
             break_confirmation_ref = ?,
@@ -1381,27 +1614,9 @@ def _upsert_structure_snapshot(
             updated_at = CURRENT_TIMESTAMP
         WHERE structure_snapshot_nk = ?
         """,
-        [
-            snapshot_row.major_state,
-            snapshot_row.trend_direction,
-            snapshot_row.reversal_stage,
-            snapshot_row.wave_id,
-            snapshot_row.current_hh_count,
-            snapshot_row.current_ll_count,
-            snapshot_row.structure_progress_state,
-            snapshot_row.break_confirmation_status,
-            snapshot_row.break_confirmation_ref,
-            snapshot_row.stats_snapshot_nk,
-            snapshot_row.exhaustion_risk_bucket,
-            snapshot_row.reversal_probability_bucket,
-            first_seen_run_id,
-            snapshot_row.last_materialized_run_id,
-            snapshot_row.structure_snapshot_nk,
-        ],
+        [*new_fingerprint, first_seen_run_id, snapshot_row.last_materialized_run_id, snapshot_row.structure_snapshot_nk],
     )
-    if existing_fingerprint == new_fingerprint:
-        return "reused"
-    return "rematerialized"
+    return "reused" if tuple(existing_row[:-1]) == new_fingerprint else "rematerialized"
 
 
 def _mark_run_completed(

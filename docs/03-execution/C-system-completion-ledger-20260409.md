@@ -1,11 +1,11 @@
 # 系统完成账本
 
-日期：`2026-04-09`
+日期：`2026-04-09`  
 状态：`持续更新`
 
-1. 当前下一锤：`34-malf-multi-timeframe-downstream-consumption-card-20260411.md`
-2. 当前待施工卡：`34-malf-multi-timeframe-downstream-consumption-card-20260411.md`
-3. 正式主线剩余卡：`8`
+1. 当前下一锤：`35-downstream-data-grade-checkpoint-alignment-after-malf-card-20260411.md`
+2. 当前待施工卡：`35-downstream-data-grade-checkpoint-alignment-after-malf-card-20260411.md`
+3. 正式主线剩余卡：`7`
 4. 可选 Sidecar 剩余卡：`1`
 5. 后置修复剩余卡：`0`
 
@@ -17,14 +17,14 @@
 4. `portfolio_plan / trade` 最小 runtime 主线：`14-15`
 5. `data -> malf -> structure` 官方主线桥接与 source governance：`16-25`
 6. `system` 最小 bounded readout / audit bootstrap：`27`
-7. `malf` canonical freeze / data-grade runner / downstream canonical rebind / downstream truthfulness revalidation / downstream canonical contract purge：`29-33`
+7. `malf` canonical freeze / data-grade runner / downstream canonical rebind / downstream truthfulness revalidation / downstream canonical contract purge / multi-timeframe downstream consumption：`29-34`
 
 ## 当前阶段
 
-1. 最新生效结论锚点已推进到 `33`。
-2. 当前施工总卡仍是 `28`，主题是“全模块含 data-grade checkpoint + dirty queue 对齐”。
-3. `29-33` 已完成并生效，`34-35` 是让 `malf` 成为下游多级别运转中心的主线卡组；`36` 是后续寿命概率 sidecar 卡；`100-105` 顺延为其后的 trade/system 恢复施工卡组。
-4. 当前主线待施工卡已调整为 `34-malf-multi-timeframe-downstream-consumption-card-20260411.md`。
+1. 最新生效结论锚点已推进到 `34-malf-multi-timeframe-downstream-consumption-conclusion-20260412.md`。
+2. 当前施工总卡仍是 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`，主题仍为“全模块 data-grade checkpoint + dirty queue 对齐”。
+3. `29-34` 已完成并生效；`35` 负责 downstream data-grade checkpoint 对齐，`36` 为其后的寿命概率 sidecar 卡；`100-105` 顺延为其后的 trade/system 恢复卡组。
+4. 当前主线待施工卡已调整为 `35-downstream-data-grade-checkpoint-alignment-after-malf-card-20260411.md`。
 
 ## 完成阶段图
 
@@ -34,6 +34,6 @@ flowchart LR
     P07 --> A10["10-13 alpha/structure/filter"]
     A10 --> T14["14-15 portfolio_plan/trade"]
     T14 --> D16["16-25 data/malf/system"]
-    D16 --> M29["29-33 malf canonical downstream 已生效"]
-    M29 --> NEXT["34 当前待施工"]
+    D16 --> M29["29-34 malf canonical downstream 已生效"]
+    M29 --> NEXT["35 当前待施工"]
 ```

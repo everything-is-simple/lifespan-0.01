@@ -86,6 +86,15 @@ class _ContextRow:
     malf_context_4: str
     lifecycle_rank_high: int
     lifecycle_rank_total: int
+    daily_source_context_nk: str | None
+    weekly_major_state: str | None
+    weekly_trend_direction: str | None
+    weekly_reversal_stage: str | None
+    weekly_source_context_nk: str | None
+    monthly_major_state: str | None
+    monthly_trend_direction: str | None
+    monthly_reversal_stage: str | None
+    monthly_source_context_nk: str | None
 
 
 @dataclass(frozen=True)
@@ -108,6 +117,15 @@ class _FormalSignalEventRow:
     malf_context_4: str
     lifecycle_rank_high: int
     lifecycle_rank_total: int
+    daily_source_context_nk: str | None
+    weekly_major_state: str | None
+    weekly_trend_direction: str | None
+    weekly_reversal_stage: str | None
+    weekly_source_context_nk: str | None
+    monthly_major_state: str | None
+    monthly_trend_direction: str | None
+    monthly_reversal_stage: str | None
+    monthly_source_context_nk: str | None
     source_trigger_event_nk: str
     signal_contract_version: str
     first_seen_run_id: str
@@ -385,6 +403,15 @@ def _load_official_context_rows(
                     asof_date,
                     structure_snapshot_nk,
                     trigger_admissible,
+                    daily_source_context_nk,
+                    weekly_major_state,
+                    weekly_trend_direction,
+                    weekly_reversal_stage,
+                    weekly_source_context_nk,
+                    monthly_major_state,
+                    monthly_trend_direction,
+                    monthly_reversal_stage,
+                    monthly_source_context_nk,
                     ROW_NUMBER() OVER (
                         PARTITION BY instrument, signal_date, asof_date
                         ORDER BY last_materialized_run_id DESC
@@ -403,7 +430,16 @@ def _load_official_context_rows(
                 s.reversal_stage,
                 s.wave_id,
                 s.current_hh_count,
-                s.current_ll_count
+                s.current_ll_count,
+                rf.daily_source_context_nk,
+                rf.weekly_major_state,
+                rf.weekly_trend_direction,
+                rf.weekly_reversal_stage,
+                rf.weekly_source_context_nk,
+                rf.monthly_major_state,
+                rf.monthly_trend_direction,
+                rf.monthly_reversal_stage,
+                rf.monthly_source_context_nk
             FROM ranked_filter AS rf
             INNER JOIN structure_db.main.{structure_table_name} AS s
                 ON s.structure_snapshot_nk = rf.structure_snapshot_nk
@@ -424,6 +460,15 @@ def _load_official_context_rows(
                 wave_id=_normalize_optional_int(row[8]),
                 current_hh_count=_normalize_optional_int(row[9]),
                 current_ll_count=_normalize_optional_int(row[10]),
+                daily_source_context_nk=_normalize_optional_nullable_str(row[11]),
+                weekly_major_state=_normalize_optional_nullable_str(row[12]),
+                weekly_trend_direction=_normalize_optional_nullable_str(row[13]),
+                weekly_reversal_stage=_normalize_optional_nullable_str(row[14]),
+                weekly_source_context_nk=_normalize_optional_nullable_str(row[15]),
+                monthly_major_state=_normalize_optional_nullable_str(row[16]),
+                monthly_trend_direction=_normalize_optional_nullable_str(row[17]),
+                monthly_reversal_stage=_normalize_optional_nullable_str(row[18]),
+                monthly_source_context_nk=_normalize_optional_nullable_str(row[19]),
             )
             for row in rows
         ]
@@ -444,6 +489,15 @@ def _build_context_row(
     wave_id: int,
     current_hh_count: int,
     current_ll_count: int,
+    daily_source_context_nk: str | None,
+    weekly_major_state: str | None,
+    weekly_trend_direction: str | None,
+    weekly_reversal_stage: str | None,
+    weekly_source_context_nk: str | None,
+    monthly_major_state: str | None,
+    monthly_trend_direction: str | None,
+    monthly_reversal_stage: str | None,
+    monthly_source_context_nk: str | None,
 ) -> _ContextRow:
     malf_context_4 = _map_major_state_to_context_code(major_state)
     lifecycle_rank_high = _derive_lifecycle_rank_high(
@@ -466,6 +520,15 @@ def _build_context_row(
         malf_context_4=malf_context_4,
         lifecycle_rank_high=lifecycle_rank_high,
         lifecycle_rank_total=4,
+        daily_source_context_nk=daily_source_context_nk,
+        weekly_major_state=weekly_major_state,
+        weekly_trend_direction=weekly_trend_direction,
+        weekly_reversal_stage=weekly_reversal_stage,
+        weekly_source_context_nk=weekly_source_context_nk,
+        monthly_major_state=monthly_major_state,
+        monthly_trend_direction=monthly_trend_direction,
+        monthly_reversal_stage=monthly_reversal_stage,
+        monthly_source_context_nk=monthly_source_context_nk,
     )
 
 
@@ -676,6 +739,15 @@ def _build_formal_signal_event_row(
         malf_context_4=context_row.malf_context_4,
         lifecycle_rank_high=context_row.lifecycle_rank_high,
         lifecycle_rank_total=context_row.lifecycle_rank_total,
+        daily_source_context_nk=context_row.daily_source_context_nk,
+        weekly_major_state=context_row.weekly_major_state,
+        weekly_trend_direction=context_row.weekly_trend_direction,
+        weekly_reversal_stage=context_row.weekly_reversal_stage,
+        weekly_source_context_nk=context_row.weekly_source_context_nk,
+        monthly_major_state=context_row.monthly_major_state,
+        monthly_trend_direction=context_row.monthly_trend_direction,
+        monthly_reversal_stage=context_row.monthly_reversal_stage,
+        monthly_source_context_nk=context_row.monthly_source_context_nk,
         source_trigger_event_nk=trigger_row.source_trigger_event_nk,
         signal_contract_version=signal_contract_version,
         first_seen_run_id=run_id,
@@ -727,6 +799,15 @@ def _upsert_formal_signal_event(
             malf_context_4,
             lifecycle_rank_high,
             lifecycle_rank_total,
+            daily_source_context_nk,
+            weekly_major_state,
+            weekly_trend_direction,
+            weekly_reversal_stage,
+            weekly_source_context_nk,
+            monthly_major_state,
+            monthly_trend_direction,
+            monthly_reversal_stage,
+            monthly_source_context_nk,
             first_seen_run_id
         FROM {ALPHA_FORMAL_SIGNAL_EVENT_TABLE}
         WHERE signal_nk = ?
@@ -755,12 +836,21 @@ def _upsert_formal_signal_event(
                 malf_context_4,
                 lifecycle_rank_high,
                 lifecycle_rank_total,
+                daily_source_context_nk,
+                weekly_major_state,
+                weekly_trend_direction,
+                weekly_reversal_stage,
+                weekly_source_context_nk,
+                monthly_major_state,
+                monthly_trend_direction,
+                monthly_reversal_stage,
+                monthly_source_context_nk,
                 source_trigger_event_nk,
                 signal_contract_version,
                 first_seen_run_id,
                 last_materialized_run_id
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 event_row.signal_nk,
@@ -781,6 +871,15 @@ def _upsert_formal_signal_event(
                 event_row.malf_context_4,
                 event_row.lifecycle_rank_high,
                 event_row.lifecycle_rank_total,
+                event_row.daily_source_context_nk,
+                event_row.weekly_major_state,
+                event_row.weekly_trend_direction,
+                event_row.weekly_reversal_stage,
+                event_row.weekly_source_context_nk,
+                event_row.monthly_major_state,
+                event_row.monthly_trend_direction,
+                event_row.monthly_reversal_stage,
+                event_row.monthly_source_context_nk,
                 event_row.source_trigger_event_nk,
                 event_row.signal_contract_version,
                 event_row.first_seen_run_id,
@@ -801,6 +900,15 @@ def _upsert_formal_signal_event(
         _normalize_optional_str(existing_row[8], default="UNKNOWN"),
         _normalize_optional_int(existing_row[9]),
         _normalize_optional_int(existing_row[10]),
+        _normalize_optional_nullable_str(existing_row[11]),
+        _normalize_optional_nullable_str(existing_row[12]),
+        _normalize_optional_nullable_str(existing_row[13]),
+        _normalize_optional_nullable_str(existing_row[14]),
+        _normalize_optional_nullable_str(existing_row[15]),
+        _normalize_optional_nullable_str(existing_row[16]),
+        _normalize_optional_nullable_str(existing_row[17]),
+        _normalize_optional_nullable_str(existing_row[18]),
+        _normalize_optional_nullable_str(existing_row[19]),
     )
     new_fingerprint = (
         event_row.formal_signal_status,
@@ -814,8 +922,17 @@ def _upsert_formal_signal_event(
         event_row.malf_context_4,
         event_row.lifecycle_rank_high,
         event_row.lifecycle_rank_total,
+        event_row.daily_source_context_nk,
+        event_row.weekly_major_state,
+        event_row.weekly_trend_direction,
+        event_row.weekly_reversal_stage,
+        event_row.weekly_source_context_nk,
+        event_row.monthly_major_state,
+        event_row.monthly_trend_direction,
+        event_row.monthly_reversal_stage,
+        event_row.monthly_source_context_nk,
     )
-    first_seen_run_id = str(existing_row[11]) if existing_row[11] is not None else event_row.first_seen_run_id
+    first_seen_run_id = str(existing_row[20]) if existing_row[20] is not None else event_row.first_seen_run_id
     connection.execute(
         f"""
         UPDATE {ALPHA_FORMAL_SIGNAL_EVENT_TABLE}
@@ -831,6 +948,15 @@ def _upsert_formal_signal_event(
             malf_context_4 = ?,
             lifecycle_rank_high = ?,
             lifecycle_rank_total = ?,
+            daily_source_context_nk = ?,
+            weekly_major_state = ?,
+            weekly_trend_direction = ?,
+            weekly_reversal_stage = ?,
+            weekly_source_context_nk = ?,
+            monthly_major_state = ?,
+            monthly_trend_direction = ?,
+            monthly_reversal_stage = ?,
+            monthly_source_context_nk = ?,
             first_seen_run_id = ?,
             last_materialized_run_id = ?,
             updated_at = CURRENT_TIMESTAMP
@@ -848,6 +974,15 @@ def _upsert_formal_signal_event(
             event_row.malf_context_4,
             event_row.lifecycle_rank_high,
             event_row.lifecycle_rank_total,
+            event_row.daily_source_context_nk,
+            event_row.weekly_major_state,
+            event_row.weekly_trend_direction,
+            event_row.weekly_reversal_stage,
+            event_row.weekly_source_context_nk,
+            event_row.monthly_major_state,
+            event_row.monthly_trend_direction,
+            event_row.monthly_reversal_stage,
+            event_row.monthly_source_context_nk,
             first_seen_run_id,
             event_row.last_materialized_run_id,
             event_row.signal_nk,
@@ -977,6 +1112,13 @@ def _normalize_optional_str(value: object, *, default: str = "") -> str:
         return default
     candidate = str(value).strip()
     return candidate or default
+
+
+def _normalize_optional_nullable_str(value: object) -> str | None:
+    if value is None:
+        return None
+    candidate = str(value).strip()
+    return candidate or None
 
 
 def _normalize_optional_int(value: object) -> int:

@@ -1,11 +1,11 @@
 # 卡片目录
 
-日期：`2026-04-09`
+日期：`2026-04-09`  
 状态：`持续更新`
 
-1. 当前下一锚：`34-malf-multi-timeframe-downstream-consumption-card-20260411.md`
-2. 当前待施工卡：`34-malf-multi-timeframe-downstream-consumption-card-20260411.md`
-3. 正式主线剩余卡：`8`
+1. 当前下一锚：`35-downstream-data-grade-checkpoint-alignment-after-malf-card-20260411.md`
+2. 当前待施工卡：`35-downstream-data-grade-checkpoint-alignment-after-malf-card-20260411.md`
+3. 正式主线剩余卡：`7`
 4. 可选 Sidecar 剩余卡：`1`
 5. 后置修复剩余卡：`0`
 
@@ -56,9 +56,9 @@
 
 ## 当前说明
 
-1. 最新生效结论锚点已推进到 `33-malf-downstream-canonical-contract-purge-conclusion-20260412.md`。
-2. 当前治理锚点仍是 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`，但当前具体待施工卡已推进到 `34-malf-multi-timeframe-downstream-consumption-card-20260411.md`。
-3. `29-33` 已完成并生效，`34-35` 是让 `malf` 成为下游多级别运转中心的主线卡组；`36` 是其后的寿命概率 sidecar 卡；`100-105` 顺延为其后的 trade/system 恢复卡组。
+1. 最新生效结论锚点已推进到 `34-malf-multi-timeframe-downstream-consumption-conclusion-20260412.md`。
+2. 当前治理锚点仍是 `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`，但当前具体待施工卡已推进到 `35-downstream-data-grade-checkpoint-alignment-after-malf-card-20260411.md`。
+3. `29-34` 已完成并生效，`35` 负责 downstream data-grade checkpoint 对齐；`36` 是其后的寿命概率 sidecar 卡；`100-105` 顺延为其后的 trade/system 恢复卡组。
 4. 当前卡组排序调整后，`100-105` 不再紧接 `33`，而是在 `34-36` 收口后再恢复推进。
 
 ## 卡组顺序图
@@ -69,7 +69,7 @@ flowchart LR
     P07 --> A10["10-13 alpha/structure/filter"]
     A10 --> T14["14-15 portfolio_plan/trade"]
     T14 --> D16["16-25 data/malf/system"]
-    D16 --> M29["29-33 malf canonical downstream"]
-    M29 --> M34["34-36 malf 多级别与 sidecar"]
-    M34 --> POST["100-105 trade/system 恢复"]
+    D16 --> M29["29-34 malf canonical downstream"]
+    M29 --> M35["35-36 malf checkpoint/sidecar"]
+    M35 --> POST["100-105 trade/system 恢复"]
 ```
