@@ -7,9 +7,9 @@
 ## 裁决
 
 - 接受：
-  `structure / filter / alpha` 已达到进入 `position` 的 data-grade 质量门槛，可恢复 `100`
+  `structure / filter / alpha` 已达到进入 pre-position 硬化链的 data-grade 质量门槛，可继续 `44 -> 46`
 - 拒绝：
-  当前不得进入 `position`；必须先补前置修复卡
+  当前不得继续 `44 -> 46 / 47 -> 55`；必须先补前置修复卡
 
 ## 原因
 
@@ -21,9 +21,9 @@
 ## 影响
 
 - 影响 1
-  若接受，当前待施工卡切回 `100`
+  若接受，当前待施工卡切到 `44`
 - 影响 2
-  若拒绝，必须新增或切换到前置修复卡，继续提升 `structure / filter / alpha` 质量
+  若拒绝，必须新增或切换到前置修复卡，继续提升 `structure / filter / alpha` 质量，且 `100-105` 继续冻结到 `55`
 
 ## 结论结构图
 

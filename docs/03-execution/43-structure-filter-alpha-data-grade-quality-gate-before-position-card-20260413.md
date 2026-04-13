@@ -9,9 +9,9 @@
 - 问题：
   当前 `structure / filter / alpha` 虽已完成 canonical rebind 与 `35` 的 queue/checkpoint 对齐，但整体质量仍未达到 `data -> malf` 的事实标准。如果现在直接进入 `position`，后续执行侧缺陷将无法区分到底来自上游 canonical downstream，还是来自 `position / trade / system` 自身。
 - 目标结果：
-  新增一张正式质量门槛卡，明确裁决 `structure / filter / alpha` 是否已经达到进入 `position` 的 data-grade 质量要求；只有通过该门槛，才允许恢复 `100 -> 105` 卡组。
+  新增一张正式质量门槛卡，明确裁决 `structure / filter / alpha` 是否已经达到进入 `position` 的 data-grade 质量要求；通过后只允许继续 `44 -> 46` 与后续 `47 -> 55`，`100 -> 105` 仍冻结到 `55`。
 - 为什么现在做：
-  `42` 已完成 alpha family 与 canonical malf 协同收口，主线下一步原本会切回 `100`。但在真正进入 `position` 之前，必须先把上游 canonical downstream 的质量门槛写死，否则 `100-105` 的全部问题都会被污染成“上下游一起不稳”。
+  `42` 已完成 alpha family 与 canonical malf 协同收口，但在真正进入 `position` 之前，必须先把上游 canonical downstream 的质量门槛写死，并驱动 `44 -> 46` 的硬化链；否则 `47-55` 乃至后续 `100-105` 的问题都会被污染成“上下游一起不稳”。
 
 ## 设计输入
 
@@ -26,7 +26,7 @@
 ## 任务分解
 
 1. 盘点 `structure / filter / alpha` 当前相对 `data -> malf` 的真实质量缺口，逐项映射到六条历史账本约束。
-2. 冻结进入 `position` 前必须满足的 data-grade 质量门槛，并明确哪些缺口会阻断 `100`。
+2. 冻结进入 `position` 前必须满足的 data-grade 质量门槛，并明确哪些缺口会阻断 `44 -> 55` 以及最终 `55` 之后的 `100-105`。
 3. 更新系统路线图、执行索引与当前施工位，把 `43` 正式插入 `42` 与 `100` 之间。
 
 ## 实现边界
@@ -61,7 +61,7 @@
 1. `structure / filter / alpha` 的质量门槛清单写清
 2. 当前路线图与执行索引完成切换
 3. evidence / record / conclusion 写完
-4. 正式裁决“是否允许进入 `position`”
+4. 正式裁决“是否允许继续进入 `44 -> 46`”，并声明 `100-105` 仍冻结到 `55`
 
 ## 卡片结构图
 
@@ -70,6 +70,6 @@ flowchart LR
     S["structure"] --> G["43 质量门槛卡"]
     F["filter"] --> G
     A["alpha"] --> G
-    G -->|通过| P["允许进入 position / 100"]
+    G -->|通过| P["允许进入 44 -> 46"]
     G -->|不通过| X["先补前置修复卡"]
 ```
