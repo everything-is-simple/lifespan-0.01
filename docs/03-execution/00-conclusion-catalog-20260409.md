@@ -49,6 +49,10 @@
 40. `40-mainline-local-ledger-incremental-sync-and-resume-conclusion-20260413.md`
 41. `41-alpha-pas-five-trigger-canonical-detector-conclusion-20260413.md`
 42. `42-alpha-family-role-and-malf-alignment-conclusion-20260413.md`
+43. `43-structure-filter-alpha-data-grade-quality-gate-before-position-conclusion-20260413.md`
+44. `44-structure-filter-official-ledger-replay-smoke-hardening-conclusion-20260413.md`
+45. `45-alpha-formal-signal-producer-hardening-before-position-conclusion-20260413.md`
+46. `46-pre-position-upstream-acceptance-gate-conclusion-20260413.md`
 100. `100-trade-signal-anchor-contract-freeze-conclusion-20260411.md`
 101. `101-position-entry-t-plus-1-open-reference-price-correction-conclusion-20260411.md`
 102. `102-trade-exit-pnl-ledger-bootstrap-conclusion-20260411.md`
@@ -59,9 +63,9 @@
 ## 主线状态
 
 1. `42` 已成为当前最新生效结论锚点。
-2. `42` 已收口后，当前待施工卡已切回 `100`。
+2. `42` 已收口后，当前待施工卡前移到 `43`，并新增 `44 -> 45 -> 46` 作为进入 `position` 前的连续前置卡组。
 3. `29-42` 已完成 canonical malf downstream + PAS detector + alpha family 收口。
-4. 当前主线继续进入 `100-105` 的 trade/system 卡组。
+4. 只有 `46` 接受后，当前主线才恢复进入 `100-105` 的 trade/system 卡组。
 
 ## 图示
 
@@ -83,8 +87,14 @@ flowchart LR
         C33["33-42"]
         C42["42 alpha family"]
     end
+    subgraph GATE["43-46 pre-position"]
+        C43["43 quality gate"]
+        C44["44 structure/filter hardening"]
+        C45["45 alpha producer hardening"]
+        C46["46 acceptance gate"]
+    end
     subgraph NEXT["100-105"]
         C100["100-105 trade/system"]
     end
-    GOV --> MAIN --> DATA --> MALF --> DOWN --> NEXT
+    GOV --> MAIN --> DATA --> MALF --> DOWN --> C43 --> C44 --> C45 --> C46 --> NEXT
 ```

@@ -2,9 +2,9 @@
 日期：`2026-04-09`
 状态：`持续更新`
 
-1. 当前下一锤：`100-trade-signal-anchor-contract-freeze-card-20260411.md`
-2. 当前待施工卡：`100-trade-signal-anchor-contract-freeze-card-20260411.md`
-3. 正式主线剩余卡：`6`
+1. 当前下一锤：`43-structure-filter-alpha-data-grade-quality-gate-before-position-card-20260413.md`
+2. 当前待施工卡：`43-structure-filter-alpha-data-grade-quality-gate-before-position-card-20260413.md`
+3. 正式主线剩余卡：`10`
 4. 可选 Sidecar 剩余卡：`0`
 5. backlog：`0`
 
@@ -26,7 +26,7 @@
 1. 最新生效结论锚点已推进到 `42-alpha-family-role-and-malf-alignment-conclusion-20260413.md`。
 2. `42-alpha-family-role-and-malf-alignment-card-20260413.md` 已完成收口并冻结 family role 与 canonical malf 协同语义。
 3. 当前主线已结束 `41-99` 的 alpha/PAS 收口阶段。
-4. 当前主线待施工卡已切回 `100-trade-signal-anchor-contract-freeze-card-20260411.md`。
+4. 当前主线待施工卡已前移到 `43-structure-filter-alpha-data-grade-quality-gate-before-position-card-20260413.md`；只有 `46` 接受后，才恢复 `100-105`。
 
 ## 完成阶段图
 ```mermaid
@@ -43,6 +43,10 @@ flowchart LR
     N39 --> N40["40 incremental sync/resume"]
     N40 --> A41["41 PAS detector"]
     A41 --> A42["42 family role"]
-    A42 --> NEXT["100 anchor freeze"]
+    A42 --> G43["43 quality gate"]
+    G43 --> G44["44 structure/filter hardening"]
+    G44 --> G45["45 alpha producer hardening"]
+    G45 --> G46["46 acceptance gate"]
+    G46 --> NEXT["100 anchor freeze"]
     NEXT --> POST["101-105 trade/system 收口"]
 ```

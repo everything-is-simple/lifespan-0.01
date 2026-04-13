@@ -1,256 +1,446 @@
 # 系统级总路线图
 
-日期：`2026-04-10`
+日期：`2026-04-09`
+最近刷新：`2026-04-13`
 状态：`生效中`
 
-## 当前进度
+## 文档角色
 
-当前新仓已经完成地基阶段，并补齐了真正缺失的前半段主线：
+这份文档现在同时承担两种职责：
 
-`data -> malf -> structure`
+1. 系统级进度跟踪器
+2. 后半部施工的正式指挥蓝图
 
-截至今天，已正式成立的部分是：
+判断基线固定为：
 
-1. 五根目录契约
-2. 历史账本共享契约
-3. 文档先行硬门禁
-4. `data -> raw_market -> market_base` 最小官方桥接
-5. `market_base(backward) -> malf -> structure` 最小官方桥接
-6. `filter / alpha / position / portfolio_plan / trade` 的最小 bounded runner 与账本层
+1. 历史账本硬约束来自 `docs/01-design/03-historical-ledger-shared-contract-charter-20260409.md`
+2. 全系统统一治理基线来自 `28-system-wide-checkpoint-and-dirty-queue-alignment-conclusion-20260411.md`
+3. 当前最新生效结论锚点为 `42-alpha-family-role-and-malf-alignment-conclusion-20260413.md`
+4. 当前待施工卡为 `43-structure-filter-alpha-data-grade-quality-gate-before-position-card-20260413.md`
+5. 当前连续前置卡组为 `43 -> 44 -> 45 -> 46`
 
-当前整体判断：
+## 当前正式判断
 
-- 系统阶段位于 `P0 已完成，P1/P2/P3/P4/P5 已有最小正式桥接，P6 仍未开始`
-- 当前最重要的事实不是“trade 已开工”，而是“前半段 `data -> malf` 已不再空缺”
-- 当前仍不能宣称 `data -> malf -> structure -> filter -> alpha -> position -> portfolio_plan -> trade -> system` 已经整体系统级收口，因为 `system` 仍未开工，整链 truthfulness 也还需要专门复核
+1. 当前冻结主链仍是：
+   `data -> malf -> structure -> filter -> alpha -> position -> portfolio_plan -> trade -> system`
+2. `28` 已把 `checkpoint + dirty/work queue + replay/resume + audit` 冻结为全系统统一 data-grade 基线。
+3. `29 -> 32` 已验证“先 canonical `malf`，再 data-grade runner，再 downstream rebind，再 truthfulness revalidation”是正确路径。
+4. `33 -> 42` 已完成 canonical downstream 清理、checkpoint 对齐、本地 ledger 标准化、增量续跑、PAS detector 与 family role 收口。
+5. 当前后半部最薄弱链段已经从 `malf` 上游切换到：
+   `structure -> filter -> alpha -> position`
 
-## 老仓来源分层
+## 当前施工摘要
 
-当前路线图背后的老仓来源，正式按下面四层理解：
+### 已完成阶段
 
-### `L1 核心已验证模块`
+1. `01-06` 治理与入口基线
+2. `07-15` `position / alpha / portfolio_plan / trade` 最小骨架
+3. `16-28` `data / malf / system` 官方桥接与统一基线
+4. `29-32` canonical `malf` 优先卡组
+5. `33-42` canonical downstream 稳定化与 `alpha` 收口
 
-1. `position`
-2. `alpha`
-3. `malf`
+### 当前阶段
 
-### `L2 支持性较强模块`
+1. 当前 active 卡：`43`
+2. 当前 active 卡组：`43 -> 44 -> 45 -> 46 -> 100 -> 105`
+3. 当前系统级目标：先把 `structure / filter / alpha` 的质量抬到接近 `data -> malf` 的事实标准，再决定是否恢复执行侧卡组
 
-1. `data`
-2. `system`
+## 系统当前剖面图
 
-### `L3 研究偏少模块`
-
-1. `trade`
-2. `core`
-
-### `L4 新系统正式新建边界`
-
-1. `structure`
-2. `filter`
-3. `portfolio_plan`
-
-## 系统阶段
-
-### `P0 治理地基`
-
-状态：`已完成`
-
-范围：
-
-1. 五根目录
-2. 共享账本契约
-3. 文档先行
-4. 执行闭环
-5. 最小治理脚本
-
-### `P1 数据依据层`
-
-状态：`最小官方桥接已成立`
-
-范围：
-
-1. `raw_market`
-2. `market_base`
-3. 文件级增量跳过
-4. 历史账本自然键沉淀
-
-### `P2 市场语义层`
-
-状态：`最小官方桥接已成立`
-
-范围：
-
-1. `malf`
-2. `structure`
-3. `filter`
-
-### `P3 alpha 触发层`
-
-状态：`共享 contract 与最小正式账本已成立`
-
-范围：
-
-1. `alpha`
-2. PAS 五表族
-3. trigger ledger / family ledger / formal signal
-
-### `P4 仓位与组合层`
-
-状态：`最小官方桥接已成立`
-
-范围：
-
-1. `position`
-2. `portfolio_plan`
-
-### `P5 交易执行层`
-
-状态：`最小 runtime 账本已成立，但不能再越过前半段宣称整链已通`
-
-范围：
-
-1. `trade`
-2. `trade_runtime`
-3. carry / entry / exit / replay
-
-### `P6 system 总装层`
-
-状态：`未开始`
-
-范围：
-
-1. `system`
-2. 组合读数
-3. 结果复用
-4. 总装验证
-
-## 各模块状态
-
-| 模块 | 当前状态 | 主要来源 | 继承方式 | 置信度 | 下一步重点 |
-| --- | --- | --- | --- | --- | --- |
-| `core` | `主线待接` | `G:\。backups\MarketLifespan-Quant\docs\01-design\modules\core\` 与 `02-spec\modules\core\` | `只吸收经验` | `中` | ownership / checkpoint / version registry |
-| `data` | `最小官方桥接已成立` | `G:\。backups\MarketLifespan-Quant\docs\01-design\modules\data\`、`02-spec\modules\data\`、`03-execution\` | `沿袭为主` | `高` | 扩股票全量覆盖、再评估指数与板块的正式下游表 |
-| `malf` | `最小官方 snapshot 已成立` | `G:\。backups\EmotionQuant-gamma\gene\` + `G:\。backups\MarketLifespan-Quant\docs\01-design\modules\malf\` + `02-spec\modules\malf\` | `沿袭后改写` | `高` | 在不破坏 `structure` 上游合同前提下继续补语义表族 |
-| `structure` | `最小官方 snapshot 已成立` | `G:\。backups\MarketLifespan-Quant\docs\01-design\modules\structure\` + 旧 `malf 29/30/31` 分层材料 | `全新设计` | `中` | 从最小 snapshot 扩到更细的 event / trace 家族 |
-| `filter` | `最小官方 snapshot 已成立` | `G:\。backups\MarketLifespan-Quant\docs\01-design\modules\filter\` + 旧 `malf 29/31/32` 分层材料 | `全新设计` | `中` | 继续补 observation 与更细的 admission 分层，但保持少拦截 |
-| `alpha` | `trigger ledger / family ledger / formal signal 三级正式账本已成立` | `G:\。backups\EmotionQuant-gamma\normandy\` + `G:\。backups\MarketLifespan-Quant\docs\01-design\modules\alpha\` + `02-spec\modules\alpha\` | `沿袭后改写` | `高` | 继续补 PAS 五表族更细 payload、trace 与专表，但不绕过 formal signal |
-| `position` | `已对接 alpha 官方 formal signal` | `G:\。backups\EmotionQuant-gamma\positioning\` + `G:\。backups\MarketLifespan-Quant\docs\01-design\modules\position\` + `02-spec\modules\position\` | `沿袭后改写` | `高` | 维持单标的正式账本边界，并固定执行参考价使用 `none` |
-| `portfolio_plan` | `最小官方账本已成立` | 旧 `position / system` 桥接经验与组合验收材料 | `全新设计` | `中` | 向 `trade` 输出官方组合裁决桥接，继续扩展容量与回测层 |
-| `trade` | `最小 runtime 账本已成立` | `G:\。backups\MarketLifespan-Quant\docs\01-design\modules\trade\` + `02-spec\modules\trade\` + carry 桥接结论 + `G:\。backups\EmotionQuant-gamma\positioning\` / `normandy\` 交易语义说明 | `只吸收经验后新建最小账本` | `中` | 维持执行层边界，并固定执行价格使用 `none` |
-| `system` | `未开始` | `G:\。backups\MarketLifespan-Quant\docs\01-design\modules\system\` + `02-spec\modules\system\` + bounded acceptance 结论 | `只吸收经验` | `中` | 系统级 readout / reuse / audit |
-
-## 当前价格口径
-
-1. `market_base.stock_daily_adjusted` 正式同时保存 `none / backward / forward`
-2. `malf -> structure -> filter -> alpha` 默认使用 `backward`
-3. `position -> trade` 默认使用 `none`
-4. `forward` 当前只作为研究与展示保留，不作为正式执行口径
-
-## 下一锤
-
-当前不再把 `trade` 或 `system` 设为下一锤。
-
-下一步约束为：
-
-1. 先以 `16-data-malf-minimal-official-mainline-bridge` 结论为锚
-2. 先复核整条主线是否真实成立到 `trade`
-3. 只有在整链 truthfulness 复核完成后，才允许再开新的 `system` 或其他主线卡
-
-## 阻塞项
-
-### `阻塞 1：system 仍未正式实现`
-
-影响：
-
-- 当前还没有系统级 readout、reuse、audit 官方出口
-- 不能宣称整条链已经系统级闭环
-
-### `阻塞 2：整链 truthfulness 仍需专门复核`
-
-影响：
-
-- 虽然 `data -> malf` 已补齐，但还需要确认 `structure -> filter -> alpha -> position -> portfolio_plan -> trade` 与新上游拼接后不存在隐性旧口径
-
-## 当前不敢写死的点
-
-1. `alpha` 的 `bof / tst / pb / cpb / bpb` 五表族虽然方向明确，但正式桥接到 `position` 的字段合同还未写死。
-2. `probe_entry / confirm_add` 虽然已有正式语义落点，但在 `trade carry` 与多腿开仓桥接冻结前仍不能默认打开。
-3. `malf` 当前只冻结了最小 snapshot，不代表更细事件家族已经共同收口。
-4. `system` 仍未开工，因此系统级总装结论仍不存在。
-
-## 里程碑定义
-
-### `M0 地基完成`
-
-判定条件：
-
-1. 五根目录成立
-2. 共享账本契约成立
-3. 文档先行硬门禁成立
-4. 执行闭环成立
-
-当前状态：`已完成`
-
-### `M1 data-malf 官方上游成立`
-
-判定条件：
-
-1. `raw_market` 成立
-2. `market_base` 成立
-3. `malf` 能官方消费 `market_base`
-4. `structure` 能官方消费 `malf`
-
-当前状态：`已完成`
-
-### `M2 alpha-position 正式桥接成立`
-
-判定条件：
-
-1. `alpha` formal signal 有正式账本出口
-2. `position` 能正式消费 `alpha`
-3. 有 bounded evidence
-
-当前状态：`已完成`
-
-### `M3 trade 最小 runtime 桥接成立`
-
-判定条件：
-
-1. `portfolio_plan` 有正式组合裁决账本
-2. `trade_runtime` 有最小执行账本
-3. bounded mainline 可复验
-
-当前状态：`已完成`
-
-### `M4 system 主线可复验`
-
-判定条件：
-
-1. `data -> malf -> structure -> filter -> alpha -> position -> portfolio_plan -> trade -> system` 形成系统级读数
-2. 有可复验 evidence / record / conclusion
-3. 能解释 blocked / admitted / carry / filled
-
-当前状态：`未完成`
-
-## 使用方式
-
-以后你想快速了解系统推进位置，优先看这一份文档。
-
-如果你想继续正式施工，再按下面顺序下钻：
-
-1. 先看当前结论是否已经把下一步边界写死
-2. 再看对应模块在本页的"主要来源 / 继承方式 / 置信度"
-3. 打开对应模块设计文档
-4. 打开当前待施工卡
-5. 再进入具体实现
-
-## 流程图
+下图以 `28` 的 data-grade 基线为观察坐标，展示当前主链各模块的实现深度分档。
 
 ```mermaid
 flowchart LR
-    CON[当前结论] --> MOD[模块设计文档]
-    MOD --> CARD[待施工卡]
-    CARD --> IMPL[具体实现]
-    DATA[data] --> MALF[malf] --> STR[structure] --> FLT[filter] --> ALPHA[alpha] --> POS[position] --> PP[portfolio_plan] --> TRADE[trade] --> SYS[system]
+    C28["28 统一基线\ncheckpoint + dirty/work queue + replay/resume"] --> DATA
+
+    subgraph ALIGNED["已对齐区域"]
+        DATA["data\nCanonical data-grade\n39/40 已冻结官方 ledger + 增量续跑"]
+        MALF["malf\nCanonical data-grade\n29/30/36 已形成 core + sidecar"]
+        STR["structure\nCanonical downstream\n31/35/38 已完成 canonical rebind + queue"]
+        FLT["filter\nCanonical downstream\n31/35/38 已完成 canonical rebind + queue"]
+    end
+
+    subgraph PARTIAL["部分对齐区域"]
+        ALPHA["alpha\nCanonical downstream\n41/42 已收口 detector/family\n100 signal anchor 待冻结"]
+    end
+
+    subgraph PENDING["待治理区域"]
+        POS["position\nBounded materialization\n独立 queue/checkpoint 待补齐"]
+        PLAN["portfolio_plan\nBounded materialization\n独立 queue/checkpoint 待补齐"]
+        TRADE["trade\nRecovery planned\n100-104 待完成合同/exit/progression/smoke"]
+        SYS["system\nBounded acceptance\n27 readout/audit 已有\n105 orchestration 待完成"]
+    end
+
+    DATA --> MALF --> STR --> FLT --> ALPHA --> POS --> PLAN --> TRADE --> SYS
+
+    classDef aligned fill:#d5f5e3,stroke:#1e8449,color:#000;
+    classDef partial fill:#fcf3cf,stroke:#b7950b,color:#000;
+    classDef pending fill:#f5c6cb,stroke:#c0392b,color:#000;
+    class DATA,MALF,STR,FLT aligned;
+    class ALPHA partial;
+    class POS,PLAN,TRADE,SYS pending;
+```
+
+## 后半部施工指挥蓝图
+
+### 正式顺序
+
+自 `28` 起，后半部正式施工顺序固定为：
+
+1. `29 -> 30 -> 31 -> 32`
+2. `33 -> 42` 稳定化与收口
+3. `100 -> 101 -> 102 -> 103 -> 104 -> 105`
+
+其中：
+
+1. `29 -> 32` 是 `malf` 优先卡组
+2. `43` 是进入 `position` 前的质量门槛定义卡
+3. `44 -> 45` 是上游质量硬化卡组
+4. `46` 是进入 `position` 前的最终 acceptance gate
+5. `100 -> 105` 是 `trade/system` 恢复卡组
+6. `105` 明确固定为最后一张后置卡
+
+```mermaid
+flowchart LR
+    C28["28 data-grade 基线裁决"] --> G2932["29-32 malf 优先卡组"]
+    G2932 --> G3342["33-42 稳定化与主线收口\npurge / multi-timeframe / checkpoint / local ledger / PAS / family"]
+    G3342 --> G43["43 quality gate"]
+    G43 --> G44["44 structure/filter hardening"]
+    G44 --> G45["45 alpha producer hardening"]
+    G45 --> G46["46 pre-position acceptance"]
+    G46 --> G100105["100-105 trade/system 恢复卡组"]
+    G100105 --> C100["100 signal anchor freeze"]
+    C100 --> C101["101 T+1 open 参考价修正"]
+    C101 --> C102["102 trade exit PnL ledger"]
+    C102 --> C103["103 trade backtest progression"]
+    C103 --> C104["104 real-data smoke regression"]
+    C104 --> C105["105 system runtime orchestration"]
+```
+
+### 当前指挥结论
+
+1. `29-32` 不是“历史已完成就可忽略”的旧卡组，而是后半部一切恢复卡的前置逻辑顺序。
+2. `43-45` 任何一张未通过前，都不允许进入 `46`。
+3. 只有 `46` 接受后，才允许恢复 `100`。
+4. `100-105` 当前必须按自然数顺排推进，不允许跳过 `100/101` 直接做 `105`。
+5. 若 `46` 证明 `position / portfolio_plan` 也缺少与 `35` 同等级的 data-grade 续跑能力，应先补新卡，再继续推进 `100-105`。
+
+## 增量更新 / 断点续跑 / 审计依赖图
+
+```mermaid
+flowchart TD
+    D0["data\nraw_market / market_base\ncheckpoint + dirty_queue + replay + freshness_audit"] --> M0
+    M0["malf\ncanonical work_queue + checkpoint + replay"] --> S0
+    S0["structure\nwork_queue + checkpoint + replay"] --> F0
+    F0["filter\nwork_queue + checkpoint + replay"] --> A0
+    A0["alpha\ntrigger/formal signal queue + checkpoint + rematerialize"] --> P0
+    P0["position\n当前仅 bounded materialization\n独立 work_queue/checkpoint 待补齐"] --> PP0
+    PP0["portfolio_plan\n当前仅 bounded materialization\n独立 work_queue/checkpoint 待补齐"] --> T0
+    T0["trade\ncarry / leg / execution plan 已有\nsignal anchor / exit pnl / progression / smoke 待补齐"] --> SY0
+    SY0["system\nreadout / audit 已有\nruntime orchestration 待补齐"]
+```
+
+## 模块纵向档案
+
+### `data`
+
+- 当前状态：`主线已接`
+- 实现深度：`Canonical data-grade`
+- 成熟度：`A`
+- 实体锚点：`asset_type + code`
+- 业务自然键对齐：
+  以 `trade_date / adjust_method / source file or request / instrument checkpoint` 叠加在标的锚点之上；`39/40` 后官方 ledger inventory 已冻结。
+- 批量建仓：
+  `scripts/data/run_mainline_local_ledger_standardization_bootstrap.py`
+- 增量更新：
+  `scripts/data/run_mainline_local_ledger_incremental_sync.py`
+- 断点续跑：
+  `run / checkpoint / dirty_queue / replay / freshness_audit` 已成立
+- 审计账本：
+  `run / checkpoint / dirty_queue / freshness_readout`
+- 当前结论：
+  `17 -> 22 -> 39 -> 40` 已把 `data` 建成全系统 data-grade 基线定义者
+- 后续动作：
+  维持官方 ledger inventory 稳定，不在执行侧恢复阶段回退到 shadow DB
+
+### `malf`
+
+- 当前状态：`主线已接`
+- 实现深度：`Canonical data-grade`
+- 成熟度：`A`
+- 实体锚点：
+  `asset_type + code + timeframe`
+- 业务自然键对齐：
+  以 `bar_dt / pivot_nk / wave_nk / semantic contract version` 叠加；`D / W / M` 独立计算，默认下游 dirty 单元投影为 `asset_type + code + timeframe='D'`
+- 批量建仓：
+  `scripts/malf/run_malf_canonical_build.py` 的 bounded bootstrap
+- 增量更新：
+  canonical `work_queue` 由官方 `market_base(backward)` 推进
+- 断点续跑：
+  `malf_canonical_work_queue + malf_canonical_checkpoint + tail replay` 已成立
+- 审计账本：
+  `malf_canonical_run` 与各 canonical ledger
+- 当前结论：
+  `23 / 29 / 30 / 31 / 32 / 33 / 36` 已完成 pure semantic core、canonical runner、downstream rebind 与只读 sidecar 边界
+- 后续动作：
+  保持 core / mechanism / wave life 的只读边界；不允许把 sidecar 回写成 `malf core`
+
+### `structure`
+
+- 当前状态：`主线已接`
+- 实现深度：`Canonical downstream`
+- 成熟度：`B+`
+- 实体锚点：
+  `asset_type + code + timeframe='D'`
+- 业务自然键对齐：
+  以 `snapshot_date or bar_dt + structure contract version` 叠加；dirty 单元与 canonical `malf` 的 `asset_type + code + timeframe='D'` 对齐
+- 批量建仓：
+  显式 `signal_start_date / signal_end_date / instruments` 的 bounded bootstrap 仍保留
+- 增量更新：
+  默认由 canonical `malf checkpoint` 驱动 queue
+- 断点续跑：
+  `structure_work_queue + structure_checkpoint + tail replay` 已成立
+- 审计账本：
+  `structure_run / snapshot / run_snapshot`
+- 当前结论：
+  `31 / 35 / 38` 已完成 canonical rebind、queue/checkpoint 对齐与 legacy `malf` purge
+- 后续动作：
+  维持 canonical 主线输入；后续若扩 event / trace，仍需服从 `35` 的 data-grade 边界
+
+### `filter`
+
+- 当前状态：`主线已接`
+- 实现深度：`Canonical downstream`
+- 成熟度：`B+`
+- 实体锚点：
+  `asset_type + code + timeframe='D'`
+- 业务自然键对齐：
+  以 `snapshot_date or bar_dt + filter contract version` 叠加；dirty 单元默认继承 `structure checkpoint` 的 `D` 级主语义
+- 批量建仓：
+  bounded bootstrap 仍保留为显式补跑接口
+- 增量更新：
+  默认由 `structure checkpoint` 驱动 queue
+- 断点续跑：
+  `filter_work_queue + filter_checkpoint + replay` 已成立
+- 审计账本：
+  `filter_run / snapshot / run_snapshot`
+- 当前结论：
+  `31 / 35 / 38` 已完成 canonical rebind、queue/checkpoint 对齐与 bridge-era purge
+- 后续动作：
+  保持 pre-trigger 边界，不把 `alpha / position / trade` 决策混回 `filter`
+
+### `alpha`
+
+- 当前状态：`主线已接`
+- 实现深度：`Canonical downstream`
+- 成熟度：`B`
+- 实体锚点：
+  默认按 `asset_type + code + timeframe='D'` 对齐到上游 dirty 单元；在事件层再叠加 `trigger / family / signal` 语义
+- 业务自然键对齐：
+  `trigger_event / family_event / formal_signal_event` 已有正式事件自然键，但 `formal signal -> trade` 的最终 anchor 仍待 `100` 冻结
+- 批量建仓：
+  `run_alpha_pas_five_trigger_build.py`、`run_alpha_trigger_ledger_build.py`、`run_alpha_family_build.py`、`run_alpha_formal_signal_build.py` 的 bounded bootstrap 仍保留
+- 增量更新：
+  `alpha trigger` 默认由 `filter checkpoint + detector fingerprint` 驱动，`formal signal` 默认由 `alpha trigger checkpoint` 驱动
+- 断点续跑：
+  `work_queue + checkpoint + rematerialize` 已覆盖 `trigger / formal signal`；`family` 通过 `source_context_fingerprint` 保留重物化依据
+- 审计账本：
+  `alpha_*_run / event / run_event`
+- 当前结论：
+  `35 / 41 / 42` 已完成 queue 对齐、PAS detector、family role 与 canonical `malf` 协同语义
+- 后续动作：
+  先完成 `100`，把 `alpha_formal_signal_event` 的正式信号锚点冻结后，再继续推进执行侧
+
+### `position`
+
+- 当前状态：`主线待接`
+- 实现深度：`Bounded materialization`
+- 成熟度：`C+`
+- 实体锚点：
+  单标的主语仍以 `asset_type + code` 为基础，再叠加 `portfolio_id + signal_date / reference_trade_date + position scene`
+- 业务自然键对齐：
+  已固定执行参考价口径使用 `market_base(none)`；但尚未像 `35` 那样形成独立 dirty 单元与 checkpoint 主语义
+- 批量建仓：
+  `position bootstrap` 与 `run_position_formal_signal_materialization.py`
+- 增量更新：
+  当前主要依赖新到达的 `alpha formal signal` 做 bounded materialization
+- 断点续跑：
+  尚未正式补齐独立 `work_queue + checkpoint + replay`
+- 审计账本：
+  `position` 正式账本、candidate audit、capacity/sizing snapshot 与 `position` run 审计
+- 当前结论：
+  `08 / 09` 已把 `position` 建成正式 bounded runner，但尚未升级为与 `structure / filter / alpha` 同等级的 data-grade 模块
+- 后续动作：
+  `101` 之前需明确 T+1 开盘参考价修正；若执行侧恢复阶段暴露 queue 缺口，应优先补 position data-grade runner
+
+### `portfolio_plan`
+
+- 当前状态：`主线待接`
+- 实现深度：`Bounded materialization`
+- 成熟度：`C+`
+- 实体锚点：
+  `portfolio_id`
+- 业务自然键对齐：
+  以 `portfolio_id + snapshot_date + plan scene` 叠加；当前主要依赖上游 `position` rematerialize 传播，而非自身独立 dirty 单元
+- 批量建仓：
+  `scripts/portfolio_plan/run_portfolio_plan_build.py`
+- 增量更新：
+  当前按上游 `position_candidate_audit / capacity / sizing` 有界重物化
+- 断点续跑：
+  尚未正式补齐独立 `work_queue + checkpoint + replay`
+- 审计账本：
+  `portfolio_plan_run / snapshot / run_snapshot`
+- 当前结论：
+  `14` 已完成最小组合裁决账本，但执行层以下仍未形成独立 data-grade 治理
+- 后续动作：
+  跟随 `position` 一起补齐执行侧 data-grade 续跑语义，再继续向 `trade` 下游稳定输出
+
+### `trade`
+
+- 当前状态：`主线待接`
+- 实现深度：`Recovery planned`
+- 成熟度：`C`
+- 实体锚点：
+  当前以 `portfolio_id + leg` 与执行账本对象为核心，再叠加 `snapshot_date / entry policy / carry scene`
+- 业务自然键对齐：
+  `portfolio_plan_snapshot + market_base(none) + trade_carry_snapshot` 的最小桥接已成立，但正式 signal anchor、exit PnL、progression 仍未冻结
+- 批量建仓：
+  `scripts/trade/run_trade_runtime_build.py` 的 bounded pilot
+- 增量更新：
+  依赖 `portfolio_plan_snapshot` 与上一轮 `trade_carry_snapshot` 驱动 runtime build
+- 断点续跑：
+  open leg / carry 延续已存在，但尚未形成 `100-104` 完整收口后的执行侧 data-grade 闭环
+- 审计账本：
+  `trade_run / trade_execution_plan / trade_position_leg / trade_carry_snapshot`
+- 当前结论：
+  `15` 已完成最小 runtime 骨架；`100 / 101 / 102 / 103 / 104` 仍是待收口恢复卡
+- 后续动作：
+  严格按 `100 -> 101 -> 102 -> 103 -> 104` 推进，不允许跳卡
+
+### `system`
+
+- 当前状态：`主线待接`
+- 实现深度：`Bounded acceptance`
+- 成熟度：`C`
+- 实体锚点：
+  `portfolio_id + snapshot_date + system_contract_version`
+- 业务自然键对齐：
+  以 `portfolio_id + snapshot_date + system scene` 与 `child_module + child_run_id` 作为系统 readout 自然键
+- 批量建仓：
+  `scripts/system/run_system_mainline_readout_build.py`
+- 增量更新：
+  当前只读消费官方 child run 与 `portfolio_plan / trade` 落表事实做 bounded acceptance readout
+- 断点续跑：
+  已具备 `inserted / reused / rematerialized` 审计语义，但仍不是主动 runtime/orchestration
+- 审计账本：
+  `system_run / system_child_run_readout / system_mainline_snapshot / system_run_snapshot`
+- 当前结论：
+  `27` 已完成最小 readout / audit bootstrap；`105` runtime/orchestration 仍未完成
+- 后续动作：
+  必须等 `100-104` 完成后再推进 `105`，避免 `system` 越位重写上游业务事实
+
+## 当前阻塞项
+
+### 阻塞 1：`alpha` 正式信号锚点仍未冻结
+
+影响：
+
+1. `position` 当前消费的最末端正式合同仍不够稳定
+2. `43` 与 `100-105` 无法稳健起步
+
+### 阻塞 2：`position / portfolio_plan` 仍缺少与 `35` 同等级的独立 data-grade 续跑语义
+
+影响：
+
+1. 执行侧无法像上游一样自洽地解释 dirty propagation
+2. `trade` 的增量一致性与 `system` 的系统级复算能力都会受影响
+
+### 阻塞 3：`trade` 恢复卡组仍未完成
+
+影响：
+
+1. exit PnL
+2. progression
+3. real-data smoke
+4. execution-side replay
+
+### 阻塞 4：`system` 仍停在 bounded acceptance，而不是 runtime/orchestration
+
+影响：
+
+1. 系统层只有 readout / audit，没有主动调度闭环
+2. “可续跑、可复算、可审计” 在系统层还只完成了一半
+
+## 当前不敢写死的点
+
+1. `position` 是否必须先开独立 data-grade checkpoint 对齐卡，才能继续推进 `102-105`
+2. `portfolio_plan` 是否需要在执行侧恢复期内同步补齐独立 queue/checkpoint
+3. `alpha_formal_signal_event` 对 family 正式解释键的物理消费收口，是否全部放入 `100`
+4. `104` 真正执行后，真实官方库 smoke 是否会暴露新的 `position / trade / system` 合同缺口
+
+## 里程碑
+
+### `M0 治理地基完成`
+
+- 判定条件：
+  五根目录、历史账本共享合同、文档先行门禁、执行闭环成立
+- 当前状态：
+  `已完成`
+- 下一步依赖：
+  无
+
+### `M1 upstream data-grade 成立`
+
+- 判定条件：
+  `data -> malf -> structure -> filter -> alpha` 已具备官方主链与 data-grade 续跑语义
+- 当前状态：
+  `已完成，但进入 position 前仍需 43 质量闸门裁决`
+- 下一步依赖：
+  `43`
+
+### `M2 canonical downstream 收口`
+
+- 判定条件：
+  `29-32` 完成 canonical freeze / runner / rebind / revalidation
+- 当前状态：
+  `已完成`
+- 下一步依赖：
+  `33-42` 稳定化已完成，当前切换到执行侧恢复
+
+### `M3 alpha 解释层收口`
+
+- 判定条件：
+  PAS detector、family role、canonical `malf` 协同解释已成立
+- 当前状态：
+  `已完成`
+- 下一步依赖：
+  `100`
+
+### `M4 执行侧合同与 runtime 收口`
+
+- 判定条件：
+  `100-104` 完成 signal anchor、T+1 价修正、exit PnL、progression、real-data smoke
+- 当前状态：
+  `未完成`
+- 下一步依赖：
+  `43 -> 100 -> 104`
+
+### `M5 system orchestration 收口`
+
+- 判定条件：
+  `105` 完成，`system` 从 bounded acceptance 进入 runtime/orchestration 正式落点
+- 当前状态：
+  `未完成`
+- 下一步依赖：
+  `43 -> 104 -> 105`
+
+## 系统审计依赖图
+
+```mermaid
+flowchart LR
+    RUN["各模块 *_run"] --> CP["checkpoint / work_queue"]
+    CP --> FACT["snapshot / event / ledger"]
+    FACT --> REMAT["reused / rematerialized 判定"]
+    REMAT --> SYS["system_child_run_readout / system_mainline_snapshot"]
+    FACT --> AUD["summary_json / freshness_audit / readout"]
 ```

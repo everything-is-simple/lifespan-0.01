@@ -42,6 +42,10 @@
 35. `35-downstream-data-grade-checkpoint-alignment-after-malf-evidence-20260412.md`
 36. `36-malf-wave-life-probability-sidecar-bootstrap-evidence-20260412.md`
 37. `37-system-governance-historical-debt-backlog-burndown-evidence-20260412.md`
+43. `43-structure-filter-alpha-data-grade-quality-gate-before-position-evidence-20260413.md`
+44. `44-structure-filter-official-ledger-replay-smoke-hardening-evidence-20260413.md`
+45. `45-alpha-formal-signal-producer-hardening-before-position-evidence-20260413.md`
+46. `46-pre-position-upstream-acceptance-gate-evidence-20260413.md`
 100. `100-trade-signal-anchor-contract-freeze-evidence-20260411.md`
 101. `101-position-entry-t-plus-1-open-reference-price-correction-evidence-20260411.md`
 102. `102-trade-exit-pnl-ledger-bootstrap-evidence-20260411.md`

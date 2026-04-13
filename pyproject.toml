@@ -39,13 +39,13 @@ execution_index_files = [
     "docs/03-execution/B-card-catalog-20260409.md",
     "docs/03-execution/C-system-completion-ledger-20260409.md",
 ]
-# 系统路线图文件不仅追踪阶段进度，也承担老仓来源分层、模块继承方式与置信度口径。
+# 系统路线图文件不仅追踪阶段进度，也承担老仓来源分层、模块继承方式、实现深度与后半部施工蓝图口径；模块状态默认采用纵向档案，不再使用横向宽表。
 system_tracker_files = [
     "docs/01-design/α-system-roadmap-and-progress-tracker-charter-20260409.md",
     "docs/02-spec/β-system-roadmap-and-progress-tracker-spec-20260409.md",
     "docs/02-spec/Ω-system-delivery-roadmap-20260409.md",
 ]
-# 当前最新生效结论已推进到 40；`40` 已完成主线官方 ledger 的每日增量同步、checkpoint / dirty queue / replay 与 freshness audit。当前正式施工卡切回 `100-105` trade/system 卡组；`position / trade` 的正式执行口径继续固定为 `adjust_method='none'`。
+# 当前最新生效结论已推进到 42；`42` 已完成 alpha family role 与 canonical malf 协同语义收口。系统路线图现以 `28` 为统一 data-grade 基线，并插入 `43 -> 44 -> 45 -> 46` 作为进入 `position` 前的前置卡组；只有 `46` 接受后才恢复 `100 -> 105` trade/system 卡组，`position / trade` 的正式执行口径继续固定为 `adjust_method='none'`。
 # `37` 卡的 pytest 证据统一按串行命令执行，避免多个进程争用 `H:/Lifespan-temp/pytest-tmp`。
 formal_runner_scripts = [
     "scripts/data/run_tdx_asset_raw_ingest.py",

@@ -2,9 +2,9 @@
 日期：`2026-04-09`
 状态：`持续更新`
 
-1. 当前下一锚：`100-trade-signal-anchor-contract-freeze-card-20260411.md`
-2. 当前待施工卡：`100-trade-signal-anchor-contract-freeze-card-20260411.md`
-3. 正式主线剩余卡：`6`
+1. 当前下一锚：`43-structure-filter-alpha-data-grade-quality-gate-before-position-card-20260413.md`
+2. 当前待施工卡：`43-structure-filter-alpha-data-grade-quality-gate-before-position-card-20260413.md`
+3. 正式主线剩余卡：`10`
 4. 可选 Sidecar 剩余卡：`0`
 5. 历史治理 backlog：`0`
 
@@ -51,6 +51,10 @@
 40. `40-mainline-local-ledger-incremental-sync-and-resume-card-20260413.md`
 41. `41-alpha-pas-five-trigger-canonical-detector-card-20260413.md`
 42. `42-alpha-family-role-and-malf-alignment-card-20260413.md`
+43. `43-structure-filter-alpha-data-grade-quality-gate-before-position-card-20260413.md`
+44. `44-structure-filter-official-ledger-replay-smoke-hardening-card-20260413.md`
+45. `45-alpha-formal-signal-producer-hardening-before-position-card-20260413.md`
+46. `46-pre-position-upstream-acceptance-gate-card-20260413.md`
 100. `100-trade-signal-anchor-contract-freeze-card-20260411.md`
 101. `101-position-entry-t-plus-1-open-reference-price-correction-card-20260411.md`
 102. `102-trade-exit-pnl-ledger-bootstrap-card-20260411.md`
@@ -61,8 +65,8 @@
 ## 当前说明
 1. 最新生效结论锚点已推进到 `42-alpha-family-role-and-malf-alignment-conclusion-20260413.md`。
 2. `42-alpha-family-role-and-malf-alignment-card-20260413.md` 已完成收口。
-3. 当前 `41-99` 的 alpha/PAS 收口阶段已结束，主线切回 `100-105`。
-4. 当前卡组排序调整为 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39 -> 40 -> 41 -> 42 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。
+3. 当前 `41-99` 的 alpha/PAS 收口阶段已结束，但在恢复 `100-105` 之前，先插入 `43 -> 44 -> 45 -> 46` 作为进入 `position` 前的连续前置卡组。
+4. 当前卡组排序调整为 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45 -> 46 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。
 
 ## 卡组路线图
 ```mermaid
@@ -79,5 +83,9 @@ flowchart LR
     D39 --> D40["40 incremental sync/resume"]
     D40 --> A41["41 alpha PAS detector"]
     A41 --> A42["42 alpha family role"]
-    A42 --> POST["100-105 trade/system 收口"]
+    A42 --> G43["43 quality gate"]
+    G43 --> G44["44 structure/filter hardening"]
+    G44 --> G45["45 alpha producer hardening"]
+    G45 --> G46["46 pre-position acceptance"]
+    G46 --> POST["100-105 trade/system 收口"]
 ```
