@@ -78,12 +78,16 @@
 
 ## alpha
 
-1. `python scripts/alpha/run_alpha_trigger_ledger_build.py --signal-start-date 2026-04-08 --signal-end-date 2026-04-08 --limit 10 --batch-size 10`
+1. `python scripts/alpha/run_alpha_pas_five_trigger_build.py --signal-start-date 2026-04-30 --signal-end-date 2026-04-30 --limit 10`
+   - 从官方 `filter / structure snapshot` 与 `market_base.stock_daily_adjusted(adjust_method='backward')` 物化 `alpha_trigger_candidate`
+   - 同时维护 `alpha_pas_trigger_run / alpha_pas_trigger_work_queue / alpha_pas_trigger_checkpoint / alpha_pas_trigger_run_candidate`
+
+2. `python scripts/alpha/run_alpha_trigger_ledger_build.py --signal-start-date 2026-04-08 --signal-end-date 2026-04-08 --limit 10 --batch-size 10`
    - 从 bounded detector 输入与官方 `filter / structure snapshot` 上游做 bounded 读取
    - 物化 `alpha_trigger_run / alpha_trigger_event / alpha_trigger_run_event`
    - 产出可被 `alpha formal signal` 稳定引用的官方 `alpha trigger ledger`
 
-2. `python scripts/alpha/run_alpha_formal_signal_build.py --signal-start-date 2026-04-08 --signal-end-date 2026-04-08 --limit 10 --batch-size 10`
+3. `python scripts/alpha/run_alpha_formal_signal_build.py --signal-start-date 2026-04-08 --signal-end-date 2026-04-08 --limit 10 --batch-size 10`
    - 从官方 `alpha trigger ledger` 与 `filter / structure snapshot` 上游做 bounded 读取
    - 物化 `alpha_formal_signal_run / alpha_formal_signal_event / alpha_formal_signal_run_event`
    - 输出可被 `position` 直接消费的官方 `alpha formal signal`

@@ -13,6 +13,11 @@ from mlq.core.paths import WorkspaceRoots, default_settings
 ALPHA_TRIGGER_RUN_TABLE: Final[str] = "alpha_trigger_run"
 ALPHA_TRIGGER_WORK_QUEUE_TABLE: Final[str] = "alpha_trigger_work_queue"
 ALPHA_TRIGGER_CHECKPOINT_TABLE: Final[str] = "alpha_trigger_checkpoint"
+ALPHA_PAS_TRIGGER_RUN_TABLE: Final[str] = "alpha_pas_trigger_run"
+ALPHA_PAS_TRIGGER_WORK_QUEUE_TABLE: Final[str] = "alpha_pas_trigger_work_queue"
+ALPHA_PAS_TRIGGER_CHECKPOINT_TABLE: Final[str] = "alpha_pas_trigger_checkpoint"
+ALPHA_TRIGGER_CANDIDATE_TABLE: Final[str] = "alpha_trigger_candidate"
+ALPHA_PAS_TRIGGER_RUN_CANDIDATE_TABLE: Final[str] = "alpha_pas_trigger_run_candidate"
 ALPHA_TRIGGER_EVENT_TABLE: Final[str] = "alpha_trigger_event"
 ALPHA_TRIGGER_RUN_EVENT_TABLE: Final[str] = "alpha_trigger_run_event"
 
@@ -27,6 +32,11 @@ ALPHA_FAMILY_RUN_EVENT_TABLE: Final[str] = "alpha_family_run_event"
 
 
 ALPHA_TRIGGER_LEDGER_TABLE_NAMES: Final[tuple[str, ...]] = (
+    ALPHA_PAS_TRIGGER_RUN_TABLE,
+    ALPHA_PAS_TRIGGER_WORK_QUEUE_TABLE,
+    ALPHA_PAS_TRIGGER_CHECKPOINT_TABLE,
+    ALPHA_TRIGGER_CANDIDATE_TABLE,
+    ALPHA_PAS_TRIGGER_RUN_CANDIDATE_TABLE,
     ALPHA_TRIGGER_RUN_TABLE,
     ALPHA_TRIGGER_WORK_QUEUE_TABLE,
     ALPHA_TRIGGER_CHECKPOINT_TABLE,
@@ -59,6 +69,100 @@ ALPHA_LEDGER_TABLE_NAMES: Final[tuple[str, ...]] = (
 
 
 ALPHA_LEDGER_DDL: Final[dict[str, str]] = {
+    ALPHA_PAS_TRIGGER_RUN_TABLE: """
+        CREATE TABLE IF NOT EXISTS alpha_pas_trigger_run (
+            run_id TEXT PRIMARY KEY,
+            runner_name TEXT NOT NULL,
+            runner_version TEXT NOT NULL,
+            run_status TEXT NOT NULL,
+            signal_start_date DATE,
+            signal_end_date DATE,
+            bounded_instrument_count BIGINT NOT NULL DEFAULT 0,
+            candidate_scope_count BIGINT NOT NULL DEFAULT 0,
+            materialized_candidate_count BIGINT NOT NULL DEFAULT 0,
+            source_filter_table TEXT NOT NULL,
+            source_structure_table TEXT NOT NULL,
+            source_price_table TEXT NOT NULL,
+            source_adjust_method TEXT NOT NULL,
+            detector_contract_version TEXT NOT NULL,
+            started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            completed_at TIMESTAMP,
+            summary_json TEXT,
+            notes TEXT
+        )
+    """,
+    ALPHA_PAS_TRIGGER_WORK_QUEUE_TABLE: """
+        CREATE TABLE IF NOT EXISTS alpha_pas_trigger_work_queue (
+            queue_nk TEXT PRIMARY KEY,
+            scope_nk TEXT NOT NULL,
+            asset_type TEXT NOT NULL,
+            code TEXT NOT NULL,
+            timeframe TEXT NOT NULL,
+            dirty_reason TEXT NOT NULL,
+            replay_start_bar_dt DATE,
+            replay_confirm_until_dt DATE,
+            source_fingerprint TEXT NOT NULL,
+            queue_status TEXT NOT NULL,
+            enqueued_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            claimed_at TIMESTAMP,
+            completed_at TIMESTAMP,
+            first_seen_run_id TEXT,
+            last_claimed_run_id TEXT,
+            last_materialized_run_id TEXT,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """,
+    ALPHA_PAS_TRIGGER_CHECKPOINT_TABLE: """
+        CREATE TABLE IF NOT EXISTS alpha_pas_trigger_checkpoint (
+            asset_type TEXT NOT NULL,
+            code TEXT NOT NULL,
+            timeframe TEXT NOT NULL,
+            last_completed_bar_dt DATE,
+            tail_start_bar_dt DATE,
+            tail_confirm_until_dt DATE,
+            source_fingerprint TEXT NOT NULL,
+            last_run_id TEXT,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (asset_type, code, timeframe)
+        )
+    """,
+    ALPHA_TRIGGER_CANDIDATE_TABLE: """
+        CREATE TABLE IF NOT EXISTS alpha_trigger_candidate (
+            candidate_nk TEXT PRIMARY KEY,
+            instrument TEXT NOT NULL,
+            signal_date DATE NOT NULL,
+            asof_date DATE NOT NULL,
+            trigger_family TEXT NOT NULL,
+            trigger_type TEXT NOT NULL,
+            pattern_code TEXT NOT NULL,
+            family_code TEXT NOT NULL,
+            trigger_strength DOUBLE NOT NULL DEFAULT 0,
+            detect_reason TEXT NOT NULL,
+            skip_reason TEXT,
+            price_context_json TEXT NOT NULL DEFAULT '{}',
+            structure_context_json TEXT NOT NULL DEFAULT '{}',
+            detector_trace_json TEXT NOT NULL DEFAULT '{}',
+            source_filter_snapshot_nk TEXT,
+            source_structure_snapshot_nk TEXT,
+            source_price_fingerprint TEXT NOT NULL DEFAULT '{}',
+            detector_contract_version TEXT,
+            first_seen_run_id TEXT,
+            last_materialized_run_id TEXT,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """,
+    ALPHA_PAS_TRIGGER_RUN_CANDIDATE_TABLE: """
+        CREATE TABLE IF NOT EXISTS alpha_pas_trigger_run_candidate (
+            run_id TEXT NOT NULL,
+            candidate_nk TEXT NOT NULL,
+            materialization_action TEXT NOT NULL,
+            trigger_type TEXT NOT NULL,
+            family_code TEXT NOT NULL,
+            recorded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (run_id, candidate_nk)
+        )
+    """,
     ALPHA_TRIGGER_RUN_TABLE: """
         CREATE TABLE IF NOT EXISTS alpha_trigger_run (
             run_id TEXT PRIMARY KEY,
@@ -307,6 +411,88 @@ ALPHA_LEDGER_DDL: Final[dict[str, str]] = {
 
 
 ALPHA_FORMAL_SIGNAL_REQUIRED_COLUMNS: Final[dict[str, dict[str, str]]] = {
+    ALPHA_PAS_TRIGGER_RUN_TABLE: {
+        "run_id": "TEXT",
+        "runner_name": "TEXT",
+        "runner_version": "TEXT",
+        "run_status": "TEXT",
+        "signal_start_date": "DATE",
+        "signal_end_date": "DATE",
+        "bounded_instrument_count": "BIGINT",
+        "candidate_scope_count": "BIGINT",
+        "materialized_candidate_count": "BIGINT",
+        "source_filter_table": "TEXT",
+        "source_structure_table": "TEXT",
+        "source_price_table": "TEXT",
+        "source_adjust_method": "TEXT",
+        "detector_contract_version": "TEXT",
+        "started_at": "TIMESTAMP",
+        "completed_at": "TIMESTAMP",
+        "summary_json": "TEXT",
+        "notes": "TEXT",
+    },
+    ALPHA_PAS_TRIGGER_WORK_QUEUE_TABLE: {
+        "queue_nk": "TEXT",
+        "scope_nk": "TEXT",
+        "asset_type": "TEXT",
+        "code": "TEXT",
+        "timeframe": "TEXT",
+        "dirty_reason": "TEXT",
+        "replay_start_bar_dt": "DATE",
+        "replay_confirm_until_dt": "DATE",
+        "source_fingerprint": "TEXT",
+        "queue_status": "TEXT",
+        "enqueued_at": "TIMESTAMP",
+        "claimed_at": "TIMESTAMP",
+        "completed_at": "TIMESTAMP",
+        "first_seen_run_id": "TEXT",
+        "last_claimed_run_id": "TEXT",
+        "last_materialized_run_id": "TEXT",
+        "updated_at": "TIMESTAMP",
+    },
+    ALPHA_PAS_TRIGGER_CHECKPOINT_TABLE: {
+        "asset_type": "TEXT",
+        "code": "TEXT",
+        "timeframe": "TEXT",
+        "last_completed_bar_dt": "DATE",
+        "tail_start_bar_dt": "DATE",
+        "tail_confirm_until_dt": "DATE",
+        "source_fingerprint": "TEXT",
+        "last_run_id": "TEXT",
+        "updated_at": "TIMESTAMP",
+    },
+    ALPHA_TRIGGER_CANDIDATE_TABLE: {
+        "candidate_nk": "TEXT",
+        "instrument": "TEXT",
+        "signal_date": "DATE",
+        "asof_date": "DATE",
+        "trigger_family": "TEXT",
+        "trigger_type": "TEXT",
+        "pattern_code": "TEXT",
+        "family_code": "TEXT",
+        "trigger_strength": "DOUBLE",
+        "detect_reason": "TEXT",
+        "skip_reason": "TEXT",
+        "price_context_json": "TEXT",
+        "structure_context_json": "TEXT",
+        "detector_trace_json": "TEXT",
+        "source_filter_snapshot_nk": "TEXT",
+        "source_structure_snapshot_nk": "TEXT",
+        "source_price_fingerprint": "TEXT",
+        "detector_contract_version": "TEXT",
+        "first_seen_run_id": "TEXT",
+        "last_materialized_run_id": "TEXT",
+        "created_at": "TIMESTAMP",
+        "updated_at": "TIMESTAMP",
+    },
+    ALPHA_PAS_TRIGGER_RUN_CANDIDATE_TABLE: {
+        "run_id": "TEXT",
+        "candidate_nk": "TEXT",
+        "materialization_action": "TEXT",
+        "trigger_type": "TEXT",
+        "family_code": "TEXT",
+        "recorded_at": "TIMESTAMP",
+    },
     ALPHA_TRIGGER_RUN_TABLE: {
         "run_id": "TEXT",
         "runner_name": "TEXT",
@@ -514,6 +700,16 @@ def bootstrap_alpha_trigger_ledger(
     finally:
         if owns_connection:
             conn.close()
+
+
+def bootstrap_alpha_pas_trigger_ledger(
+    settings: WorkspaceRoots | None = None,
+    *,
+    connection: duckdb.DuckDBPyConnection | None = None,
+) -> tuple[str, ...]:
+    """创建 `alpha PAS detector` 表族与官方 candidate 输出表。"""
+
+    return bootstrap_alpha_trigger_ledger(settings, connection=connection)
 
 
 def bootstrap_alpha_formal_signal_ledger(

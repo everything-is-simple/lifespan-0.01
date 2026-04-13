@@ -1,16 +1,14 @@
-# 卡片目录
-
+# 执行卡目录
 日期：`2026-04-09`
 状态：`持续更新`
 
-1. 当前下一锚：`100-trade-signal-anchor-contract-freeze-card-20260411.md`
-2. 当前待施工卡：`100-trade-signal-anchor-contract-freeze-card-20260411.md`
-3. 正式主线剩余卡：`6`
+1. 当前下一锚：`42-alpha-family-role-and-malf-alignment-card-20260413.md`
+2. 当前待施工卡：`42-alpha-family-role-and-malf-alignment-card-20260413.md`
+3. 正式主线剩余卡：`7`
 4. 可选 Sidecar 剩余卡：`0`
-5. 后置修复剩余卡：`0`
+5. 历史治理 backlog：`0`
 
-## 正式卡目录
-
+## 正式执行卡
 1. `01-governance-tooling-and-environment-bootstrap-card-20260409.md`
 2. `02-shared-ledger-contract-and-pytest-path-fix-card-20260409.md`
 3. `03-doc-first-gating-checker-card-20260409.md`
@@ -51,6 +49,8 @@
 38. `38-structure-filter-mainline-legacy-malf-semantic-purge-card-20260413.md`
 39. `39-mainline-local-ledger-standardization-bootstrap-card-20260413.md`
 40. `40-mainline-local-ledger-incremental-sync-and-resume-card-20260413.md`
+41. `41-alpha-pas-five-trigger-canonical-detector-card-20260413.md`
+42. `42-alpha-family-role-and-malf-alignment-card-20260413.md`
 100. `100-trade-signal-anchor-contract-freeze-card-20260411.md`
 101. `101-position-entry-t-plus-1-open-reference-price-correction-card-20260411.md`
 102. `102-trade-exit-pnl-ledger-bootstrap-card-20260411.md`
@@ -59,25 +59,25 @@
 105. `105-system-runtime-orchestration-bootstrap-card-20260411.md`
 
 ## 当前说明
+1. 最新生效结论锚点已推进到 `41-alpha-pas-five-trigger-canonical-detector-conclusion-20260413.md`。
+2. `41-alpha-pas-five-trigger-canonical-detector-card-20260413.md` 已收口；在进入 `100` 前，主线继续新增 `42-alpha-family-role-and-malf-alignment-card-20260413.md`。
+3. `41` 已完成，当前继续处于 `41-99` 的 alpha/PAS 收口阶段，再回到 `100-105`。
+4. 当前卡组排序调整为 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39 -> 40 -> 41 -> 42 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。
 
-1. 最新生效结论锚点已推进到 `40-mainline-local-ledger-incremental-sync-and-resume-conclusion-20260413.md`。
-2. `40-mainline-local-ledger-incremental-sync-and-resume-card-20260413.md` 已收口，当前具体待施工卡切回 `100-trade-signal-anchor-contract-freeze-card-20260411.md`。
-3. `38-40` 已作为 `100-105` 之前的数据治理前置卡组收口；`100-105` 恢复为后续 trade/system 卡组。
-4. 当前卡组排序保持 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39 -> 40 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。
-
-## 卡组顺序图
-
+## 卡组路线图
 ```mermaid
 flowchart LR
-    G01["01-06 治理入口"] --> P07["07-09 position"]
+    G01["01-06 治理与入口"] --> P07["07-09 position"]
     P07 --> A10["10-13 alpha/structure/filter"]
     A10 --> T14["14-15 portfolio_plan/trade"]
     T14 --> D16["16-25 data/malf/system"]
     D16 --> M29["29-35 malf canonical downstream"]
     M29 --> M36["36 wave life sidecar"]
-    M36 --> G37["37 system governance 清账"]
+    M36 --> G37["37 system governance"]
     G37 --> P38["38 structure/filter purge"]
     P38 --> D39["39 ledger standardization"]
     D39 --> D40["40 incremental sync/resume"]
-    D40 --> POST["100-105 trade/system 恢复"]
+    D40 --> A41["41 alpha PAS detector"]
+    A41 --> A42["42 alpha family role"]
+    A42 --> POST["100-105 trade/system 收口"]
 ```

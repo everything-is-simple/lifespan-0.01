@@ -103,6 +103,7 @@ flowchart LR
   - 正式脚本入口保持不变；实现允许拆分到 `src/mlq/malf/wave_life_runner.py` 与同目录 helper 模块 `wave_life_shared.py / wave_life_source.py / wave_life_materialization.py`，用于满足治理文件长度约束而不改变外部契约。
 - `scripts/structure/run_structure_snapshot_build.py`
 - `scripts/filter/run_filter_snapshot_build.py`
+- `scripts/alpha/run_alpha_pas_five_trigger_build.py`
 - `scripts/alpha/run_alpha_trigger_ledger_build.py`
 - `scripts/alpha/run_alpha_family_build.py`
 - `scripts/alpha/run_alpha_formal_signal_build.py`
@@ -126,7 +127,7 @@ flowchart LR
   - `malf -> structure -> filter -> alpha` 默认消费 `adjust_method='backward'`
   - `position -> trade` 默认消费 `adjust_method='none'`
   - `forward` 当前只作研究与展示保留
-- 当前最新生效结论锚点已推进到 `40-mainline-local-ledger-incremental-sync-and-resume-conclusion-20260413.md`：`40` 已完成主线官方 ledger 的每日增量同步、checkpoint / dirty queue / replay 与 freshness audit 收口；当前正式施工卡已切回 `100-trade-signal-anchor-contract-freeze-card-20260411.md`
+- 当前最新生效结论锚点已推进到 `41-alpha-pas-five-trigger-canonical-detector-conclusion-20260413.md`：`41` 已完成 alpha PAS 五触发 canonical detector；当前待施工卡切到 `42-alpha-family-role-and-malf-alignment-card-20260413.md`，继续先冻结 alpha family role 与 malf 协同语义，再回到 `100`
 - `txt -> raw_market -> market_base` 继续保留为正式 fallback
 
 ## 当前 malf 正式口径

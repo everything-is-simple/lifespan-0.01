@@ -58,6 +58,7 @@ formal_runner_scripts = [
     "scripts/malf/run_malf_snapshot_build.py",
     "scripts/malf/run_malf_mechanism_build.py",
     "scripts/malf/run_malf_wave_life_build.py",
+    "scripts/alpha/run_alpha_pas_five_trigger_build.py",
     "scripts/alpha/run_alpha_trigger_ledger_build.py",
     "scripts/alpha/run_alpha_family_build.py",
     "scripts/structure/run_structure_snapshot_build.py",

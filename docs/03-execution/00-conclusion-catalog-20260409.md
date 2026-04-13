@@ -1,9 +1,9 @@
 # 结论目录
 
-日期：`2026-04-09`
-状态：`持续更新`
+`日期：2026-04-09`
+`状态：生效`
 
-当前最新生效结论锚点：`37-system-governance-historical-debt-backlog-burndown-conclusion-20260412.md`
+当前最新生效结论锚点：`41-alpha-pas-five-trigger-canonical-detector-conclusion-20260413.md`
 
 ## 正式结论目录
 
@@ -44,6 +44,10 @@
 35. `35-downstream-data-grade-checkpoint-alignment-after-malf-conclusion-20260412.md`
 36. `36-malf-wave-life-probability-sidecar-bootstrap-conclusion-20260412.md`
 37. `37-system-governance-historical-debt-backlog-burndown-conclusion-20260412.md`
+38. `38-structure-filter-mainline-legacy-malf-semantic-purge-conclusion-20260413.md`
+39. `39-mainline-local-ledger-standardization-bootstrap-conclusion-20260413.md`
+40. `40-mainline-local-ledger-incremental-sync-and-resume-conclusion-20260413.md`
+41. `41-alpha-pas-five-trigger-canonical-detector-conclusion-20260413.md`
 100. `100-trade-signal-anchor-contract-freeze-conclusion-20260411.md`
 101. `101-position-entry-t-plus-1-open-reference-price-correction-conclusion-20260411.md`
 102. `102-trade-exit-pnl-ledger-bootstrap-conclusion-20260411.md`
@@ -51,38 +55,35 @@
 104. `104-mainline-real-data-smoke-regression-conclusion-20260411.md`
 105. `105-system-runtime-orchestration-bootstrap-conclusion-20260411.md`
 
-## 当前说明
+## 主线状态
 
-1. `37` 已成为当前最新生效结论锚点。
-2. `37` 已完成收口，当前待施工卡已切换到 `100`。
-3. `29-37` 已完成并生效，`malf` downstream + sidecar 与系统治理清账卡组均已收口。
-4. `100-105` 顺延为后续 trade/system 卡组。
+1. `41` 已成为当前最新生效结论锚点。
+2. `41` 已收口后，当前待施工卡已前推到 `42`。
+3. `29-41` 已完成 canonical malf downstream + PAS detector 收口，但 alpha family / trade/system 仍未完成。
+4. `42` 完成后再回到 `100-105` 的 trade/system 卡组。
 
-## 卡组进度图
+## 图示
 
 ```mermaid
 flowchart LR
-    subgraph 治理地基
-        C01[01-06 治理/路线图]
+    subgraph GOV["01-06 治理与路线"]
+        C01["01-06"]
     end
-    subgraph 主链建立
-        C07[07-15 position→trade]
+    subgraph MAIN["07-15 position / alpha / trade 骨架"]
+        C07["07-15"]
     end
-    subgraph data强化
-        C16[16-22 data/raw/base]
+    subgraph DATA["16-22 data / raw / base"]
+        C16["16-22"]
     end
-    subgraph malf收口
-        C23[23-32 malf canonical]
+    subgraph MALF["23-32 canonical malf"]
+        C23["23-32"]
     end
-    subgraph malf下游主线
-        C33[33-36 downstream+sidecar]
+    subgraph DOWN["33-41 downstream + alpha detector"]
+        C33["33-41"]
     end
-    subgraph 治理清账
-        C37[37 system governance]
+    subgraph NEXT["42 + 100-105"]
+        C42["42 alpha family"]
+        C100["100-105 trade/system"]
     end
-    subgraph 后置恢复
-        C100[100-105 trade/system]
-    end
-    治理地基 --> 主链建立 --> data强化 --> malf收口 --> malf下游主线 --> 治理清账 --> 后置恢复
-```
+    GOV --> MAIN --> DATA --> MALF --> DOWN --> NEXT
 ```
