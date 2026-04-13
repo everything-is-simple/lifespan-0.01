@@ -45,7 +45,7 @@ system_tracker_files = [
     "docs/02-spec/β-system-roadmap-and-progress-tracker-spec-20260409.md",
     "docs/02-spec/Ω-system-delivery-roadmap-20260409.md",
 ]
-# 当前最新生效结论已推进到 42；`42` 已完成 alpha family role 与 canonical malf 协同语义收口。系统路线图现以 `28` 为统一 data-grade 基线，并插入 `43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55` 作为进入 `trade` 前的 upstream A 级前置卡组；只有 `55` 接受后才恢复 `100 -> 105` trade/system 卡组，其中 `100` 冻结 signal anchor、`102` 补齐 exit/pnl 账本、`103` 交付 trade progression queue/checkpoint/freshness、`105` 再升级 system orchestration；`position / trade` 的正式执行口径继续固定为 `adjust_method='none'`。
+# 当前最新生效结论已推进到 44；`44` 已完成 structure/filter official ledger replay/smoke 硬化，当前待施工卡前移到 `45`。系统路线图现以 `28` 为统一 data-grade 基线，并顺排进入 `45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55` 作为进入 `trade` 前的 upstream A 级前置卡组；只有 `55` 接受后才恢复 `100 -> 105` trade/system 卡组，其中 `100` 冻结 signal anchor、`102` 补齐 exit/pnl 账本、`103` 交付 trade progression queue/checkpoint/freshness、`105` 再升级 system orchestration；`position / trade` 的正式执行口径继续固定为 `adjust_method='none'`。
 # `37` 卡的 pytest 证据统一按串行命令执行，避免多个进程争用 `H:/Lifespan-temp/pytest-tmp`。
 formal_runner_scripts = [
     "scripts/data/run_tdx_asset_raw_ingest.py",

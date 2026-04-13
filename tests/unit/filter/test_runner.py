@@ -9,7 +9,11 @@ import duckdb
 import pytest
 
 from mlq.core.paths import default_settings
-from mlq.filter import filter_ledger_path, run_filter_snapshot_build
+from mlq.filter import (
+    bootstrap_filter_snapshot_ledger,
+    filter_ledger_path,
+    run_filter_snapshot_build,
+)
 from mlq.structure import bootstrap_structure_snapshot_ledger, connect_structure_ledger
 
 
@@ -159,6 +163,16 @@ def _seed_structure_checkpoints(structure_path: Path, rows: list[tuple[object, .
                 """,
                 row,
             )
+    finally:
+        conn.close()
+
+
+def _downgrade_filter_legacy_official_db(settings) -> None:
+    conn = duckdb.connect(str(settings.databases.filter))
+    try:
+        bootstrap_filter_snapshot_ledger(settings, connection=conn)
+        conn.execute("DROP TABLE IF EXISTS filter_work_queue")
+        conn.execute("DROP TABLE IF EXISTS filter_checkpoint")
     finally:
         conn.close()
 
@@ -453,6 +467,67 @@ def test_run_filter_snapshot_build_uses_checkpoint_queue_by_default(
     assert queue_row == ("completed",)
     assert checkpoint_row == ("filter-snapshot-test-queue-001b", date(2026, 4, 8), date(2026, 4, 8))
     assert snapshot_row == ("\u718a\u9006", "filter-snapshot-test-queue-001b")
+
+
+def test_run_filter_snapshot_build_bootstraps_queue_tables_on_legacy_official_db(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+    _seed_structure_snapshots(settings)
+    _seed_context_rows(settings.databases.malf)
+    _seed_structure_checkpoints(
+        settings.databases.structure,
+        [
+            ("stock", "000001.SZ", "D", "2026-04-08", "2026-04-08", "2026-04-08", "structure-source-legacy-a", "structure-run-legacy-a"),
+            ("stock", "000002.SZ", "D", "2026-04-08", "2026-04-08", "2026-04-08", "structure-source-legacy-a", "structure-run-legacy-a"),
+        ],
+    )
+    _downgrade_filter_legacy_official_db(settings)
+
+    summary = run_filter_snapshot_build(
+        settings=settings,
+        run_id="filter-snapshot-test-legacy-001",
+    )
+
+    assert summary.execution_mode == "checkpoint_queue"
+    assert summary.queue_enqueued_count == 2
+    assert summary.queue_claimed_count == 2
+    assert summary.checkpoint_upserted_count == 2
+
+    conn = duckdb.connect(str(filter_ledger_path(settings)), read_only=True)
+    try:
+        queue_table = conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM information_schema.tables
+            WHERE table_schema = 'main'
+              AND table_name = 'filter_work_queue'
+            """
+        ).fetchone()
+        checkpoint_table = conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM information_schema.tables
+            WHERE table_schema = 'main'
+              AND table_name = 'filter_checkpoint'
+            """
+        ).fetchone()
+        checkpoint_count = conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM filter_checkpoint
+            WHERE timeframe = 'D'
+            """
+        ).fetchone()
+    finally:
+        conn.close()
+
+    assert queue_table == (1,)
+    assert checkpoint_table == (1,)
+    assert checkpoint_count == (2,)
 
 
 def test_run_filter_snapshot_build_rejects_legacy_bridge_source_tables(

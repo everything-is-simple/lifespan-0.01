@@ -3,7 +3,7 @@
 `日期：2026-04-09`
 `状态：生效`
 
-当前最新生效结论锚点：`43-structure-filter-alpha-data-grade-quality-gate-before-position-conclusion-20260413.md`
+当前最新生效结论锚点：`44-structure-filter-official-ledger-replay-smoke-hardening-conclusion-20260413.md`
 
 ## 正式结论目录
 
@@ -62,9 +62,9 @@
 
 ## 主线状态
 
-1. `43` 已成为当前最新生效结论锚点。
-2. `43` 已正式裁决“允许继续 `44 -> 46`，但不得直接进入 `47 -> 55 / 100 -> 105`”；当前待施工卡切到 `44`。
-3. `29-43` 已完成 canonical malf downstream + PAS detector + alpha family + pre-position quality gate 收口。
+1. `44` 已成为当前最新生效结论锚点。
+2. `44` 已正式裁决 `structure / filter` 的 official-ledger replay / smoke 已硬化完成；当前待施工卡切到 `45`。
+3. `29-44` 已完成 canonical malf downstream + PAS detector + alpha family + pre-position quality gate + official ledger hardening 收口。
 4. 只有 `46` 接受后，当前主线才允许进入 `47 -> 55`；只有 `55` 接受后，才恢复 `100-105` 的 trade/system 卡组。
 
 ## 图示

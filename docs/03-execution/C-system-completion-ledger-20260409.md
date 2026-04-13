@@ -2,9 +2,9 @@
 日期：`2026-04-09`
 状态：`持续更新`
 
-1. 当前下一锤：`44-structure-filter-official-ledger-replay-smoke-hardening-card-20260413.md`
-2. 当前待施工卡：`44-structure-filter-official-ledger-replay-smoke-hardening-card-20260413.md`
-3. 正式主线剩余卡：`18`
+1. 当前下一锤：`45-alpha-formal-signal-producer-hardening-before-position-card-20260413.md`
+2. 当前待施工卡：`45-alpha-formal-signal-producer-hardening-before-position-card-20260413.md`
+3. 正式主线剩余卡：`17`
 4. 可选 Sidecar 剩余卡：`0`
 5. backlog：`0`
 
@@ -22,12 +22,13 @@
 11. 主线本地正式 ledger 每日增量同步、断点续跑与 freshness audit 卡`40`
 12. `alpha family role / canonical malf alignment` 卡`42`
 13. `pre-position data-grade quality gate` 卡`43`
+14. `structure / filter official ledger replay / smoke hardening` 卡`44`
 
 ## 当前阶段
-1. 最新生效结论锚点已推进到 `43-structure-filter-alpha-data-grade-quality-gate-before-position-conclusion-20260413.md`。
-2. `43` 已完成 pre-position data-grade 质量门槛裁决：允许继续 `44 -> 46`，但不允许直接进入 `47 -> 55 / 100 -> 105`。
-3. 当前主线已从“定义上游质量门槛”切换到“补齐上游 official ledger hardening 与 integrated acceptance”阶段。
-4. 当前主线待施工卡已前移到 `44-structure-filter-official-ledger-replay-smoke-hardening-card-20260413.md`；只有 `46` 接受后，才允许进入 `47 -> 55`，只有 `55` 接受后，才恢复 `100-105`。
+1. 最新生效结论锚点已推进到 `44-structure-filter-official-ledger-replay-smoke-hardening-conclusion-20260413.md`。
+2. `44` 已完成 `structure / filter` official ledger replay / smoke 硬化，并允许继续进入 `45`。
+3. 当前主线已从“structure/filter official ledger hardening”切换到“alpha formal signal producer hardening + integrated acceptance”阶段。
+4. 当前主线待施工卡已前移到 `45-alpha-formal-signal-producer-hardening-before-position-card-20260413.md`；只有 `46` 接受后，才允许进入 `47 -> 55`，只有 `55` 接受后，才恢复 `100-105`。
 
 ## 完成阶段图
 ```mermaid

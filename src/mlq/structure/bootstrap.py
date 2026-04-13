@@ -239,6 +239,31 @@ STRUCTURE_REQUIRED_COLUMNS: Final[dict[str, dict[str, str]]] = {
     },
 }
 
+STRUCTURE_SNAPSHOT_REQUIRED_VALUE_COLUMNS: Final[tuple[str, ...]] = (
+    "structure_snapshot_nk",
+    "instrument",
+    "signal_date",
+    "asof_date",
+    "major_state",
+    "trend_direction",
+    "reversal_stage",
+    "wave_id",
+    "current_hh_count",
+    "current_ll_count",
+    "structure_progress_state",
+    "source_context_nk",
+    "structure_contract_version",
+    "first_seen_run_id",
+    "last_materialized_run_id",
+)
+
+STRUCTURE_RUN_SNAPSHOT_REQUIRED_VALUE_COLUMNS: Final[tuple[str, ...]] = (
+    "run_id",
+    "structure_snapshot_nk",
+    "materialization_action",
+    "structure_progress_state",
+)
+
 
 def connect_structure_ledger(
     settings: WorkspaceRoots | None = None,
@@ -266,6 +291,8 @@ def bootstrap_structure_snapshot_ledger(
     try:
         for ddl in STRUCTURE_LEDGER_DDL.values():
             conn.execute(ddl)
+        if _standardize_structure_snapshot_table(conn):
+            _standardize_structure_run_snapshot_table(conn, force_rebuild=True)
         for table_name, column_map in STRUCTURE_REQUIRED_COLUMNS.items():
             _ensure_columns(conn, table_name=table_name, required_columns=column_map)
         return STRUCTURE_LEDGER_TABLE_NAMES
@@ -301,3 +328,130 @@ def _ensure_columns(
         if column_name in existing_columns:
             continue
         connection.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}")
+
+
+def _standardize_structure_snapshot_table(connection: duckdb.DuckDBPyConnection) -> bool:
+    if not _table_exists(connection, STRUCTURE_SNAPSHOT_TABLE):
+        return False
+    existing_columns = _list_columns(connection, STRUCTURE_SNAPSHOT_TABLE)
+    unexpected_columns = {
+        column_name
+        for column_name in existing_columns
+        if column_name not in STRUCTURE_REQUIRED_COLUMNS[STRUCTURE_SNAPSHOT_TABLE]
+    }
+    missing_required_value_columns = {
+        column_name
+        for column_name in STRUCTURE_SNAPSHOT_REQUIRED_VALUE_COLUMNS
+        if column_name not in existing_columns
+    }
+    if not unexpected_columns and not missing_required_value_columns:
+        return False
+
+    transferable_columns = [
+        column_name
+        for column_name in STRUCTURE_REQUIRED_COLUMNS[STRUCTURE_SNAPSHOT_TABLE]
+        if column_name in existing_columns
+    ]
+    temp_table_name = f"{STRUCTURE_SNAPSHOT_TABLE}__canonicalized"
+    connection.execute(f"DROP TABLE IF EXISTS {temp_table_name}")
+    connection.execute(_build_table_ddl(STRUCTURE_SNAPSHOT_TABLE, temp_table_name))
+    if not missing_required_value_columns and transferable_columns:
+        transfer_predicate = " AND ".join(
+            f"{column_name} IS NOT NULL" for column_name in STRUCTURE_SNAPSHOT_REQUIRED_VALUE_COLUMNS
+        )
+        transferable_sql = ", ".join(transferable_columns)
+        connection.execute(
+            f"""
+            INSERT INTO {temp_table_name} ({transferable_sql})
+            SELECT {transferable_sql}
+            FROM {STRUCTURE_SNAPSHOT_TABLE}
+            WHERE {transfer_predicate}
+            """
+        )
+    connection.execute(f"DROP TABLE {STRUCTURE_SNAPSHOT_TABLE}")
+    connection.execute(f"ALTER TABLE {temp_table_name} RENAME TO {STRUCTURE_SNAPSHOT_TABLE}")
+    return True
+
+
+def _standardize_structure_run_snapshot_table(
+    connection: duckdb.DuckDBPyConnection,
+    *,
+    force_rebuild: bool = False,
+) -> None:
+    if not _table_exists(connection, STRUCTURE_RUN_SNAPSHOT_TABLE):
+        return
+    existing_columns = _list_columns(connection, STRUCTURE_RUN_SNAPSHOT_TABLE)
+    unexpected_columns = {
+        column_name
+        for column_name in existing_columns
+        if column_name not in STRUCTURE_REQUIRED_COLUMNS[STRUCTURE_RUN_SNAPSHOT_TABLE]
+    }
+    missing_required_value_columns = {
+        column_name
+        for column_name in STRUCTURE_RUN_SNAPSHOT_REQUIRED_VALUE_COLUMNS
+        if column_name not in existing_columns
+    }
+    if not force_rebuild and not unexpected_columns and not missing_required_value_columns:
+        return
+
+    transferable_columns = [
+        column_name
+        for column_name in STRUCTURE_REQUIRED_COLUMNS[STRUCTURE_RUN_SNAPSHOT_TABLE]
+        if column_name in existing_columns
+    ]
+    temp_table_name = f"{STRUCTURE_RUN_SNAPSHOT_TABLE}__canonicalized"
+    connection.execute(f"DROP TABLE IF EXISTS {temp_table_name}")
+    connection.execute(_build_table_ddl(STRUCTURE_RUN_SNAPSHOT_TABLE, temp_table_name))
+    if not missing_required_value_columns and transferable_columns:
+        transfer_predicate = " AND ".join(
+            f"legacy.{column_name} IS NOT NULL"
+            for column_name in STRUCTURE_RUN_SNAPSHOT_REQUIRED_VALUE_COLUMNS
+        )
+        transferable_sql = ", ".join(f"legacy.{column_name}" for column_name in transferable_columns)
+        connection.execute(
+            f"""
+            INSERT INTO {temp_table_name} ({", ".join(transferable_columns)})
+            SELECT {transferable_sql}
+            FROM {STRUCTURE_RUN_SNAPSHOT_TABLE} AS legacy
+            INNER JOIN {STRUCTURE_SNAPSHOT_TABLE} AS snapshot
+                ON snapshot.structure_snapshot_nk = legacy.structure_snapshot_nk
+            WHERE {transfer_predicate}
+            """
+        )
+    connection.execute(f"DROP TABLE {STRUCTURE_RUN_SNAPSHOT_TABLE}")
+    connection.execute(f"ALTER TABLE {temp_table_name} RENAME TO {STRUCTURE_RUN_SNAPSHOT_TABLE}")
+
+
+def _table_exists(connection: duckdb.DuckDBPyConnection, table_name: str) -> bool:
+    row = connection.execute(
+        """
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = 'main'
+          AND table_name = ?
+        """,
+        [table_name],
+    ).fetchone()
+    return row is not None
+
+
+def _list_columns(connection: duckdb.DuckDBPyConnection, table_name: str) -> tuple[str, ...]:
+    rows = connection.execute(
+        """
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_schema = 'main'
+          AND table_name = ?
+        ORDER BY ordinal_position
+        """,
+        [table_name],
+    ).fetchall()
+    return tuple(str(row[0]) for row in rows)
+
+
+def _build_table_ddl(template_table_name: str, actual_table_name: str) -> str:
+    return STRUCTURE_LEDGER_DDL[template_table_name].replace(
+        f"CREATE TABLE IF NOT EXISTS {template_table_name}",
+        f"CREATE TABLE {actual_table_name}",
+        1,
+    )

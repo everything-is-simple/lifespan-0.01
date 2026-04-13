@@ -139,7 +139,7 @@ flowchart LR
 1. `malf -> structure -> filter -> alpha` 默认使用 `adjust_method = backward`
 2. `position -> trade` 默认使用 `adjust_method = none`
 3. `adjust_method = forward` 当前只作为研究与展示保留，不作为正式执行口径
-4. 当前最新生效结论锚点已推进到 `42-alpha-family-role-and-malf-alignment-conclusion-20260413.md`；它已裁决 alpha family role 与 canonical malf 协同语义已收口。当前正式施工位已前移到 `43-structure-filter-alpha-data-grade-quality-gate-before-position-card-20260413.md`；其中 `29-42` 已完成并生效，`43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55` 成为进入 `trade` 前的前置卡组，`100-105` 退回到通过 `55` 之后才允许恢复的 trade/system 卡组。
+4. 当前最新生效结论锚点已推进到 `44-structure-filter-official-ledger-replay-smoke-hardening-conclusion-20260413.md`；它已裁决 `structure / filter` 的 official ledger replay / smoke 已完成硬化。当前正式施工位已前移到 `45-alpha-formal-signal-producer-hardening-before-position-card-20260413.md`；其中 `29-44` 已完成并生效，`45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55` 成为进入 `trade` 前的前置卡组，`100-105` 退回到通过 `55` 之后才允许恢复的 trade/system 卡组。
 5. 当前主线系统级路线图必须以 `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 为准；该文档已把 `structure -> filter -> alpha -> position -> portfolio_plan` 识别为当前后半部最薄弱链段，并把 `43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55` 固定为进入 `trade` 前的前置卡组，不允许再仅凭旧宽表口径判断模块成熟度。
 
 ## 5. 历史账本原则
@@ -199,7 +199,7 @@ flowchart LR
 只要治理规则、环境脚手架、路径契约、测试入口、执行入口发生变化，就必须同步刷新这三个入口文件。
 其中 `docs/01-design/`、`docs/02-spec/` 与 `src/mlq/core/paths.py` 的正式口径变化，也视为入口变化。
 全仓 `python scripts/system/check_development_governance.py` 盘点允许通过 `scripts/system/development_governance_legacy_backlog.py` 显式登记历史债务；但按改动路径触发的严格治理检查，不得豁免新增违规。
-当前 `40` 施工已经收口，历史硬超长 backlog 与目标超长 backlog 均已清零；当前正式施工位前移到 `43`，并顺排进入 `44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55`，只有 `55` 接受后才恢复 `100-105`。每解决一项都必须同步回填 card / evidence / record / conclusion，并从 backlog 台账移除。
+当前 `44` 施工已经收口，历史硬超长 backlog 与目标超长 backlog 均已清零；当前正式施工位前移到 `45`，并顺排进入 `46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55`，只有 `55` 接受后才恢复 `100-105`。每解决一项都必须同步回填 card / evidence / record / conclusion，并从 backlog 台账移除。
 当前已完成的清债包括 `src/mlq/system/runner.py`、`src/mlq/trade/runner.py`、`src/mlq/alpha/trigger_runner.py`、`src/mlq/filter/runner.py`、`src/mlq/malf/mechanism_runner.py`、`src/mlq/malf/canonical_runner.py`、`src/mlq/structure/runner.py`、`src/mlq/alpha/runner.py`、`src/mlq/data/runner.py`、`tests/unit/data/test_data_runner.py`、`src/mlq/data/bootstrap.py`、`src/mlq/malf/runner.py`、`src/mlq/malf/bootstrap.py`、`src/mlq/alpha/family_runner.py`、`src/mlq/position/bootstrap.py` 与 `docs/03-execution/37-system-governance-historical-debt-backlog-burndown-card-20260412.md`；本卡后续 `pytest` 证据统一按串行口径执行，避免多个进程争用 `H:\Lifespan-temp\pytest-tmp`。
 
 ## 8. 文档规则

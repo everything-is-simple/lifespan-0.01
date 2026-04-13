@@ -9,7 +9,11 @@ import duckdb
 import pytest
 
 from mlq.core.paths import default_settings
-from mlq.structure import run_structure_snapshot_build, structure_ledger_path
+from mlq.structure import (
+    bootstrap_structure_snapshot_ledger,
+    run_structure_snapshot_build,
+    structure_ledger_path,
+)
 
 
 def _clear_workspace_env(monkeypatch) -> None:
@@ -174,6 +178,100 @@ def _seed_canonical_malf_checkpoints(
                 """,
                 row,
             )
+    finally:
+        conn.close()
+
+
+def _downgrade_structure_legacy_official_db(settings) -> None:
+    settings.databases.structure.parent.mkdir(parents=True, exist_ok=True)
+    conn = duckdb.connect(str(settings.databases.structure))
+    try:
+        bootstrap_structure_snapshot_ledger(settings, connection=conn)
+        conn.execute("DROP TABLE IF EXISTS structure_work_queue")
+        conn.execute("DROP TABLE IF EXISTS structure_checkpoint")
+        conn.execute("DROP TABLE IF EXISTS structure_snapshot")
+        conn.execute(
+            """
+            CREATE TABLE structure_snapshot (
+                structure_snapshot_nk TEXT PRIMARY KEY,
+                instrument TEXT NOT NULL,
+                signal_date DATE NOT NULL,
+                asof_date DATE NOT NULL,
+                malf_context_4 TEXT NOT NULL,
+                lifecycle_rank_high BIGINT NOT NULL,
+                lifecycle_rank_total BIGINT NOT NULL,
+                new_high_count BIGINT NOT NULL,
+                new_low_count BIGINT NOT NULL,
+                refresh_density DOUBLE NOT NULL,
+                advancement_density DOUBLE NOT NULL,
+                is_failed_extreme BOOLEAN NOT NULL,
+                failure_type TEXT,
+                structure_progress_state TEXT NOT NULL,
+                source_context_nk TEXT NOT NULL,
+                structure_contract_version TEXT NOT NULL,
+                first_seen_run_id TEXT NOT NULL,
+                last_materialized_run_id TEXT NOT NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        conn.execute(
+            """
+            INSERT INTO structure_snapshot (
+                structure_snapshot_nk,
+                instrument,
+                signal_date,
+                asof_date,
+                malf_context_4,
+                lifecycle_rank_high,
+                lifecycle_rank_total,
+                new_high_count,
+                new_low_count,
+                refresh_density,
+                advancement_density,
+                is_failed_extreme,
+                failure_type,
+                structure_progress_state,
+                source_context_nk,
+                structure_contract_version,
+                first_seen_run_id,
+                last_materialized_run_id
+            )
+            VALUES (
+                'legacy-structure-001',
+                'LEGACY.SZ',
+                '2026-04-01',
+                '2026-04-01',
+                'legacy-context',
+                1,
+                2,
+                1,
+                0,
+                0.5,
+                0.5,
+                FALSE,
+                NULL,
+                'advancing',
+                'legacy-context-001',
+                'structure-snapshot-v1',
+                'legacy-run-a',
+                'legacy-run-a'
+            )
+            """
+        )
+        conn.execute("DELETE FROM structure_run_snapshot")
+        conn.execute(
+            """
+            INSERT INTO structure_run_snapshot (
+                run_id,
+                structure_snapshot_nk,
+                materialization_action,
+                structure_progress_state
+            )
+            VALUES ('legacy-run-a', 'legacy-structure-001', 'inserted', 'advancing')
+            """
+        )
     finally:
         conn.close()
 
@@ -545,6 +643,105 @@ def test_run_structure_snapshot_build_uses_checkpoint_queue_by_default(
     assert queue_row == ("completed",)
     assert checkpoint_row == ("structure-snapshot-test-queue-001b", date(2026, 3, 31), date(2026, 4, 8))
     assert snapshot_row == ("\u718a\u9006", "structure-snapshot-test-queue-001b")
+
+
+def test_run_structure_snapshot_build_bootstraps_queue_tables_on_legacy_official_db(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+    _seed_canonical_malf_state_rows(
+        settings.databases.malf,
+        [
+            ("state-d-legacy-001", "CARD44.SZ", "D", "2026-04-08", "\u725b\u987a", "up", "none", 7, 2, 0),
+            ("state-w-legacy-001", "CARD44.SZ", "W", "2026-04-04", "\u725b\u987a", "up", "expand", 3, 1, 0),
+            ("state-m-legacy-001", "CARD44.SZ", "M", "2026-03-31", "\u725b\u9006", "down", "trigger", 1, 0, 1),
+        ],
+    )
+    _seed_canonical_malf_checkpoints(
+        settings.databases.malf,
+        [
+            ("stock", "CARD44.SZ", "D", "2026-04-08", "2026-04-08", "2026-04-08", 7, "malf-run-legacy"),
+            ("stock", "CARD44.SZ", "W", "2026-04-04", "2026-04-04", "2026-04-04", 3, "malf-run-legacy"),
+            ("stock", "CARD44.SZ", "M", "2026-03-31", "2026-03-31", "2026-03-31", 1, "malf-run-legacy"),
+        ],
+    )
+    _downgrade_structure_legacy_official_db(settings)
+
+    summary = run_structure_snapshot_build(
+        settings=settings,
+        run_id="structure-snapshot-test-legacy-001",
+    )
+
+    assert summary.execution_mode == "checkpoint_queue"
+    assert summary.queue_enqueued_count == 1
+    assert summary.queue_claimed_count == 1
+    assert summary.checkpoint_upserted_count == 1
+
+    conn = duckdb.connect(str(structure_ledger_path(settings)), read_only=True)
+    try:
+        queue_table = conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM information_schema.tables
+            WHERE table_schema = 'main'
+              AND table_name = 'structure_work_queue'
+            """
+        ).fetchone()
+        checkpoint_table = conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM information_schema.tables
+            WHERE table_schema = 'main'
+              AND table_name = 'structure_checkpoint'
+            """
+        ).fetchone()
+        checkpoint_row = conn.execute(
+            """
+            SELECT last_run_id
+            FROM structure_checkpoint
+            WHERE code = 'CARD44.SZ' AND timeframe = 'D'
+            """
+        ).fetchone()
+        legacy_column = conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM information_schema.columns
+            WHERE table_schema = 'main'
+              AND table_name = 'structure_snapshot'
+              AND column_name = 'malf_context_4'
+            """
+        ).fetchone()
+        snapshot_rows = conn.execute(
+            """
+            SELECT instrument
+            FROM structure_snapshot
+            ORDER BY instrument
+            """
+        ).fetchall()
+        run_snapshot_rows = conn.execute(
+            """
+            SELECT run_id, structure_snapshot_nk
+            FROM structure_run_snapshot
+            ORDER BY run_id, structure_snapshot_nk
+            """
+        ).fetchall()
+    finally:
+        conn.close()
+
+    assert queue_table == (1,)
+    assert checkpoint_table == (1,)
+    assert checkpoint_row == ("structure-snapshot-test-legacy-001",)
+    assert legacy_column == (0,)
+    assert snapshot_rows == [("CARD44.SZ",)]
+    assert run_snapshot_rows == [
+        (
+            "structure-snapshot-test-legacy-001",
+            "CARD44.SZ|2026-04-08|2026-04-08|state-d-legacy-001|structure-snapshot-v2",
+        )
+    ]
 
 
 def test_run_structure_snapshot_build_rejects_legacy_bridge_source_tables(

@@ -15,9 +15,9 @@
 
 1. 历史账本硬约束来自 `docs/01-design/03-historical-ledger-shared-contract-charter-20260409.md`
 2. 全系统统一治理基线来自 `28-system-wide-checkpoint-and-dirty-queue-alignment-conclusion-20260411.md`
-3. 当前最新生效结论锚点为 `43-structure-filter-alpha-data-grade-quality-gate-before-position-conclusion-20260413.md`
-4. 当前待施工卡为 `44-structure-filter-official-ledger-replay-smoke-hardening-card-20260413.md`
-5. 当前连续前置卡组为 `44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55`
+3. 当前最新生效结论锚点为 `44-structure-filter-official-ledger-replay-smoke-hardening-conclusion-20260413.md`
+4. 当前待施工卡为 `45-alpha-formal-signal-producer-hardening-before-position-card-20260413.md`
+5. 当前连续前置卡组为 `45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55`
 
 ## 当前正式判断
 
@@ -25,9 +25,9 @@
    `data -> malf -> structure -> filter -> alpha -> position -> portfolio_plan -> trade -> system`
 2. `28` 已把 `checkpoint + dirty/work queue + replay/resume + audit` 冻结为全系统统一 data-grade 基线。
 3. `29 -> 32` 已验证“先 canonical `malf`，再 data-grade runner，再 downstream rebind，再 truthfulness revalidation”是正确路径。
-4. `33 -> 43` 已完成 canonical downstream 清理、checkpoint 对齐、本地 ledger 标准化、增量续跑、PAS detector、family role 与 pre-position quality gate 收口。
+4. `33 -> 44` 已完成 canonical downstream 清理、checkpoint 对齐、本地 ledger 标准化、增量续跑、PAS detector、family role、pre-position quality gate 与 official ledger hardening 收口。
 5. 当前后半部最薄弱链段已经从 `malf` 上游切换到：
-   `structure -> filter -> alpha -> position`
+   `alpha -> position`
 
 ## 当前施工摘要
 
@@ -37,12 +37,12 @@
 2. `07-15` `position / alpha / portfolio_plan / trade` 最小骨架
 3. `16-28` `data / malf / system` 官方桥接与统一基线
 4. `29-32` canonical `malf` 优先卡组
-5. `33-42` canonical downstream 稳定化与 `alpha` 收口
+5. `33-44` canonical downstream 稳定化、quality gate 与 official ledger hardening
 
 ### 当前阶段
 
-1. 当前 active 卡：`44`
-2. 当前 active 卡组：`44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`
+1. 当前 active 卡：`45`
+2. 当前 active 卡组：`45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`
 3. 当前系统级目标：先把 `data -> portfolio_plan` 的质量抬到统一的全 A baseline，再决定是否恢复 `trade -> system`
 
 ## 系统当前剖面图
@@ -56,8 +56,8 @@ flowchart LR
     subgraph ALIGNED["已对齐区域"]
         DATA["data\nCanonical data-grade\n39/40 已冻结官方 ledger + 增量续跑"]
         MALF["malf\nCanonical data-grade\n29/30/36 已形成 core + sidecar"]
-        STR["structure\nCanonical downstream\n31/35/38 已完成 canonical rebind + queue"]
-        FLT["filter\nCanonical downstream\n31/35/38 已完成 canonical rebind + queue"]
+        STR["structure\nOfficial ledger hardening accepted\n31/35/38/44 已完成 canonical rebind + replay smoke"]
+        FLT["filter\nOfficial ledger hardening accepted\n31/35/38/44 已完成 canonical rebind + replay smoke"]
     end
 
     subgraph PARTIAL["部分对齐区域"]
@@ -204,8 +204,8 @@ flowchart TD
 ### `structure`
 
 - 当前状态：`主线已接`
-- 实现深度：`Canonical downstream`
-- 成熟度：`B+`
+- 实现深度：`Official ledger hardening accepted`
+- 成熟度：`A-`
 - 实体锚点：
   `asset_type + code + timeframe='D'`
 - 业务自然键对齐：
@@ -219,15 +219,15 @@ flowchart TD
 - 审计账本：
   `structure_run / snapshot / run_snapshot`
 - 当前结论：
-  `31 / 35 / 38` 已完成 canonical rebind、queue/checkpoint 对齐与 legacy `malf` purge
+  `31 / 35 / 38 / 44` 已完成 canonical rebind、queue/checkpoint 对齐、legacy `malf` purge 与 official copy replay/smoke 硬化
 - 后续动作：
-  维持 canonical 主线输入；后续若扩 event / trace，仍需服从 `35` 的 data-grade 边界
+  保持 canonical 主线输入；后续聚焦 `45` 的 `alpha formal signal` producer 稳定性
 
 ### `filter`
 
 - 当前状态：`主线已接`
-- 实现深度：`Canonical downstream`
-- 成熟度：`B+`
+- 实现深度：`Official ledger hardening accepted`
+- 成熟度：`A-`
 - 实体锚点：
   `asset_type + code + timeframe='D'`
 - 业务自然键对齐：
@@ -241,9 +241,9 @@ flowchart TD
 - 审计账本：
   `filter_run / snapshot / run_snapshot`
 - 当前结论：
-  `31 / 35 / 38` 已完成 canonical rebind、queue/checkpoint 对齐与 bridge-era purge
+  `31 / 35 / 38 / 44` 已完成 canonical rebind、queue/checkpoint 对齐、bridge-era purge 与 official copy replay/smoke 硬化
 - 后续动作：
-  保持 pre-trigger 边界，不把 `alpha / position / trade` 决策混回 `filter`
+  保持 pre-trigger 边界，等待 `45/46` 把 `alpha` 与 integrated acceptance 收口
 
 ### `alpha`
 
