@@ -2,7 +2,7 @@
 
 卡片编号：`40`
 日期：`2026-04-13`
-状态：`草稿`
+状态：`已完成`
 
 ## 需求
 
@@ -27,6 +27,7 @@
 1. 冻结每日增量输入来源与同步顺序。
 2. 补齐 checkpoint / dirty queue / replay / last freshness readout。
 3. 为至少一条主线链路跑通增量同步与断点恢复证据。
+4. 把当前正式施工卡切回 `100-trade-signal-anchor-contract-freeze-card-20260411.md`。
 
 ## 任务结构图
 

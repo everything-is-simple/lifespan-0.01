@@ -6,6 +6,13 @@ from mlq.data.data_market_base_runner import (
     run_asset_market_base_build,
     run_market_base_build,
 )
+from mlq.data.data_mainline_incremental_sync import (
+    MainlineLocalLedgerIncrementalSyncSummary,
+    bootstrap_mainline_local_ledger_sync_control,
+    connect_mainline_local_ledger_sync_control,
+    mainline_local_ledger_sync_control_path,
+    run_mainline_local_ledger_incremental_sync,
+)
 from mlq.data.data_mainline_standardization import (
     MainlineLocalLedgerStandardizationSummary,
     run_mainline_local_ledger_standardization_bootstrap,
@@ -23,11 +30,16 @@ from mlq.data.data_shared import (
 from mlq.data.data_tdxquant import run_tdxquant_daily_raw_sync
 
 __all__ = [
+    "MainlineLocalLedgerIncrementalSyncSummary",
     "MainlineLocalLedgerStandardizationSummary",
     "MarketBaseBuildSummary",
     "TdxQuantDailyRawSyncSummary",
     "TdxStockRawIngestSummary",
+    "bootstrap_mainline_local_ledger_sync_control",
+    "connect_mainline_local_ledger_sync_control",
+    "mainline_local_ledger_sync_control_path",
     "mark_base_instrument_dirty",
+    "run_mainline_local_ledger_incremental_sync",
     "run_mainline_local_ledger_standardization_bootstrap",
     "run_asset_market_base_build",
     "run_market_base_build",
