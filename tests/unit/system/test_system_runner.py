@@ -1,4 +1,4 @@
-"""覆盖 `system` 主链 bounded acceptance readout / audit bootstrap。"""
+"""覆盖 `system` 主链 bounded readout。"""
 
 from __future__ import annotations
 
@@ -42,20 +42,6 @@ def _seed_malf_sources(settings) -> None:
     try:
         conn.execute(
             """
-            CREATE TABLE pas_context_snapshot (
-                entity_code TEXT NOT NULL,
-                signal_date DATE NOT NULL,
-                asof_date DATE NOT NULL,
-                source_context_nk TEXT NOT NULL,
-                malf_context_4 TEXT NOT NULL,
-                lifecycle_rank_high BIGINT NOT NULL,
-                lifecycle_rank_total BIGINT NOT NULL,
-                calc_date DATE NOT NULL
-            )
-            """
-        )
-        conn.execute(
-            """
             CREATE TABLE malf_state_snapshot (
                 snapshot_nk TEXT NOT NULL,
                 asset_type TEXT NOT NULL,
@@ -68,21 +54,6 @@ def _seed_malf_sources(settings) -> None:
                 wave_id BIGINT NOT NULL,
                 current_hh_count BIGINT NOT NULL,
                 current_ll_count BIGINT NOT NULL
-            )
-            """
-        )
-        conn.execute(
-            """
-            CREATE TABLE structure_candidate_snapshot (
-                instrument TEXT NOT NULL,
-                signal_date DATE NOT NULL,
-                asof_date DATE NOT NULL,
-                new_high_count BIGINT NOT NULL,
-                new_low_count BIGINT NOT NULL,
-                refresh_density DOUBLE NOT NULL,
-                advancement_density DOUBLE NOT NULL,
-                is_failed_extreme BOOLEAN NOT NULL,
-                failure_type TEXT
             )
             """
         )
@@ -111,20 +82,8 @@ def _seed_malf_sources(settings) -> None:
         )
         conn.execute(
             """
-            INSERT INTO pas_context_snapshot VALUES
-            ('000001.SZ', '2026-04-08', '2026-04-08', 'ctx-001', 'BULL_MAINSTREAM', 1, 4, '2026-04-08')
-            """
-        )
-        conn.execute(
-            """
             INSERT INTO malf_state_snapshot VALUES
-            ('state-001', 'stock', '000001.SZ', 'D', '2026-04-08', '牛顺', 'up', 'none', 0, 1, 0)
-            """
-        )
-        conn.execute(
-            """
-            INSERT INTO structure_candidate_snapshot VALUES
-            ('000001.SZ', '2026-04-08', '2026-04-08', 2, 0, 0.8, 0.7, FALSE, NULL)
+            ('state-001', 'stock', '000001.SZ', 'D', '2026-04-08', '\u725b\u987a', 'up', 'none', 0, 1, 0)
             """
         )
         conn.execute(
@@ -212,7 +171,6 @@ def _prepare_mainline(settings) -> None:
         signal_start_date="2026-04-08",
         signal_end_date="2026-04-08",
         run_id="structure-mainline-system-001",
-        source_structure_input_table="structure_candidate_snapshot",
     )
     run_filter_snapshot_build(
         settings=settings,

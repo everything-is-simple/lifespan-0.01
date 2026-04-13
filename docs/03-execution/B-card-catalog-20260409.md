@@ -1,11 +1,11 @@
 # 卡片目录
 
-日期：`2026-04-09`  
+日期：`2026-04-09`
 状态：`持续更新`
 
-1. 当前下一锚：`100-trade-signal-anchor-contract-freeze-card-20260411.md`
-2. 当前待施工卡：`100-trade-signal-anchor-contract-freeze-card-20260411.md`
-3. 正式主线剩余卡：`6`
+1. 当前下一锚：`39-mainline-local-ledger-standardization-bootstrap-card-20260413.md`
+2. 当前待施工卡：`39-mainline-local-ledger-standardization-bootstrap-card-20260413.md`
+3. 正式主线剩余卡：`9`
 4. 可选 Sidecar 剩余卡：`0`
 5. 后置修复剩余卡：`0`
 
@@ -47,7 +47,10 @@
 34. `34-malf-multi-timeframe-downstream-consumption-card-20260411.md`
 35. `35-downstream-data-grade-checkpoint-alignment-after-malf-card-20260411.md`
 36. `36-malf-wave-life-probability-sidecar-bootstrap-card-20260411.md`
- 37. `37-system-governance-historical-debt-backlog-burndown-card-20260412.md`
+37. `37-system-governance-historical-debt-backlog-burndown-card-20260412.md`
+38. `38-structure-filter-mainline-legacy-malf-semantic-purge-card-20260413.md`
+39. `39-mainline-local-ledger-standardization-bootstrap-card-20260413.md`
+40. `40-mainline-local-ledger-incremental-sync-and-resume-card-20260413.md`
 100. `100-trade-signal-anchor-contract-freeze-card-20260411.md`
 101. `101-position-entry-t-plus-1-open-reference-price-correction-card-20260411.md`
 102. `102-trade-exit-pnl-ledger-bootstrap-card-20260411.md`
@@ -58,9 +61,9 @@
 ## 当前说明
 
 1. 最新生效结论锚点已推进到 `37-system-governance-historical-debt-backlog-burndown-conclusion-20260412.md`。
-2. 当前治理收口已完成，当前具体待施工卡已切换为 `100-trade-signal-anchor-contract-freeze-card-20260411.md`。
-3. `29-37` 已完成并生效；`100-105` 继续作为后续 trade/system 恢复卡组。
-4. 当前卡组排序保持 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。
+2. `38-structure-filter-mainline-legacy-malf-semantic-purge-card-20260413.md` 已收口，当前具体待施工卡切换为 `39-mainline-local-ledger-standardization-bootstrap-card-20260413.md`。
+3. `38-40` 作为 `alpha PAS 5` 与 `100-105` 之前的新前置卡组；当前顺序推进到 `39 -> 40`，`100-105` 顺延为后续 trade/system 恢复卡组。
+4. 当前卡组排序保持 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39 -> 40 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。
 
 ## 卡组顺序图
 
@@ -71,8 +74,10 @@ flowchart LR
     A10 --> T14["14-15 portfolio_plan/trade"]
     T14 --> D16["16-25 data/malf/system"]
     D16 --> M29["29-35 malf canonical downstream"]
-    M29 --> M35["36 malf sidecar 已完成"]
-    M35 --> G37["37 system governance 清账"]
-    G37 --> POST["100-105 trade/system 恢复"]
-```
+    M29 --> M36["36 wave life sidecar"]
+    M36 --> G37["37 system governance 清账"]
+    G37 --> P38["38 structure/filter purge"]
+    P38 --> D39["39 ledger standardization"]
+    D39 --> D40["40 incremental sync/resume"]
+    D40 --> POST["100-105 trade/system 恢复"]
 ```

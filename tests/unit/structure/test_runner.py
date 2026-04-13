@@ -6,6 +6,7 @@ from datetime import date
 from pathlib import Path
 
 import duckdb
+import pytest
 
 from mlq.core.paths import default_settings
 from mlq.structure import run_structure_snapshot_build, structure_ledger_path
@@ -29,57 +30,76 @@ def _bootstrap_repo_root(tmp_path: Path) -> Path:
     return repo_root
 
 
-def _seed_malf_inputs(
+def _seed_canonical_malf_state_rows(
     malf_path: Path,
-    *,
-    context_rows: list[tuple[object, ...]],
-    structure_rows: list[tuple[object, ...]],
+    rows: list[tuple[object, ...]],
 ) -> None:
     malf_path.parent.mkdir(parents=True, exist_ok=True)
     conn = duckdb.connect(str(malf_path))
     try:
         conn.execute(
             """
-            CREATE TABLE pas_context_snapshot (
-                entity_code TEXT NOT NULL,
-                signal_date DATE NOT NULL,
-                asof_date DATE NOT NULL,
-                source_context_nk TEXT NOT NULL,
-                malf_context_4 TEXT NOT NULL,
-                lifecycle_rank_high BIGINT NOT NULL,
-                lifecycle_rank_total BIGINT NOT NULL
+            CREATE TABLE IF NOT EXISTS malf_state_snapshot (
+                snapshot_nk TEXT NOT NULL,
+                asset_type TEXT NOT NULL,
+                code TEXT NOT NULL,
+                timeframe TEXT NOT NULL,
+                asof_bar_dt DATE NOT NULL,
+                major_state TEXT NOT NULL,
+                trend_direction TEXT NOT NULL,
+                reversal_stage TEXT NOT NULL,
+                wave_id BIGINT NOT NULL,
+                current_hh_count BIGINT NOT NULL,
+                current_ll_count BIGINT NOT NULL
             )
             """
         )
-        conn.execute(
-            """
-            CREATE TABLE structure_candidate_snapshot (
-                instrument TEXT NOT NULL,
-                signal_date DATE NOT NULL,
-                asof_date DATE NOT NULL,
-                new_high_count BIGINT NOT NULL,
-                new_low_count BIGINT NOT NULL,
-                refresh_density DOUBLE NOT NULL,
-                advancement_density DOUBLE NOT NULL,
-                is_failed_extreme BOOLEAN NOT NULL,
-                failure_type TEXT
+        for row in rows:
+            conn.execute(
+                """
+                INSERT INTO malf_state_snapshot VALUES (?, 'stock', ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                row,
             )
-            """
-        )
-        for row in context_rows:
-            conn.execute("INSERT INTO pas_context_snapshot VALUES (?, ?, ?, ?, ?, ?, ?)", row)
-        for row in structure_rows:
-            conn.execute("INSERT INTO structure_candidate_snapshot VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", row)
     finally:
         conn.close()
 
 
-def _replace_structure_inputs(malf_path: Path, rows: list[tuple[object, ...]]) -> None:
+def _update_canonical_state_row(
+    malf_path: Path,
+    *,
+    snapshot_nk: str,
+    major_state: str,
+    trend_direction: str,
+    reversal_stage: str,
+    wave_id: int,
+    current_hh_count: int,
+    current_ll_count: int,
+) -> None:
     conn = duckdb.connect(str(malf_path))
     try:
-        conn.execute("DELETE FROM structure_candidate_snapshot")
-        for row in rows:
-            conn.execute("INSERT INTO structure_candidate_snapshot VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", row)
+        conn.execute(
+            """
+            UPDATE malf_state_snapshot
+            SET
+                major_state = ?,
+                trend_direction = ?,
+                reversal_stage = ?,
+                wave_id = ?,
+                current_hh_count = ?,
+                current_ll_count = ?
+            WHERE snapshot_nk = ?
+            """,
+            [
+                major_state,
+                trend_direction,
+                reversal_stage,
+                wave_id,
+                current_hh_count,
+                current_ll_count,
+                snapshot_nk,
+            ],
+        )
     finally:
         conn.close()
 
@@ -126,41 +146,6 @@ def _seed_malf_sidecars(malf_path: Path) -> None:
         conn.close()
 
 
-def _seed_canonical_malf_state_rows(
-    malf_path: Path,
-    rows: list[tuple[object, ...]],
-) -> None:
-    malf_path.parent.mkdir(parents=True, exist_ok=True)
-    conn = duckdb.connect(str(malf_path))
-    try:
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS malf_state_snapshot (
-                snapshot_nk TEXT NOT NULL,
-                asset_type TEXT NOT NULL,
-                code TEXT NOT NULL,
-                timeframe TEXT NOT NULL,
-                asof_bar_dt DATE NOT NULL,
-                major_state TEXT NOT NULL,
-                trend_direction TEXT NOT NULL,
-                reversal_stage TEXT NOT NULL,
-                wave_id BIGINT NOT NULL,
-                current_hh_count BIGINT NOT NULL,
-                current_ll_count BIGINT NOT NULL
-            )
-            """
-        )
-        for row in rows:
-            conn.execute(
-                """
-                INSERT INTO malf_state_snapshot VALUES (?, 'stock', ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                row,
-            )
-    finally:
-        conn.close()
-
-
 def _seed_canonical_malf_checkpoints(
     malf_path: Path,
     rows: list[tuple[object, ...]],
@@ -193,22 +178,18 @@ def _seed_canonical_malf_checkpoints(
         conn.close()
 
 
-def test_run_structure_snapshot_build_materializes_run_snapshot_and_bridge(
+def test_run_structure_snapshot_build_materializes_run_snapshot_from_canonical(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
     _clear_workspace_env(monkeypatch)
     repo_root = _bootstrap_repo_root(tmp_path)
     settings = default_settings(repo_root=repo_root)
-    _seed_malf_inputs(
+    _seed_canonical_malf_state_rows(
         settings.databases.malf,
-        context_rows=[
-            ("000001.SZ", "2026-04-08", "2026-04-08", "ctx-001", "BULL_MAINSTREAM", 1, 4),
-            ("000002.SZ", "2026-04-08", "2026-04-08", "ctx-002", "BEAR_MAINSTREAM", 0, 4),
-        ],
-        structure_rows=[
-            ("000001.SZ", "2026-04-08", "2026-04-08", 2, 0, 0.7, 0.6, False, None),
-            ("000002.SZ", "2026-04-08", "2026-04-08", 0, 1, 0.0, 0.0, True, "failed_extreme"),
+        [
+            ("snap-d-001", "000001.SZ", "D", "2026-04-08", "\u725b\u987a", "up", "none", 7, 2, 0),
+            ("snap-d-002", "000002.SZ", "D", "2026-04-08", "\u718a\u987a", "down", "expand", 9, 0, 1),
         ],
     )
 
@@ -219,8 +200,6 @@ def test_run_structure_snapshot_build_materializes_run_snapshot_and_bridge(
         limit=10,
         batch_size=1,
         run_id="structure-snapshot-test-001",
-        source_context_table="pas_context_snapshot",
-        source_structure_input_table="structure_candidate_snapshot",
     )
 
     assert summary.candidate_input_count == 2
@@ -253,7 +232,7 @@ def test_run_structure_snapshot_build_materializes_run_snapshot_and_bridge(
             ORDER BY instrument
             """
         ).fetchall()
-        bridge_rows = conn.execute(
+        run_snapshot_rows = conn.execute(
             """
             SELECT structure_snapshot_nk, materialization_action
             FROM structure_run_snapshot
@@ -266,27 +245,24 @@ def test_run_structure_snapshot_build_materializes_run_snapshot_and_bridge(
 
     assert run_row == ("completed", 2)
     assert snapshot_rows == [
-        ("000001.SZ", "牛顺", "up", "none", 1, 0, "advancing", "ctx-001"),
-        ("000002.SZ", "熊顺", "down", "none", 0, 0, "failed", "ctx-002"),
+        ("000001.SZ", "\u725b\u987a", "up", "none", 2, 0, "advancing", "snap-d-001"),
+        ("000002.SZ", "\u718a\u987a", "down", "expand", 0, 1, "failed", "snap-d-002"),
     ]
-    assert len(bridge_rows) == 2
-    assert {row[1] for row in bridge_rows} == {"inserted"}
+    assert len(run_snapshot_rows) == 2
+    assert {row[1] for row in run_snapshot_rows} == {"inserted"}
 
 
-def test_run_structure_snapshot_build_marks_rematerialized_when_structure_changes(
+def test_run_structure_snapshot_build_marks_rematerialized_when_canonical_state_changes(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
     _clear_workspace_env(monkeypatch)
     repo_root = _bootstrap_repo_root(tmp_path)
     settings = default_settings(repo_root=repo_root)
-    _seed_malf_inputs(
+    _seed_canonical_malf_state_rows(
         settings.databases.malf,
-        context_rows=[
-            ("000001.SZ", "2026-04-08", "2026-04-08", "ctx-101", "BULL_MAINSTREAM", 1, 4),
-        ],
-        structure_rows=[
-            ("000001.SZ", "2026-04-08", "2026-04-08", 1, 0, 0.4, 0.3, False, None),
+        [
+            ("snap-d-101", "000001.SZ", "D", "2026-04-08", "\u725b\u987a", "up", "none", 7, 1, 0),
         ],
     )
 
@@ -295,22 +271,24 @@ def test_run_structure_snapshot_build_marks_rematerialized_when_structure_change
         signal_start_date="2026-04-08",
         signal_end_date="2026-04-08",
         run_id="structure-snapshot-test-002a",
-        source_context_table="pas_context_snapshot",
-        source_structure_input_table="structure_candidate_snapshot",
     )
     assert first_summary.inserted_count == 1
 
-    _replace_structure_inputs(
+    _update_canonical_state_row(
         settings.databases.malf,
-        [("000001.SZ", "2026-04-08", "2026-04-08", 0, 1, 0.0, 0.0, True, "failed_extreme")],
+        snapshot_nk="snap-d-101",
+        major_state="\u725b\u9006",
+        trend_direction="down",
+        reversal_stage="trigger",
+        wave_id=7,
+        current_hh_count=0,
+        current_ll_count=1,
     )
     second_summary = run_structure_snapshot_build(
         settings=settings,
         signal_start_date="2026-04-08",
         signal_end_date="2026-04-08",
         run_id="structure-snapshot-test-002b",
-        source_context_table="pas_context_snapshot",
-        source_structure_input_table="structure_candidate_snapshot",
     )
 
     assert second_summary.rematerialized_count == 1
@@ -325,7 +303,7 @@ def test_run_structure_snapshot_build_marks_rematerialized_when_structure_change
             WHERE instrument = '000001.SZ'
             """
         ).fetchone()
-        bridge_row = conn.execute(
+        run_snapshot_row = conn.execute(
             """
             SELECT materialization_action
             FROM structure_run_snapshot
@@ -335,8 +313,8 @@ def test_run_structure_snapshot_build_marks_rematerialized_when_structure_change
     finally:
         conn.close()
 
-    assert snapshot_row == ("failed", "牛顺", "structure-snapshot-test-002b")
-    assert bridge_row == ("rematerialized",)
+    assert snapshot_row == ("failed", "\u725b\u9006", "structure-snapshot-test-002b")
+    assert run_snapshot_row == ("rematerialized",)
 
 
 def test_run_structure_snapshot_build_attaches_sidecar_fields_without_rewriting_progress(
@@ -346,13 +324,10 @@ def test_run_structure_snapshot_build_attaches_sidecar_fields_without_rewriting_
     _clear_workspace_env(monkeypatch)
     repo_root = _bootstrap_repo_root(tmp_path)
     settings = default_settings(repo_root=repo_root)
-    _seed_malf_inputs(
+    _seed_canonical_malf_state_rows(
         settings.databases.malf,
-        context_rows=[
-            ("000001.SZ", "2026-04-08", "2026-04-08", "ctx-301", "BULL_MAINSTREAM", 1, 4),
-        ],
-        structure_rows=[
-            ("000001.SZ", "2026-04-08", "2026-04-08", 2, 0, 0.8, 0.7, False, None),
+        [
+            ("snap-d-301", "000001.SZ", "D", "2026-04-08", "\u725b\u987a", "up", "none", 7, 2, 0),
         ],
     )
     _seed_malf_sidecars(settings.databases.malf)
@@ -362,8 +337,6 @@ def test_run_structure_snapshot_build_attaches_sidecar_fields_without_rewriting_
         signal_start_date="2026-04-08",
         signal_end_date="2026-04-08",
         run_id="structure-snapshot-test-003",
-        source_context_table="pas_context_snapshot",
-        source_structure_input_table="structure_candidate_snapshot",
     )
 
     assert summary.materialized_snapshot_count == 1
@@ -399,9 +372,9 @@ def test_run_structure_snapshot_build_materializes_read_only_weekly_monthly_cont
     _seed_canonical_malf_state_rows(
         settings.databases.malf,
         [
-            ("state-d-001", "000001.SZ", "D", "2026-04-08", "牛顺", "up", "none", 7, 2, 0),
-            ("state-w-001", "000001.SZ", "W", "2026-04-04", "牛顺", "up", "expand", 3, 1, 0),
-            ("state-m-001", "000001.SZ", "M", "2026-03-31", "牛逆", "down", "trigger", 1, 0, 1),
+            ("state-d-001", "000001.SZ", "D", "2026-04-08", "\u725b\u987a", "up", "none", 7, 2, 0),
+            ("state-w-001", "000001.SZ", "W", "2026-04-04", "\u725b\u987a", "up", "expand", 3, 1, 0),
+            ("state-m-001", "000001.SZ", "M", "2026-03-31", "\u725b\u9006", "down", "trigger", 1, 0, 1),
         ],
     )
 
@@ -419,7 +392,7 @@ def test_run_structure_snapshot_build_materializes_read_only_weekly_monthly_cont
             """
             UPDATE malf_state_snapshot
             SET
-                major_state = '熊逆',
+                major_state = '\u718a\u9006',
                 trend_direction = 'down',
                 reversal_stage = 'trigger',
                 current_hh_count = 0,
@@ -462,13 +435,13 @@ def test_run_structure_snapshot_build_materializes_read_only_weekly_monthly_cont
         conn.close()
 
     assert snapshot_row == (
-        "牛顺",
-        "牛顺",
+        "\u725b\u987a",
+        "\u725b\u987a",
         "state-d-001",
-        "牛顺",
+        "\u725b\u987a",
         "expand",
         "state-w-001",
-        "熊逆",
+        "\u718a\u9006",
         "trigger",
         "state-m-001",
         "structure-snapshot-test-004b",
@@ -485,9 +458,9 @@ def test_run_structure_snapshot_build_uses_checkpoint_queue_by_default(
     _seed_canonical_malf_state_rows(
         settings.databases.malf,
         [
-            ("state-d-q1", "000001.SZ", "D", "2026-04-08", "牛顺", "up", "none", 7, 2, 0),
-            ("state-w-q1", "000001.SZ", "W", "2026-04-04", "牛顺", "up", "expand", 3, 1, 0),
-            ("state-m-q1", "000001.SZ", "M", "2026-03-31", "牛逆", "down", "trigger", 1, 0, 1),
+            ("state-d-q1", "000001.SZ", "D", "2026-04-08", "\u725b\u987a", "up", "none", 7, 2, 0),
+            ("state-w-q1", "000001.SZ", "W", "2026-04-04", "\u725b\u987a", "up", "expand", 3, 1, 0),
+            ("state-m-q1", "000001.SZ", "M", "2026-03-31", "\u725b\u9006", "down", "trigger", 1, 0, 1),
         ],
     )
     _seed_canonical_malf_checkpoints(
@@ -514,7 +487,7 @@ def test_run_structure_snapshot_build_uses_checkpoint_queue_by_default(
             """
             UPDATE malf_state_snapshot
             SET
-                major_state = '熊逆',
+                major_state = '\u718a\u9006',
                 trend_direction = 'down',
                 reversal_stage = 'trigger',
                 current_hh_count = 0,
@@ -571,4 +544,28 @@ def test_run_structure_snapshot_build_uses_checkpoint_queue_by_default(
 
     assert queue_row == ("completed",)
     assert checkpoint_row == ("structure-snapshot-test-queue-001b", date(2026, 3, 31), date(2026, 4, 8))
-    assert snapshot_row == ("熊逆", "structure-snapshot-test-queue-001b")
+    assert snapshot_row == ("\u718a\u9006", "structure-snapshot-test-queue-001b")
+
+
+def test_run_structure_snapshot_build_rejects_legacy_bridge_source_tables(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+    _seed_canonical_malf_state_rows(
+        settings.databases.malf,
+        [
+            ("state-d-reject-001", "000001.SZ", "D", "2026-04-08", "\u725b\u987a", "up", "none", 7, 1, 0),
+        ],
+    )
+
+    with pytest.raises(ValueError, match="structure mainline only accepts canonical"):
+        run_structure_snapshot_build(
+            settings=settings,
+            signal_start_date="2026-04-08",
+            signal_end_date="2026-04-08",
+            run_id="structure-snapshot-test-reject-001",
+            source_context_table="pas_context_snapshot",
+        )

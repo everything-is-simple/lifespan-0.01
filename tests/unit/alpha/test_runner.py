@@ -66,20 +66,6 @@ def _seed_malf_sources(
     try:
         conn.execute(
             """
-            CREATE TABLE pas_context_snapshot (
-                entity_code TEXT NOT NULL,
-                signal_date DATE NOT NULL,
-                asof_date DATE NOT NULL,
-                source_context_nk TEXT NOT NULL,
-                malf_context_4 TEXT NOT NULL,
-                lifecycle_rank_high BIGINT NOT NULL,
-                lifecycle_rank_total BIGINT NOT NULL,
-                calc_date DATE NOT NULL
-            )
-            """
-        )
-        conn.execute(
-            """
             CREATE TABLE malf_state_snapshot (
                 snapshot_nk TEXT NOT NULL,
                 asset_type TEXT NOT NULL,
@@ -95,23 +81,7 @@ def _seed_malf_sources(
             )
             """
         )
-        conn.execute(
-            """
-            CREATE TABLE structure_candidate_snapshot (
-                instrument TEXT NOT NULL,
-                signal_date DATE NOT NULL,
-                asof_date DATE NOT NULL,
-                new_high_count BIGINT NOT NULL,
-                new_low_count BIGINT NOT NULL,
-                refresh_density DOUBLE NOT NULL,
-                advancement_density DOUBLE NOT NULL,
-                is_failed_extreme BOOLEAN NOT NULL,
-                failure_type TEXT
-            )
-            """
-        )
         for row in context_rows:
-            conn.execute("INSERT INTO pas_context_snapshot VALUES (?, ?, ?, ?, ?, ?, ?, ?)", row)
             context_code = str(row[4])
             lifecycle_rank_high = int(row[5])
             if context_code == "BULL_MAINSTREAM":
@@ -144,8 +114,6 @@ def _seed_malf_sources(
                 """,
                 row,
             )
-        for row in structure_rows:
-            conn.execute("INSERT INTO structure_candidate_snapshot VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", row)
     finally:
         conn.close()
 
@@ -153,9 +121,48 @@ def _seed_malf_sources(
 def _replace_structure_source(malf_path: Path, rows: list[tuple[object, ...]]) -> None:
     conn = duckdb.connect(str(malf_path))
     try:
-        conn.execute("DELETE FROM structure_candidate_snapshot")
         for row in rows:
-            conn.execute("INSERT INTO structure_candidate_snapshot VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", row)
+            instrument = str(row[0])
+            signal_date = row[2]
+            new_high_count = int(row[3])
+            new_low_count = int(row[4])
+            is_failed_extreme = bool(row[7])
+            failure_type = None if row[8] is None else str(row[8])
+            if is_failed_extreme or failure_type is not None:
+                major_state = "\u725b\u9006"
+                trend_direction = "down"
+                reversal_stage = "trigger"
+                current_hh_count = 0
+                current_ll_count = max(1, new_low_count)
+            else:
+                major_state = "\u725b\u987a"
+                trend_direction = "up"
+                reversal_stage = "none"
+                current_hh_count = max(1, new_high_count)
+                current_ll_count = 0
+            conn.execute(
+                """
+                UPDATE malf_state_snapshot
+                SET
+                    major_state = ?,
+                    trend_direction = ?,
+                    reversal_stage = ?,
+                    current_hh_count = ?,
+                    current_ll_count = ?
+                WHERE code = ?
+                  AND timeframe = 'D'
+                  AND asof_bar_dt = ?
+                """,
+                [
+                    major_state,
+                    trend_direction,
+                    reversal_stage,
+                    current_hh_count,
+                    current_ll_count,
+                    instrument,
+                    signal_date,
+                ],
+            )
     finally:
         conn.close()
 
@@ -186,7 +193,6 @@ def _materialize_official_upstream(settings, *, suffix: str) -> None:
         signal_start_date="2026-04-08",
         signal_end_date="2026-04-08",
         run_id=f"structure-upstream-alpha-test-{suffix}",
-        source_structure_input_table="structure_candidate_snapshot",
     )
     run_filter_snapshot_build(
         settings=settings,

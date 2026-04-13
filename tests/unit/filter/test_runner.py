@@ -6,6 +6,7 @@ from datetime import date
 from pathlib import Path
 
 import duckdb
+import pytest
 
 from mlq.core.paths import default_settings
 from mlq.filter import filter_ledger_path, run_filter_snapshot_build
@@ -81,18 +82,20 @@ def _seed_structure_snapshots(settings) -> None:
             )
             VALUES
                 (
-                    'ss-001', '000001.SZ', '2026-04-08', '2026-04-08', '牛顺', 'up', 'expand', 7, 2, 0,
-                    '牛顺', 'up', 'expand', 7, 2, 0, 'ctx-d-001',
-                    '牛顺', 'up', 'none', 3, 1, 0, 'ctx-w-001',
-                    '牛逆', 'down', 'trigger', 1, 0, 1, 'ctx-m-001',
-                    'advancing', 'confirmed', 'break-001', 'stats-001', 'high', 'elevated', 'ctx-001', 'structure-snapshot-v2', 'run-a', 'run-a'
+                    'ss-001', '000001.SZ', '2026-04-08', '2026-04-08', '\u725b\u987a', 'up', 'expand', 7, 2, 0,
+                    '\u725b\u987a', 'up', 'expand', 7, 2, 0, 'ctx-d-001',
+                    '\u725b\u987a', 'up', 'none', 3, 1, 0, 'ctx-w-001',
+                    '\u725b\u9006', 'down', 'trigger', 1, 0, 1, 'ctx-m-001',
+                    'advancing', 'confirmed', 'break-001', 'stats-001', 'high', 'elevated', 'ctx-001',
+                    'structure-snapshot-v2', 'run-a', 'run-a'
                 ),
                 (
-                    'ss-002', '000002.SZ', '2026-04-08', '2026-04-08', '熊顺', 'down', 'expand', 9, 0, 1,
-                    '熊顺', 'down', 'expand', 9, 0, 1, 'ctx-d-002',
+                    'ss-002', '000002.SZ', '2026-04-08', '2026-04-08', '\u718a\u987a', 'down', 'expand', 9, 0, 1,
+                    '\u718a\u987a', 'down', 'expand', 9, 0, 1, 'ctx-d-002',
                     NULL, NULL, NULL, NULL, NULL, NULL, NULL,
                     NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                    'failed', NULL, NULL, NULL, NULL, NULL, 'ctx-002', 'structure-snapshot-v2', 'run-a', 'run-a'
+                    'failed', NULL, NULL, NULL, NULL, NULL, 'ctx-002',
+                    'structure-snapshot-v2', 'run-a', 'run-a'
                 )
             """
         )
@@ -124,7 +127,7 @@ def _seed_context_rows(malf_path: Path) -> None:
         conn.execute(
             """
             INSERT INTO malf_state_snapshot VALUES
-            ('state-001', 'stock', '000001.SZ', 'D', '2026-04-08', '牛顺', 'up', 'expand', 7, 2, 0)
+            ('state-001', 'stock', '000001.SZ', 'D', '2026-04-08', '\u725b\u987a', 'up', 'expand', 7, 2, 0)
             """
         )
     finally:
@@ -237,7 +240,7 @@ def test_run_filter_snapshot_build_marks_rematerialized_when_structure_turns_fai
             UPDATE structure_snapshot
             SET
                 structure_progress_state = 'failed',
-                major_state = '熊顺',
+                major_state = '\u718a\u987a',
                 trend_direction = 'down',
                 last_materialized_run_id = 'run-b'
             WHERE structure_snapshot_nk = 'ss-001'
@@ -308,9 +311,9 @@ def test_run_filter_snapshot_build_copies_read_only_multi_timeframe_context_with
     assert first_row == (
         True,
         "ctx-d-001",
-        "牛顺",
-        "牛逆",
-        "canonical_context=牛顺/up/expand; read_only_context=W:牛顺/none;M:牛逆/trigger; break_confirmation=confirmed 仅 sidecar 提示; exhaustion_risk=high",
+        "\u725b\u987a",
+        "\u725b\u9006",
+        "canonical_context=\u725b\u987a/up/expand; read_only_context=W:\u725b\u987a/none;M:\u725b\u9006/trigger; break_confirmation=confirmed \u4ec5 sidecar \u63d0\u793a; exhaustion_risk=high",
     )
 
     conn = connect_structure_ledger(settings)
@@ -319,7 +322,7 @@ def test_run_filter_snapshot_build_copies_read_only_multi_timeframe_context_with
             """
             UPDATE structure_snapshot
             SET
-                monthly_major_state = '熊逆',
+                monthly_major_state = '\u718a\u9006',
                 monthly_trend_direction = 'down',
                 monthly_reversal_stage = 'trigger',
                 monthly_source_context_nk = 'ctx-m-002',
@@ -357,7 +360,7 @@ def test_run_filter_snapshot_build_copies_read_only_multi_timeframe_context_with
     finally:
         conn.close()
 
-    assert second_row == (True, None, "熊逆", "ctx-m-002", "filter-snapshot-test-003b")
+    assert second_row == (True, None, "\u718a\u9006", "ctx-m-002", "filter-snapshot-test-003b")
 
 
 def test_run_filter_snapshot_build_uses_checkpoint_queue_by_default(
@@ -392,7 +395,7 @@ def test_run_filter_snapshot_build_uses_checkpoint_queue_by_default(
             """
             UPDATE structure_snapshot
             SET
-                monthly_major_state = '熊逆',
+                monthly_major_state = '\u718a\u9006',
                 monthly_trend_direction = 'down',
                 monthly_reversal_stage = 'trigger',
                 monthly_source_context_nk = 'ctx-m-queue-002',
@@ -449,4 +452,24 @@ def test_run_filter_snapshot_build_uses_checkpoint_queue_by_default(
 
     assert queue_row == ("completed",)
     assert checkpoint_row == ("filter-snapshot-test-queue-001b", date(2026, 4, 8), date(2026, 4, 8))
-    assert snapshot_row == ("熊逆", "filter-snapshot-test-queue-001b")
+    assert snapshot_row == ("\u718a\u9006", "filter-snapshot-test-queue-001b")
+
+
+def test_run_filter_snapshot_build_rejects_legacy_bridge_source_tables(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+    _seed_structure_snapshots(settings)
+    _seed_context_rows(settings.databases.malf)
+
+    with pytest.raises(ValueError, match="filter mainline only accepts official"):
+        run_filter_snapshot_build(
+            settings=settings,
+            signal_start_date="2026-04-08",
+            signal_end_date="2026-04-08",
+            run_id="filter-snapshot-test-reject-001",
+            source_structure_table="structure_candidate_snapshot",
+        )

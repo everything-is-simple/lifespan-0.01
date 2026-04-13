@@ -214,12 +214,6 @@ def _lookup_latest_context_row(
     return rows[matched_index]
 
 
-def _is_canonical_state_table(available_columns: set[str]) -> bool:
-    return {"major_state", "trend_direction", "current_hh_count", "current_ll_count"}.issubset(
-        available_columns
-    )
-
-
 def _build_scope_nk(*, asset_type: str, code: str, timeframe: str) -> str:
     return f"{asset_type}|{code}|{timeframe}"
 
@@ -238,16 +232,6 @@ def _map_major_state_to_context_code(major_state: str) -> str:
     return mapping.get(major_state, "UNKNOWN")
 
 
-def _map_legacy_context_code_to_major_state(malf_context_4: str) -> str:
-    mapping = {
-        "BULL_MAINSTREAM": "牛顺",
-        "BULL_COUNTERTREND": "熊逆",
-        "BEAR_COUNTERTREND": "牛逆",
-        "BEAR_MAINSTREAM": "熊顺",
-    }
-    return mapping.get(malf_context_4, "牛逆")
-
-
 def _derive_trend_direction_from_major_state(major_state: str) -> str:
     if major_state in {"牛顺", "熊逆"}:
         return "up"
@@ -256,39 +240,12 @@ def _derive_trend_direction_from_major_state(major_state: str) -> str:
     return "down"
 
 
-def _derive_lifecycle_rank_high(
-    *,
-    malf_context_4: str,
-    current_hh_count: int,
-    current_ll_count: int,
-) -> int:
-    raw_rank = current_hh_count if malf_context_4.startswith("BULL_") else current_ll_count
-    return max(0, min(raw_rank, 4))
-
-
 def _derive_failure_type_from_major_state(major_state: str) -> str | None:
     if major_state == "熊顺":
         return "failed_breakdown"
     if major_state == "牛逆":
         return "failed_extreme"
     return None
-
-
-def _build_source_context_nk(
-    *,
-    instrument: str,
-    signal_date: date,
-    asof_date: date,
-    malf_context_4: str,
-) -> str:
-    return "|".join(
-        [
-            instrument,
-            signal_date.isoformat(),
-            asof_date.isoformat(),
-            malf_context_4,
-        ]
-    )
 
 
 def _build_canonical_context_nk(

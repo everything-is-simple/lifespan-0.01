@@ -1,4 +1,4 @@
-"""覆盖 26 号卡要求的整链 truthfulness 复核。"""
+"""覆盖主线 truthfulness 复核。"""
 
 from __future__ import annotations
 
@@ -41,20 +41,6 @@ def _seed_malf_sources(settings) -> None:
     try:
         conn.execute(
             """
-            CREATE TABLE pas_context_snapshot (
-                entity_code TEXT NOT NULL,
-                signal_date DATE NOT NULL,
-                asof_date DATE NOT NULL,
-                source_context_nk TEXT NOT NULL,
-                malf_context_4 TEXT NOT NULL,
-                lifecycle_rank_high BIGINT NOT NULL,
-                lifecycle_rank_total BIGINT NOT NULL,
-                calc_date DATE NOT NULL
-            )
-            """
-        )
-        conn.execute(
-            """
             CREATE TABLE malf_state_snapshot (
                 snapshot_nk TEXT NOT NULL,
                 asset_type TEXT NOT NULL,
@@ -67,21 +53,6 @@ def _seed_malf_sources(settings) -> None:
                 wave_id BIGINT NOT NULL,
                 current_hh_count BIGINT NOT NULL,
                 current_ll_count BIGINT NOT NULL
-            )
-            """
-        )
-        conn.execute(
-            """
-            CREATE TABLE structure_candidate_snapshot (
-                instrument TEXT NOT NULL,
-                signal_date DATE NOT NULL,
-                asof_date DATE NOT NULL,
-                new_high_count BIGINT NOT NULL,
-                new_low_count BIGINT NOT NULL,
-                refresh_density DOUBLE NOT NULL,
-                advancement_density DOUBLE NOT NULL,
-                is_failed_extreme BOOLEAN NOT NULL,
-                failure_type TEXT
             )
             """
         )
@@ -110,20 +81,8 @@ def _seed_malf_sources(settings) -> None:
         )
         conn.execute(
             """
-            INSERT INTO pas_context_snapshot VALUES
-            ('000001.SZ', '2026-04-08', '2026-04-08', 'ctx-001', 'BULL_MAINSTREAM', 1, 4, '2026-04-08')
-            """
-        )
-        conn.execute(
-            """
             INSERT INTO malf_state_snapshot VALUES
-            ('state-001', 'stock', '000001.SZ', 'D', '2026-04-08', '牛顺', 'up', 'none', 0, 1, 0)
-            """
-        )
-        conn.execute(
-            """
-            INSERT INTO structure_candidate_snapshot VALUES
-            ('000001.SZ', '2026-04-08', '2026-04-08', 2, 0, 0.8, 0.7, FALSE, NULL)
+            ('state-001', 'stock', '000001.SZ', 'D', '2026-04-08', '\u725b\u987a', 'up', 'none', 0, 1, 0)
             """
         )
         conn.execute(
@@ -218,7 +177,6 @@ def test_mainline_truthfulness_revalidation_runs_to_trade_with_sidecar_read_only
         signal_start_date="2026-04-08",
         signal_end_date="2026-04-08",
         run_id="structure-mainline-truthfulness-001",
-        source_structure_input_table="structure_candidate_snapshot",
     )
     filter_summary = run_filter_snapshot_build(
         settings=settings,
@@ -377,7 +335,7 @@ def test_mainline_truthfulness_revalidation_runs_to_trade_with_sidecar_read_only
     assert filter_row[3] is None
     assert filter_row[5] == "confirmed"
     assert filter_row[6] == "high"
-    assert "break_confirmation=confirmed 仅 sidecar 提示" in str(filter_row[4])
+    assert "break_confirmation=confirmed \u4ec5 sidecar \u63d0\u793a" in str(filter_row[4])
     assert "exhaustion_risk=high" in str(filter_row[4])
     assert trigger_row == (filter_row[0], filter_row[1])
     assert signal_row[0:2] == ("admitted", True)

@@ -72,6 +72,12 @@ def run_filter_snapshot_build(
     normalized_start_date = _coerce_date(signal_start_date)
     normalized_end_date = _coerce_date(signal_end_date)
     normalized_instruments = tuple(sorted({item for item in instruments or () if item}))
+    normalized_timeframe = _normalize_timeframe(source_timeframe)
+    _validate_filter_mainline_contract(
+        source_structure_table=source_structure_table,
+        source_context_table=source_context_table,
+        source_timeframe=normalized_timeframe,
+    )
     if _should_use_queue_execution(
         use_checkpoint_queue=use_checkpoint_queue,
         signal_start_date=normalized_start_date,
@@ -88,7 +94,7 @@ def run_filter_snapshot_build(
             run_id=run_id,
             source_structure_table=source_structure_table,
             source_context_table=source_context_table,
-            source_timeframe=source_timeframe,
+            source_timeframe=normalized_timeframe,
             filter_contract_version=filter_contract_version,
             runner_name=runner_name,
             runner_version=runner_version,
@@ -107,12 +113,30 @@ def run_filter_snapshot_build(
         run_id=run_id,
         source_structure_table=source_structure_table,
         source_context_table=source_context_table,
-        source_timeframe=source_timeframe,
+        source_timeframe=normalized_timeframe,
         filter_contract_version=filter_contract_version,
         runner_name=runner_name,
         runner_version=runner_version,
         summary_path=summary_path,
     )
+
+
+def _validate_filter_mainline_contract(
+    *,
+    source_structure_table: str,
+    source_context_table: str,
+    source_timeframe: str,
+) -> None:
+    if source_structure_table != DEFAULT_FILTER_STRUCTURE_TABLE:
+        raise ValueError(
+            "filter mainline only accepts official `structure_snapshot` as source_structure_table."
+        )
+    if source_context_table != DEFAULT_FILTER_CONTEXT_TABLE:
+        raise ValueError(
+            "filter mainline only accepts canonical `malf_state_snapshot` as source_context_table."
+        )
+    if source_timeframe != DEFAULT_FILTER_SOURCE_TIMEFRAME:
+        raise ValueError("filter mainline only accepts canonical timeframe `D`.")
 
 
 def _run_filter_bounded_build(

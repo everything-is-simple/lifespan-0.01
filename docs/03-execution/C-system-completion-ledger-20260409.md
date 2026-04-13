@@ -1,11 +1,11 @@
 # 系统完成账本
 
-日期：`2026-04-09`  
+日期：`2026-04-09`
 状态：`持续更新`
 
-1. 当前下一锤：`100-trade-signal-anchor-contract-freeze-card-20260411.md`
-2. 当前待施工卡：`100-trade-signal-anchor-contract-freeze-card-20260411.md`
-3. 正式主线剩余卡：`6`
+1. 当前下一锤：`39-mainline-local-ledger-standardization-bootstrap-card-20260413.md`
+2. 当前待施工卡：`39-mainline-local-ledger-standardization-bootstrap-card-20260413.md`
+3. 正式主线剩余卡：`9`
 4. 可选 Sidecar 剩余卡：`0`
 5. 后置修复剩余卡：`0`
 
@@ -23,9 +23,9 @@
 ## 当前阶段
 
 1. 最新生效结论锚点已推进到 `37-system-governance-historical-debt-backlog-burndown-conclusion-20260412.md`。
-2. 当前治理收口已完成，当前施工总卡已切换为 `100-trade-signal-anchor-contract-freeze-card-20260411.md`。
-3. `29-37` 已完成并生效；`100-105` 顺延为后续 trade/system 卡组。
-4. 当前主线待施工卡已调整为 `100-trade-signal-anchor-contract-freeze-card-20260411.md`。
+2. `38-structure-filter-mainline-legacy-malf-semantic-purge-card-20260413.md` 已完成收口并通过主线回归。
+3. `38-40` 作为 `100-105` 之前的新前置卡组，主线恢复顺序更新为 `39 -> 40 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。
+4. 当前主线待施工卡已调整为 `39-mainline-local-ledger-standardization-bootstrap-card-20260413.md`。
 
 ## 完成阶段图
 
@@ -38,7 +38,9 @@ flowchart LR
     D16 --> M29["29-35 malf canonical downstream 已生效"]
     M29 --> M36["36 wave life sidecar 已生效"]
     M36 --> G37["37 已完成清账"]
-    G37 --> NEXT["100 当前待施工"]
+    G37 --> N38["38 structure/filter purge"]
+    N38 --> N39["39 ledger standardization"]
+    N39 --> N40["40 incremental sync/resume"]
+    N40 --> NEXT["100 anchor freeze"]
     NEXT --> POST["101-105 后续恢复"]
-```
 ```
