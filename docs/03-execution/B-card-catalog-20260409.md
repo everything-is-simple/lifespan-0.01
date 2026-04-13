@@ -55,6 +55,15 @@
 44. `44-structure-filter-official-ledger-replay-smoke-hardening-card-20260413.md`
 45. `45-alpha-formal-signal-producer-hardening-before-position-card-20260413.md`
 46. `46-pre-position-upstream-acceptance-gate-card-20260413.md`
+47. `47-position-malf-context-driven-sizing-and-batch-contract-card-20260413.md`
+48. `48-position-risk-budget-and-capacity-ledger-hardening-card-20260413.md`
+49. `49-position-batched-entry-trim-and-partial-exit-contract-card-20260413.md`
+50. `50-position-data-grade-checkpoint-and-replay-runner-card-20260413.md`
+51. `51-pre-portfolio-plan-position-acceptance-gate-card-20260413.md`
+52. `52-portfolio-plan-official-ledger-family-and-natural-key-freeze-card-20260413.md`
+53. `53-portfolio-plan-capacity-decision-ledger-hardening-card-20260413.md`
+54. `54-portfolio-plan-data-grade-checkpoint-replay-and-freshness-card-20260413.md`
+55. `55-pre-trade-upstream-data-grade-baseline-gate-card-20260413.md`
 100. `100-trade-signal-anchor-contract-freeze-card-20260411.md`
 101. `101-position-entry-t-plus-1-open-reference-price-correction-card-20260411.md`
 102. `102-trade-exit-pnl-ledger-bootstrap-card-20260411.md`
@@ -65,8 +74,8 @@
 ## 当前说明
 1. 最新生效结论锚点已推进到 `42-alpha-family-role-and-malf-alignment-conclusion-20260413.md`。
 2. `42-alpha-family-role-and-malf-alignment-card-20260413.md` 已完成收口。
-3. 当前 `41-99` 的 alpha/PAS 收口阶段已结束，但在恢复 `100-105` 之前，先插入 `43 -> 44 -> 45 -> 46` 作为进入 `position` 前的连续前置卡组。
-4. 当前卡组排序调整为 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45 -> 46 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。
+3. 当前 `41-99` 的 alpha/PAS 收口阶段已结束，但在恢复 `100-105` 之前，先插入 `43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55` 作为进入 `trade` 前的连续前置卡组。
+4. 当前卡组排序调整为 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。
 
 ## 卡组路线图
 ```mermaid
@@ -87,5 +96,14 @@ flowchart LR
     G43 --> G44["44 structure/filter hardening"]
     G44 --> G45["45 alpha producer hardening"]
     G45 --> G46["46 pre-position acceptance"]
-    G46 --> POST["100-105 trade/system 收口"]
+    G46 --> G47["47 position MALF sizing/batch contract"]
+    G47 --> G48["48 position risk/capacity hardening"]
+    G48 --> G49["49 position batched entry/exit"]
+    G49 --> G50["50 position data-grade runner"]
+    G50 --> G51["51 position acceptance"]
+    G51 --> G52["52 portfolio_plan ledger family"]
+    G52 --> G53["53 portfolio_plan decision/capacity"]
+    G53 --> G54["54 portfolio_plan data-grade runner"]
+    G54 --> G55["55 pre-trade baseline gate"]
+    G55 --> POST["100-105 trade/system 收口"]
 ```

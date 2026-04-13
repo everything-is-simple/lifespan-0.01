@@ -26,7 +26,7 @@
 1. 最新生效结论锚点已推进到 `42-alpha-family-role-and-malf-alignment-conclusion-20260413.md`。
 2. `42-alpha-family-role-and-malf-alignment-card-20260413.md` 已完成收口并冻结 family role 与 canonical malf 协同语义。
 3. 当前主线已结束 `41-99` 的 alpha/PAS 收口阶段。
-4. 当前主线待施工卡已前移到 `43-structure-filter-alpha-data-grade-quality-gate-before-position-card-20260413.md`；只有 `46` 接受后，才恢复 `100-105`。
+4. 当前主线待施工卡已前移到 `43-structure-filter-alpha-data-grade-quality-gate-before-position-card-20260413.md`；只有 `55` 接受后，才恢复 `100-105`。
 
 ## 完成阶段图
 ```mermaid
@@ -47,6 +47,15 @@ flowchart LR
     G43 --> G44["44 structure/filter hardening"]
     G44 --> G45["45 alpha producer hardening"]
     G45 --> G46["46 acceptance gate"]
-    G46 --> NEXT["100 anchor freeze"]
+    G46 --> G47["47 position sizing/batch contract"]
+    G47 --> G48["48 risk/capacity hardening"]
+    G48 --> G49["49 batched entry/exit contract"]
+    G49 --> G50["50 data-grade runner"]
+    G50 --> G51["51 position acceptance gate"]
+    G51 --> G52["52 portfolio_plan ledger family"]
+    G52 --> G53["53 portfolio_plan capacity/decision"]
+    G53 --> G54["54 portfolio_plan data-grade runner"]
+    G54 --> G55["55 pre-trade baseline gate"]
+    G55 --> NEXT["100 anchor freeze"]
     NEXT --> POST["101-105 trade/system 收口"]
 ```

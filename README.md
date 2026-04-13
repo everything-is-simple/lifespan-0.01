@@ -128,7 +128,8 @@ flowchart LR
   - `position -> trade` 默认消费 `adjust_method='none'`
   - `forward` 当前只作研究与展示保留
 - 当前最新生效结论锚点已推进到 `42-alpha-family-role-and-malf-alignment-conclusion-20260413.md`：`42` 已完成 alpha family role 与 canonical malf 协同语义收口；当前待施工卡前移到 `43-structure-filter-alpha-data-grade-quality-gate-before-position-card-20260413.md`
-- `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 现已升级为后半部施工的正式指挥蓝图：以 `28` 的 `checkpoint + dirty/work queue + replay/resume` 为统一基线，先完成 `43 -> 44 -> 45 -> 46` 的 pre-position 前置卡组，再恢复 `100 -> 105`，并以纵向模块档案显式记录六条历史账本约束
+- `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 现已升级为后半部施工的正式指挥蓝图：以 `28` 的 `checkpoint + dirty/work queue + replay/resume` 为统一基线，先完成 `43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55` 的 pre-trade upstream 前置卡组，把 `data -> portfolio_plan` 打造成全 A baseline，再恢复 `100 -> 105`，并以纵向模块档案显式记录六条历史账本约束
+- `55` 通过后恢复的 `100 -> 105` 当前正式口径已进一步写实：`100` 冻结 `signal_low / last_higher_low` anchor 合同，`102` 补齐 `trade_exit_ledger / trade_realized_pnl_ledger`，`103` 把 `trade` 升级为带 `work_queue / checkpoint / replay / freshness` 的 progression runner，`105` 再把 `system` 从 bounded readout 升级为只读消费官方 child ledger 的 orchestration / freeze 入口
 - `txt -> raw_market -> market_base` 继续保留为正式 fallback
 
 ## 当前 malf 正式口径
@@ -186,7 +187,7 @@ flowchart LR
 6. 正式文档默认多用图：涉及模块边界、数据流、状态机、账本表族或施工顺序时，至少提供一张与正文一致的图，优先使用 Mermaid。
 7. 全仓 `python scripts/system/check_development_governance.py` 盘点允许通过 `scripts/system/development_governance_legacy_backlog.py` 登记历史债务；按改动路径触发的严格治理检查仍直接拦截新增违规。
 8. `37` 卡收口时，每解决一项历史债务，都必须同步更新 `development_governance_legacy_backlog.py` 与 `37` 对应的 card / evidence / record / conclusion。
-9. 当前已完成的清债包括 `src/mlq/system/runner.py`、`src/mlq/trade/runner.py`、`src/mlq/alpha/trigger_runner.py`、`src/mlq/filter/runner.py`、`src/mlq/malf/mechanism_runner.py`、`src/mlq/malf/canonical_runner.py`、`src/mlq/structure/runner.py`、`src/mlq/alpha/runner.py`、`src/mlq/data/runner.py`、`tests/unit/data/test_data_runner.py`、`src/mlq/data/bootstrap.py`、`src/mlq/malf/runner.py`、`src/mlq/malf/bootstrap.py`、`src/mlq/alpha/family_runner.py` 与 `src/mlq/position/bootstrap.py`；当前 target backlog 已清零，`38-40` 已作为数据治理前置卡组完成，当前正式施工位前移到 `43`，并新增 `44 -> 45 -> 46` 作为进入 `position` 前的前置卡组；只有 `46` 接受后才恢复 `100-105` trade/system 卡组，本仓 `pytest` 证据仍统一按串行命令登记，避免多个进程争用 `H:\Lifespan-temp\pytest-tmp`。
+9. 当前已完成的清债包括 `src/mlq/system/runner.py`、`src/mlq/trade/runner.py`、`src/mlq/alpha/trigger_runner.py`、`src/mlq/filter/runner.py`、`src/mlq/malf/mechanism_runner.py`、`src/mlq/malf/canonical_runner.py`、`src/mlq/structure/runner.py`、`src/mlq/alpha/runner.py`、`src/mlq/data/runner.py`、`tests/unit/data/test_data_runner.py`、`src/mlq/data/bootstrap.py`、`src/mlq/malf/runner.py`、`src/mlq/malf/bootstrap.py`、`src/mlq/alpha/family_runner.py` 与 `src/mlq/position/bootstrap.py`；当前 target backlog 已清零，`38-40` 已作为数据治理前置卡组完成，当前正式施工位前移到 `43`，并新增 `44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55` 作为进入 `trade` 前的 upstream A 级前置卡组；只有 `55` 接受后才恢复 `100-105` trade/system 卡组，本仓 `pytest` 证据仍统一按串行命令登记，避免多个进程争用 `H:\Lifespan-temp\pytest-tmp`。
 
 ## 建议阅读顺序
 

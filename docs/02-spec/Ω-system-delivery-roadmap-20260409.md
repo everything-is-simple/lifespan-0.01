@@ -17,7 +17,7 @@
 2. 全系统统一治理基线来自 `28-system-wide-checkpoint-and-dirty-queue-alignment-conclusion-20260411.md`
 3. 当前最新生效结论锚点为 `42-alpha-family-role-and-malf-alignment-conclusion-20260413.md`
 4. 当前待施工卡为 `43-structure-filter-alpha-data-grade-quality-gate-before-position-card-20260413.md`
-5. 当前连续前置卡组为 `43 -> 44 -> 45 -> 46`
+5. 当前连续前置卡组为 `43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55`
 
 ## 当前正式判断
 
@@ -42,8 +42,8 @@
 ### 当前阶段
 
 1. 当前 active 卡：`43`
-2. 当前 active 卡组：`43 -> 44 -> 45 -> 46 -> 100 -> 105`
-3. 当前系统级目标：先把 `structure / filter / alpha` 的质量抬到接近 `data -> malf` 的事实标准，再决定是否恢复执行侧卡组
+2. 当前 active 卡组：`43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55 -> 100 -> 105`
+3. 当前系统级目标：先把 `data -> portfolio_plan` 的质量抬到统一的全 A baseline，再决定是否恢复 `trade -> system`
 
 ## 系统当前剖面图
 
@@ -65,8 +65,8 @@ flowchart LR
     end
 
     subgraph PENDING["待治理区域"]
-        POS["position\nBounded materialization\n独立 queue/checkpoint 待补齐"]
-        PLAN["portfolio_plan\nBounded materialization\n独立 queue/checkpoint 待补齐"]
+        POS["position\nBounded materialization\n47-51 待抬升到 A"]
+        PLAN["portfolio_plan\nBounded materialization\n52-55 待抬升到 A"]
         TRADE["trade\nRecovery planned\n100-104 待完成合同/exit/progression/smoke"]
         SYS["system\nBounded acceptance\n27 readout/audit 已有\n105 orchestration 待完成"]
     end
@@ -89,7 +89,8 @@ flowchart LR
 
 1. `29 -> 30 -> 31 -> 32`
 2. `33 -> 42` 稳定化与收口
-3. `100 -> 101 -> 102 -> 103 -> 104 -> 105`
+3. `52 -> 53 -> 54 -> 55`
+4. `100 -> 101 -> 102 -> 103 -> 104 -> 105`
 
 其中：
 
@@ -97,8 +98,10 @@ flowchart LR
 2. `43` 是进入 `position` 前的质量门槛定义卡
 3. `44 -> 45` 是上游质量硬化卡组
 4. `46` 是进入 `position` 前的最终 acceptance gate
-5. `100 -> 105` 是 `trade/system` 恢复卡组
-6. `105` 明确固定为最后一张后置卡
+5. `47 -> 51` 是 `position` A 级硬化卡组
+6. `52 -> 55` 是 `portfolio_plan` A 级硬化与 pre-trade gate
+7. `100 -> 105` 是 `trade/system` 恢复卡组
+8. `105` 明确固定为最后一张后置卡
 
 ```mermaid
 flowchart LR
@@ -108,7 +111,16 @@ flowchart LR
     G43 --> G44["44 structure/filter hardening"]
     G44 --> G45["45 alpha producer hardening"]
     G45 --> G46["46 pre-position acceptance"]
-    G46 --> G100105["100-105 trade/system 恢复卡组"]
+    G46 --> G47["47 position MALF sizing/batch contract"]
+    G47 --> G48["48 position risk/capacity hardening"]
+    G48 --> G49["49 position batched entry/trim/partial-exit"]
+    G49 --> G50["50 position data-grade runner"]
+    G50 --> G51["51 pre-portfolio-plan position acceptance"]
+    G51 --> G52["52 portfolio_plan ledger family freeze"]
+    G52 --> G53["53 portfolio_plan decision/capacity hardening"]
+    G53 --> G54["54 portfolio_plan data-grade runner"]
+    G54 --> G55["55 pre-trade upstream baseline gate"]
+    G55 --> G100105["100-105 trade/system 恢复卡组"]
     G100105 --> C100["100 signal anchor freeze"]
     C100 --> C101["101 T+1 open 参考价修正"]
     C101 --> C102["102 trade exit PnL ledger"]
@@ -121,9 +133,11 @@ flowchart LR
 
 1. `29-32` 不是“历史已完成就可忽略”的旧卡组，而是后半部一切恢复卡的前置逻辑顺序。
 2. `43-45` 任何一张未通过前，都不允许进入 `46`。
-3. 只有 `46` 接受后，才允许恢复 `100`。
+3. 只有 `55` 接受后，才允许恢复 `100`。
 4. `100-105` 当前必须按自然数顺排推进，不允许跳过 `100/101` 直接做 `105`。
-5. 若 `46` 证明 `position / portfolio_plan` 也缺少与 `35` 同等级的 data-grade 续跑能力，应先补新卡，再继续推进 `100-105`。
+5. `47-51` 属于 `position` 追平 `data -> malf` 事实标准的正式卡组，不允许把 `position` 继续当成 bounded skeleton 直接越过。
+6. `52-54` 属于 `portfolio_plan` 追平 `data -> malf` 事实标准的正式卡组，不允许继续把组合层当成最小桥接层直接越过。
+7. 若 `55` 证明 `position / portfolio_plan` 仍缺少与 `35` 同等级的 data-grade 续跑能力，应先补新卡，再继续推进 `100-105`。
 
 ## 增量更新 / 断点续跑 / 审计依赖图
 
@@ -134,8 +148,8 @@ flowchart TD
     S0["structure\nwork_queue + checkpoint + replay"] --> F0
     F0["filter\nwork_queue + checkpoint + replay"] --> A0
     A0["alpha\ntrigger/formal signal queue + checkpoint + rematerialize"] --> P0
-    P0["position\n当前仅 bounded materialization\n独立 work_queue/checkpoint 待补齐"] --> PP0
-    PP0["portfolio_plan\n当前仅 bounded materialization\n独立 work_queue/checkpoint 待补齐"] --> T0
+    P0["position\n当前仅 bounded materialization\n47-51 待补齐到 data-grade"] --> PP0
+    PP0["portfolio_plan\n当前仅 bounded materialization\n52-54 待补齐到 data-grade"] --> T0
     T0["trade\ncarry / leg / execution plan 已有\nsignal anchor / exit pnl / progression / smoke 待补齐"] --> SY0
     SY0["system\nreadout / audit 已有\nruntime orchestration 待补齐"]
 ```
@@ -249,12 +263,12 @@ flowchart TD
 - 当前结论：
   `35 / 41 / 42` 已完成 queue 对齐、PAS detector、family role 与 canonical `malf` 协同语义
 - 后续动作：
-  先完成 `100`，把 `alpha_formal_signal_event` 的正式信号锚点冻结后，再继续推进执行侧
+  先完成 `43-46` 的 upstream 质量闸门、`47-51` 的 `position` 质量对齐与 `52-54` 的 `portfolio_plan` data-grade 硬化，再由 `55` 决定是否允许进入 `100`
 
 ### `position`
 
 - 当前状态：`主线待接`
-- 实现深度：`Bounded materialization`
+- 实现深度：`Bounded materialization -> A-grade hardening planned`
 - 成熟度：`C+`
 - 实体锚点：
   单标的主语仍以 `asset_type + code` 为基础，再叠加 `portfolio_id + signal_date / reference_trade_date + position scene`
@@ -276,7 +290,7 @@ flowchart TD
 ### `portfolio_plan`
 
 - 当前状态：`主线待接`
-- 实现深度：`Bounded materialization`
+- 实现深度：`Bounded materialization -> A-grade hardening planned`
 - 成熟度：`C+`
 - 实体锚点：
   `portfolio_id`
@@ -293,7 +307,7 @@ flowchart TD
 - 当前结论：
   `14` 已完成最小组合裁决账本，但执行层以下仍未形成独立 data-grade 治理
 - 后续动作：
-  跟随 `position` 一起补齐执行侧 data-grade 续跑语义，再继续向 `trade` 下游稳定输出
+  通过 `52-54` 补齐官方账本族、容量裁决厚账本、data-grade runner 与 freshness，再由 `55` 裁决是否允许进入 `100`
 
 ### `trade`
 
@@ -346,7 +360,7 @@ flowchart TD
 影响：
 
 1. `position` 当前消费的最末端正式合同仍不够稳定
-2. `43` 与 `100-105` 无法稳健起步
+2. `43-55` 与 `100-105` 无法稳健起步
 
 ### 阻塞 2：`position / portfolio_plan` 仍缺少与 `35` 同等级的独立 data-grade 续跑语义
 
@@ -414,7 +428,7 @@ flowchart TD
 - 当前状态：
   `已完成`
 - 下一步依赖：
-  `100`
+  `47-51 -> 52-55 -> 100`
 
 ### `M4 执行侧合同与 runtime 收口`
 
@@ -423,7 +437,7 @@ flowchart TD
 - 当前状态：
   `未完成`
 - 下一步依赖：
-  `43 -> 100 -> 104`
+  `43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55 -> 100 -> 104`
 
 ### `M5 system orchestration 收口`
 
@@ -432,7 +446,7 @@ flowchart TD
 - 当前状态：
   `未完成`
 - 下一步依赖：
-  `43 -> 104 -> 105`
+  `43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55 -> 104 -> 105`
 
 ## 系统审计依赖图
 
