@@ -2,9 +2,9 @@
 日期：`2026-04-09`
 状态：`持续更新`
 
-1. 当前下一锚：`43-structure-filter-alpha-data-grade-quality-gate-before-position-card-20260413.md`
-2. 当前待施工卡：`43-structure-filter-alpha-data-grade-quality-gate-before-position-card-20260413.md`
-3. 正式主线剩余卡：`10`
+1. 当前下一锚：`44-structure-filter-official-ledger-replay-smoke-hardening-card-20260413.md`
+2. 当前待施工卡：`44-structure-filter-official-ledger-replay-smoke-hardening-card-20260413.md`
+3. 正式主线剩余卡：`18`
 4. 可选 Sidecar 剩余卡：`0`
 5. 历史治理 backlog：`0`
 
@@ -72,10 +72,10 @@
 105. `105-system-runtime-orchestration-bootstrap-card-20260411.md`
 
 ## 当前说明
-1. 最新生效结论锚点已推进到 `42-alpha-family-role-and-malf-alignment-conclusion-20260413.md`。
-2. `42-alpha-family-role-and-malf-alignment-card-20260413.md` 已完成收口。
-3. 当前 `41-99` 的 alpha/PAS 收口阶段已结束，但在恢复 `100-105` 之前，先插入 `43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55` 作为进入 `trade` 前的连续前置卡组。
-4. 当前卡组排序调整为 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。
+1. 最新生效结论锚点已推进到 `43-structure-filter-alpha-data-grade-quality-gate-before-position-conclusion-20260413.md`。
+2. `43-structure-filter-alpha-data-grade-quality-gate-before-position-card-20260413.md` 已完成收口，并正式裁决“允许继续 `44 -> 46`，但暂不允许进入 `47 -> 55 / 100 -> 105`”。
+3. 当前正式主线待施工卡已切到 `44 -> 45 -> 46` 的 upstream 硬化与 acceptance 卡组；`47 -> 55` 继续等待 `46` 接受后恢复。
+4. 当前卡组排序维持为 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。
 
 ## 卡组路线图
 ```mermaid

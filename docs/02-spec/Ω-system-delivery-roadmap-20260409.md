@@ -15,9 +15,9 @@
 
 1. 历史账本硬约束来自 `docs/01-design/03-historical-ledger-shared-contract-charter-20260409.md`
 2. 全系统统一治理基线来自 `28-system-wide-checkpoint-and-dirty-queue-alignment-conclusion-20260411.md`
-3. 当前最新生效结论锚点为 `42-alpha-family-role-and-malf-alignment-conclusion-20260413.md`
-4. 当前待施工卡为 `43-structure-filter-alpha-data-grade-quality-gate-before-position-card-20260413.md`
-5. 当前连续前置卡组为 `43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55`
+3. 当前最新生效结论锚点为 `43-structure-filter-alpha-data-grade-quality-gate-before-position-conclusion-20260413.md`
+4. 当前待施工卡为 `44-structure-filter-official-ledger-replay-smoke-hardening-card-20260413.md`
+5. 当前连续前置卡组为 `44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55`
 
 ## 当前正式判断
 
@@ -25,7 +25,7 @@
    `data -> malf -> structure -> filter -> alpha -> position -> portfolio_plan -> trade -> system`
 2. `28` 已把 `checkpoint + dirty/work queue + replay/resume + audit` 冻结为全系统统一 data-grade 基线。
 3. `29 -> 32` 已验证“先 canonical `malf`，再 data-grade runner，再 downstream rebind，再 truthfulness revalidation”是正确路径。
-4. `33 -> 42` 已完成 canonical downstream 清理、checkpoint 对齐、本地 ledger 标准化、增量续跑、PAS detector 与 family role 收口。
+4. `33 -> 43` 已完成 canonical downstream 清理、checkpoint 对齐、本地 ledger 标准化、增量续跑、PAS detector、family role 与 pre-position quality gate 收口。
 5. 当前后半部最薄弱链段已经从 `malf` 上游切换到：
    `structure -> filter -> alpha -> position`
 
@@ -41,8 +41,8 @@
 
 ### 当前阶段
 
-1. 当前 active 卡：`43`
-2. 当前 active 卡组：`43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55 -> 100 -> 105`
+1. 当前 active 卡：`44`
+2. 当前 active 卡组：`44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`
 3. 当前系统级目标：先把 `data -> portfolio_plan` 的质量抬到统一的全 A baseline，再决定是否恢复 `trade -> system`
 
 ## 系统当前剖面图
@@ -89,8 +89,10 @@ flowchart LR
 
 1. `29 -> 30 -> 31 -> 32`
 2. `33 -> 42` 稳定化与收口
-3. `52 -> 53 -> 54 -> 55`
-4. `100 -> 101 -> 102 -> 103 -> 104 -> 105`
+3. `43 -> 44 -> 45 -> 46`
+4. `47 -> 48 -> 49 -> 50 -> 51`
+5. `52 -> 53 -> 54 -> 55`
+6. `100 -> 101 -> 102 -> 103 -> 104 -> 105`
 
 其中：
 

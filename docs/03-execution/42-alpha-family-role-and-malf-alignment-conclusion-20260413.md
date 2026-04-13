@@ -35,7 +35,7 @@
 ## 下一步
 
 - `42` 已完成 alpha family role 与 canonical malf 协同语义收口。
-- 当前待施工卡切回 `100-trade-signal-anchor-contract-freeze-card-20260411.md`。
+- 当前待施工卡前移到 `43-structure-filter-alpha-data-grade-quality-gate-before-position-card-20260413.md`，先冻结进入 `position` 前的 upstream data-grade 质量门槛。
 
 ```mermaid
 flowchart LR
@@ -43,5 +43,6 @@ flowchart LR
     TRG --> FAM["42 alpha family explanation"]
     STR["structure_snapshot"] --> FAM
     MALF["canonical malf facts"] --> FAM
-    FAM --> NEXT["100 signal anchor freeze"]
+    FAM --> NEXT["43 pre-position quality gate"]
+    NEXT --> HOLD["44-46 upstream hardening / acceptance"]
 ```
