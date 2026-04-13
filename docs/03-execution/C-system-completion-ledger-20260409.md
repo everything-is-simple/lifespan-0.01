@@ -2,9 +2,9 @@
 `日期：2026-04-09`
 `状态：持续更新`
 
-1. 当前下一锤：`46-pre-position-upstream-acceptance-gate-card-20260413.md`
-2. 当前待施工卡：`46-pre-position-upstream-acceptance-gate-card-20260413.md`
-3. 正式主线剩余卡：`16`
+1. 当前下一锤：`47-position-malf-context-driven-sizing-and-batch-contract-card-20260413.md`
+2. 当前待施工卡：`47-position-malf-context-driven-sizing-and-batch-contract-card-20260413.md`
+3. 正式主线剩余卡：`15`
 4. 可选 Sidecar 剩余卡：`0`
 5. backlog：`0`
 
@@ -25,12 +25,13 @@
 14. `pre-position data-grade quality gate` 卡 `43`
 15. `structure / filter official ledger replay / smoke hardening` 卡 `44`
 16. `alpha formal signal producer family-aware hardening` 卡 `45`
+17. `pre-position upstream acceptance gate` 卡 `46`
 
 ## 当前阶段
-1. 最新生效结论锚点已推进到 `45-alpha-formal-signal-producer-hardening-before-position-conclusion-20260413.md`。
-2. `45` 已完成 `alpha formal signal` 对 `alpha_family_event` 正式解释键的物理接入、family-aware replay 硬化与 `position` 消费合同校验。
-3. 当前主线已从 `alpha producer hardening` 前移到 `46 pre-position upstream acceptance gate`。
-4. 只有 `46` 接受后，才允许进入 `47 -> 55`；只有 `55` 接受后，才允许恢复 `100-105`。
+1. 最新生效结论锚点已推进到 `46-pre-position-upstream-acceptance-gate-conclusion-20260413.md`。
+2. `46` 已完成对 `43 / 44 / 45` 的 upstream integrated acceptance，并正式恢复 `47` 为当前待施工卡。
+3. 当前主线已从 `pre-position acceptance gate` 前移到 `47 position MALF sizing / batch contract`。
+4. `47 -> 55` 现在可以继续推进；`100-105` 仍必须等待 `55` 接受后再恢复。
 
 ## 完成阶段图
 ```mermaid

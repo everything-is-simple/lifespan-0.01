@@ -139,7 +139,7 @@ flowchart LR
 1. `malf -> structure -> filter -> alpha` 默认使用 `adjust_method = backward`
 2. `position -> trade` 默认使用 `adjust_method = none`
 3. `adjust_method = forward` 当前只作为研究与展示保留，不作为正式执行口径
-4. 当前最新生效结论锚点已推进到 `44-structure-filter-official-ledger-replay-smoke-hardening-conclusion-20260413.md`；它已裁决 `structure / filter` 的 official ledger replay / smoke 已完成硬化。当前正式施工位已前移到 `45-alpha-formal-signal-producer-hardening-before-position-card-20260413.md`；其中 `29-44` 已完成并生效，`45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55` 成为进入 `trade` 前的前置卡组，`100-105` 退回到通过 `55` 之后才允许恢复的 trade/system 卡组。
+4. 当前最新生效结论锚点已推进到 `46-pre-position-upstream-acceptance-gate-conclusion-20260413.md`；它已裁决 `structure / filter / alpha` 的 upstream integrated acceptance 已成立，并允许主线进入 `47-position-malf-context-driven-sizing-and-batch-contract-card-20260413.md`。其中 `29-46` 已完成并生效，`47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55` 成为进入 `trade` 前的前置卡组，`100-105` 退回到通过 `55` 之后才允许恢复的 trade/system 卡组。
 5. 当前主线系统级路线图必须以 `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 为准；该文档已把 `structure -> filter -> alpha -> position -> portfolio_plan` 识别为当前后半部最薄弱链段，并把 `43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55` 固定为进入 `trade` 前的前置卡组，不允许再仅凭旧宽表口径判断模块成熟度。
 
 ## 5. 历史账本原则

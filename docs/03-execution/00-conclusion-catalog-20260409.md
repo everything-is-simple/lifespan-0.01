@@ -3,7 +3,7 @@
 `日期：2026-04-09`
 `状态：生效`
 
-当前最新生效结论锚点：`45-alpha-formal-signal-producer-hardening-before-position-conclusion-20260413.md`
+当前最新生效结论锚点：`46-pre-position-upstream-acceptance-gate-conclusion-20260413.md`
 
 ## 正式结论目录
 
@@ -61,10 +61,10 @@
 105. `105-system-runtime-orchestration-bootstrap-conclusion-20260411.md`
 
 ## 主线状态
-1. `45` 已成为当前最新生效结论锚点。
-2. `45` 已正式裁决 `alpha formal signal` producer 完成 family-aware 硬化，可进入 `46`。
-3. `29-45` 已完成 canonical malf downstream、mainline ledger standardization、alpha detector、alpha family、quality gate 与 alpha producer hardening 收口。
-4. 只有 `46` 接受后，当前主线才允许进入 `47 -> 55`；只有 `55` 接受后，才允许恢复 `100 -> 105` 的 trade/system 卡组。
+1. `46` 已成为当前最新生效结论锚点。
+2. `46` 已正式裁决 upstream integrated acceptance 成立，允许当前主线进入 `47 -> 55`。
+3. `29-46` 已完成 canonical malf downstream、mainline ledger standardization、alpha detector、alpha family、quality gate、official replay hardening、alpha producer hardening与 pre-position acceptance 收口。
+4. 当前待施工卡已恢复到 `47`；只有 `55` 接受后，才允许恢复 `100 -> 105` 的 trade/system 卡组。
 
 ## 图示
 ```mermaid
