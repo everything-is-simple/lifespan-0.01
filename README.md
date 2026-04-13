@@ -122,7 +122,7 @@ flowchart LR
   - `malf -> structure -> filter -> alpha` 默认消费 `adjust_method='backward'`
   - `position -> trade` 默认消费 `adjust_method='none'`
   - `forward` 当前只作研究与展示保留
-- 当前最新生效结论锚点已推进到 `38-structure-filter-mainline-legacy-malf-semantic-purge-conclusion-20260413.md`：`38` 已完成 `structure / filter` 主线旧版 malf 语义清理，正式主线不再接受 bridge-era `pas_context_snapshot / structure_candidate_snapshot`；当前正式施工卡已切换到 `39-mainline-local-ledger-standardization-bootstrap-card-20260413.md`，新前置卡组顺序为 `39 -> 40`，先完成主线本地账本标准化与增量续跑，再恢复 `100 -> 101 -> 102 -> 103 -> 104 -> 105` 的 trade/system 卡组
+- 当前最新生效结论锚点已推进到 `39-mainline-local-ledger-standardization-bootstrap-conclusion-20260413.md`：`39` 已完成主线正式 ledger 清单冻结、官方路径统一和一次性标准化 bootstrap 入口；当前正式施工卡已切换到 `40-mainline-local-ledger-incremental-sync-and-resume-card-20260413.md`，接下来先完成每日增量同步、断点续跑与新鲜度审计，再恢复 `100 -> 101 -> 102 -> 103 -> 104 -> 105` 的 trade/system 卡组
 - `txt -> raw_market -> market_base` 继续保留为正式 fallback
 
 ## 当前 malf 正式口径

@@ -3,8 +3,8 @@
 日期：`2026-04-09`
 状态：`持续更新`
 
-1. 当前下一锤：`39-mainline-local-ledger-standardization-bootstrap-card-20260413.md`
-2. 当前待施工卡：`39-mainline-local-ledger-standardization-bootstrap-card-20260413.md`
+1. 当前下一锤：`40-mainline-local-ledger-incremental-sync-and-resume-card-20260413.md`
+2. 当前待施工卡：`40-mainline-local-ledger-incremental-sync-and-resume-card-20260413.md`
 3. 正式主线剩余卡：`9`
 4. 可选 Sidecar 剩余卡：`0`
 5. 后置修复剩余卡：`0`
@@ -23,9 +23,9 @@
 ## 当前阶段
 
 1. 最新生效结论锚点已推进到 `37-system-governance-historical-debt-backlog-burndown-conclusion-20260412.md`。
-2. `38-structure-filter-mainline-legacy-malf-semantic-purge-card-20260413.md` 已完成收口并通过主线回归。
-3. `38-40` 作为 `100-105` 之前的新前置卡组，主线恢复顺序更新为 `39 -> 40 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。
-4. 当前主线待施工卡已调整为 `39-mainline-local-ledger-standardization-bootstrap-card-20260413.md`。
+2. `39-mainline-local-ledger-standardization-bootstrap-card-20260413.md` 已完成收口并通过迁移演练。
+3. `38-40` 作为 `100-105` 之前的新前置卡组，主线恢复顺序更新为 `40 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。
+4. 当前主线待施工卡已调整为 `40-mainline-local-ledger-incremental-sync-and-resume-card-20260413.md`。
 
 ## 完成阶段图
 

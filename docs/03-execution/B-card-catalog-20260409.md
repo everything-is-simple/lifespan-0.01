@@ -3,8 +3,8 @@
 日期：`2026-04-09`
 状态：`持续更新`
 
-1. 当前下一锚：`39-mainline-local-ledger-standardization-bootstrap-card-20260413.md`
-2. 当前待施工卡：`39-mainline-local-ledger-standardization-bootstrap-card-20260413.md`
+1. 当前下一锚：`40-mainline-local-ledger-incremental-sync-and-resume-card-20260413.md`
+2. 当前待施工卡：`40-mainline-local-ledger-incremental-sync-and-resume-card-20260413.md`
 3. 正式主线剩余卡：`9`
 4. 可选 Sidecar 剩余卡：`0`
 5. 后置修复剩余卡：`0`
@@ -61,8 +61,8 @@
 ## 当前说明
 
 1. 最新生效结论锚点已推进到 `37-system-governance-historical-debt-backlog-burndown-conclusion-20260412.md`。
-2. `38-structure-filter-mainline-legacy-malf-semantic-purge-card-20260413.md` 已收口，当前具体待施工卡切换为 `39-mainline-local-ledger-standardization-bootstrap-card-20260413.md`。
-3. `38-40` 作为 `alpha PAS 5` 与 `100-105` 之前的新前置卡组；当前顺序推进到 `39 -> 40`，`100-105` 顺延为后续 trade/system 恢复卡组。
+2. `39-mainline-local-ledger-standardization-bootstrap-card-20260413.md` 已收口，当前具体待施工卡切换为 `40-mainline-local-ledger-incremental-sync-and-resume-card-20260413.md`。
+3. `38-40` 作为 `alpha PAS 5` 与 `100-105` 之前的新前置卡组；当前顺序推进到 `40`，`100-105` 顺延为后续 trade/system 恢复卡组。
 4. 当前卡组排序保持 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39 -> 40 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。
 
 ## 卡组顺序图
