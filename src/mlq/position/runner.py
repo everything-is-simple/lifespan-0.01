@@ -207,6 +207,14 @@ def _load_alpha_formal_signal_rows(
                 "source_trigger_event_nk": row[12],
                 "signal_contract_version": row[13],
                 "source_signal_run_id": row[14],
+                "source_family_event_nk": row[15],
+                "source_family_contract_version": row[16],
+                "family_code": row[17],
+                "family_role": row[18],
+                "family_bias": row[19],
+                "malf_alignment": row[20],
+                "malf_phase_bucket": row[21],
+                "family_source_context_fingerprint": row[22],
             }
             for row in rows
         ]
@@ -277,6 +285,22 @@ def _build_alpha_select_sql(*, table_name: str, available_columns: set[str]) -> 
         select_fields.append("last_materialized_run_id AS source_signal_run_id")
     else:
         select_fields.append("NULL AS source_signal_run_id")
+    optional_family_columns = {
+        "source_family_event_nk": ("source_family_event_nk",),
+        "source_family_contract_version": ("source_family_contract_version",),
+        "family_code": ("family_code",),
+        "family_role": ("family_role",),
+        "family_bias": ("family_bias",),
+        "malf_alignment": ("malf_alignment",),
+        "malf_phase_bucket": ("malf_phase_bucket",),
+        "family_source_context_fingerprint": ("family_source_context_fingerprint",),
+    }
+    for alias, candidates in optional_family_columns.items():
+        column_name = next((candidate for candidate in candidates if candidate in available_columns), None)
+        if column_name is None:
+            select_fields.append(f"NULL AS {alias}")
+        else:
+            select_fields.append(f"{column_name} AS {alias}")
     return f"SELECT {', '.join(select_fields)} FROM {table_name}"
 
 
@@ -341,6 +365,22 @@ def _enrich_reference_prices(
                     source_signal_run_id=None
                     if row["source_signal_run_id"] is None
                     else str(row["source_signal_run_id"]),
+                    source_family_event_nk=None
+                    if row["source_family_event_nk"] is None
+                    else str(row["source_family_event_nk"]),
+                    source_family_contract_version=None
+                    if row["source_family_contract_version"] is None
+                    else str(row["source_family_contract_version"]),
+                    family_code=None if row["family_code"] is None else str(row["family_code"]),
+                    family_role=None if row["family_role"] is None else str(row["family_role"]),
+                    family_bias=None if row["family_bias"] is None else str(row["family_bias"]),
+                    malf_alignment=None if row["malf_alignment"] is None else str(row["malf_alignment"]),
+                    malf_phase_bucket=None
+                    if row["malf_phase_bucket"] is None
+                    else str(row["malf_phase_bucket"]),
+                    family_source_context_fingerprint=None
+                    if row["family_source_context_fingerprint"] is None
+                    else str(row["family_source_context_fingerprint"]),
                 )
             )
         return enriched_signals, missing_reference_price_count

@@ -33,6 +33,14 @@ class PositionFormalSignalInput:
     blocked_reason_code: str | None = None
     audit_note: str | None = None
     source_signal_run_id: str | None = None
+    source_family_event_nk: str | None = None
+    source_family_contract_version: str | None = None
+    family_code: str | None = None
+    family_role: str | None = None
+    family_bias: str | None = None
+    malf_alignment: str | None = None
+    malf_phase_bucket: str | None = None
+    family_source_context_fingerprint: str | None = None
 
 
 @dataclass(frozen=True)

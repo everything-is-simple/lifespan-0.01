@@ -8,6 +8,7 @@ from pathlib import Path
 
 from mlq.alpha import (
     DEFAULT_ALPHA_FORMAL_SIGNAL_CONTRACT_VERSION,
+    DEFAULT_ALPHA_FORMAL_SIGNAL_FAMILY_TABLE,
     DEFAULT_ALPHA_FORMAL_SIGNAL_FILTER_TABLE,
     DEFAULT_ALPHA_FORMAL_SIGNAL_STRUCTURE_TABLE,
     DEFAULT_ALPHA_FORMAL_SIGNAL_TRIGGER_TABLE,
@@ -30,6 +31,10 @@ def build_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--source-trigger-table",
         default=DEFAULT_ALPHA_FORMAL_SIGNAL_TRIGGER_TABLE,
+    )
+    parser.add_argument(
+        "--source-family-table",
+        default=DEFAULT_ALPHA_FORMAL_SIGNAL_FAMILY_TABLE,
     )
     parser.add_argument(
         "--source-filter-table",
@@ -60,6 +65,7 @@ def main() -> None:
         batch_size=args.batch_size,
         run_id=args.run_id,
         source_trigger_table=args.source_trigger_table,
+        source_family_table=args.source_family_table,
         source_filter_table=args.source_filter_table,
         source_structure_table=args.source_structure_table,
         signal_contract_version=args.signal_contract_version,

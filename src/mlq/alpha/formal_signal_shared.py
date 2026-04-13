@@ -10,9 +10,10 @@ from typing import Final
 
 
 DEFAULT_ALPHA_FORMAL_SIGNAL_TRIGGER_TABLE: Final[str] = "alpha_trigger_event"
+DEFAULT_ALPHA_FORMAL_SIGNAL_FAMILY_TABLE: Final[str] = "alpha_family_event"
 DEFAULT_ALPHA_FORMAL_SIGNAL_FILTER_TABLE: Final[str] = "filter_snapshot"
 DEFAULT_ALPHA_FORMAL_SIGNAL_STRUCTURE_TABLE: Final[str] = "structure_snapshot"
-DEFAULT_ALPHA_FORMAL_SIGNAL_CONTRACT_VERSION: Final[str] = "alpha-formal-signal-v2"
+DEFAULT_ALPHA_FORMAL_SIGNAL_CONTRACT_VERSION: Final[str] = "alpha-formal-signal-v3"
 
 
 @dataclass(frozen=True)
@@ -44,6 +45,7 @@ class AlphaFormalSignalBuildSummary:
     filter_ledger_path: str
     structure_ledger_path: str
     source_trigger_table: str
+    source_family_table: str
     source_filter_table: str
     source_structure_table: str
 
@@ -92,6 +94,19 @@ class _ContextRow:
 
 
 @dataclass(frozen=True)
+class _FamilyRow:
+    source_family_event_nk: str
+    source_trigger_event_nk: str
+    family_code: str | None
+    source_family_contract_version: str | None
+    family_role: str | None
+    family_bias: str | None
+    malf_alignment: str | None
+    malf_phase_bucket: str | None
+    family_source_context_fingerprint: str | None
+
+
+@dataclass(frozen=True)
 class _FormalSignalEventRow:
     signal_nk: str
     instrument: str
@@ -120,6 +135,14 @@ class _FormalSignalEventRow:
     monthly_trend_direction: str | None
     monthly_reversal_stage: str | None
     monthly_source_context_nk: str | None
+    source_family_event_nk: str | None
+    family_code: str | None
+    source_family_contract_version: str | None
+    family_role: str | None
+    family_bias: str | None
+    malf_alignment: str | None
+    malf_phase_bucket: str | None
+    family_source_context_fingerprint: str | None
     source_trigger_event_nk: str
     signal_contract_version: str
     first_seen_run_id: str

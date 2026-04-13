@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
+import json
 from datetime import date
 from pathlib import Path
 
 import duckdb
 
-from mlq.alpha import alpha_ledger_path, run_alpha_formal_signal_build, run_alpha_trigger_build
+from mlq.alpha import (
+    alpha_ledger_path,
+    run_alpha_family_build,
+    run_alpha_formal_signal_build,
+    run_alpha_trigger_build,
+)
 from mlq.core.paths import default_settings
 from mlq.filter import run_filter_snapshot_build
 from mlq.position import position_ledger_path, run_position_formal_signal_materialization
@@ -208,6 +214,16 @@ def _materialize_official_trigger(settings, *, suffix: str) -> None:
         signal_start_date="2026-04-08",
         signal_end_date="2026-04-08",
         run_id=f"alpha-trigger-upstream-test-{suffix}",
+    )
+
+
+def _materialize_official_family(settings, *, suffix: str) -> None:
+    run_alpha_family_build(
+        settings=settings,
+        signal_start_date="2026-04-08",
+        signal_end_date="2026-04-08",
+        family_scope=["bof", "tst", "pb", "cpb", "bpb"],
+        run_id=f"alpha-family-upstream-test-{suffix}",
     )
 
 
@@ -422,6 +438,7 @@ def test_run_alpha_formal_signal_build_materializes_run_event_and_run_bridge(
     )
     _materialize_official_upstream(settings, suffix="001")
     _materialize_official_trigger(settings, suffix="001")
+    _materialize_official_family(settings, suffix="001")
 
     summary = run_alpha_formal_signal_build(
         settings=settings,
@@ -458,9 +475,20 @@ def test_run_alpha_formal_signal_build_materializes_run_event_and_run_bridge(
                 reversal_stage,
                 daily_source_context_nk,
                 weekly_major_state,
-                monthly_major_state
+                monthly_major_state,
+                family_code,
+                family_role,
+                source_family_event_nk
             FROM alpha_formal_signal_event
             ORDER BY instrument
+            """
+        ).fetchall()
+        run_event_rows = conn.execute(
+            """
+            SELECT signal_nk, source_family_event_nk, family_role
+            FROM alpha_formal_signal_run_event
+            WHERE run_id = 'alpha-formal-signal-test-001'
+            ORDER BY signal_nk
             """
         ).fetchall()
     finally:
@@ -468,8 +496,46 @@ def test_run_alpha_formal_signal_build_materializes_run_event_and_run_bridge(
 
     assert run_row == ("completed", 2)
     assert event_rows == [
-        ("000001.SZ", "BOF", "admitted", True, "牛顺", "none", "state-000001.SZ-2026-04-08", "牛顺", "牛逆"),
-        ("000002.SZ", "PB", "blocked", False, "熊顺", "none", "state-000002.SZ-2026-04-08", None, None),
+        (
+            "000001.SZ",
+            "BOF",
+            "admitted",
+            True,
+            "牛顺",
+            "none",
+            "state-000001.SZ-2026-04-08",
+            "牛顺",
+            "牛逆",
+            "bof_core",
+            "mainline",
+            "000001.SZ|2026-04-08|2026-04-08|PAS|bof|BOF|alpha-trigger-v2|alpha-family-v2",
+        ),
+        (
+            "000002.SZ",
+            "PB",
+            "blocked",
+            False,
+            "熊顺",
+            "none",
+            "state-000002.SZ-2026-04-08",
+            None,
+            None,
+            "pb_core",
+            "supporting",
+            "000002.SZ|2026-04-08|2026-04-08|PAS|pb|PB|alpha-trigger-v2|alpha-family-v2",
+        ),
+    ]
+    assert run_event_rows == [
+        (
+            "000001.SZ|2026-04-08|2026-04-08|PAS|bof|BOF|000001.SZ|2026-04-08|2026-04-08|PAS|bof|BOF|alpha-trigger-v2|alpha-formal-signal-v3",
+            "000001.SZ|2026-04-08|2026-04-08|PAS|bof|BOF|alpha-trigger-v2|alpha-family-v2",
+            "mainline",
+        ),
+        (
+            "000002.SZ|2026-04-08|2026-04-08|PAS|pb|PB|000002.SZ|2026-04-08|2026-04-08|PAS|pb|PB|alpha-trigger-v2|alpha-formal-signal-v3",
+            "000002.SZ|2026-04-08|2026-04-08|PAS|pb|PB|alpha-trigger-v2|alpha-family-v2",
+            "supporting",
+        ),
     ]
 
 
@@ -498,6 +564,7 @@ def test_run_alpha_formal_signal_build_marks_rematerialized_when_official_upstre
     )
     _materialize_official_upstream(settings, suffix="002a")
     _materialize_official_trigger(settings, suffix="002a")
+    _materialize_official_family(settings, suffix="002a")
 
     first_summary = run_alpha_formal_signal_build(
         settings=settings,
@@ -513,6 +580,7 @@ def test_run_alpha_formal_signal_build_marks_rematerialized_when_official_upstre
     )
     _materialize_official_upstream(settings, suffix="002b")
     _materialize_official_trigger(settings, suffix="002b")
+    _materialize_official_family(settings, suffix="002b")
     second_summary = run_alpha_formal_signal_build(
         settings=settings,
         signal_start_date="2026-04-08",
@@ -527,7 +595,7 @@ def test_run_alpha_formal_signal_build_marks_rematerialized_when_official_upstre
     try:
         event_row = conn.execute(
             """
-            SELECT formal_signal_status, trigger_admissible, last_materialized_run_id
+            SELECT formal_signal_status, trigger_admissible, family_role, malf_alignment, last_materialized_run_id
             FROM alpha_formal_signal_event
             WHERE instrument = '000001.SZ'
             """
@@ -535,7 +603,101 @@ def test_run_alpha_formal_signal_build_marks_rematerialized_when_official_upstre
     finally:
         conn.close()
 
-    assert event_row == ("blocked", False, "alpha-formal-signal-test-002b")
+    assert event_row == ("blocked", False, "supporting", "conflicted", "alpha-formal-signal-test-002b")
+
+
+def test_run_alpha_formal_signal_build_queue_replays_when_family_payload_changes(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+
+    _seed_trigger_source(
+        settings.databases.alpha,
+        [("000001.SZ", "2026-04-08", "2026-04-08", "PAS", "bof", "BOF")],
+    )
+    _seed_malf_sources(
+        settings.databases.malf,
+        context_rows=[
+            ("000001.SZ", "2026-04-08", "2026-04-08", "ctx-family-queue-001", "BULL_MAINSTREAM", 1, 4, "2026-04-08"),
+        ],
+        structure_rows=[
+            ("000001.SZ", "2026-04-08", "2026-04-08", 2, 0, 0.8, 0.7, False, None),
+        ],
+        higher_timeframe_rows=[
+            ("state-w-family-queue-001", "000001.SZ", "W", "2026-04-03", "牛顺", "up", "none", 3, 1, 0),
+            ("state-m-family-queue-001", "000001.SZ", "M", "2026-03-31", "牛逆", "down", "trigger", 1, 0, 1),
+        ],
+    )
+    _materialize_official_upstream(settings, suffix="family-queue-a")
+    _seed_filter_checkpoints(
+        settings.databases.filter,
+        [("stock", "000001.SZ", "D", "2026-04-08", "2026-04-08", "2026-04-08", "filter-source-a", "filter-run-a")],
+    )
+
+    run_alpha_trigger_build(settings=settings, run_id="alpha-trigger-family-queue-a")
+    _materialize_official_family(settings, suffix="family-queue-a")
+    first_summary = run_alpha_formal_signal_build(
+        settings=settings,
+        run_id="alpha-formal-signal-family-queue-a",
+    )
+
+    conn = duckdb.connect(str(alpha_ledger_path(settings)))
+    try:
+        payload_json = conn.execute(
+            """
+            SELECT payload_json
+            FROM alpha_family_event
+            WHERE instrument = '000001.SZ'
+            """
+        ).fetchone()[0]
+        payload = json.loads(payload_json)
+        payload["family_role"] = "warning"
+        payload["malf_alignment"] = "conflicted"
+        payload["source_context_fingerprint"] = "manual-family-fingerprint-b"
+        conn.execute(
+            """
+            UPDATE alpha_family_event
+            SET payload_json = ?, last_materialized_run_id = 'alpha-family-upstream-test-family-queue-b', updated_at = CURRENT_TIMESTAMP
+            WHERE instrument = '000001.SZ'
+            """,
+            [json.dumps(payload, ensure_ascii=False, sort_keys=True)],
+        )
+    finally:
+        conn.close()
+
+    second_summary = run_alpha_formal_signal_build(
+        settings=settings,
+        run_id="alpha-formal-signal-family-queue-b",
+    )
+
+    conn = duckdb.connect(str(alpha_ledger_path(settings)), read_only=True)
+    try:
+        queue_row = conn.execute(
+            """
+            SELECT queue_status, dirty_reason
+            FROM alpha_formal_signal_work_queue
+            WHERE code = '000001.SZ'
+            ORDER BY updated_at DESC
+            LIMIT 1
+            """
+        ).fetchone()
+        event_row = conn.execute(
+            """
+            SELECT family_role, malf_alignment, family_source_context_fingerprint, last_materialized_run_id
+            FROM alpha_formal_signal_event
+            WHERE instrument = '000001.SZ'
+            """
+        ).fetchone()
+    finally:
+        conn.close()
+
+    assert first_summary.execution_mode == "checkpoint_queue"
+    assert second_summary.rematerialized_count == 1
+    assert queue_row == ("completed", "source_fingerprint_changed")
+    assert event_row == ("warning", "conflicted", "manual-family-fingerprint-b", "alpha-formal-signal-family-queue-b")
 
 
 def test_run_alpha_formal_signal_build_outputs_event_consumable_by_position_runner(
@@ -567,6 +729,7 @@ def test_run_alpha_formal_signal_build_outputs_event_consumable_by_position_runn
     )
     _materialize_official_upstream(settings, suffix="003")
     _materialize_official_trigger(settings, suffix="003")
+    _materialize_official_family(settings, suffix="003")
 
     alpha_summary = run_alpha_formal_signal_build(
         settings=settings,
@@ -642,6 +805,7 @@ def test_run_alpha_trigger_and_formal_signal_use_checkpoint_queue_by_default(
     assert trigger_summary.execution_mode == "checkpoint_queue"
     assert trigger_summary.queue_claimed_count == 1
     assert trigger_summary.checkpoint_upserted_count == 1
+    _materialize_official_family(settings, suffix="queue-a")
 
     formal_summary = run_alpha_formal_signal_build(
         settings=settings,
@@ -679,6 +843,7 @@ def test_run_alpha_trigger_and_formal_signal_use_checkpoint_queue_by_default(
         settings=settings,
         run_id="alpha-trigger-test-queue-001b",
     )
+    _materialize_official_family(settings, suffix="queue-b")
     second_formal_summary = run_alpha_formal_signal_build(
         settings=settings,
         run_id="alpha-formal-signal-test-queue-001b",

@@ -16,6 +16,7 @@ from mlq.alpha.bootstrap import (
 from mlq.alpha.formal_signal_shared import (
     AlphaFormalSignalBuildSummary,
     _ContextRow,
+    _FamilyRow,
     _FormalSignalEventRow,
     _TriggerRow,
     _build_signal_nk,
@@ -24,7 +25,11 @@ from mlq.alpha.formal_signal_shared import (
     _normalize_optional_nullable_str,
     _normalize_optional_str,
 )
-from mlq.alpha.formal_signal_source import _load_official_context_rows, _load_trigger_rows
+from mlq.alpha.formal_signal_source import (
+    _load_family_rows,
+    _load_official_context_rows,
+    _load_trigger_rows,
+)
 
 
 def _materialize_alpha_formal_signal_scope(
@@ -40,6 +45,7 @@ def _materialize_alpha_formal_signal_scope(
     limit: int,
     batch_size: int,
     source_trigger_table: str,
+    source_family_table: str,
     source_filter_table: str,
     source_structure_table: str,
     signal_contract_version: str,
@@ -53,6 +59,11 @@ def _materialize_alpha_formal_signal_scope(
         signal_end_date=signal_end_date,
         instruments=(instrument,),
         limit=limit,
+    )
+    family_map = _load_family_rows(
+        connection=connection,
+        table_name=source_family_table,
+        trigger_rows=trigger_rows,
     )
     context_rows = _load_official_context_rows(
         filter_path=filter_path,
@@ -71,6 +82,7 @@ def _materialize_alpha_formal_signal_scope(
         connection=connection,
         run_id=run_id,
         trigger_rows=trigger_rows,
+        family_map=family_map,
         context_map=context_map,
         signal_contract_version=signal_contract_version,
         producer_name=producer_name,
@@ -81,6 +93,7 @@ def _materialize_alpha_formal_signal_scope(
         filter_path=filter_path,
         structure_path=structure_path,
         source_trigger_table=source_trigger_table,
+        source_family_table=source_family_table,
         source_filter_table=source_filter_table,
         source_structure_table=source_structure_table,
         batch_size=batch_size,
@@ -92,6 +105,7 @@ def _materialize_formal_signal_rows(
     connection: duckdb.DuckDBPyConnection,
     run_id: str,
     trigger_rows: list[_TriggerRow],
+    family_map: dict[str, _FamilyRow],
     context_map: dict[tuple[str, date, date], _ContextRow],
     signal_contract_version: str,
     producer_name: str,
@@ -102,6 +116,7 @@ def _materialize_formal_signal_rows(
     filter_path: Path,
     structure_path: Path,
     source_trigger_table: str,
+    source_family_table: str,
     source_filter_table: str,
     source_structure_table: str,
     batch_size: int,
@@ -123,6 +138,7 @@ def _materialize_formal_signal_rows(
             event_row = _build_formal_signal_event_row(
                 run_id=run_id,
                 trigger_row=trigger_row,
+                family_row=family_map.get(trigger_row.source_trigger_event_nk),
                 context_row=context_row,
                 signal_contract_version=signal_contract_version,
             )
@@ -137,15 +153,25 @@ def _materialize_formal_signal_rows(
                     signal_nk,
                     materialization_action,
                     formal_signal_status,
+                    source_family_event_nk,
+                    family_code,
+                    family_role,
+                    malf_alignment,
+                    family_source_context_fingerprint,
                     source_trigger_event_nk
                 )
-                VALUES (?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 [
                     run_id,
                     event_row.signal_nk,
                     materialization_action,
                     event_row.formal_signal_status,
+                    event_row.source_family_event_nk,
+                    event_row.family_code,
+                    event_row.family_role,
+                    event_row.malf_alignment,
+                    event_row.family_source_context_fingerprint,
                     event_row.source_trigger_event_nk,
                 ],
             )
@@ -190,6 +216,7 @@ def _materialize_formal_signal_rows(
         filter_ledger_path=str(filter_path),
         structure_ledger_path=str(structure_path),
         source_trigger_table=source_trigger_table,
+        source_family_table=source_family_table,
         source_filter_table=source_filter_table,
         source_structure_table=source_structure_table,
     )
@@ -228,6 +255,7 @@ def _insert_run_row(
     signal_end_date: date | None,
     bounded_instrument_count: int,
     source_trigger_table: str,
+    source_family_table: str,
     source_context_table: str,
     signal_contract_version: str,
 ) -> None:
@@ -242,11 +270,12 @@ def _insert_run_row(
             signal_end_date,
             bounded_instrument_count,
             source_trigger_table,
+            source_family_table,
             source_context_table,
             signal_contract_version,
             notes
         )
-        VALUES (?, ?, ?, 'running', ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, 'running', ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         [
             run_id,
@@ -256,6 +285,7 @@ def _insert_run_row(
             signal_end_date,
             bounded_instrument_count,
             source_trigger_table,
+            source_family_table,
             source_context_table,
             signal_contract_version,
             "bounded alpha formal signal producer",
@@ -267,6 +297,7 @@ def _build_formal_signal_event_row(
     *,
     run_id: str,
     trigger_row: _TriggerRow,
+    family_row: _FamilyRow | None,
     context_row: _ContextRow,
     signal_contract_version: str,
 ) -> _FormalSignalEventRow:
@@ -308,6 +339,18 @@ def _build_formal_signal_event_row(
         monthly_trend_direction=context_row.monthly_trend_direction,
         monthly_reversal_stage=context_row.monthly_reversal_stage,
         monthly_source_context_nk=context_row.monthly_source_context_nk,
+        source_family_event_nk=None if family_row is None else family_row.source_family_event_nk,
+        family_code=None if family_row is None else family_row.family_code,
+        source_family_contract_version=None
+        if family_row is None
+        else family_row.source_family_contract_version,
+        family_role=None if family_row is None else family_row.family_role,
+        family_bias=None if family_row is None else family_row.family_bias,
+        malf_alignment=None if family_row is None else family_row.malf_alignment,
+        malf_phase_bucket=None if family_row is None else family_row.malf_phase_bucket,
+        family_source_context_fingerprint=None
+        if family_row is None
+        else family_row.family_source_context_fingerprint,
         source_trigger_event_nk=trigger_row.source_trigger_event_nk,
         signal_contract_version=signal_contract_version,
         first_seen_run_id=run_id,
@@ -343,6 +386,14 @@ def _upsert_formal_signal_event(
             monthly_trend_direction,
             monthly_reversal_stage,
             monthly_source_context_nk,
+            source_family_event_nk,
+            family_code,
+            source_family_contract_version,
+            family_role,
+            family_bias,
+            malf_alignment,
+            malf_phase_bucket,
+            family_source_context_fingerprint,
             first_seen_run_id
         FROM {ALPHA_FORMAL_SIGNAL_EVENT_TABLE}
         WHERE signal_nk = ?
@@ -352,11 +403,11 @@ def _upsert_formal_signal_event(
     if existing_row is None:
         connection.execute(
             f"""
-            INSERT INTO {ALPHA_FORMAL_SIGNAL_EVENT_TABLE} (
-                signal_nk,
-                instrument,
-                signal_date,
-                asof_date,
+                INSERT INTO {ALPHA_FORMAL_SIGNAL_EVENT_TABLE} (
+                    signal_nk,
+                    instrument,
+                    signal_date,
+                    asof_date,
                 trigger_family,
                 trigger_type,
                 pattern_code,
@@ -376,19 +427,27 @@ def _upsert_formal_signal_event(
                 weekly_trend_direction,
                 weekly_reversal_stage,
                 weekly_source_context_nk,
-                monthly_major_state,
-                monthly_trend_direction,
-                monthly_reversal_stage,
-                monthly_source_context_nk,
-                source_trigger_event_nk,
-                signal_contract_version,
-                first_seen_run_id,
-                last_materialized_run_id
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            [
-                event_row.signal_nk,
+                    monthly_major_state,
+                    monthly_trend_direction,
+                    monthly_reversal_stage,
+                    monthly_source_context_nk,
+                    source_family_event_nk,
+                    family_code,
+                    source_family_contract_version,
+                    family_role,
+                    family_bias,
+                    malf_alignment,
+                    malf_phase_bucket,
+                    family_source_context_fingerprint,
+                    source_trigger_event_nk,
+                    signal_contract_version,
+                    first_seen_run_id,
+                    last_materialized_run_id
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                [
+                    event_row.signal_nk,
                 event_row.instrument,
                 event_row.signal_date,
                 event_row.asof_date,
@@ -411,13 +470,21 @@ def _upsert_formal_signal_event(
                 event_row.weekly_trend_direction,
                 event_row.weekly_reversal_stage,
                 event_row.weekly_source_context_nk,
-                event_row.monthly_major_state,
-                event_row.monthly_trend_direction,
-                event_row.monthly_reversal_stage,
-                event_row.monthly_source_context_nk,
-                event_row.source_trigger_event_nk,
-                event_row.signal_contract_version,
-                event_row.first_seen_run_id,
+                    event_row.monthly_major_state,
+                    event_row.monthly_trend_direction,
+                    event_row.monthly_reversal_stage,
+                    event_row.monthly_source_context_nk,
+                    event_row.source_family_event_nk,
+                    event_row.family_code,
+                    event_row.source_family_contract_version,
+                    event_row.family_role,
+                    event_row.family_bias,
+                    event_row.malf_alignment,
+                    event_row.malf_phase_bucket,
+                    event_row.family_source_context_fingerprint,
+                    event_row.source_trigger_event_nk,
+                    event_row.signal_contract_version,
+                    event_row.first_seen_run_id,
                 event_row.last_materialized_run_id,
             ],
         )
@@ -444,6 +511,14 @@ def _upsert_formal_signal_event(
         _normalize_optional_nullable_str(existing_row[17]),
         _normalize_optional_nullable_str(existing_row[18]),
         _normalize_optional_nullable_str(existing_row[19]),
+        _normalize_optional_nullable_str(existing_row[20]),
+        _normalize_optional_nullable_str(existing_row[21]),
+        _normalize_optional_nullable_str(existing_row[22]),
+        _normalize_optional_nullable_str(existing_row[23]),
+        _normalize_optional_nullable_str(existing_row[24]),
+        _normalize_optional_nullable_str(existing_row[25]),
+        _normalize_optional_nullable_str(existing_row[26]),
+        _normalize_optional_nullable_str(existing_row[27]),
     )
     new_fingerprint = (
         event_row.formal_signal_status,
@@ -466,8 +541,16 @@ def _upsert_formal_signal_event(
         event_row.monthly_trend_direction,
         event_row.monthly_reversal_stage,
         event_row.monthly_source_context_nk,
+        event_row.source_family_event_nk,
+        event_row.family_code,
+        event_row.source_family_contract_version,
+        event_row.family_role,
+        event_row.family_bias,
+        event_row.malf_alignment,
+        event_row.malf_phase_bucket,
+        event_row.family_source_context_fingerprint,
     )
-    first_seen_run_id = str(existing_row[20]) if existing_row[20] is not None else event_row.first_seen_run_id
+    first_seen_run_id = str(existing_row[-1]) if existing_row[-1] is not None else event_row.first_seen_run_id
     connection.execute(
         f"""
         UPDATE {ALPHA_FORMAL_SIGNAL_EVENT_TABLE}
@@ -492,6 +575,14 @@ def _upsert_formal_signal_event(
             monthly_trend_direction = ?,
             monthly_reversal_stage = ?,
             monthly_source_context_nk = ?,
+            source_family_event_nk = ?,
+            family_code = ?,
+            source_family_contract_version = ?,
+            family_role = ?,
+            family_bias = ?,
+            malf_alignment = ?,
+            malf_phase_bucket = ?,
+            family_source_context_fingerprint = ?,
             first_seen_run_id = ?,
             last_materialized_run_id = ?,
             updated_at = CURRENT_TIMESTAMP
@@ -518,6 +609,14 @@ def _upsert_formal_signal_event(
             event_row.monthly_trend_direction,
             event_row.monthly_reversal_stage,
             event_row.monthly_source_context_nk,
+            event_row.source_family_event_nk,
+            event_row.family_code,
+            event_row.source_family_contract_version,
+            event_row.family_role,
+            event_row.family_bias,
+            event_row.malf_alignment,
+            event_row.malf_phase_bucket,
+            event_row.family_source_context_fingerprint,
             first_seen_run_id,
             event_row.last_materialized_run_id,
             event_row.signal_nk,

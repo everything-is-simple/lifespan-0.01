@@ -49,14 +49,39 @@ def _seed_alpha_formal_signal_table(alpha_path: Path, rows: list[tuple[object, .
                 lifecycle_rank_high BIGINT NOT NULL,
                 lifecycle_rank_total BIGINT NOT NULL,
                 source_trigger_event_nk TEXT NOT NULL,
-                signal_contract_version TEXT NOT NULL
+                signal_contract_version TEXT NOT NULL,
+                source_family_event_nk TEXT,
+                source_family_contract_version TEXT,
+                family_code TEXT,
+                family_role TEXT,
+                family_bias TEXT,
+                malf_alignment TEXT,
+                malf_phase_bucket TEXT,
+                family_source_context_fingerprint TEXT,
+                last_materialized_run_id TEXT
             )
             """
         )
         for row in rows:
             conn.execute(
                 """
-                INSERT INTO alpha_formal_signal_event VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO alpha_formal_signal_event (
+                    signal_nk,
+                    instrument,
+                    signal_date,
+                    asof_date,
+                    trigger_family,
+                    trigger_type,
+                    pattern_code,
+                    formal_signal_status,
+                    trigger_admissible,
+                    malf_context_4,
+                    lifecycle_rank_high,
+                    lifecycle_rank_total,
+                    source_trigger_event_nk,
+                    signal_contract_version
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 row,
             )
@@ -158,6 +183,89 @@ def test_run_position_formal_signal_materialization_reads_official_alpha_and_enr
 
     assert candidate_row == ("admitted",)
     assert sizing_row == (date(2026, 4, 9), 10.5, "open_up_to_context_cap", 17800)
+
+
+def test_run_position_formal_signal_materialization_accepts_family_aware_alpha_columns(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+
+    _seed_alpha_formal_signal_table(
+        settings.databases.alpha,
+        [
+            (
+                "sig-111",
+                "000001.SZ",
+                "2026-04-08",
+                "2026-04-08",
+                "PAS",
+                "bof",
+                "BOF",
+                "admitted",
+                True,
+                "BULL_MAINSTREAM",
+                1,
+                4,
+                "evt-111",
+                "alpha-formal-signal-v3",
+            )
+        ],
+    )
+    conn = duckdb.connect(str(settings.databases.alpha))
+    try:
+        conn.execute(
+            """
+            UPDATE alpha_formal_signal_event
+            SET
+                source_family_event_nk = 'evt-111|alpha-family-v2',
+                source_family_contract_version = 'alpha-family-v2',
+                family_code = 'bof_core',
+                family_role = 'mainline',
+                family_bias = 'reversal_attempt',
+                malf_alignment = 'cautious',
+                malf_phase_bucket = 'early',
+                family_source_context_fingerprint = 'family-fingerprint-111',
+                last_materialized_run_id = 'alpha-formal-run-111'
+            WHERE signal_nk = 'sig-111'
+            """
+        )
+    finally:
+        conn.close()
+    _seed_market_base_prices(
+        settings.databases.market_base,
+        [("000001.SZ", "2026-04-09", "none", 10.5)],
+    )
+
+    summary = run_position_formal_signal_materialization(
+        policy_id="fixed_notional_full_exit_v1",
+        capital_base_value=1_000_000.0,
+        settings=settings,
+        signal_start_date="2026-04-08",
+        signal_end_date="2026-04-08",
+        limit=10,
+        run_id="position-runner-test-family-aware-001",
+    )
+
+    assert summary.position_run_id == "position-runner-test-family-aware-001"
+    assert summary.alpha_signal_count == 1
+    assert summary.enriched_signal_count == 1
+
+    conn = duckdb.connect(str(position_ledger_path(settings)), read_only=True)
+    try:
+        candidate_row = conn.execute(
+            """
+            SELECT candidate_status, source_signal_run_id
+            FROM position_candidate_audit
+            WHERE candidate_nk = 'sig-111|fixed_notional_full_exit_v1|2026-04-09'
+            """
+        ).fetchone()
+    finally:
+        conn.close()
+
+    assert candidate_row == ("admitted", "alpha-formal-run-111")
 
 
 def test_run_position_formal_signal_materialization_skips_signals_without_reference_price(

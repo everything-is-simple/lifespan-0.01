@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from datetime import date
 from pathlib import Path
@@ -9,12 +10,14 @@ from pathlib import Path
 import duckdb
 
 from mlq.alpha.bootstrap import (
+    ALPHA_FAMILY_EVENT_TABLE,
     ALPHA_FORMAL_SIGNAL_CHECKPOINT_TABLE,
     ALPHA_FORMAL_SIGNAL_WORK_QUEUE_TABLE,
     ALPHA_TRIGGER_CHECKPOINT_TABLE,
 )
 from mlq.alpha.formal_signal_shared import (
     _ContextRow,
+    _FamilyRow,
     _TriggerRow,
     _build_alpha_formal_signal_run_id,
     _build_queue_nk,
@@ -55,6 +58,12 @@ def _load_alpha_formal_signal_dirty_scopes(
         replay_end = _to_python_date(row[1])
         if replay_end is None:
             continue
+        family_scope_fingerprint = _build_family_scope_fingerprint(
+            connection=connection,
+            instrument=str(row[0]),
+            replay_start_bar_dt=_to_python_date(row[2]) or replay_end,
+            replay_confirm_until_dt=replay_end,
+        )
         source_fingerprint = json.dumps(
             {
                 "last_completed_bar_dt": replay_end.isoformat(),
@@ -62,6 +71,7 @@ def _load_alpha_formal_signal_dirty_scopes(
                 "tail_confirm_until_dt": None if _to_python_date(row[3]) is None else _to_python_date(row[3]).isoformat(),
                 "source_fingerprint": str(row[4]),
                 "last_run_id": None if row[5] is None else str(row[5]),
+                "family_scope_fingerprint": family_scope_fingerprint,
             },
             ensure_ascii=False,
             sort_keys=True,
@@ -78,6 +88,50 @@ def _load_alpha_formal_signal_dirty_scopes(
             }
         )
     return scope_rows
+
+
+def _build_family_scope_fingerprint(
+    *,
+    connection: duckdb.DuckDBPyConnection,
+    instrument: str,
+    replay_start_bar_dt: date,
+    replay_confirm_until_dt: date,
+    table_name: str = ALPHA_FAMILY_EVENT_TABLE,
+) -> dict[str, object]:
+    if not _table_exists(connection, table_name):
+        return {"family_table_present": False}
+    rows = connection.execute(
+        f"""
+        SELECT
+            family_event_nk,
+            trigger_event_nk,
+            family_code,
+            family_contract_version,
+            payload_json,
+            last_materialized_run_id
+        FROM {table_name}
+        WHERE instrument = ?
+          AND signal_date >= ?
+          AND signal_date <= ?
+        ORDER BY signal_date, trigger_event_nk, family_event_nk
+        """,
+        [instrument, replay_start_bar_dt, replay_confirm_until_dt],
+    ).fetchall()
+    return {
+        "family_table_present": True,
+        "family_event_count": len(rows),
+        "family_events": [
+            {
+                "family_event_nk": str(row[0]),
+                "trigger_event_nk": str(row[1]),
+                "family_code": _normalize_optional_nullable_str(row[2]),
+                "family_contract_version": _normalize_optional_nullable_str(row[3]),
+                "payload_sha256": hashlib.sha256(_normalize_optional_str(row[4]).encode("utf-8")).hexdigest(),
+                "last_materialized_run_id": _normalize_optional_nullable_str(row[5]),
+            }
+            for row in rows
+        ],
+    }
 
 
 def _enqueue_alpha_formal_signal_dirty_scopes(
@@ -310,6 +364,66 @@ def _upsert_alpha_formal_signal_checkpoint(
         """,
         [last_completed_bar_dt, tail_start_bar_dt, tail_confirm_until_dt, source_fingerprint, last_run_id, asset_type, code, timeframe],
     )
+
+
+def _load_family_rows(
+    *,
+    connection: duckdb.DuckDBPyConnection,
+    table_name: str,
+    trigger_rows: list[_TriggerRow],
+) -> dict[str, _FamilyRow]:
+    if not trigger_rows or not _table_exists(connection, table_name):
+        return {}
+    trigger_event_nks = tuple(
+        dict.fromkeys(row.source_trigger_event_nk for row in trigger_rows if row.source_trigger_event_nk)
+    )
+    if not trigger_event_nks:
+        return {}
+    placeholders = ", ".join("?" for _ in trigger_event_nks)
+    rows = connection.execute(
+        f"""
+        WITH ranked_family AS (
+            SELECT
+                family_event_nk,
+                trigger_event_nk,
+                family_code,
+                family_contract_version,
+                payload_json,
+                ROW_NUMBER() OVER (
+                    PARTITION BY trigger_event_nk
+                    ORDER BY updated_at DESC, last_materialized_run_id DESC, family_event_nk DESC
+                ) AS row_rank
+            FROM {table_name}
+            WHERE trigger_event_nk IN ({placeholders})
+        )
+        SELECT
+            family_event_nk,
+            trigger_event_nk,
+            family_code,
+            family_contract_version,
+            payload_json
+        FROM ranked_family
+        WHERE row_rank = 1
+        """,
+        [*trigger_event_nks],
+    ).fetchall()
+    family_map: dict[str, _FamilyRow] = {}
+    for row in rows:
+        payload = _parse_payload_json(row[4])
+        family_map[str(row[1])] = _FamilyRow(
+            source_family_event_nk=str(row[0]),
+            source_trigger_event_nk=str(row[1]),
+            family_code=_normalize_optional_nullable_str(row[2]),
+            source_family_contract_version=_normalize_optional_nullable_str(row[3]),
+            family_role=_normalize_optional_nullable_str(payload.get("family_role")),
+            family_bias=_normalize_optional_nullable_str(payload.get("family_bias")),
+            malf_alignment=_normalize_optional_nullable_str(payload.get("malf_alignment")),
+            malf_phase_bucket=_normalize_optional_nullable_str(payload.get("malf_phase_bucket")),
+            family_source_context_fingerprint=_normalize_optional_nullable_str(
+                payload.get("source_context_fingerprint")
+            ),
+        )
+    return family_map
 
 
 def _load_trigger_rows(
@@ -613,3 +727,27 @@ def _resolve_optional_column(available_columns: set[str], candidates: tuple[str,
         if candidate in available_columns:
             return candidate
     return None
+
+
+def _table_exists(connection: duckdb.DuckDBPyConnection, table_name: str) -> bool:
+    row = connection.execute(
+        """
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = 'main'
+          AND table_name = ?
+        LIMIT 1
+        """,
+        [table_name],
+    ).fetchone()
+    return row is not None
+
+
+def _parse_payload_json(payload_json: object) -> dict[str, object]:
+    if payload_json is None:
+        return {}
+    try:
+        parsed = json.loads(str(payload_json))
+    except json.JSONDecodeError:
+        return {}
+    return parsed if isinstance(parsed, dict) else {}

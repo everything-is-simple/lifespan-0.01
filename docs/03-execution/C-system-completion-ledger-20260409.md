@@ -1,34 +1,36 @@
 # 系统完成账本
-日期：`2026-04-09`
-状态：`持续更新`
+`日期：2026-04-09`
+`状态：持续更新`
 
-1. 当前下一锤：`45-alpha-formal-signal-producer-hardening-before-position-card-20260413.md`
-2. 当前待施工卡：`45-alpha-formal-signal-producer-hardening-before-position-card-20260413.md`
-3. 正式主线剩余卡：`17`
+1. 当前下一锤：`46-pre-position-upstream-acceptance-gate-card-20260413.md`
+2. 当前待施工卡：`46-pre-position-upstream-acceptance-gate-card-20260413.md`
+3. 正式主线剩余卡：`16`
 4. 可选 Sidecar 剩余卡：`0`
 5. backlog：`0`
 
 ## 已完成阶段
-1. 治理与入口基线卡`01-06`
-2. `position` bounded runner 卡`07-09`
-3. `alpha / structure / filter` 最小主线合同卡`10-13`
-4. `portfolio_plan / trade` 最小运行时骨架卡`14-15`
-5. `data / malf / system` 官方主线桥接与治理卡`16-28`
-6. `malf` canonical freeze / runner / downstream rebind 卡`29-35`
-7. `malf` wave life probability sidecar 卡`36`
-8. 治理历史债务清理卡`37`
-9. `structure / filter` 主线旧 malf 语义 purge 卡`38`
-10. 主线本地正式 ledger 一次性标准化 bootstrap 卡`39`
-11. 主线本地正式 ledger 每日增量同步、断点续跑与 freshness audit 卡`40`
-12. `alpha family role / canonical malf alignment` 卡`42`
-13. `pre-position data-grade quality gate` 卡`43`
-14. `structure / filter official ledger replay / smoke hardening` 卡`44`
+1. 治理与入口基线卡 `01-06`
+2. `position` bounded runner 卡 `07-09`
+3. `alpha / structure / filter` 最小主链合同卡 `10-13`
+4. `portfolio_plan / trade` 最小运行时骨架卡 `14-15`
+5. `data / malf / system` 官方主线桥接与治理卡 `16-28`
+6. `malf` canonical freeze / runner / downstream rebind 卡 `29-35`
+7. `malf` wave life probability sidecar 卡 `36`
+8. 治理历史债务清理卡 `37`
+9. `structure / filter` 主线旧 malf 语义 purge 卡 `38`
+10. 主线本地正式 ledger 一次性标准化 bootstrap 卡 `39`
+11. 主线本地正式 ledger 每日增量同步、断点续跑与 freshness audit 卡 `40`
+12. `alpha PAS canonical detector` 卡 `41`
+13. `alpha family role / canonical malf alignment` 卡 `42`
+14. `pre-position data-grade quality gate` 卡 `43`
+15. `structure / filter official ledger replay / smoke hardening` 卡 `44`
+16. `alpha formal signal producer family-aware hardening` 卡 `45`
 
 ## 当前阶段
-1. 最新生效结论锚点已推进到 `44-structure-filter-official-ledger-replay-smoke-hardening-conclusion-20260413.md`。
-2. `44` 已完成 `structure / filter` official ledger replay / smoke 硬化，并允许继续进入 `45`。
-3. 当前主线已从“structure/filter official ledger hardening”切换到“alpha formal signal producer hardening + integrated acceptance”阶段。
-4. 当前主线待施工卡已前移到 `45-alpha-formal-signal-producer-hardening-before-position-card-20260413.md`；只有 `46` 接受后，才允许进入 `47 -> 55`，只有 `55` 接受后，才恢复 `100-105`。
+1. 最新生效结论锚点已推进到 `45-alpha-formal-signal-producer-hardening-before-position-conclusion-20260413.md`。
+2. `45` 已完成 `alpha formal signal` 对 `alpha_family_event` 正式解释键的物理接入、family-aware replay 硬化与 `position` 消费合同校验。
+3. 当前主线已从 `alpha producer hardening` 前移到 `46 pre-position upstream acceptance gate`。
+4. 只有 `46` 接受后，才允许进入 `47 -> 55`；只有 `55` 接受后，才允许恢复 `100-105`。
 
 ## 完成阶段图
 ```mermaid

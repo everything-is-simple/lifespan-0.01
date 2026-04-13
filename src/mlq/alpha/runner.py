@@ -20,6 +20,7 @@ from mlq.alpha.formal_signal_materialization import (
 )
 from mlq.alpha.formal_signal_shared import (
     DEFAULT_ALPHA_FORMAL_SIGNAL_CONTRACT_VERSION,
+    DEFAULT_ALPHA_FORMAL_SIGNAL_FAMILY_TABLE,
     DEFAULT_ALPHA_FORMAL_SIGNAL_FILTER_TABLE,
     DEFAULT_ALPHA_FORMAL_SIGNAL_STRUCTURE_TABLE,
     DEFAULT_ALPHA_FORMAL_SIGNAL_TRIGGER_TABLE,
@@ -34,6 +35,7 @@ from mlq.alpha.formal_signal_source import (
     _claim_alpha_formal_signal_scopes,
     _enqueue_alpha_formal_signal_dirty_scopes,
     _ensure_database_exists,
+    _load_family_rows,
     _load_alpha_formal_signal_dirty_scopes,
     _load_official_context_rows,
     _load_trigger_rows,
@@ -58,6 +60,7 @@ def run_alpha_formal_signal_build(
     batch_size: int = 100,
     run_id: str | None = None,
     source_trigger_table: str = DEFAULT_ALPHA_FORMAL_SIGNAL_TRIGGER_TABLE,
+    source_family_table: str = DEFAULT_ALPHA_FORMAL_SIGNAL_FAMILY_TABLE,
     source_filter_table: str = DEFAULT_ALPHA_FORMAL_SIGNAL_FILTER_TABLE,
     source_structure_table: str = DEFAULT_ALPHA_FORMAL_SIGNAL_STRUCTURE_TABLE,
     signal_contract_version: str = DEFAULT_ALPHA_FORMAL_SIGNAL_CONTRACT_VERSION,
@@ -86,6 +89,7 @@ def run_alpha_formal_signal_build(
             batch_size=batch_size,
             run_id=run_id,
             source_trigger_table=source_trigger_table,
+            source_family_table=source_family_table,
             source_filter_table=source_filter_table,
             source_structure_table=source_structure_table,
             signal_contract_version=signal_contract_version,
@@ -106,6 +110,7 @@ def run_alpha_formal_signal_build(
         batch_size=batch_size,
         run_id=run_id,
         source_trigger_table=source_trigger_table,
+        source_family_table=source_family_table,
         source_filter_table=source_filter_table,
         source_structure_table=source_structure_table,
         signal_contract_version=signal_contract_version,
@@ -129,6 +134,7 @@ def _run_alpha_formal_signal_bounded_build(
     batch_size: int,
     run_id: str | None,
     source_trigger_table: str,
+    source_family_table: str,
     source_filter_table: str,
     source_structure_table: str,
     signal_contract_version: str,
@@ -161,6 +167,11 @@ def _run_alpha_formal_signal_bounded_build(
             instruments=instruments,
             limit=normalized_limit,
         )
+        family_rows = _load_family_rows(
+            connection=alpha_connection,
+            table_name=source_family_table,
+            trigger_rows=trigger_rows,
+        )
         context_rows = _load_official_context_rows(
             filter_path=resolved_filter_path,
             structure_path=resolved_structure_path,
@@ -184,6 +195,7 @@ def _run_alpha_formal_signal_bounded_build(
             signal_end_date=signal_end_date,
             bounded_instrument_count=len({row.instrument for row in trigger_rows}),
             source_trigger_table=source_trigger_table,
+            source_family_table=source_family_table,
             source_context_table=source_filter_table,
             signal_contract_version=signal_contract_version,
         )
@@ -192,6 +204,7 @@ def _run_alpha_formal_signal_bounded_build(
             connection=alpha_connection,
             run_id=materialization_run_id,
             trigger_rows=trigger_rows,
+            family_map=family_rows,
             context_map=context_map,
             signal_contract_version=signal_contract_version,
             producer_name=producer_name,
@@ -202,6 +215,7 @@ def _run_alpha_formal_signal_bounded_build(
             filter_path=resolved_filter_path,
             structure_path=resolved_structure_path,
             source_trigger_table=source_trigger_table,
+            source_family_table=source_family_table,
             source_filter_table=source_filter_table,
             source_structure_table=source_structure_table,
             batch_size=normalized_batch_size,
@@ -231,6 +245,7 @@ def _run_alpha_formal_signal_queue_build(
     batch_size: int,
     run_id: str | None,
     source_trigger_table: str,
+    source_family_table: str,
     source_filter_table: str,
     source_structure_table: str,
     signal_contract_version: str,
@@ -277,6 +292,7 @@ def _run_alpha_formal_signal_queue_build(
             signal_end_date=None,
             bounded_instrument_count=len({str(row["code"]) for row in claimed_scope_rows}),
             source_trigger_table=source_trigger_table,
+            source_family_table=source_family_table,
             source_context_table=source_filter_table,
             signal_contract_version=signal_contract_version,
         )
@@ -307,6 +323,7 @@ def _run_alpha_formal_signal_queue_build(
                     limit=normalized_limit,
                     batch_size=normalized_batch_size,
                     source_trigger_table=source_trigger_table,
+                    source_family_table=source_family_table,
                     source_filter_table=source_filter_table,
                     source_structure_table=source_structure_table,
                     signal_contract_version=signal_contract_version,
@@ -366,6 +383,7 @@ def _run_alpha_formal_signal_queue_build(
             filter_ledger_path=str(resolved_filter_path),
             structure_ledger_path=str(resolved_structure_path),
             source_trigger_table=source_trigger_table,
+            source_family_table=source_family_table,
             source_filter_table=source_filter_table,
             source_structure_table=source_structure_table,
         )

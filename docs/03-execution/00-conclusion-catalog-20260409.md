@@ -3,7 +3,7 @@
 `日期：2026-04-09`
 `状态：生效`
 
-当前最新生效结论锚点：`44-structure-filter-official-ledger-replay-smoke-hardening-conclusion-20260413.md`
+当前最新生效结论锚点：`45-alpha-formal-signal-producer-hardening-before-position-conclusion-20260413.md`
 
 ## 正式结论目录
 
@@ -61,14 +61,12 @@
 105. `105-system-runtime-orchestration-bootstrap-conclusion-20260411.md`
 
 ## 主线状态
-
-1. `44` 已成为当前最新生效结论锚点。
-2. `44` 已正式裁决 `structure / filter` 的 official-ledger replay / smoke 已硬化完成；当前待施工卡切到 `45`。
-3. `29-44` 已完成 canonical malf downstream + PAS detector + alpha family + pre-position quality gate + official ledger hardening 收口。
-4. 只有 `46` 接受后，当前主线才允许进入 `47 -> 55`；只有 `55` 接受后，才恢复 `100-105` 的 trade/system 卡组。
+1. `45` 已成为当前最新生效结论锚点。
+2. `45` 已正式裁决 `alpha formal signal` producer 完成 family-aware 硬化，可进入 `46`。
+3. `29-45` 已完成 canonical malf downstream、mainline ledger standardization、alpha detector、alpha family、quality gate 与 alpha producer hardening 收口。
+4. 只有 `46` 接受后，当前主线才允许进入 `47 -> 55`；只有 `55` 接受后，才允许恢复 `100 -> 105` 的 trade/system 卡组。
 
 ## 图示
-
 ```mermaid
 flowchart LR
     subgraph GOV["01-06 治理与路线"]
@@ -85,7 +83,6 @@ flowchart LR
     end
     subgraph DOWN["33-42 downstream + alpha family"]
         C33["33-42"]
-        C42["42 alpha family"]
     end
     subgraph GATE["43-46 pre-position"]
         C43["43 quality gate"]
