@@ -38,6 +38,9 @@ class PositionFormalSignalRunnerSummary:
     blocked_count: int
     sizing_count: int
     family_snapshot_count: int
+    entry_leg_count: int
+    exit_plan_count: int
+    exit_leg_count: int
     alpha_ledger_path: str
     market_base_path: str
     position_ledger_path: str
@@ -115,6 +118,9 @@ def run_position_formal_signal_materialization(
         blocked_count=materialization_summary.blocked_count if materialization_summary else 0,
         sizing_count=materialization_summary.sizing_count if materialization_summary else 0,
         family_snapshot_count=materialization_summary.family_snapshot_count if materialization_summary else 0,
+        entry_leg_count=materialization_summary.entry_leg_count if materialization_summary else 0,
+        exit_plan_count=materialization_summary.exit_plan_count if materialization_summary else 0,
+        exit_leg_count=materialization_summary.exit_leg_count if materialization_summary else 0,
         alpha_ledger_path=str(resolved_alpha_path),
         market_base_path=str(resolved_market_base_path),
         position_ledger_path=str(resolved_position_path),

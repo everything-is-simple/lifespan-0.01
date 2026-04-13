@@ -1,7 +1,7 @@
 # 系统级总路线图
 
 日期：`2026-04-09`
-最近刷新：`2026-04-13`
+最近刷新：`2026-04-14`
 状态：`生效中`
 
 ## 文档角色
@@ -15,9 +15,9 @@
 
 1. 历史账本硬约束来自 `docs/01-design/03-historical-ledger-shared-contract-charter-20260409.md`
 2. 全系统统一治理基线来自 `28-system-wide-checkpoint-and-dirty-queue-alignment-conclusion-20260411.md`
-3. 当前最新生效结论锚点为 `46-pre-position-upstream-acceptance-gate-conclusion-20260413.md`
-4. 当前待施工卡为 `47-position-malf-context-driven-sizing-and-batch-contract-card-20260413.md`
-5. 当前连续前置卡组为 `47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55`
+3. 当前最新生效结论锚点为 `47-position-malf-context-driven-sizing-and-batch-contract-conclusion-20260414.md`
+4. 当前待施工卡为 `48-position-risk-budget-and-capacity-ledger-hardening-card-20260413.md`
+5. 当前连续前置卡组为 `48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55`
 
 ## 当前正式判断
 
@@ -25,7 +25,7 @@
    `data -> malf -> structure -> filter -> alpha -> position -> portfolio_plan -> trade -> system`
 2. `28` 已把 `checkpoint + dirty/work queue + replay/resume + audit` 冻结为全系统统一 data-grade 基线。
 3. `29 -> 32` 已验证“先 canonical `malf`，再 data-grade runner，再 downstream rebind，再 truthfulness revalidation”是正确路径。
-4. `33 -> 44` 已完成 canonical downstream 清理、checkpoint 对齐、本地 ledger 标准化、增量续跑、PAS detector、family role、pre-position quality gate 与 official ledger hardening 收口。
+4. `33 -> 47` 已完成 canonical downstream 清理、checkpoint 对齐、本地 ledger 标准化、增量续跑、PAS detector、family role、pre-position quality gate、official ledger hardening 与 position contract freeze 收口。
 5. 当前后半部最薄弱链段已经前移到：
    `position -> portfolio_plan`
 
@@ -41,8 +41,8 @@
 
 ### 当前阶段
 
-1. 当前 active 卡：`47`
-2. 当前 active 卡组：`47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`
+1. 当前 active 卡：`48`
+2. 当前 active 卡组：`48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`
 3. 当前系统级目标：先把 `data -> portfolio_plan` 的质量抬到统一的全 A baseline，再决定是否恢复 `trade -> system`
 
 ## 系统当前剖面图

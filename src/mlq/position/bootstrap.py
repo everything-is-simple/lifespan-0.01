@@ -12,6 +12,7 @@ from .position_bootstrap_schema import (
     DEFAULT_POSITION_POLICY_SEEDS,
     POSITION_LEDGER_DDL,
     POSITION_LEDGER_TABLE_NAMES,
+    apply_position_schema_evolution,
     seed_default_policies,
 )
 from .position_materialization import (
@@ -54,6 +55,7 @@ def bootstrap_position_ledger(
     try:
         for ddl in POSITION_LEDGER_DDL.values():
             conn.execute(ddl)
+        apply_position_schema_evolution(conn)
         seed_default_policies(conn)
         return POSITION_LEDGER_TABLE_NAMES
     finally:
@@ -79,7 +81,7 @@ def materialize_position_from_formal_signals(
     conn = connection or connect_position_ledger(workspace)
     try:
         bootstrap_position_ledger(workspace, connection=conn)
-        policy_family, policy_version, entry_leg_role_default = fetch_policy_contract(conn, policy_id)
+        policy_contract = fetch_policy_contract(conn, policy_id)
         materialization_run_id = run_id or build_position_run_id()
         register_position_run(
             conn,
@@ -91,9 +93,7 @@ def materialize_position_from_formal_signals(
             conn,
             formal_signals,
             policy_id=policy_id,
-            policy_family=policy_family,
-            policy_version=policy_version,
-            entry_leg_role_default=entry_leg_role_default,
+            policy_contract=policy_contract,
             default_single_name_cap_weight=default_single_name_cap_weight,
             default_portfolio_cap_weight=default_portfolio_cap_weight,
             share_lot_size=share_lot_size,
@@ -106,6 +106,9 @@ def materialize_position_from_formal_signals(
             blocked_count=counts.blocked_count,
             sizing_count=len(formal_signals),
             family_snapshot_count=counts.family_snapshot_count,
+            entry_leg_count=counts.entry_leg_count,
+            exit_plan_count=counts.exit_plan_count,
+            exit_leg_count=counts.exit_leg_count,
         )
     finally:
         if owns_connection:

@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import duckdb
+import pytest
 
 from mlq.core.paths import default_settings
 from mlq.position import (
@@ -133,12 +134,15 @@ def test_materialize_position_from_formal_signals_writes_candidate_capacity_and_
     assert summary.candidate_count == 1
     assert summary.admitted_count == 1
     assert summary.family_snapshot_count == 1
+    assert summary.entry_leg_count == 3
+    assert summary.exit_plan_count == 0
+    assert summary.exit_leg_count == 0
 
     conn = duckdb.connect(str(position_ledger_path(settings)), read_only=True)
     try:
         candidate_row = conn.execute(
             """
-            SELECT candidate_status, context_code
+            SELECT candidate_status, context_code, context_behavior_profile, deployment_stage
             FROM position_candidate_audit
             WHERE candidate_nk = 'sig-001|fixed_notional_full_exit_v1|2026-04-09'
             """
@@ -152,11 +156,20 @@ def test_materialize_position_from_formal_signals_writes_candidate_capacity_and_
         ).fetchone()
         sizing_row = conn.execute(
             """
-            SELECT position_action_decision, target_weight, target_notional, target_shares
+            SELECT position_action_decision, target_weight, target_notional, target_shares,
+                   schedule_stage, entry_leg_count, exit_plan_required
             FROM position_sizing_snapshot
             WHERE candidate_nk = 'sig-001|fixed_notional_full_exit_v1|2026-04-09'
             """
         ).fetchone()
+        entry_leg_rows = conn.execute(
+            """
+            SELECT leg_role, leg_status, schedule_stage, target_weight_after_leg
+            FROM position_entry_leg_plan
+            WHERE candidate_nk = 'sig-001|fixed_notional_full_exit_v1|2026-04-09'
+            ORDER BY schedule_lag_days
+            """
+        ).fetchall()
         family_row = conn.execute(
             """
             SELECT cap_trim_applied, final_target_shares
@@ -167,9 +180,18 @@ def test_materialize_position_from_formal_signals_writes_candidate_capacity_and_
     finally:
         conn.close()
 
-    assert candidate_row == ("admitted", "BULL_MAINSTREAM")
+    assert candidate_row == (
+        "admitted",
+        "BULL_MAINSTREAM",
+        "trend_following_expansion",
+        "initial_entry_window",
+    )
     assert capacity_row == (0.1875, 0.0, "bootstrap_default_capacity")
-    assert sizing_row == ("open_up_to_context_cap", 0.1875, 187500.0, 18700)
+    assert sizing_row == ("open_up_to_context_cap", 0.1875, 187500.0, 18700, "t+1", 3, False)
+    assert entry_leg_rows[0] == ("initial_entry", "planned", "t+1", 0.09375)
+    assert entry_leg_rows[1][0:3] == ("add_on_confirmation", "deferred", "t+2")
+    assert entry_leg_rows[1][3] == pytest.approx(0.15)
+    assert entry_leg_rows[2] == ("add_on_continuation", "deferred", "t+3", 0.1875)
     assert family_row == (False, 18700)
 
 
@@ -211,6 +233,9 @@ def test_materialize_position_from_formal_signals_writes_blocked_single_lot_snap
     )
 
     assert summary.blocked_count == 1
+    assert summary.entry_leg_count == 3
+    assert summary.exit_plan_count == 0
+    assert summary.exit_leg_count == 0
 
     conn = duckdb.connect(str(position_ledger_path(settings)), read_only=True)
     try:
@@ -235,12 +260,25 @@ def test_materialize_position_from_formal_signals_writes_blocked_single_lot_snap
             WHERE candidate_nk = 'sig-002|single_lot_full_exit_v1|2026-04-09'
             """
         ).fetchone()
+        entry_leg_rows = conn.execute(
+            """
+            SELECT leg_role, leg_status, leg_gate_reason
+            FROM position_entry_leg_plan
+            WHERE candidate_nk = 'sig-002|single_lot_full_exit_v1|2026-04-09'
+            ORDER BY schedule_lag_days
+            """
+        ).fetchall()
     finally:
         conn.close()
 
     assert candidate_row == ("blocked", "alpha_not_admitted")
     assert sizing_row == ("reject_open", 0.0, 0)
     assert family_row == (100, False, 0, None)
+    assert entry_leg_rows == [
+        ("initial_entry", "blocked", "candidate_blocked"),
+        ("add_on_confirmation", "blocked", "candidate_blocked"),
+        ("add_on_continuation", "blocked", "candidate_blocked"),
+    ]
 
 
 def test_materialize_position_from_formal_signals_marks_trim_when_current_position_exceeds_cap(
@@ -293,13 +331,109 @@ def test_materialize_position_from_formal_signals_marks_trim_when_current_positi
         ).fetchone()
         sizing_row = conn.execute(
             """
-            SELECT position_action_decision, target_weight
+            SELECT position_action_decision, target_weight, exit_plan_required
             FROM position_sizing_snapshot
             WHERE candidate_nk = 'sig-003|fixed_notional_full_exit_v1|2026-04-09'
+            """
+        ).fetchone()
+        exit_plan_row = conn.execute(
+            """
+            SELECT plan_role, exit_status, required_reduction_weight, target_weight_after_exit
+            FROM position_exit_plan
+            WHERE candidate_nk = 'sig-003|fixed_notional_full_exit_v1|2026-04-09'
+            """
+        ).fetchone()
+        exit_leg_row = conn.execute(
+            """
+            SELECT leg_role, exit_reason_code, target_weight_after_leg, is_partial_exit
+            FROM position_exit_leg
+            WHERE exit_plan_nk = (
+                SELECT exit_plan_nk
+                FROM position_exit_plan
+                WHERE candidate_nk = 'sig-003|fixed_notional_full_exit_v1|2026-04-09'
+            )
             """
         ).fetchone()
     finally:
         conn.close()
 
     assert capacity_row == (0.125, 0.07500000000000001)
-    assert sizing_row == ("trim_to_context_cap", 0.125)
+    assert sizing_row == ("trim_to_context_cap", 0.125, True)
+    assert exit_plan_row == ("trim", "planned", 0.07500000000000001, 0.125)
+    assert exit_leg_row == ("protective_trim", "required_reduction_weight_positive", 0.125, True)
+
+
+def test_materialize_position_from_formal_signals_marks_closeout_when_blocked_signal_hits_existing_position(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+
+    bootstrap_position_ledger(settings=settings)
+    summary = materialize_position_from_formal_signals(
+        [
+            PositionFormalSignalInput(
+                signal_nk="sig-004",
+                instrument="000004.SZ",
+                signal_date="2026-04-08",
+                asof_date="2026-04-08",
+                trigger_family="PAS",
+                trigger_type="pb",
+                pattern_code="PB",
+                formal_signal_status="blocked",
+                trigger_admissible=False,
+                malf_context_4="BEAR_MAINSTREAM",
+                lifecycle_rank_high=4,
+                lifecycle_rank_total=4,
+                source_trigger_event_nk="evt-004",
+                signal_contract_version="pas-formal-signal-v1",
+                reference_trade_date="2026-04-09",
+                reference_price=8.0,
+                capital_base_value=1_000_000.0,
+                current_position_weight=0.10,
+                blocked_reason_code="alpha_not_admitted",
+            )
+        ],
+        policy_id="fixed_notional_full_exit_v1",
+        settings=settings,
+        run_id="position-bootstrap-test-run-closeout",
+    )
+
+    assert summary.exit_plan_count == 1
+    assert summary.exit_leg_count == 1
+
+    conn = duckdb.connect(str(position_ledger_path(settings)), read_only=True)
+    try:
+        sizing_row = conn.execute(
+            """
+            SELECT position_action_decision, target_weight, exit_plan_required
+            FROM position_sizing_snapshot
+            WHERE candidate_nk = 'sig-004|fixed_notional_full_exit_v1|2026-04-09'
+            """
+        ).fetchone()
+        exit_plan_row = conn.execute(
+            """
+            SELECT plan_role, exit_status, target_weight_after_exit, hard_close_guard_active
+            FROM position_exit_plan
+            WHERE candidate_nk = 'sig-004|fixed_notional_full_exit_v1|2026-04-09'
+            """
+        ).fetchone()
+        exit_leg_row = conn.execute(
+            """
+            SELECT leg_role, exit_reason_code, target_weight_after_leg, fallback_to_full_exit
+            FROM position_exit_leg
+            WHERE exit_plan_nk = (
+                SELECT exit_plan_nk
+                FROM position_exit_plan
+                WHERE candidate_nk = 'sig-004|fixed_notional_full_exit_v1|2026-04-09'
+            )
+            """
+        ).fetchone()
+    finally:
+        conn.close()
+
+    assert sizing_row == ("closeout_by_exit_plan", 0.0, True)
+    assert exit_plan_row == ("terminal_exit", "planned", 0.0, True)
+    assert exit_leg_row == ("terminal_exit", "alpha_not_admitted", 0.0, True)

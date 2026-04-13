@@ -3,7 +3,7 @@
 `日期：2026-04-09`
 `状态：生效`
 
-当前最新生效结论锚点：`46-pre-position-upstream-acceptance-gate-conclusion-20260413.md`
+当前最新生效结论锚点：`47-position-malf-context-driven-sizing-and-batch-contract-conclusion-20260414.md`
 
 ## 正式结论目录
 
@@ -53,6 +53,7 @@
 44. `44-structure-filter-official-ledger-replay-smoke-hardening-conclusion-20260413.md`
 45. `45-alpha-formal-signal-producer-hardening-before-position-conclusion-20260413.md`
 46. `46-pre-position-upstream-acceptance-gate-conclusion-20260413.md`
+47. `47-position-malf-context-driven-sizing-and-batch-contract-conclusion-20260414.md`
 100. `100-trade-signal-anchor-contract-freeze-conclusion-20260411.md`
 101. `101-position-entry-t-plus-1-open-reference-price-correction-conclusion-20260411.md`
 102. `102-trade-exit-pnl-ledger-bootstrap-conclusion-20260411.md`
@@ -61,10 +62,10 @@
 105. `105-system-runtime-orchestration-bootstrap-conclusion-20260411.md`
 
 ## 主线状态
-1. `46` 已成为当前最新生效结论锚点。
-2. `46` 已正式裁决 upstream integrated acceptance 成立，允许当前主线进入 `47 -> 55`。
-3. `29-46` 已完成 canonical malf downstream、mainline ledger standardization、alpha detector、alpha family、quality gate、official replay hardening、alpha producer hardening与 pre-position acceptance 收口。
-4. 当前待施工卡已恢复到 `47`；只有 `55` 接受后，才允许恢复 `100 -> 105` 的 trade/system 卡组。
+1. `47` 已成为当前最新生效结论锚点。
+2. `47` 已把 `position` 提升为 MALF context 驱动的正式 sizing / batch contract，并把当前待施工卡前移到 `48`。
+3. `29-47` 已完成 canonical malf downstream、mainline ledger standardization、alpha detector、alpha family、quality gate、official replay hardening、alpha producer hardening、pre-position acceptance 与 position contract freeze 收口。
+4. 当前待施工卡已前移到 `48`；只有 `55` 接受后，才允许恢复 `100 -> 105` 的 trade/system 卡组。
 
 ## 图示
 ```mermaid

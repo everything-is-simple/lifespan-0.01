@@ -1,4 +1,4 @@
-"""承载 `position bootstrap` 的候选/容量/仓位物化逻辑。"""
+"""承载 `position bootstrap` 的账本物化与落表逻辑。"""
 
 from __future__ import annotations
 
@@ -6,6 +6,32 @@ from dataclasses import dataclass
 
 import duckdb
 
+from .position_contract_logic import (
+    PositionContextContract,
+    PositionEntryLegPlan,
+    PositionExitLeg,
+    PositionExitPlan,
+    PositionPolicyContract,
+    apply_share_lot_floor,
+    build_candidate_nk,
+    build_capacity_snapshot_nk,
+    build_entry_leg_plans,
+    build_exit_plan,
+    build_family_snapshot_nk,
+    build_sizing_snapshot_nk,
+    resolve_blocked_reason_code,
+    resolve_candidate_status,
+    resolve_context_contract,
+    resolve_final_allowed_position_weight,
+    resolve_portfolio_capacity_weight,
+    resolve_position_action_decision,
+    resolve_single_name_capacity_weight,
+    resolve_sizing_leg_role,
+    resolve_sizing_schedule,
+    resolve_target_notional,
+    resolve_target_shares_before_lot,
+    resolve_target_weight,
+)
 from .position_shared import PositionFormalSignalInput
 
 
@@ -16,6 +42,9 @@ class PositionMaterializationCounts:
     admitted_count: int
     blocked_count: int
     family_snapshot_count: int
+    entry_leg_count: int
+    exit_plan_count: int
+    exit_leg_count: int
 
 
 def register_position_run(
@@ -48,7 +77,7 @@ def register_position_run(
             run_id,
             source_signal_contract_version,
             source_signal_run_id,
-            "minimal bootstrap materialization from alpha formal signal",
+            "MALF context driven position materialization from alpha formal signal",
             run_id,
         ],
     )
@@ -57,12 +86,23 @@ def register_position_run(
 def fetch_policy_contract(
     connection: duckdb.DuckDBPyConnection,
     policy_id: str,
-) -> tuple[str, str, str]:
+) -> PositionPolicyContract:
     """读取一次物化所绑定的 policy 契约。"""
 
     row = connection.execute(
         """
-        SELECT policy_family, policy_version, entry_leg_role_default
+        SELECT
+            policy_family,
+            policy_version,
+            position_contract_version,
+            entry_leg_role_default,
+            entry_schedule_stage_default,
+            entry_schedule_lag_days_default,
+            trim_schedule_stage_default,
+            trim_schedule_lag_days_default,
+            exit_schedule_stage_default,
+            exit_schedule_lag_days_default,
+            exit_family
         FROM position_policy_registry
         WHERE policy_id = ?
         """,
@@ -70,7 +110,19 @@ def fetch_policy_contract(
     ).fetchone()
     if row is None:
         raise ValueError(f"Unknown position policy: {policy_id}")
-    return row[0], row[1], row[2]
+    return PositionPolicyContract(
+        policy_family=str(row[0]),
+        policy_version=str(row[1]),
+        position_contract_version=str(row[2]),
+        entry_leg_role_default=str(row[3]),
+        entry_schedule_stage_default=str(row[4]),
+        entry_schedule_lag_days_default=int(row[5]),
+        trim_schedule_stage_default=str(row[6]),
+        trim_schedule_lag_days_default=int(row[7]),
+        exit_schedule_stage_default=str(row[8]),
+        exit_schedule_lag_days_default=int(row[9]),
+        exit_family=str(row[10]),
+    )
 
 
 def materialize_position_rows(
@@ -78,9 +130,7 @@ def materialize_position_rows(
     formal_signals: list[PositionFormalSignalInput] | tuple[PositionFormalSignalInput, ...],
     *,
     policy_id: str,
-    policy_family: str,
-    policy_version: str,
-    entry_leg_role_default: str,
+    policy_contract: PositionPolicyContract,
     default_single_name_cap_weight: float,
     default_portfolio_cap_weight: float,
     share_lot_size: int,
@@ -90,23 +140,26 @@ def materialize_position_rows(
     admitted_count = 0
     blocked_count = 0
     family_snapshot_count = 0
+    entry_leg_count = 0
+    exit_plan_count = 0
+    exit_leg_count = 0
 
     for signal in formal_signals:
-        candidate_status = _resolve_candidate_status(signal)
-        blocked_reason_code = _resolve_blocked_reason_code(signal, candidate_status)
-        candidate_nk = _build_candidate_nk(signal, policy_id)
-        context_max_position_weight = _context_max_position_weight(signal)
-        remaining_single_name_capacity_weight = _resolve_single_name_capacity_weight(
+        candidate_status = resolve_candidate_status(signal)
+        blocked_reason_code = resolve_blocked_reason_code(signal, candidate_status)
+        candidate_nk = build_candidate_nk(signal, policy_id)
+        context_contract = resolve_context_contract(signal)
+        remaining_single_name_capacity_weight = resolve_single_name_capacity_weight(
             signal,
             default_single_name_cap_weight=default_single_name_cap_weight,
         )
-        remaining_portfolio_capacity_weight = _resolve_portfolio_capacity_weight(
+        remaining_portfolio_capacity_weight = resolve_portfolio_capacity_weight(
             signal,
             default_portfolio_cap_weight=default_portfolio_cap_weight,
         )
-        final_allowed_position_weight = _resolve_final_allowed_position_weight(
+        final_allowed_position_weight = resolve_final_allowed_position_weight(
             candidate_status=candidate_status,
-            context_max_position_weight=context_max_position_weight,
+            context_max_position_weight=context_contract.context_max_position_weight,
             remaining_single_name_capacity_weight=remaining_single_name_capacity_weight,
             remaining_portfolio_capacity_weight=remaining_portfolio_capacity_weight,
         )
@@ -114,22 +167,53 @@ def materialize_position_rows(
             signal.current_position_weight - final_allowed_position_weight,
             0.0,
         )
-        position_action_decision = _resolve_position_action_decision(
+        position_action_decision = resolve_position_action_decision(
+            signal=signal,
             candidate_status=candidate_status,
-            current_position_weight=signal.current_position_weight,
             final_allowed_position_weight=final_allowed_position_weight,
             required_reduction_weight=required_reduction_weight,
         )
-
-        target_weight = 0.0 if position_action_decision == "reject_open" else final_allowed_position_weight
-        target_notional = _resolve_target_notional(signal, target_weight=target_weight)
-        target_shares_before_lot = _resolve_target_shares_before_lot(
+        sizing_leg_role = resolve_sizing_leg_role(
+            position_action_decision,
+            entry_leg_role_default=policy_contract.entry_leg_role_default,
+        )
+        sizing_schedule_stage, sizing_schedule_lag_days = resolve_sizing_schedule(
+            context_contract=context_contract,
+            policy_contract=policy_contract,
+            position_action_decision=position_action_decision,
+        )
+        target_weight = resolve_target_weight(
+            position_action_decision=position_action_decision,
+            final_allowed_position_weight=final_allowed_position_weight,
+        )
+        target_notional = resolve_target_notional(signal, target_weight=target_weight)
+        target_shares_before_lot = resolve_target_shares_before_lot(
             signal,
             target_notional=target_notional,
         )
-        target_shares = _apply_share_lot_floor(
+        target_shares = apply_share_lot_floor(
             target_shares_before_lot,
             share_lot_size=share_lot_size,
+        )
+        entry_leg_plans = build_entry_leg_plans(
+            signal=signal,
+            candidate_nk=candidate_nk,
+            policy_contract=policy_contract,
+            context_contract=context_contract,
+            candidate_status=candidate_status,
+            position_action_decision=position_action_decision,
+            final_allowed_position_weight=final_allowed_position_weight,
+            share_lot_size=share_lot_size,
+        )
+        exit_plan, exit_legs = build_exit_plan(
+            signal=signal,
+            candidate_nk=candidate_nk,
+            policy_contract=policy_contract,
+            position_action_decision=position_action_decision,
+            blocked_reason_code=blocked_reason_code,
+            final_allowed_position_weight=final_allowed_position_weight,
+            required_reduction_weight=required_reduction_weight,
+            target_shares=target_shares,
         )
 
         _insert_position_candidate_audit(
@@ -139,12 +223,14 @@ def materialize_position_rows(
             policy_id=policy_id,
             candidate_status=candidate_status,
             blocked_reason_code=blocked_reason_code,
+            context_contract=context_contract,
+            candidate_contract_version=policy_contract.position_contract_version,
         )
         _insert_position_capacity_snapshot(
             connection,
             candidate_nk=candidate_nk,
             signal=signal,
-            context_max_position_weight=context_max_position_weight,
+            context_contract=context_contract,
             remaining_single_name_capacity_weight=remaining_single_name_capacity_weight,
             remaining_portfolio_capacity_weight=remaining_portfolio_capacity_weight,
             final_allowed_position_weight=final_allowed_position_weight,
@@ -154,30 +240,61 @@ def materialize_position_rows(
             connection,
             candidate_nk=candidate_nk,
             policy_id=policy_id,
-            policy_version=policy_version,
-            entry_leg_role_default=entry_leg_role_default,
+            policy_contract=policy_contract,
+            sizing_leg_role=sizing_leg_role,
             signal=signal,
+            context_contract=context_contract,
             position_action_decision=position_action_decision,
+            sizing_schedule_stage=sizing_schedule_stage,
+            sizing_schedule_lag_days=sizing_schedule_lag_days,
+            entry_leg_count=len(entry_leg_plans),
+            exit_plan_required=exit_plan is not None,
             target_weight=target_weight,
             target_notional=target_notional,
             target_shares=target_shares,
             final_allowed_position_weight=final_allowed_position_weight,
             required_reduction_weight=required_reduction_weight,
         )
+        for entry_leg_plan in entry_leg_plans:
+            _insert_position_entry_leg_plan(
+                connection,
+                candidate_nk=candidate_nk,
+                policy_id=policy_id,
+                policy_contract=policy_contract,
+                context_contract=context_contract,
+                entry_leg_plan=entry_leg_plan,
+            )
         family_snapshot_count += _insert_policy_family_snapshot(
             connection,
-            policy_family=policy_family,
-            policy_version=policy_version,
+            policy_contract=policy_contract,
             policy_id=policy_id,
             candidate_nk=candidate_nk,
             signal=signal,
             share_lot_size=share_lot_size,
-            context_max_position_weight=context_max_position_weight,
+            context_max_position_weight=context_contract.context_max_position_weight,
             final_allowed_position_weight=final_allowed_position_weight,
             target_shares_before_lot=target_shares_before_lot,
             final_target_shares=target_shares,
         )
+        if exit_plan is not None:
+            _insert_position_exit_plan(
+                connection,
+                candidate_nk=candidate_nk,
+                policy_id=policy_id,
+                policy_contract=policy_contract,
+                exit_plan=exit_plan,
+            )
+            exit_plan_count += 1
+        for exit_leg in exit_legs:
+            _insert_position_exit_leg(
+                connection,
+                policy_contract=policy_contract,
+                exit_plan_nk=exit_plan.exit_plan_nk if exit_plan is not None else "",
+                exit_leg=exit_leg,
+            )
+            exit_leg_count += 1
 
+        entry_leg_count += len(entry_leg_plans)
         if candidate_status == "admitted":
             admitted_count += 1
         else:
@@ -187,140 +304,10 @@ def materialize_position_rows(
         admitted_count=admitted_count,
         blocked_count=blocked_count,
         family_snapshot_count=family_snapshot_count,
+        entry_leg_count=entry_leg_count,
+        exit_plan_count=exit_plan_count,
+        exit_leg_count=exit_leg_count,
     )
-
-
-def _resolve_candidate_status(signal: PositionFormalSignalInput) -> str:
-    if signal.trigger_admissible and signal.formal_signal_status == "admitted":
-        return "admitted"
-    if signal.formal_signal_status in {"blocked", "deferred"}:
-        return signal.formal_signal_status
-    return "blocked"
-
-
-def _resolve_blocked_reason_code(signal: PositionFormalSignalInput, candidate_status: str) -> str | None:
-    if candidate_status == "admitted":
-        return None
-    if signal.blocked_reason_code:
-        return signal.blocked_reason_code
-    if not signal.trigger_admissible:
-        return "alpha_not_admitted"
-    return f"alpha_status_{candidate_status}"
-
-
-def _build_candidate_nk(signal: PositionFormalSignalInput, policy_id: str) -> str:
-    return "|".join((signal.signal_nk, policy_id, signal.reference_trade_date))
-
-
-def _build_capacity_snapshot_nk(candidate_nk: str) -> str:
-    return f"{candidate_nk}|default"
-
-
-def _build_sizing_snapshot_nk(
-    candidate_nk: str,
-    *,
-    entry_leg_role_default: str,
-    policy_version: str,
-) -> str:
-    return f"{candidate_nk}|{entry_leg_role_default}|{policy_version}"
-
-
-def _build_family_snapshot_nk(candidate_nk: str, *, policy_family: str, policy_version: str) -> str:
-    return f"{candidate_nk}|{policy_family}|{policy_version}"
-
-
-def _context_max_position_weight(signal: PositionFormalSignalInput) -> float:
-    if signal.lifecycle_rank_total <= 0:
-        conservative_rank_ratio = 0.0
-    else:
-        conservative_rank_ratio = signal.lifecycle_rank_high / signal.lifecycle_rank_total
-    context_code = signal.malf_context_4
-    if context_code == "BULL_MAINSTREAM":
-        return 0.25 * (1 - conservative_rank_ratio)
-    if context_code == "BULL_COUNTERTREND":
-        return 0.25 * conservative_rank_ratio
-    if context_code == "BEAR_COUNTERTREND":
-        return 0.25 * (1 - conservative_rank_ratio) * 0.5
-    if context_code == "BEAR_MAINSTREAM":
-        return 0.0
-    return 0.0
-
-
-def _resolve_single_name_capacity_weight(
-    signal: PositionFormalSignalInput,
-    *,
-    default_single_name_cap_weight: float,
-) -> float:
-    if signal.remaining_single_name_capacity_weight is not None:
-        return max(signal.remaining_single_name_capacity_weight, 0.0)
-    return max(default_single_name_cap_weight - signal.current_position_weight, 0.0)
-
-
-def _resolve_portfolio_capacity_weight(
-    signal: PositionFormalSignalInput,
-    *,
-    default_portfolio_cap_weight: float,
-) -> float:
-    if signal.remaining_portfolio_capacity_weight is not None:
-        return max(signal.remaining_portfolio_capacity_weight, 0.0)
-    return max(default_portfolio_cap_weight, 0.0)
-
-
-def _resolve_final_allowed_position_weight(
-    *,
-    candidate_status: str,
-    context_max_position_weight: float,
-    remaining_single_name_capacity_weight: float,
-    remaining_portfolio_capacity_weight: float,
-) -> float:
-    if candidate_status != "admitted":
-        return 0.0
-    return max(
-        min(
-            context_max_position_weight,
-            remaining_single_name_capacity_weight,
-            remaining_portfolio_capacity_weight,
-        ),
-        0.0,
-    )
-
-
-def _resolve_position_action_decision(
-    *,
-    candidate_status: str,
-    current_position_weight: float,
-    final_allowed_position_weight: float,
-    required_reduction_weight: float,
-) -> str:
-    if candidate_status != "admitted" or final_allowed_position_weight <= 0:
-        return "reject_open"
-    if required_reduction_weight > 0:
-        return "trim_to_context_cap"
-    if current_position_weight > 0 and abs(current_position_weight - final_allowed_position_weight) < 1e-12:
-        return "hold_at_cap"
-    return "open_up_to_context_cap"
-
-
-def _resolve_target_notional(signal: PositionFormalSignalInput, *, target_weight: float) -> float:
-    if signal.capital_base_value is None:
-        return 0.0
-    return max(target_weight, 0.0) * signal.capital_base_value
-
-
-def _resolve_target_shares_before_lot(
-    signal: PositionFormalSignalInput,
-    *,
-    target_notional: float,
-) -> int:
-    if signal.reference_price is None or signal.reference_price <= 0:
-        return 0
-    return int(target_notional / signal.reference_price)
-
-
-def _apply_share_lot_floor(target_shares_before_lot: int, *, share_lot_size: int) -> int:
-    if target_shares_before_lot <= 0:
-        return 0
-    return (target_shares_before_lot // share_lot_size) * share_lot_size
 
 
 def _insert_position_candidate_audit(
@@ -331,22 +318,29 @@ def _insert_position_candidate_audit(
     policy_id: str,
     candidate_status: str,
     blocked_reason_code: str | None,
+    context_contract: PositionContextContract,
+    candidate_contract_version: str,
 ) -> None:
     connection.execute(
         """
         INSERT INTO position_candidate_audit (
             candidate_nk,
             signal_nk,
+            asset_type,
             instrument,
+            code,
             policy_id,
             reference_trade_date,
             candidate_status,
             blocked_reason_code,
             context_code,
+            context_behavior_profile,
+            deployment_stage,
+            candidate_contract_version,
             audit_note,
             source_signal_run_id
         )
-        SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+        SELECT ?, ?, 'stock', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
         WHERE NOT EXISTS (
             SELECT 1
             FROM position_candidate_audit
@@ -357,11 +351,15 @@ def _insert_position_candidate_audit(
             candidate_nk,
             signal.signal_nk,
             signal.instrument,
+            signal.instrument,
             policy_id,
             signal.reference_trade_date,
             candidate_status,
             blocked_reason_code,
             signal.malf_context_4,
+            context_contract.context_behavior_profile,
+            context_contract.deployment_stage,
+            candidate_contract_version,
             signal.audit_note,
             signal.source_signal_run_id,
             candidate_nk,
@@ -374,13 +372,13 @@ def _insert_position_capacity_snapshot(
     *,
     candidate_nk: str,
     signal: PositionFormalSignalInput,
-    context_max_position_weight: float,
+    context_contract: PositionContextContract,
     remaining_single_name_capacity_weight: float,
     remaining_portfolio_capacity_weight: float,
     final_allowed_position_weight: float,
     required_reduction_weight: float,
 ) -> None:
-    capacity_snapshot_nk = _build_capacity_snapshot_nk(candidate_nk)
+    capacity_snapshot_nk = build_capacity_snapshot_nk(candidate_nk)
     capacity_source_code = (
         "formal_position_capacity"
         if signal.remaining_single_name_capacity_weight is not None
@@ -394,14 +392,17 @@ def _insert_position_capacity_snapshot(
             candidate_nk,
             capacity_snapshot_role,
             current_position_weight,
+            context_behavior_profile,
+            deployment_stage,
             context_max_position_weight,
             remaining_single_name_capacity_weight,
             remaining_portfolio_capacity_weight,
             final_allowed_position_weight,
             required_reduction_weight,
+            context_weight_rule_code,
             capacity_source_code
         )
-        SELECT ?, ?, 'default', ?, ?, ?, ?, ?, ?, ?
+        SELECT ?, ?, 'default', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
         WHERE NOT EXISTS (
             SELECT 1
             FROM position_capacity_snapshot
@@ -412,11 +413,14 @@ def _insert_position_capacity_snapshot(
             capacity_snapshot_nk,
             candidate_nk,
             signal.current_position_weight,
-            context_max_position_weight,
+            context_contract.context_behavior_profile,
+            context_contract.deployment_stage,
+            context_contract.context_max_position_weight,
             remaining_single_name_capacity_weight,
             remaining_portfolio_capacity_weight,
             final_allowed_position_weight,
             required_reduction_weight,
+            context_contract.context_weight_rule_code,
             capacity_source_code,
             capacity_snapshot_nk,
         ],
@@ -428,20 +432,25 @@ def _insert_position_sizing_snapshot(
     *,
     candidate_nk: str,
     policy_id: str,
-    policy_version: str,
-    entry_leg_role_default: str,
+    policy_contract: PositionPolicyContract,
+    sizing_leg_role: str,
     signal: PositionFormalSignalInput,
+    context_contract: PositionContextContract,
     position_action_decision: str,
+    sizing_schedule_stage: str,
+    sizing_schedule_lag_days: int,
+    entry_leg_count: int,
+    exit_plan_required: bool,
     target_weight: float,
     target_notional: float,
     target_shares: int,
     final_allowed_position_weight: float,
     required_reduction_weight: float,
 ) -> None:
-    sizing_snapshot_nk = _build_sizing_snapshot_nk(
+    sizing_snapshot_nk = build_sizing_snapshot_nk(
         candidate_nk,
-        entry_leg_role_default=entry_leg_role_default,
-        policy_version=policy_version,
+        sizing_leg_role=sizing_leg_role,
+        policy_version=policy_contract.policy_version,
     )
     connection.execute(
         """
@@ -450,6 +459,13 @@ def _insert_position_sizing_snapshot(
             candidate_nk,
             policy_id,
             entry_leg_role,
+            context_behavior_profile,
+            deployment_stage,
+            schedule_stage,
+            schedule_lag_days,
+            sizing_contract_version,
+            entry_leg_count,
+            exit_plan_required,
             position_action_decision,
             target_weight,
             target_notional,
@@ -459,7 +475,7 @@ def _insert_position_sizing_snapshot(
             reference_price,
             reference_trade_date
         )
-        SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+        SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
         WHERE NOT EXISTS (
             SELECT 1
             FROM position_sizing_snapshot
@@ -470,7 +486,14 @@ def _insert_position_sizing_snapshot(
             sizing_snapshot_nk,
             candidate_nk,
             policy_id,
-            entry_leg_role_default,
+            sizing_leg_role,
+            context_contract.context_behavior_profile,
+            context_contract.deployment_stage,
+            sizing_schedule_stage,
+            sizing_schedule_lag_days,
+            policy_contract.position_contract_version,
+            entry_leg_count,
+            exit_plan_required,
             position_action_decision,
             target_weight,
             target_notional,
@@ -484,11 +507,64 @@ def _insert_position_sizing_snapshot(
     )
 
 
+def _insert_position_entry_leg_plan(
+    connection: duckdb.DuckDBPyConnection,
+    *,
+    candidate_nk: str,
+    policy_id: str,
+    policy_contract: PositionPolicyContract,
+    context_contract: PositionContextContract,
+    entry_leg_plan: PositionEntryLegPlan,
+) -> None:
+    connection.execute(
+        """
+        INSERT INTO position_entry_leg_plan (
+            entry_leg_nk,
+            candidate_nk,
+            policy_id,
+            leg_role,
+            leg_status,
+            schedule_stage,
+            schedule_lag_days,
+            leg_gate_reason,
+            target_weight_after_leg,
+            target_notional_after_leg,
+            target_shares_after_leg,
+            context_behavior_profile,
+            deployment_stage,
+            plan_contract_version
+        )
+        SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM position_entry_leg_plan
+            WHERE entry_leg_nk = ?
+        )
+        """,
+        [
+            entry_leg_plan.entry_leg_nk,
+            candidate_nk,
+            policy_id,
+            entry_leg_plan.leg_role,
+            entry_leg_plan.leg_status,
+            entry_leg_plan.schedule_stage,
+            entry_leg_plan.schedule_lag_days,
+            entry_leg_plan.leg_gate_reason,
+            entry_leg_plan.target_weight_after_leg,
+            entry_leg_plan.target_notional_after_leg,
+            entry_leg_plan.target_shares_after_leg,
+            context_contract.context_behavior_profile,
+            context_contract.deployment_stage,
+            policy_contract.position_contract_version,
+            entry_leg_plan.entry_leg_nk,
+        ],
+    )
+
+
 def _insert_policy_family_snapshot(
     connection: duckdb.DuckDBPyConnection,
     *,
-    policy_family: str,
-    policy_version: str,
+    policy_contract: PositionPolicyContract,
     policy_id: str,
     candidate_nk: str,
     signal: PositionFormalSignalInput,
@@ -498,17 +574,17 @@ def _insert_policy_family_snapshot(
     target_shares_before_lot: int,
     final_target_shares: int,
 ) -> int:
-    family_snapshot_nk = _build_family_snapshot_nk(
+    family_snapshot_nk = build_family_snapshot_nk(
         candidate_nk,
-        policy_family=policy_family,
-        policy_version=policy_version,
+        policy_family=policy_contract.policy_family,
+        policy_version=policy_contract.policy_version,
     )
-    if policy_family == "FIXED_NOTIONAL_CONTROL":
-        target_notional_before_cap = _resolve_target_notional(
+    if policy_contract.policy_family == "FIXED_NOTIONAL_CONTROL":
+        target_notional_before_cap = resolve_target_notional(
             signal,
             target_weight=context_max_position_weight,
         )
-        target_shares_before_cap = _resolve_target_shares_before_lot(
+        target_shares_before_cap = resolve_target_shares_before_lot(
             signal,
             target_notional=target_notional_before_cap,
         )
@@ -542,7 +618,7 @@ def _insert_policy_family_snapshot(
             ],
         )
         return 1
-    if policy_family == "SINGLE_LOT_CONTROL":
+    if policy_contract.policy_family == "SINGLE_LOT_CONTROL":
         lot_floor_applied = target_shares_before_lot != final_target_shares
         fallback_reason_code = None
         if final_allowed_position_weight > 0 and final_target_shares == 0:
@@ -578,3 +654,104 @@ def _insert_policy_family_snapshot(
         )
         return 1
     return 0
+
+
+def _insert_position_exit_plan(
+    connection: duckdb.DuckDBPyConnection,
+    *,
+    candidate_nk: str,
+    policy_id: str,
+    policy_contract: PositionPolicyContract,
+    exit_plan: PositionExitPlan,
+) -> None:
+    connection.execute(
+        """
+        INSERT INTO position_exit_plan (
+            exit_plan_nk,
+            position_nk,
+            candidate_nk,
+            policy_id,
+            exit_family,
+            plan_role,
+            exit_status,
+            schedule_stage,
+            schedule_lag_days,
+            planned_leg_count,
+            required_reduction_weight,
+            target_weight_after_exit,
+            plan_contract_version,
+            hard_close_guard_active
+        )
+        SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM position_exit_plan
+            WHERE exit_plan_nk = ?
+        )
+        """,
+        [
+            exit_plan.exit_plan_nk,
+            candidate_nk,
+            candidate_nk,
+            policy_id,
+            policy_contract.exit_family,
+            exit_plan.plan_role,
+            exit_plan.exit_status,
+            exit_plan.schedule_stage,
+            exit_plan.schedule_lag_days,
+            exit_plan.planned_leg_count,
+            exit_plan.required_reduction_weight,
+            exit_plan.target_weight_after_exit,
+            policy_contract.position_contract_version,
+            exit_plan.hard_close_guard_active,
+            exit_plan.exit_plan_nk,
+        ],
+    )
+
+
+def _insert_position_exit_leg(
+    connection: duckdb.DuckDBPyConnection,
+    *,
+    policy_contract: PositionPolicyContract,
+    exit_plan_nk: str,
+    exit_leg: PositionExitLeg,
+) -> None:
+    connection.execute(
+        """
+        INSERT INTO position_exit_leg (
+            exit_leg_nk,
+            exit_plan_nk,
+            exit_leg_seq,
+            leg_role,
+            schedule_stage,
+            schedule_lag_days,
+            exit_reason_code,
+            target_weight_after_leg,
+            target_qty_after,
+            is_partial_exit,
+            fallback_to_full_exit,
+            plan_contract_version
+        )
+        SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM position_exit_leg
+            WHERE exit_leg_nk = ?
+        )
+        """,
+        [
+            exit_leg.exit_leg_nk,
+            exit_plan_nk,
+            exit_leg.exit_leg_seq,
+            exit_leg.leg_role,
+            exit_leg.schedule_stage,
+            exit_leg.schedule_lag_days,
+            exit_leg.exit_reason_code,
+            exit_leg.target_weight_after_leg,
+            exit_leg.target_qty_after,
+            exit_leg.is_partial_exit,
+            exit_leg.fallback_to_full_exit,
+            policy_contract.position_contract_version,
+            exit_leg.exit_leg_nk,
+        ],
+    )

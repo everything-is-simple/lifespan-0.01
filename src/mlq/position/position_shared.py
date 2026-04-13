@@ -41,6 +41,12 @@ class PositionFormalSignalInput:
     malf_alignment: str | None = None
     malf_phase_bucket: str | None = None
     family_source_context_fingerprint: str | None = None
+    structure_regime_code: str | None = None
+    structure_position_slot: str | None = None
+    structure_distance_to_pivot_pct: float | None = None
+    filter_gate_code: str | None = None
+    filter_strength_bucket: str | None = None
+    filter_reject_reason_code: str | None = None
 
 
 @dataclass(frozen=True)
@@ -54,6 +60,9 @@ class PositionMaterializationSummary:
     blocked_count: int
     sizing_count: int
     family_snapshot_count: int
+    entry_leg_count: int
+    exit_plan_count: int
+    exit_leg_count: int
 
 
 def build_position_run_id() -> str:

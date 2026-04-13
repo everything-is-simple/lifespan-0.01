@@ -161,28 +161,40 @@ def test_run_position_formal_signal_materialization_reads_official_alpha_and_enr
     assert summary.enriched_signal_count == 1
     assert summary.missing_reference_price_count == 0
     assert summary.candidate_count == 1
+    assert summary.entry_leg_count == 3
+    assert summary.exit_plan_count == 0
+    assert summary.exit_leg_count == 0
 
     conn = duckdb.connect(str(position_ledger_path(settings)), read_only=True)
     try:
         candidate_row = conn.execute(
             """
-            SELECT candidate_status
+            SELECT candidate_status, context_behavior_profile, deployment_stage
             FROM position_candidate_audit
             WHERE candidate_nk = 'sig-101|fixed_notional_full_exit_v1|2026-04-09'
             """
         ).fetchone()
         sizing_row = conn.execute(
             """
-            SELECT reference_trade_date, reference_price, position_action_decision, target_shares
+            SELECT reference_trade_date, reference_price, position_action_decision, target_shares,
+                   schedule_stage, entry_leg_count
             FROM position_sizing_snapshot
             WHERE candidate_nk = 'sig-101|fixed_notional_full_exit_v1|2026-04-09'
             """
         ).fetchone()
+        entry_leg_count = conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM position_entry_leg_plan
+            WHERE candidate_nk = 'sig-101|fixed_notional_full_exit_v1|2026-04-09'
+            """
+        ).fetchone()[0]
     finally:
         conn.close()
 
-    assert candidate_row == ("admitted",)
-    assert sizing_row == (date(2026, 4, 9), 10.5, "open_up_to_context_cap", 17800)
+    assert candidate_row == ("admitted", "trend_following_expansion", "initial_entry_window")
+    assert sizing_row == (date(2026, 4, 9), 10.5, "open_up_to_context_cap", 17800, "t+1", 3)
+    assert entry_leg_count == 3
 
 
 def test_run_position_formal_signal_materialization_accepts_family_aware_alpha_columns(
@@ -252,12 +264,13 @@ def test_run_position_formal_signal_materialization_accepts_family_aware_alpha_c
     assert summary.position_run_id == "position-runner-test-family-aware-001"
     assert summary.alpha_signal_count == 1
     assert summary.enriched_signal_count == 1
+    assert summary.entry_leg_count == 3
 
     conn = duckdb.connect(str(position_ledger_path(settings)), read_only=True)
     try:
         candidate_row = conn.execute(
             """
-            SELECT candidate_status, source_signal_run_id
+            SELECT candidate_status, source_signal_run_id, candidate_contract_version
             FROM position_candidate_audit
             WHERE candidate_nk = 'sig-111|fixed_notional_full_exit_v1|2026-04-09'
             """
@@ -265,7 +278,11 @@ def test_run_position_formal_signal_materialization_accepts_family_aware_alpha_c
     finally:
         conn.close()
 
-    assert candidate_row == ("admitted", "alpha-formal-run-111")
+    assert candidate_row == (
+        "admitted",
+        "alpha-formal-run-111",
+        "position-malf-sizing-batch-v1",
+    )
 
 
 def test_run_position_formal_signal_materialization_skips_signals_without_reference_price(

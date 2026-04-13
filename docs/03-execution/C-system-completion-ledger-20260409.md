@@ -2,9 +2,9 @@
 `日期：2026-04-09`
 `状态：持续更新`
 
-1. 当前下一锤：`47-position-malf-context-driven-sizing-and-batch-contract-card-20260413.md`
-2. 当前待施工卡：`47-position-malf-context-driven-sizing-and-batch-contract-card-20260413.md`
-3. 正式主线剩余卡：`15`
+1. 当前下一锤：`48-position-risk-budget-and-capacity-ledger-hardening-card-20260413.md`
+2. 当前待施工卡：`48-position-risk-budget-and-capacity-ledger-hardening-card-20260413.md`
+3. 正式主线剩余卡：`14`
 4. 可选 Sidecar 剩余卡：`0`
 5. backlog：`0`
 
@@ -26,12 +26,13 @@
 15. `structure / filter official ledger replay / smoke hardening` 卡 `44`
 16. `alpha formal signal producer family-aware hardening` 卡 `45`
 17. `pre-position upstream acceptance gate` 卡 `46`
+18. `position MALF sizing / batch contract freeze` 卡 `47`
 
 ## 当前阶段
-1. 最新生效结论锚点已推进到 `46-pre-position-upstream-acceptance-gate-conclusion-20260413.md`。
-2. `46` 已完成对 `43 / 44 / 45` 的 upstream integrated acceptance，并正式恢复 `47` 为当前待施工卡。
-3. 当前主线已从 `pre-position acceptance gate` 前移到 `47 position MALF sizing / batch contract`。
-4. `47 -> 55` 现在可以继续推进；`100-105` 仍必须等待 `55` 接受后再恢复。
+1. 最新生效结论锚点已推进到 `47-position-malf-context-driven-sizing-and-batch-contract-conclusion-20260414.md`。
+2. `47` 已完成对 `position` MALF context sizing / batch contract 的正式冻结，并把当前待施工卡前移到 `48`。
+3. 当前主线已从 `47 position MALF sizing / batch contract` 前移到 `48 position risk budget / capacity ledger hardening`。
+4. `48 -> 55` 现在可以继续推进；`100-105` 仍必须等待 `55` 接受后再恢复。
 
 ## 完成阶段图
 ```mermaid

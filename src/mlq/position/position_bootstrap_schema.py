@@ -1,4 +1,4 @@
-"""承载 `position bootstrap` 的正式表族 DDL 与默认 policy seed。"""
+"""承载 `position bootstrap` 的正式表族 DDL、补列升级与默认 policy seed。"""
 
 from __future__ import annotations
 
@@ -8,12 +8,16 @@ from typing import Final
 import duckdb
 
 
+DEFAULT_POSITION_CONTRACT_VERSION: Final[str] = "position-malf-sizing-batch-v1"
+
+
 POSITION_LEDGER_TABLE_NAMES: Final[tuple[str, ...]] = (
     "position_run",
     "position_policy_registry",
     "position_candidate_audit",
     "position_capacity_snapshot",
     "position_sizing_snapshot",
+    "position_entry_leg_plan",
     "position_funding_fixed_notional_snapshot",
     "position_funding_single_lot_snapshot",
     "position_exit_plan",
@@ -38,7 +42,14 @@ POSITION_LEDGER_DDL: Final[dict[str, str]] = {
             policy_id TEXT PRIMARY KEY,
             policy_family TEXT NOT NULL,
             policy_version TEXT NOT NULL,
+            position_contract_version TEXT NOT NULL DEFAULT 'position-malf-sizing-batch-v1',
             entry_leg_role_default TEXT NOT NULL,
+            entry_schedule_stage_default TEXT NOT NULL DEFAULT 't+1',
+            entry_schedule_lag_days_default INTEGER NOT NULL DEFAULT 1,
+            trim_schedule_stage_default TEXT NOT NULL DEFAULT 't+1',
+            trim_schedule_lag_days_default INTEGER NOT NULL DEFAULT 1,
+            exit_schedule_stage_default TEXT NOT NULL DEFAULT 't+1',
+            exit_schedule_lag_days_default INTEGER NOT NULL DEFAULT 1,
             exit_family TEXT NOT NULL,
             is_active BOOLEAN NOT NULL,
             effective_from DATE NOT NULL,
@@ -50,12 +61,17 @@ POSITION_LEDGER_DDL: Final[dict[str, str]] = {
         CREATE TABLE IF NOT EXISTS position_candidate_audit (
             candidate_nk TEXT PRIMARY KEY,
             signal_nk TEXT NOT NULL,
+            asset_type TEXT NOT NULL DEFAULT 'stock',
             instrument TEXT NOT NULL,
+            code TEXT,
             policy_id TEXT NOT NULL,
             reference_trade_date DATE NOT NULL,
             candidate_status TEXT NOT NULL,
             blocked_reason_code TEXT,
             context_code TEXT,
+            context_behavior_profile TEXT,
+            deployment_stage TEXT,
+            candidate_contract_version TEXT NOT NULL DEFAULT 'position-malf-sizing-batch-v1',
             audit_note TEXT,
             source_signal_run_id TEXT,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -67,11 +83,14 @@ POSITION_LEDGER_DDL: Final[dict[str, str]] = {
             candidate_nk TEXT NOT NULL,
             capacity_snapshot_role TEXT NOT NULL,
             current_position_weight DOUBLE NOT NULL DEFAULT 0,
+            context_behavior_profile TEXT,
+            deployment_stage TEXT,
             context_max_position_weight DOUBLE NOT NULL DEFAULT 0,
             remaining_single_name_capacity_weight DOUBLE NOT NULL DEFAULT 0,
             remaining_portfolio_capacity_weight DOUBLE NOT NULL DEFAULT 0,
             final_allowed_position_weight DOUBLE NOT NULL DEFAULT 0,
             required_reduction_weight DOUBLE NOT NULL DEFAULT 0,
+            context_weight_rule_code TEXT,
             capacity_source_code TEXT NOT NULL,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
@@ -82,6 +101,13 @@ POSITION_LEDGER_DDL: Final[dict[str, str]] = {
             candidate_nk TEXT NOT NULL,
             policy_id TEXT NOT NULL,
             entry_leg_role TEXT NOT NULL,
+            context_behavior_profile TEXT,
+            deployment_stage TEXT,
+            schedule_stage TEXT NOT NULL DEFAULT 't+1',
+            schedule_lag_days INTEGER NOT NULL DEFAULT 1,
+            sizing_contract_version TEXT NOT NULL DEFAULT 'position-malf-sizing-batch-v1',
+            entry_leg_count INTEGER NOT NULL DEFAULT 1,
+            exit_plan_required BOOLEAN NOT NULL DEFAULT FALSE,
             position_action_decision TEXT NOT NULL,
             target_weight DOUBLE NOT NULL DEFAULT 0,
             target_notional DOUBLE NOT NULL DEFAULT 0,
@@ -90,6 +116,25 @@ POSITION_LEDGER_DDL: Final[dict[str, str]] = {
             required_reduction_weight DOUBLE NOT NULL DEFAULT 0,
             reference_price DOUBLE,
             reference_trade_date DATE NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """,
+    "position_entry_leg_plan": """
+        CREATE TABLE IF NOT EXISTS position_entry_leg_plan (
+            entry_leg_nk TEXT PRIMARY KEY,
+            candidate_nk TEXT NOT NULL,
+            policy_id TEXT NOT NULL,
+            leg_role TEXT NOT NULL,
+            leg_status TEXT NOT NULL,
+            schedule_stage TEXT NOT NULL,
+            schedule_lag_days INTEGER NOT NULL DEFAULT 1,
+            leg_gate_reason TEXT,
+            target_weight_after_leg DOUBLE NOT NULL DEFAULT 0,
+            target_notional_after_leg DOUBLE NOT NULL DEFAULT 0,
+            target_shares_after_leg BIGINT NOT NULL DEFAULT 0,
+            context_behavior_profile TEXT,
+            deployment_stage TEXT,
+            plan_contract_version TEXT NOT NULL DEFAULT 'position-malf-sizing-batch-v1',
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
     """,
@@ -121,10 +166,17 @@ POSITION_LEDGER_DDL: Final[dict[str, str]] = {
         CREATE TABLE IF NOT EXISTS position_exit_plan (
             exit_plan_nk TEXT PRIMARY KEY,
             position_nk TEXT NOT NULL,
+            candidate_nk TEXT,
             policy_id TEXT NOT NULL,
             exit_family TEXT NOT NULL,
+            plan_role TEXT NOT NULL DEFAULT 'hold',
             exit_status TEXT NOT NULL,
+            schedule_stage TEXT NOT NULL DEFAULT 't+1',
+            schedule_lag_days INTEGER NOT NULL DEFAULT 1,
             planned_leg_count INTEGER NOT NULL DEFAULT 1,
+            required_reduction_weight DOUBLE NOT NULL DEFAULT 0,
+            target_weight_after_exit DOUBLE NOT NULL DEFAULT 0,
+            plan_contract_version TEXT NOT NULL DEFAULT 'position-malf-sizing-batch-v1',
             hard_close_guard_active BOOLEAN NOT NULL DEFAULT TRUE,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
@@ -134,13 +186,68 @@ POSITION_LEDGER_DDL: Final[dict[str, str]] = {
             exit_leg_nk TEXT PRIMARY KEY,
             exit_plan_nk TEXT NOT NULL,
             exit_leg_seq INTEGER NOT NULL,
+            leg_role TEXT NOT NULL DEFAULT 'closeout',
+            schedule_stage TEXT NOT NULL DEFAULT 't+1',
+            schedule_lag_days INTEGER NOT NULL DEFAULT 1,
             exit_reason_code TEXT NOT NULL,
+            target_weight_after_leg DOUBLE NOT NULL DEFAULT 0,
             target_qty_after BIGINT NOT NULL DEFAULT 0,
             is_partial_exit BOOLEAN NOT NULL DEFAULT FALSE,
             fallback_to_full_exit BOOLEAN NOT NULL DEFAULT FALSE,
+            plan_contract_version TEXT NOT NULL DEFAULT 'position-malf-sizing-batch-v1',
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
     """,
+}
+
+
+POSITION_LEDGER_EVOLUTION_DDL: Final[dict[str, tuple[str, ...]]] = {
+    "position_policy_registry": (
+        f"ALTER TABLE position_policy_registry ADD COLUMN IF NOT EXISTS position_contract_version TEXT DEFAULT '{DEFAULT_POSITION_CONTRACT_VERSION}'",
+        "ALTER TABLE position_policy_registry ADD COLUMN IF NOT EXISTS entry_schedule_stage_default TEXT DEFAULT 't+1'",
+        "ALTER TABLE position_policy_registry ADD COLUMN IF NOT EXISTS entry_schedule_lag_days_default INTEGER DEFAULT 1",
+        "ALTER TABLE position_policy_registry ADD COLUMN IF NOT EXISTS trim_schedule_stage_default TEXT DEFAULT 't+1'",
+        "ALTER TABLE position_policy_registry ADD COLUMN IF NOT EXISTS trim_schedule_lag_days_default INTEGER DEFAULT 1",
+        "ALTER TABLE position_policy_registry ADD COLUMN IF NOT EXISTS exit_schedule_stage_default TEXT DEFAULT 't+1'",
+        "ALTER TABLE position_policy_registry ADD COLUMN IF NOT EXISTS exit_schedule_lag_days_default INTEGER DEFAULT 1",
+    ),
+    "position_candidate_audit": (
+        "ALTER TABLE position_candidate_audit ADD COLUMN IF NOT EXISTS asset_type TEXT DEFAULT 'stock'",
+        "ALTER TABLE position_candidate_audit ADD COLUMN IF NOT EXISTS code TEXT",
+        "ALTER TABLE position_candidate_audit ADD COLUMN IF NOT EXISTS context_behavior_profile TEXT",
+        "ALTER TABLE position_candidate_audit ADD COLUMN IF NOT EXISTS deployment_stage TEXT",
+        f"ALTER TABLE position_candidate_audit ADD COLUMN IF NOT EXISTS candidate_contract_version TEXT DEFAULT '{DEFAULT_POSITION_CONTRACT_VERSION}'",
+    ),
+    "position_capacity_snapshot": (
+        "ALTER TABLE position_capacity_snapshot ADD COLUMN IF NOT EXISTS context_behavior_profile TEXT",
+        "ALTER TABLE position_capacity_snapshot ADD COLUMN IF NOT EXISTS deployment_stage TEXT",
+        "ALTER TABLE position_capacity_snapshot ADD COLUMN IF NOT EXISTS context_weight_rule_code TEXT",
+    ),
+    "position_sizing_snapshot": (
+        "ALTER TABLE position_sizing_snapshot ADD COLUMN IF NOT EXISTS context_behavior_profile TEXT",
+        "ALTER TABLE position_sizing_snapshot ADD COLUMN IF NOT EXISTS deployment_stage TEXT",
+        "ALTER TABLE position_sizing_snapshot ADD COLUMN IF NOT EXISTS schedule_stage TEXT DEFAULT 't+1'",
+        "ALTER TABLE position_sizing_snapshot ADD COLUMN IF NOT EXISTS schedule_lag_days INTEGER DEFAULT 1",
+        f"ALTER TABLE position_sizing_snapshot ADD COLUMN IF NOT EXISTS sizing_contract_version TEXT DEFAULT '{DEFAULT_POSITION_CONTRACT_VERSION}'",
+        "ALTER TABLE position_sizing_snapshot ADD COLUMN IF NOT EXISTS entry_leg_count INTEGER DEFAULT 1",
+        "ALTER TABLE position_sizing_snapshot ADD COLUMN IF NOT EXISTS exit_plan_required BOOLEAN DEFAULT FALSE",
+    ),
+    "position_exit_plan": (
+        "ALTER TABLE position_exit_plan ADD COLUMN IF NOT EXISTS candidate_nk TEXT",
+        "ALTER TABLE position_exit_plan ADD COLUMN IF NOT EXISTS plan_role TEXT DEFAULT 'hold'",
+        "ALTER TABLE position_exit_plan ADD COLUMN IF NOT EXISTS schedule_stage TEXT DEFAULT 't+1'",
+        "ALTER TABLE position_exit_plan ADD COLUMN IF NOT EXISTS schedule_lag_days INTEGER DEFAULT 1",
+        "ALTER TABLE position_exit_plan ADD COLUMN IF NOT EXISTS required_reduction_weight DOUBLE DEFAULT 0",
+        "ALTER TABLE position_exit_plan ADD COLUMN IF NOT EXISTS target_weight_after_exit DOUBLE DEFAULT 0",
+        f"ALTER TABLE position_exit_plan ADD COLUMN IF NOT EXISTS plan_contract_version TEXT DEFAULT '{DEFAULT_POSITION_CONTRACT_VERSION}'",
+    ),
+    "position_exit_leg": (
+        "ALTER TABLE position_exit_leg ADD COLUMN IF NOT EXISTS leg_role TEXT DEFAULT 'closeout'",
+        "ALTER TABLE position_exit_leg ADD COLUMN IF NOT EXISTS schedule_stage TEXT DEFAULT 't+1'",
+        "ALTER TABLE position_exit_leg ADD COLUMN IF NOT EXISTS schedule_lag_days INTEGER DEFAULT 1",
+        "ALTER TABLE position_exit_leg ADD COLUMN IF NOT EXISTS target_weight_after_leg DOUBLE DEFAULT 0",
+        f"ALTER TABLE position_exit_leg ADD COLUMN IF NOT EXISTS plan_contract_version TEXT DEFAULT '{DEFAULT_POSITION_CONTRACT_VERSION}'",
+    ),
 }
 
 
@@ -151,7 +258,14 @@ class PositionPolicySeed:
     policy_id: str
     policy_family: str
     policy_version: str
+    position_contract_version: str
     entry_leg_role_default: str
+    entry_schedule_stage_default: str
+    entry_schedule_lag_days_default: int
+    trim_schedule_stage_default: str
+    trim_schedule_lag_days_default: int
+    exit_schedule_stage_default: str
+    exit_schedule_lag_days_default: int
     exit_family: str
     is_active: bool
     effective_from: str
@@ -164,47 +278,95 @@ DEFAULT_POSITION_POLICY_SEEDS: Final[tuple[PositionPolicySeed, ...]] = (
         policy_id="fixed_notional_full_exit_v1",
         policy_family="FIXED_NOTIONAL_CONTROL",
         policy_version="v1",
-        entry_leg_role_default="base_entry",
+        position_contract_version=DEFAULT_POSITION_CONTRACT_VERSION,
+        entry_leg_role_default="initial_entry",
+        entry_schedule_stage_default="t+1",
+        entry_schedule_lag_days_default=1,
+        trim_schedule_stage_default="t+1",
+        trim_schedule_lag_days_default=1,
+        exit_schedule_stage_default="t+1",
+        exit_schedule_lag_days_default=1,
         exit_family="FULL_EXIT_CONTROL",
         is_active=True,
         effective_from="2026-04-09",
         effective_to=None,
-        notes="position v1 operating control baseline",
+        notes="position MALF sizing operating baseline",
     ),
     PositionPolicySeed(
         policy_id="single_lot_full_exit_v1",
         policy_family="SINGLE_LOT_CONTROL",
         policy_version="v1",
-        entry_leg_role_default="base_entry",
+        position_contract_version=DEFAULT_POSITION_CONTRACT_VERSION,
+        entry_leg_role_default="initial_entry",
+        entry_schedule_stage_default="t+1",
+        entry_schedule_lag_days_default=1,
+        trim_schedule_stage_default="t+1",
+        trim_schedule_lag_days_default=1,
+        exit_schedule_stage_default="t+1",
+        exit_schedule_lag_days_default=1,
         exit_family="FULL_EXIT_CONTROL",
         is_active=True,
         effective_from="2026-04-09",
         effective_to=None,
-        notes="position v1 floor sanity baseline",
+        notes="position single-lot floor sanity baseline",
     ),
     PositionPolicySeed(
         policy_id="fixed_notional_naive_trail_scale_out_50_50_v1",
         policy_family="FIXED_NOTIONAL_CONTROL",
         policy_version="v1",
-        entry_leg_role_default="base_entry",
+        position_contract_version=DEFAULT_POSITION_CONTRACT_VERSION,
+        entry_leg_role_default="initial_entry",
+        entry_schedule_stage_default="t+1",
+        entry_schedule_lag_days_default=1,
+        trim_schedule_stage_default="t+1",
+        trim_schedule_lag_days_default=1,
+        exit_schedule_stage_default="t+1",
+        exit_schedule_lag_days_default=1,
         exit_family="NAIVE_TRAIL_SCALE_OUT_50_50_CONTROL",
         is_active=True,
         effective_from="2026-04-09",
         effective_to=None,
-        notes="position v1 operating partial-exit control",
+        notes="position MALF sizing partial-exit baseline",
     ),
     PositionPolicySeed(
         policy_id="single_lot_naive_trail_scale_out_50_50_v1",
         policy_family="SINGLE_LOT_CONTROL",
         policy_version="v1",
-        entry_leg_role_default="base_entry",
+        position_contract_version=DEFAULT_POSITION_CONTRACT_VERSION,
+        entry_leg_role_default="initial_entry",
+        entry_schedule_stage_default="t+1",
+        entry_schedule_lag_days_default=1,
+        trim_schedule_stage_default="t+1",
+        trim_schedule_lag_days_default=1,
+        exit_schedule_stage_default="t+1",
+        exit_schedule_lag_days_default=1,
         exit_family="NAIVE_TRAIL_SCALE_OUT_50_50_CONTROL",
         is_active=True,
         effective_from="2026-04-09",
         effective_to=None,
-        notes="position v1 floor sanity partial-exit control",
+        notes="position single-lot partial-exit floor sanity baseline",
     ),
 )
+
+
+def apply_position_schema_evolution(connection: duckdb.DuckDBPyConnection) -> None:
+    """对已有 `position` 账本执行幂等补列，确保卡 47 合同可被旧库消费。"""
+
+    existing_tables = {
+        str(row[0])
+        for row in connection.execute(
+            """
+            SELECT table_name
+            FROM information_schema.tables
+            WHERE table_schema = 'main'
+            """
+        ).fetchall()
+    }
+    for table_name, statements in POSITION_LEDGER_EVOLUTION_DDL.items():
+        if table_name not in existing_tables:
+            continue
+        for statement in statements:
+            connection.execute(statement)
 
 
 def seed_default_policies(connection: duckdb.DuckDBPyConnection) -> None:
@@ -215,14 +377,21 @@ def seed_default_policies(connection: duckdb.DuckDBPyConnection) -> None:
             policy_id,
             policy_family,
             policy_version,
+            position_contract_version,
             entry_leg_role_default,
+            entry_schedule_stage_default,
+            entry_schedule_lag_days_default,
+            trim_schedule_stage_default,
+            trim_schedule_lag_days_default,
+            exit_schedule_stage_default,
+            exit_schedule_lag_days_default,
             exit_family,
             is_active,
             effective_from,
             effective_to,
             notes
         )
-        SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?
+        SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
         WHERE NOT EXISTS (
             SELECT 1
             FROM position_policy_registry
@@ -236,7 +405,14 @@ def seed_default_policies(connection: duckdb.DuckDBPyConnection) -> None:
                 seed.policy_id,
                 seed.policy_family,
                 seed.policy_version,
+                seed.position_contract_version,
                 seed.entry_leg_role_default,
+                seed.entry_schedule_stage_default,
+                seed.entry_schedule_lag_days_default,
+                seed.trim_schedule_stage_default,
+                seed.trim_schedule_lag_days_default,
+                seed.exit_schedule_stage_default,
+                seed.exit_schedule_lag_days_default,
                 seed.exit_family,
                 seed.is_active,
                 seed.effective_from,
@@ -245,3 +421,4 @@ def seed_default_policies(connection: duckdb.DuckDBPyConnection) -> None:
                 seed.policy_id,
             ],
         )
+

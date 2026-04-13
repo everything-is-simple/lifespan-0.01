@@ -4,17 +4,25 @@
 `日期`：`2026-04-13`
 `状态`：`待施工`
 
-## 问题
+## 需求
 
-- 当前 `position_capacity_snapshot` 只覆盖极薄的 cap 交集，缺少 risk budget 正式账本。
-- `FIXED_NOTIONAL_CONTROL` 与 `SINGLE_LOT_CONTROL` 的旧实验结论还没有升格为主线中的显式 capacity decomposition。
+- 问题：
+  当前 `position_capacity_snapshot` 只覆盖极薄的 cap 交集，缺少 risk budget 正式账本。
+- 目标结果：
+  把 `risk budget / context cap / single-name cap / portfolio cap / final allowed weight` 升级为可追踪的正式 ledger 分解，为 `49-50` 和 `portfolio_plan` 提供稳定容量真相源。
+- 为什么现在做：
+  `47` 已完成 MALF context sizing / batch contract freeze；若 `48` 不把风险与容量厚账本补齐，`position` 仍停留在“只有最终 cap 值、无法解释裁减原因”的中间状态。
 
-## 设计依据
+## 设计输入
 
-- [02-position-malf-context-driven-batched-management-charter-20260413.md](/H:/lifespan-0.01/docs/01-design/modules/position/02-position-malf-context-driven-batched-management-charter-20260413.md)
-- [04-position-malf-context-driven-batched-management-spec-20260413.md](/H:/lifespan-0.01/docs/02-spec/modules/position/04-position-malf-context-driven-batched-management-spec-20260413.md)
+- 设计文档：
+  - `docs/01-design/modules/position/02-position-malf-context-driven-batched-management-charter-20260413.md`
+- 规格文档：
+  - `docs/02-spec/modules/position/04-position-malf-context-driven-batched-management-spec-20260413.md`
+- 上游结论：
+  - `docs/03-execution/47-position-malf-context-driven-sizing-and-batch-contract-conclusion-20260414.md`
 
-## 任务
+## 任务分解
 
 1. 新增 `position_risk_budget_snapshot` 正式账本。
 2. 把 `risk budget / context cap / single-name cap / portfolio cap / final allowed weight` 拆开落表。
@@ -23,18 +31,18 @@
 
 ## 历史账本约束
 
-1. `实体锚点`
-   - `candidate_nk`。
-2. `业务自然键`
-   - `risk_budget_snapshot_nk / capacity_snapshot_nk`。
-3. `批量建仓`
-   - 对历史正式 signal 回灌所有 risk/capacity 分解快照。
-4. `增量更新`
-   - 对 signal 或参考价变化只重算脏候选。
-5. `断点续跑`
-   - 本卡先定义账本和物化语义，续跑由 `50` 接管。
-6. `审计账本`
-   - 每个 snapshot 必须保留来源 policy、source fingerprint、contract version。
+- 实体锚点：
+  `candidate_nk`
+- 业务自然键：
+  `risk_budget_snapshot_nk / capacity_snapshot_nk`
+- 批量建仓：
+  对历史正式 signal 回灌所有 risk/capacity 分解快照
+- 增量更新：
+  对 signal、参考价或 capacity contract 变化只重算脏候选
+- 断点续跑：
+  本卡先定义账本和物化语义，续跑由 `50` 接管
+- 审计账本：
+  每个 snapshot 必须保留来源 policy、source fingerprint、contract version
 
 ## A 级判定表
 
