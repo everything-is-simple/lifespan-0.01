@@ -127,7 +127,7 @@ flowchart LR
   - `malf -> structure -> filter -> alpha` 默认消费 `adjust_method='backward'`
   - `position -> trade` 默认消费 `adjust_method='none'`
   - `forward` 当前只作研究与展示保留
-- 当前最新生效结论锚点已推进到 `41-alpha-pas-five-trigger-canonical-detector-conclusion-20260413.md`：`41` 已完成 alpha PAS 五触发 canonical detector；当前待施工卡切到 `42-alpha-family-role-and-malf-alignment-card-20260413.md`，继续先冻结 alpha family role 与 malf 协同语义，再回到 `100`
+- 当前最新生效结论锚点已推进到 `42-alpha-family-role-and-malf-alignment-conclusion-20260413.md`：`42` 已完成 alpha family role 与 canonical malf 协同语义收口；当前待施工卡切回 `100-trade-signal-anchor-contract-freeze-card-20260411.md`
 - `txt -> raw_market -> market_base` 继续保留为正式 fallback
 
 ## 当前 malf 正式口径

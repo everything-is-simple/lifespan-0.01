@@ -2,9 +2,9 @@
 日期：`2026-04-09`
 状态：`持续更新`
 
-1. 当前下一锤：`42-alpha-family-role-and-malf-alignment-card-20260413.md`
-2. 当前待施工卡：`42-alpha-family-role-and-malf-alignment-card-20260413.md`
-3. 正式主线剩余卡：`7`
+1. 当前下一锤：`100-trade-signal-anchor-contract-freeze-card-20260411.md`
+2. 当前待施工卡：`100-trade-signal-anchor-contract-freeze-card-20260411.md`
+3. 正式主线剩余卡：`6`
 4. 可选 Sidecar 剩余卡：`0`
 5. backlog：`0`
 
@@ -20,12 +20,13 @@
 9. `structure / filter` 主线旧 malf 语义 purge 卡`38`
 10. 主线本地正式 ledger 一次性标准化 bootstrap 卡`39`
 11. 主线本地正式 ledger 每日增量同步、断点续跑与 freshness audit 卡`40`
+12. `alpha family role / canonical malf alignment` 卡`42`
 
 ## 当前阶段
-1. 最新生效结论锚点已推进到 `41-alpha-pas-five-trigger-canonical-detector-conclusion-20260413.md`。
-2. `41-alpha-pas-five-trigger-canonical-detector-card-20260413.md` 已完成收口并补齐官方 PAS 五触发 canonical detector。
-3. 在进入 `100-105` 前，主线继续新增 `42`，先冻结 alpha family role 与 malf 协同语义。
-4. 当前主线待施工卡已调整为 `42-alpha-family-role-and-malf-alignment-card-20260413.md`。
+1. 最新生效结论锚点已推进到 `42-alpha-family-role-and-malf-alignment-conclusion-20260413.md`。
+2. `42-alpha-family-role-and-malf-alignment-card-20260413.md` 已完成收口并冻结 family role 与 canonical malf 协同语义。
+3. 当前主线已结束 `41-99` 的 alpha/PAS 收口阶段。
+4. 当前主线待施工卡已切回 `100-trade-signal-anchor-contract-freeze-card-20260411.md`。
 
 ## 完成阶段图
 ```mermaid

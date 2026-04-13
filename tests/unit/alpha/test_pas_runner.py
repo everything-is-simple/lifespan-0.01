@@ -39,9 +39,28 @@ def _bootstrap_repo_root(tmp_path: Path) -> Path:
 def _seed_structure_and_filter(settings) -> None:
     structure_conn = connect_structure_ledger(settings)
     filter_conn = connect_filter_ledger(settings)
+    settings.databases.malf.parent.mkdir(parents=True, exist_ok=True)
+    malf_conn = duckdb.connect(str(settings.databases.malf))
     try:
         bootstrap_structure_snapshot_ledger(settings, connection=structure_conn)
         bootstrap_filter_snapshot_ledger(settings, connection=filter_conn)
+        malf_conn.execute(
+            """
+            CREATE TABLE malf_state_snapshot (
+                snapshot_nk TEXT NOT NULL,
+                asset_type TEXT NOT NULL,
+                code TEXT NOT NULL,
+                timeframe TEXT NOT NULL,
+                asof_bar_dt DATE NOT NULL,
+                major_state TEXT NOT NULL,
+                trend_direction TEXT NOT NULL,
+                reversal_stage TEXT NOT NULL,
+                wave_id BIGINT NOT NULL,
+                current_hh_count BIGINT NOT NULL,
+                current_ll_count BIGINT NOT NULL
+            )
+            """
+        )
         structure_conn.execute(
             """
             INSERT INTO structure_snapshot (
@@ -150,9 +169,30 @@ def _seed_structure_and_filter(settings) -> None:
                 ('stock', '000005.SZ', 'D', '2026-04-30', '2026-04-30', '2026-04-30', 'filter-source-a', 'filter-run-a')
             """
         )
+        malf_conn.execute(
+            """
+            INSERT INTO malf_state_snapshot VALUES
+                ('ctx-bof', 'stock', '000001.SZ', 'D', '2026-04-30', '牛逆', 'down', 'trigger', 1, 0, 2),
+                ('ctx-w-bof', 'stock', '000001.SZ', 'W', '2026-04-24', '牛顺', 'up', 'none', 3, 2, 0),
+                ('ctx-m-bof', 'stock', '000001.SZ', 'M', '2026-03-31', '熊逆', 'down', 'trigger', 1, 0, 1),
+                ('ctx-tst', 'stock', '000002.SZ', 'D', '2026-04-30', '牛顺', 'up', 'expand', 7, 3, 0),
+                ('ctx-w-tst', 'stock', '000002.SZ', 'W', '2026-04-24', '牛顺', 'up', 'none', 4, 2, 0),
+                ('ctx-m-tst', 'stock', '000002.SZ', 'M', '2026-03-31', '牛逆', 'down', 'trigger', 1, 0, 1),
+                ('ctx-pb', 'stock', '000003.SZ', 'D', '2026-04-30', '牛顺', 'up', 'expand', 9, 4, 0),
+                ('ctx-w-pb', 'stock', '000003.SZ', 'W', '2026-04-24', '牛顺', 'up', 'none', 4, 2, 0),
+                ('ctx-m-pb', 'stock', '000003.SZ', 'M', '2026-03-31', '牛顺', 'up', 'none', 2, 1, 0),
+                ('ctx-cpb', 'stock', '000004.SZ', 'D', '2026-04-30', '牛顺', 'up', 'expand', 11, 5, 0),
+                ('ctx-w-cpb', 'stock', '000004.SZ', 'W', '2026-04-24', '牛顺', 'up', 'none', 5, 3, 0),
+                ('ctx-m-cpb', 'stock', '000004.SZ', 'M', '2026-03-31', '牛顺', 'up', 'none', 2, 1, 0),
+                ('ctx-bpb', 'stock', '000005.SZ', 'D', '2026-04-30', '牛顺', 'up', 'expand', 8, 3, 0),
+                ('ctx-w-bpb', 'stock', '000005.SZ', 'W', '2026-04-24', '牛顺', 'up', 'none', 4, 2, 0),
+                ('ctx-m-bpb', 'stock', '000005.SZ', 'M', '2026-03-31', '牛顺', 'up', 'none', 2, 1, 0)
+            """
+        )
     finally:
         structure_conn.close()
         filter_conn.close()
+        malf_conn.close()
 
 
 def _seed_market_base(settings) -> None:
@@ -326,8 +366,9 @@ def test_run_alpha_pas_five_trigger_build_materializes_official_candidates_and_d
         ("pb", "PB", "pb_core"),
         ("tst", "TST", "tst_core"),
     ]
-    assert '"trigger_strength"' in family_payload[0]
-    assert '"structure_context_json"' in family_payload[0]
+    assert '"family_role"' in family_payload[0]
+    assert '"malf_alignment"' in family_payload[0]
+    assert '"source_context_fingerprint"' in family_payload[0]
 
 
 def test_run_alpha_pas_five_trigger_build_uses_checkpoint_queue_and_rematerializes(

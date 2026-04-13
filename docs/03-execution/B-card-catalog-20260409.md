@@ -2,9 +2,9 @@
 日期：`2026-04-09`
 状态：`持续更新`
 
-1. 当前下一锚：`42-alpha-family-role-and-malf-alignment-card-20260413.md`
-2. 当前待施工卡：`42-alpha-family-role-and-malf-alignment-card-20260413.md`
-3. 正式主线剩余卡：`7`
+1. 当前下一锚：`100-trade-signal-anchor-contract-freeze-card-20260411.md`
+2. 当前待施工卡：`100-trade-signal-anchor-contract-freeze-card-20260411.md`
+3. 正式主线剩余卡：`6`
 4. 可选 Sidecar 剩余卡：`0`
 5. 历史治理 backlog：`0`
 
@@ -59,9 +59,9 @@
 105. `105-system-runtime-orchestration-bootstrap-card-20260411.md`
 
 ## 当前说明
-1. 最新生效结论锚点已推进到 `41-alpha-pas-five-trigger-canonical-detector-conclusion-20260413.md`。
-2. `41-alpha-pas-five-trigger-canonical-detector-card-20260413.md` 已收口；在进入 `100` 前，主线继续新增 `42-alpha-family-role-and-malf-alignment-card-20260413.md`。
-3. `41` 已完成，当前继续处于 `41-99` 的 alpha/PAS 收口阶段，再回到 `100-105`。
+1. 最新生效结论锚点已推进到 `42-alpha-family-role-and-malf-alignment-conclusion-20260413.md`。
+2. `42-alpha-family-role-and-malf-alignment-card-20260413.md` 已完成收口。
+3. 当前 `41-99` 的 alpha/PAS 收口阶段已结束，主线切回 `100-105`。
 4. 当前卡组排序调整为 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39 -> 40 -> 41 -> 42 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。
 
 ## 卡组路线图

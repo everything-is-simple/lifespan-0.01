@@ -3,7 +3,7 @@
 `日期：2026-04-09`
 `状态：生效`
 
-当前最新生效结论锚点：`41-alpha-pas-five-trigger-canonical-detector-conclusion-20260413.md`
+当前最新生效结论锚点：`42-alpha-family-role-and-malf-alignment-conclusion-20260413.md`
 
 ## 正式结论目录
 
@@ -48,6 +48,7 @@
 39. `39-mainline-local-ledger-standardization-bootstrap-conclusion-20260413.md`
 40. `40-mainline-local-ledger-incremental-sync-and-resume-conclusion-20260413.md`
 41. `41-alpha-pas-five-trigger-canonical-detector-conclusion-20260413.md`
+42. `42-alpha-family-role-and-malf-alignment-conclusion-20260413.md`
 100. `100-trade-signal-anchor-contract-freeze-conclusion-20260411.md`
 101. `101-position-entry-t-plus-1-open-reference-price-correction-conclusion-20260411.md`
 102. `102-trade-exit-pnl-ledger-bootstrap-conclusion-20260411.md`
@@ -57,10 +58,10 @@
 
 ## 主线状态
 
-1. `41` 已成为当前最新生效结论锚点。
-2. `41` 已收口后，当前待施工卡已前推到 `42`。
-3. `29-41` 已完成 canonical malf downstream + PAS detector 收口，但 alpha family / trade/system 仍未完成。
-4. `42` 完成后再回到 `100-105` 的 trade/system 卡组。
+1. `42` 已成为当前最新生效结论锚点。
+2. `42` 已收口后，当前待施工卡已切回 `100`。
+3. `29-42` 已完成 canonical malf downstream + PAS detector + alpha family 收口。
+4. 当前主线继续进入 `100-105` 的 trade/system 卡组。
 
 ## 图示
 
@@ -78,11 +79,11 @@ flowchart LR
     subgraph MALF["23-32 canonical malf"]
         C23["23-32"]
     end
-    subgraph DOWN["33-41 downstream + alpha detector"]
-        C33["33-41"]
-    end
-    subgraph NEXT["42 + 100-105"]
+    subgraph DOWN["33-42 downstream + alpha family"]
+        C33["33-42"]
         C42["42 alpha family"]
+    end
+    subgraph NEXT["100-105"]
         C100["100-105 trade/system"]
     end
     GOV --> MAIN --> DATA --> MALF --> DOWN --> NEXT

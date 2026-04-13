@@ -3,12 +3,17 @@
 from __future__ import annotations
 
 from datetime import date
+from pathlib import Path
 
 import duckdb
 
 from mlq.alpha.family_shared import (
+    _FamilyContextRow,
+    _MalfStateRow,
     _TriggerRow,
     _normalize_date_value,
+    _normalize_optional_int,
+    _normalize_optional_nullable_str,
     _normalize_optional_str,
 )
 
@@ -52,6 +57,15 @@ def _load_trigger_rows(
             pattern_code,
             source_filter_snapshot_nk,
             source_structure_snapshot_nk,
+            daily_source_context_nk,
+            weekly_major_state,
+            weekly_trend_direction,
+            weekly_reversal_stage,
+            weekly_source_context_nk,
+            monthly_major_state,
+            monthly_trend_direction,
+            monthly_reversal_stage,
+            monthly_source_context_nk,
             upstream_context_fingerprint
         FROM {table_name}
         {where_sql}
@@ -71,7 +85,16 @@ def _load_trigger_rows(
             pattern_code=_normalize_optional_str(row[6]),
             source_filter_snapshot_nk=_normalize_optional_str(row[7]),
             source_structure_snapshot_nk=_normalize_optional_str(row[8]),
-            upstream_context_fingerprint=_normalize_optional_str(row[9], default="{}"),
+            daily_source_context_nk=_normalize_optional_nullable_str(row[9]),
+            weekly_major_state=_normalize_optional_nullable_str(row[10]),
+            weekly_trend_direction=_normalize_optional_nullable_str(row[11]),
+            weekly_reversal_stage=_normalize_optional_nullable_str(row[12]),
+            weekly_source_context_nk=_normalize_optional_nullable_str(row[13]),
+            monthly_major_state=_normalize_optional_nullable_str(row[14]),
+            monthly_trend_direction=_normalize_optional_nullable_str(row[15]),
+            monthly_reversal_stage=_normalize_optional_nullable_str(row[16]),
+            monthly_source_context_nk=_normalize_optional_nullable_str(row[17]),
+            upstream_context_fingerprint=_normalize_optional_str(row[18], default="{}"),
         )
         for row in rows
     ]
@@ -182,6 +205,215 @@ def _load_candidate_rows(
             )
         ] = row_dict
     return candidate_map
+
+
+def _load_official_context_rows(
+    *,
+    structure_path: Path,
+    malf_path: Path,
+    structure_table_name: str,
+    malf_table_name: str,
+    trigger_rows: list[_TriggerRow],
+) -> dict[str, _FamilyContextRow]:
+    if not trigger_rows:
+        return {}
+    structure_map = _load_structure_rows(
+        structure_path=structure_path,
+        table_name=structure_table_name,
+        structure_snapshot_nks=tuple(
+            sorted({row.source_structure_snapshot_nk for row in trigger_rows if row.source_structure_snapshot_nk})
+        ),
+    )
+    malf_snapshot_nks: set[str] = set()
+    for trigger_row in trigger_rows:
+        structure_row = structure_map.get(trigger_row.source_structure_snapshot_nk)
+        for snapshot_nk in (
+            None if structure_row is None else structure_row["source_context_nk"],
+            None if structure_row is None else structure_row["weekly_source_context_nk"],
+            None if structure_row is None else structure_row["monthly_source_context_nk"],
+            trigger_row.daily_source_context_nk,
+            trigger_row.weekly_source_context_nk,
+            trigger_row.monthly_source_context_nk,
+        ):
+            if snapshot_nk:
+                malf_snapshot_nks.add(str(snapshot_nk))
+    malf_map = _load_malf_state_rows(
+        malf_path=malf_path,
+        table_name=malf_table_name,
+        snapshot_nks=tuple(sorted(malf_snapshot_nks)),
+    )
+
+    context_map: dict[str, _FamilyContextRow] = {}
+    for trigger_row in trigger_rows:
+        structure_row = structure_map.get(trigger_row.source_structure_snapshot_nk)
+        daily_context_nk = (
+            _normalize_optional_nullable_str(None if structure_row is None else structure_row["source_context_nk"])
+            or trigger_row.daily_source_context_nk
+        )
+        weekly_context_nk = (
+            _normalize_optional_nullable_str(
+                None if structure_row is None else structure_row["weekly_source_context_nk"]
+            )
+            or trigger_row.weekly_source_context_nk
+        )
+        monthly_context_nk = (
+            _normalize_optional_nullable_str(
+                None if structure_row is None else structure_row["monthly_source_context_nk"]
+            )
+            or trigger_row.monthly_source_context_nk
+        )
+        daily_malf_state = None if daily_context_nk is None else malf_map.get(daily_context_nk)
+        weekly_malf_state = None if weekly_context_nk is None else malf_map.get(weekly_context_nk)
+        monthly_malf_state = None if monthly_context_nk is None else malf_map.get(monthly_context_nk)
+        context_map[trigger_row.trigger_event_nk] = _FamilyContextRow(
+            structure_snapshot_nk=trigger_row.source_structure_snapshot_nk,
+            instrument=trigger_row.instrument,
+            signal_date=trigger_row.signal_date,
+            asof_date=trigger_row.asof_date,
+            major_state=_normalize_optional_str(
+                None if structure_row is None else structure_row["major_state"],
+                default=(
+                    "unknown"
+                    if daily_malf_state is None
+                    else daily_malf_state.major_state
+                ),
+            ),
+            trend_direction=_normalize_optional_str(
+                None if structure_row is None else structure_row["trend_direction"],
+                default=(
+                    "unknown"
+                    if daily_malf_state is None
+                    else daily_malf_state.trend_direction
+                ),
+            ).lower(),
+            reversal_stage=_normalize_optional_str(
+                None if structure_row is None else structure_row["reversal_stage"],
+                default=(
+                    "unknown"
+                    if daily_malf_state is None
+                    else daily_malf_state.reversal_stage
+                ),
+            ).lower(),
+            current_hh_count=_normalize_optional_int(
+                None if structure_row is None else structure_row["current_hh_count"]
+            ),
+            current_ll_count=_normalize_optional_int(
+                None if structure_row is None else structure_row["current_ll_count"]
+            ),
+            structure_progress_state=_normalize_optional_str(
+                None if structure_row is None else structure_row["structure_progress_state"],
+                default="unknown",
+            ).lower(),
+            break_confirmation_status=_normalize_optional_nullable_str(
+                None if structure_row is None else structure_row["break_confirmation_status"]
+            ),
+            break_confirmation_ref=_normalize_optional_nullable_str(
+                None if structure_row is None else structure_row["break_confirmation_ref"]
+            ),
+            exhaustion_risk_bucket=_normalize_optional_nullable_str(
+                None if structure_row is None else structure_row["exhaustion_risk_bucket"]
+            ),
+            reversal_probability_bucket=_normalize_optional_nullable_str(
+                None if structure_row is None else structure_row["reversal_probability_bucket"]
+            ),
+            source_context_nk=daily_context_nk,
+            weekly_source_context_nk=weekly_context_nk,
+            monthly_source_context_nk=monthly_context_nk,
+            daily_malf_state=daily_malf_state,
+            weekly_malf_state=weekly_malf_state,
+            monthly_malf_state=monthly_malf_state,
+        )
+    return context_map
+
+
+def _load_structure_rows(
+    *,
+    structure_path: Path,
+    table_name: str,
+    structure_snapshot_nks: tuple[str, ...],
+) -> dict[str, dict[str, object]]:
+    if not structure_snapshot_nks:
+        return {}
+    connection = duckdb.connect(str(structure_path), read_only=True)
+    try:
+        placeholders = ", ".join("?" for _ in structure_snapshot_nks)
+        rows = connection.execute(
+            f"""
+            SELECT
+                structure_snapshot_nk,
+                instrument,
+                signal_date,
+                asof_date,
+                major_state,
+                trend_direction,
+                reversal_stage,
+                current_hh_count,
+                current_ll_count,
+                structure_progress_state,
+                break_confirmation_status,
+                break_confirmation_ref,
+                exhaustion_risk_bucket,
+                reversal_probability_bucket,
+                source_context_nk,
+                weekly_source_context_nk,
+                monthly_source_context_nk
+            FROM {table_name}
+            WHERE structure_snapshot_nk IN ({placeholders})
+            """,
+            [*structure_snapshot_nks],
+        ).fetchall()
+        column_names = [str(item[0]) for item in connection.description]
+        return {
+            str(row[0]): {
+                column_name: row[index]
+                for index, column_name in enumerate(column_names)
+            }
+            for row in rows
+        }
+    finally:
+        connection.close()
+
+
+def _load_malf_state_rows(
+    *,
+    malf_path: Path,
+    table_name: str,
+    snapshot_nks: tuple[str, ...],
+) -> dict[str, _MalfStateRow]:
+    if not snapshot_nks:
+        return {}
+    connection = duckdb.connect(str(malf_path), read_only=True)
+    try:
+        placeholders = ", ".join("?" for _ in snapshot_nks)
+        rows = connection.execute(
+            f"""
+            SELECT
+                snapshot_nk,
+                timeframe,
+                major_state,
+                trend_direction,
+                reversal_stage,
+                current_hh_count,
+                current_ll_count
+            FROM {table_name}
+            WHERE snapshot_nk IN ({placeholders})
+            """,
+            [*snapshot_nks],
+        ).fetchall()
+        return {
+            str(row[0]): _MalfStateRow(
+                snapshot_nk=str(row[0]),
+                timeframe=_normalize_optional_str(row[1], default="D"),
+                major_state=_normalize_optional_str(row[2], default="unknown"),
+                trend_direction=_normalize_optional_str(row[3], default="unknown").lower(),
+                reversal_stage=_normalize_optional_str(row[4], default="unknown").lower(),
+                current_hh_count=_normalize_optional_int(row[5]),
+                current_ll_count=_normalize_optional_int(row[6]),
+            )
+            for row in rows
+        }
+    finally:
+        connection.close()
 
 
 def _load_table_columns(connection: duckdb.DuckDBPyConnection, table_name: str) -> set[str]:

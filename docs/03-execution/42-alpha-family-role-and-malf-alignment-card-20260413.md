@@ -1,6 +1,6 @@
 # 42-alpha-family-role-and-malf-alignment
 `日期：2026-04-13`
-`状态：待施工`
+`状态：已完成`
 
 ## 需求
 

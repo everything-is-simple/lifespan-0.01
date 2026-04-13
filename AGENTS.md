@@ -136,7 +136,7 @@ flowchart LR
 1. `malf -> structure -> filter -> alpha` 默认使用 `adjust_method = backward`
 2. `position -> trade` 默认使用 `adjust_method = none`
 3. `adjust_method = forward` 当前只作为研究与展示保留，不作为正式执行口径
-4. 当前最新生效结论锚点已推进到 `41-alpha-pas-five-trigger-canonical-detector-conclusion-20260413.md`；它已裁决 alpha PAS 五触发 canonical detector 已收口。当前正式施工位已切换到 `42-alpha-family-role-and-malf-alignment-card-20260413.md`；其中 `29-41` 已完成并生效，主线先进入 `41-99` 的 alpha/PAS 收口阶段，再恢复 `100-105` 的 trade/system 卡组。
+4. 当前最新生效结论锚点已推进到 `42-alpha-family-role-and-malf-alignment-conclusion-20260413.md`；它已裁决 alpha family role 与 canonical malf 协同语义已收口。当前正式施工位已切回 `100-trade-signal-anchor-contract-freeze-card-20260411.md`；其中 `29-42` 已完成并生效，主线重新回到 `100-105` 的 trade/system 卡组。
 
 ## 5. 历史账本原则
 
