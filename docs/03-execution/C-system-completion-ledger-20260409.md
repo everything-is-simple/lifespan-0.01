@@ -1,14 +1,15 @@
-# 系统完成账本
+﻿# 系统完成账本
 `日期：2026-04-09`
 `状态：持续更新`
 
-1. 当前下一锤：`54-portfolio-plan-data-grade-checkpoint-replay-and-freshness-card-20260413.md`
-2. 当前待施工卡：`54-portfolio-plan-data-grade-checkpoint-replay-and-freshness-card-20260413.md`
-3. 正式主线剩余卡：`8`
+1. 当前下一锤：`100-trade-signal-anchor-contract-freeze-card-20260411.md`
+2. 当前待施工卡：`100-trade-signal-anchor-contract-freeze-card-20260411.md`
+3. 正式主线剩余卡：`6`
 4. 可选 Sidecar 剩余卡：`0`
-5. backlog：`0`
+5. 历史治理 backlog：`0`
 
 ## 已完成阶段
+
 1. 治理与入口基线卡 `01-06`
 2. `position` bounded runner 卡 `07-09`
 3. `alpha / structure / filter` 最小主链合同卡 `10-13`
@@ -33,14 +34,18 @@
 22. `pre-portfolio-plan position acceptance gate` 卡 `51`
 23. `portfolio_plan official ledger family / natural key freeze` 卡 `52`
 24. `portfolio_plan capacity / decision hardening` 卡 `53`
+25. `portfolio_plan data-grade checkpoint / replay / freshness` 卡 `54`
+26. `pre-trade upstream data-grade baseline gate` 卡 `55`
 
 ## 当前阶段
-1. 最新生效结论锚点已推进到 `53-portfolio-plan-capacity-decision-ledger-hardening-conclusion-20260414.md`。
-2. `53` 已完成 `portfolio_plan` 容量与裁决厚账本收口，并把当前待施工卡前移到 `54`。
-3. 当前主线已从 `53 portfolio_plan capacity / decision hardening` 前移到 `54 portfolio_plan data-grade checkpoint / replay / freshness`。
-4. `54 -> 55` 现在可以继续推进；`100-105` 仍必须等待 `55` 接受后再恢复。
 
-## 完成阶段图
+1. 最新生效结论锚点已推进到 `55-pre-trade-upstream-data-grade-baseline-gate-conclusion-20260414.md`。
+2. `55` 已完成并接受。
+3. 当前正式主线待施工卡已切到 `100`。
+4. `100 -> 105` 继续按既定顺序推进，`100-105` 已从 `55` 的冻结状态中恢复。
+
+## 体系图
+
 ```mermaid
 flowchart LR
     G01["01-06 治理与入口"] --> P07["07-09 position"]

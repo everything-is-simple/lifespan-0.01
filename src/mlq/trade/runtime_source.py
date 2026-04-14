@@ -127,6 +127,7 @@ def _load_next_trade_date(
     market_price_table: str,
     instrument: str,
     reference_trade_date: date,
+    fallback_to_reference_date: bool = False,
 ) -> date:
     connection = duckdb.connect(str(market_base_path), read_only=True)
     try:
@@ -156,6 +157,9 @@ def _load_next_trade_date(
             parameters,
         ).fetchone()
         if row is None:
+            if fallback_to_reference_date:
+                # blocked_upstream 计划不再要求必须存在 T+1 行情。
+                return reference_trade_date
             raise ValueError(
                 f"Missing next trading day in `{market_price_table}` for {instrument} after {reference_trade_date.isoformat()}."
             )

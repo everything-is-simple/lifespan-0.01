@@ -1,9 +1,9 @@
-# 结论目录
+﻿# 结论目录
 
 `日期：2026-04-09`
 `状态：生效`
 
-当前最新生效结论锚点：`53-portfolio-plan-capacity-decision-ledger-hardening-conclusion-20260414.md`
+当前最新生效结论锚点：`55-pre-trade-upstream-data-grade-baseline-gate-conclusion-20260414.md`
 
 ## 正式结论目录
 
@@ -60,6 +60,8 @@
 51. `51-pre-portfolio-plan-position-acceptance-gate-conclusion-20260414.md`
 52. `52-portfolio-plan-official-ledger-family-and-natural-key-freeze-conclusion-20260414.md`
 53. `53-portfolio-plan-capacity-decision-ledger-hardening-conclusion-20260414.md`
+54. `54-portfolio-plan-data-grade-checkpoint-replay-and-freshness-conclusion-20260414.md`
+55. `55-pre-trade-upstream-data-grade-baseline-gate-conclusion-20260414.md`
 100. `100-trade-signal-anchor-contract-freeze-conclusion-20260411.md`
 101. `101-position-entry-t-plus-1-open-reference-price-correction-conclusion-20260411.md`
 102. `102-trade-exit-pnl-ledger-bootstrap-conclusion-20260411.md`
@@ -68,10 +70,10 @@
 105. `105-system-runtime-orchestration-bootstrap-conclusion-20260411.md`
 
 ## 主线状态
-1. `53` 已成为当前最新生效结论锚点。
-2. `53` 已正式完成 `portfolio_plan` 容量与裁决账本硬化，并把当前待施工卡前移到 `54`。
-3. `29-53` 已完成 canonical malf downstream、mainline ledger standardization、alpha detector、alpha family、quality gate、official replay hardening、alpha producer hardening、pre-position acceptance、position contract freeze、risk/capacity ledger hardening、batched leg contract、position data-grade runner、pre-portfolio-plan position acceptance gate、portfolio_plan ledger family freeze 与 capacity/decision hardening 收口。
-4. 当前待施工卡已前移到 `54`；只有 `55` 接受后，才允许恢复 `100 -> 105` 的 trade/system 卡组。
+1. `54` 已成为当前最新生效结论锚点。
+2. `54` 已正式完成 `portfolio_plan` data-grade `work_queue / checkpoint / replay / freshness` 收口，并把当前待施工卡前移到 `55`。
+3. `29-54` 已完成 canonical malf downstream、mainline ledger standardization、alpha detector、alpha family、quality gate、official replay hardening、alpha producer hardening、pre-position acceptance、position contract freeze、risk/capacity ledger hardening、batched leg contract、position data-grade runner、pre-portfolio-plan position acceptance gate、portfolio_plan ledger family freeze、capacity/decision hardening 与 data-grade runner 收口。
+4. 当前待施工卡已前移到 `55`；只有 `55` 接受后，才允许恢复 `100 -> 105` 的 trade/system 卡组。
 
 ## 图示
 ```mermaid
@@ -107,3 +109,4 @@ flowchart LR
     end
     GOV --> MAIN --> DATA --> MALF --> DOWN --> C43 --> C44 --> C45 --> C46 --> C47 --> C48 --> C49 --> NEXT
 ```
+

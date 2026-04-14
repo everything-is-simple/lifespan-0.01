@@ -52,11 +52,14 @@ def _seed_portfolio_plan_rows(settings, rows: list[dict[str, object]]) -> None:
                     portfolio_gross_cap_weight,
                     portfolio_gross_used_weight,
                     portfolio_gross_remaining_weight,
+                    candidate_decision_nk,
+                    capacity_snapshot_nk,
+                    allocation_snapshot_nk,
                     portfolio_plan_contract_version,
                     first_seen_run_id,
                     last_materialized_run_id
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1.0, 0.0, 1.0, 'portfolio-plan-v1', ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1.0, 0.0, 1.0, ?, ?, ?, 'portfolio-plan-v1', ?, ?)
                 """,
                 [
                     row["plan_snapshot_nk"],
@@ -70,6 +73,18 @@ def _seed_portfolio_plan_rows(settings, rows: list[dict[str, object]]) -> None:
                     row.get("trimmed_weight", 0.0),
                     row["plan_status"],
                     row.get("blocking_reason_code"),
+                    row.get(
+                        "candidate_decision_nk",
+                        f"{row['candidate_nk']}|decision|portfolio-plan-v1",
+                    ),
+                    row.get(
+                        "capacity_snapshot_nk",
+                        f"{row.get('portfolio_id', 'main_book')}|portfolio_gross|{row['reference_trade_date']}|portfolio-plan-v1",
+                    ),
+                    row.get(
+                        "allocation_snapshot_nk",
+                        f"{row['candidate_nk']}|allocation|portfolio-plan-v1",
+                    ),
                     f"plan-run-seed-{index}",
                     f"plan-run-seed-{index}",
                 ],
@@ -133,6 +148,17 @@ def test_run_trade_runtime_build_materializes_planned_entry_blocked_and_carry(
                 "plan_status": "blocked",
                 "blocking_reason_code": "portfolio_capacity_exhausted",
             },
+            {
+                "plan_snapshot_nk": "plan-003",
+                "candidate_nk": "cand-003",
+                "instrument": "000003.SZ",
+                "reference_trade_date": "2026-04-09",
+                "requested_weight": 0.0,
+                "admitted_weight": 0.0,
+                "trimmed_weight": 0.0,
+                "plan_status": "blocked",
+                "blocking_reason_code": "missing_trade_day_after_signal",
+            },
         ],
     )
     _seed_market_base_prices(
@@ -141,7 +167,6 @@ def test_run_trade_runtime_build_materializes_planned_entry_blocked_and_carry(
             ("000001.SZ", "2026-04-10", "none", 10.1, 10.8, 9.9, 10.5),
             ("000002.SZ", "2026-04-10", "none", 20.1, 20.9, 19.8, 20.4),
             ("000003.SZ", "2026-04-09", "none", 30.0, 30.9, 29.8, 30.5),
-            ("000003.SZ", "2026-04-10", "none", 30.3, 31.0, 30.0, 30.8),
         ],
     )
 
@@ -171,11 +196,11 @@ def test_run_trade_runtime_build_materializes_planned_entry_blocked_and_carry(
         limit=10,
     )
 
-    assert first_summary.bounded_plan_count == 2
+    assert first_summary.bounded_plan_count == 3
     assert first_summary.planned_entry_count == 1
-    assert first_summary.blocked_upstream_count == 1
-    assert first_summary.execution_plan_inserted_count == 2
-    assert second_summary.execution_plan_reused_count == 2
+    assert first_summary.blocked_upstream_count == 2
+    assert first_summary.execution_plan_inserted_count == 3
+    assert second_summary.execution_plan_reused_count == 3
     assert third_summary.bounded_plan_count == 0
     assert third_summary.planned_carry_count == 1
 
@@ -221,8 +246,8 @@ def test_run_trade_runtime_build_materializes_planned_entry_blocked_and_carry(
         conn.close()
 
     assert run_rows == [
-        ("trade-run-test-001a", "completed", 2, 1, 1, 1),
-        ("trade-run-test-001b", "completed", 2, 1, 1, 1),
+        ("trade-run-test-001a", "completed", 3, 1, 2, 1),
+        ("trade-run-test-001b", "completed", 3, 1, 2, 1),
         ("trade-run-test-001c", "completed", 0, 0, 0, 1),
     ]
     assert execution_rows == [
@@ -256,6 +281,16 @@ def test_run_trade_runtime_build_materializes_planned_entry_blocked_and_carry(
             0.0,
             "no_prior_trade_run",
         ),
+        (
+            "plan-003|2026-04-09|trade-runtime-v1",
+            "plan-003",
+            "000003.SZ",
+            "block_upstream",
+            "blocked_upstream",
+            date(2026, 4, 9),
+            0.0,
+            "no_prior_trade_run",
+        ),
     ]
     assert leg_rows == [
         (
@@ -285,6 +320,14 @@ def test_run_trade_runtime_build_materializes_planned_entry_blocked_and_carry(
             "no_prior_trade_run",
         ),
         (
+            "main_book|000003.SZ|2026-04-09|trade-runtime-v1",
+            date(2026, 4, 9),
+            "000003.SZ",
+            0.0,
+            0,
+            "no_prior_trade_run",
+        ),
+        (
             "main_book|000001.SZ|2026-04-10|trade-runtime-v1",
             date(2026, 4, 10),
             "000001.SZ",
@@ -296,6 +339,8 @@ def test_run_trade_runtime_build_materializes_planned_entry_blocked_and_carry(
     assert run_execution_actions == [
         ("trade-run-test-001a", "inserted"),
         ("trade-run-test-001a", "inserted"),
+        ("trade-run-test-001a", "inserted"),
+        ("trade-run-test-001b", "reused"),
         ("trade-run-test-001b", "reused"),
         ("trade-run-test-001b", "reused"),
         ("trade-run-test-001c", "inserted"),

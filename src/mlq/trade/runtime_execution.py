@@ -275,24 +275,38 @@ def _build_plan_execution_rows(
 ) -> list[_TradeExecutionPlanRow]:
     rows: list[_TradeExecutionPlanRow] = []
     for plan_row in plan_rows:
-        planned_entry_trade_date = _load_next_trade_date(
-            market_base_path=market_base_path,
-            market_price_table=market_price_table,
-            instrument=plan_row.instrument,
-            reference_trade_date=plan_row.reference_trade_date,
-        )
         carry_source_status = _derive_carry_source_status(
             prior_carry_by_instrument.get(plan_row.instrument)
         )
         if plan_row.plan_status == "blocked":
+            planned_entry_trade_date = _load_next_trade_date(
+                market_base_path=market_base_path,
+                market_price_table=market_price_table,
+                instrument=plan_row.instrument,
+                reference_trade_date=plan_row.reference_trade_date,
+                fallback_to_reference_date=True,
+            )
             execution_action = "block_upstream"
             execution_status = "blocked_upstream"
             planned_entry_weight = 0.0
         elif plan_row.plan_status in {"admitted", "trimmed"} and plan_row.admitted_weight > 0:
+            planned_entry_trade_date = _load_next_trade_date(
+                market_base_path=market_base_path,
+                market_price_table=market_price_table,
+                instrument=plan_row.instrument,
+                reference_trade_date=plan_row.reference_trade_date,
+            )
             execution_action = "enter"
             execution_status = "planned_entry"
             planned_entry_weight = plan_row.admitted_weight
         else:
+            planned_entry_trade_date = _load_next_trade_date(
+                market_base_path=market_base_path,
+                market_price_table=market_price_table,
+                instrument=plan_row.instrument,
+                reference_trade_date=plan_row.reference_trade_date,
+                fallback_to_reference_date=True,
+            )
             execution_action = "block_upstream"
             execution_status = "blocked_upstream"
             planned_entry_weight = 0.0

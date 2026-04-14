@@ -47,6 +47,7 @@ PORTFOLIO_PLAN_LEDGER_DDL: Final[dict[str, str]] = {
             runner_name TEXT NOT NULL,
             runner_version TEXT NOT NULL,
             run_status TEXT NOT NULL,
+            execution_mode TEXT NOT NULL DEFAULT 'bootstrap',
             portfolio_id TEXT NOT NULL,
             signal_start_date DATE,
             signal_end_date DATE,
@@ -55,6 +56,13 @@ PORTFOLIO_PLAN_LEDGER_DDL: Final[dict[str, str]] = {
             blocked_count BIGINT NOT NULL DEFAULT 0,
             trimmed_count BIGINT NOT NULL DEFAULT 0,
             deferred_count BIGINT NOT NULL DEFAULT 0,
+            inserted_count BIGINT NOT NULL DEFAULT 0,
+            reused_count BIGINT NOT NULL DEFAULT 0,
+            rematerialized_count BIGINT NOT NULL DEFAULT 0,
+            queue_enqueued_count BIGINT NOT NULL DEFAULT 0,
+            queue_claimed_count BIGINT NOT NULL DEFAULT 0,
+            checkpoint_upserted_count BIGINT NOT NULL DEFAULT 0,
+            freshness_updated_count BIGINT NOT NULL DEFAULT 0,
             source_position_table TEXT NOT NULL,
             portfolio_plan_contract_version TEXT NOT NULL,
             started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -68,11 +76,18 @@ PORTFOLIO_PLAN_LEDGER_DDL: Final[dict[str, str]] = {
             portfolio_id TEXT NOT NULL,
             candidate_nk TEXT NOT NULL,
             reference_trade_date DATE NOT NULL,
+            checkpoint_nk TEXT NOT NULL,
             queue_reason TEXT NOT NULL,
+            queued_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             queue_status TEXT NOT NULL DEFAULT 'pending',
+            source_fingerprint TEXT,
+            source_run_id TEXT,
             source_candidate_nk TEXT,
             first_enqueued_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             last_enqueued_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            claimed_at TIMESTAMP,
+            last_claimed_run_id TEXT,
+            completed_at TIMESTAMP,
             last_success_run_id TEXT,
             last_error_text TEXT
         )
@@ -84,7 +99,10 @@ PORTFOLIO_PLAN_LEDGER_DDL: Final[dict[str, str]] = {
             checkpoint_scope TEXT NOT NULL,
             latest_reference_trade_date DATE,
             last_candidate_nk TEXT,
+            last_completed_reference_trade_date DATE,
+            last_completed_candidate_nk TEXT,
             last_success_run_id TEXT,
+            last_run_id TEXT,
             checkpoint_payload_json TEXT,
             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
@@ -229,6 +247,8 @@ PORTFOLIO_PLAN_LEDGER_DDL: Final[dict[str, str]] = {
             plan_status TEXT NOT NULL,
             decision_reason_code TEXT NOT NULL DEFAULT 'unknown',
             trade_readiness_status TEXT NOT NULL DEFAULT 'not_trade_ready',
+            queue_nk TEXT,
+            queue_reason TEXT,
             materialization_action TEXT NOT NULL,
             recorded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (run_id, plan_snapshot_nk)
@@ -237,9 +257,11 @@ PORTFOLIO_PLAN_LEDGER_DDL: Final[dict[str, str]] = {
     PORTFOLIO_PLAN_FRESHNESS_AUDIT_TABLE: """
         CREATE TABLE IF NOT EXISTS portfolio_plan_freshness_audit (
             portfolio_id TEXT PRIMARY KEY,
+            audit_date DATE,
             latest_reference_trade_date DATE,
             expected_reference_trade_date DATE,
             freshness_status TEXT NOT NULL DEFAULT 'unknown',
+            last_success_run_id TEXT,
             last_run_id TEXT,
             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
@@ -251,7 +273,29 @@ PORTFOLIO_PLAN_SCHEMA_EVOLUTION: Final[
     dict[str, tuple[tuple[str, str], ...]]
 ] = {
     PORTFOLIO_PLAN_RUN_TABLE: (
+        ("execution_mode", "TEXT NOT NULL DEFAULT 'bootstrap'"),
         ("deferred_count", "BIGINT NOT NULL DEFAULT 0"),
+        ("inserted_count", "BIGINT NOT NULL DEFAULT 0"),
+        ("reused_count", "BIGINT NOT NULL DEFAULT 0"),
+        ("rematerialized_count", "BIGINT NOT NULL DEFAULT 0"),
+        ("queue_enqueued_count", "BIGINT NOT NULL DEFAULT 0"),
+        ("queue_claimed_count", "BIGINT NOT NULL DEFAULT 0"),
+        ("checkpoint_upserted_count", "BIGINT NOT NULL DEFAULT 0"),
+        ("freshness_updated_count", "BIGINT NOT NULL DEFAULT 0"),
+    ),
+    PORTFOLIO_PLAN_WORK_QUEUE_TABLE: (
+        ("checkpoint_nk", "TEXT"),
+        ("queued_at", "TIMESTAMP"),
+        ("source_fingerprint", "TEXT"),
+        ("source_run_id", "TEXT"),
+        ("claimed_at", "TIMESTAMP"),
+        ("last_claimed_run_id", "TEXT"),
+        ("completed_at", "TIMESTAMP"),
+    ),
+    PORTFOLIO_PLAN_CHECKPOINT_TABLE: (
+        ("last_completed_reference_trade_date", "DATE"),
+        ("last_completed_candidate_nk", "TEXT"),
+        ("last_run_id", "TEXT"),
     ),
     PORTFOLIO_PLAN_CANDIDATE_DECISION_TABLE: (
         ("decision_rank", "BIGINT NOT NULL DEFAULT 0"),
@@ -325,6 +369,12 @@ PORTFOLIO_PLAN_SCHEMA_EVOLUTION: Final[
         ("allocation_snapshot_nk", "TEXT"),
         ("decision_reason_code", "TEXT NOT NULL DEFAULT 'unknown'"),
         ("trade_readiness_status", "TEXT NOT NULL DEFAULT 'not_trade_ready'"),
+        ("queue_nk", "TEXT"),
+        ("queue_reason", "TEXT"),
+    ),
+    PORTFOLIO_PLAN_FRESHNESS_AUDIT_TABLE: (
+        ("audit_date", "DATE"),
+        ("last_success_run_id", "TEXT"),
     ),
 }
 

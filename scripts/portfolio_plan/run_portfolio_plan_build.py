@@ -27,6 +27,10 @@ def build_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument("--candidate-nk", dest="candidate_nks", action="append", default=[])
     parser.add_argument("--limit", type=int, default=100)
     parser.add_argument("--run-id")
+    mode_group = parser.add_mutually_exclusive_group()
+    mode_group.add_argument("--bootstrap-mode", action="store_true")
+    mode_group.add_argument("--incremental-mode", action="store_true")
+    mode_group.add_argument("--replay-mode", action="store_true")
     parser.add_argument(
         "--source-position-table",
         default=DEFAULT_SOURCE_POSITION_TABLE,
@@ -55,6 +59,9 @@ def main() -> None:
         run_id=args.run_id,
         source_position_table=args.source_position_table,
         portfolio_plan_contract_version=args.portfolio_plan_contract_version,
+        bootstrap_mode=args.bootstrap_mode,
+        incremental_mode=True if args.incremental_mode else None,
+        replay_mode=args.replay_mode,
         summary_path=args.summary_path,
     )
     print(json.dumps(summary.as_dict(), ensure_ascii=False, indent=2))
