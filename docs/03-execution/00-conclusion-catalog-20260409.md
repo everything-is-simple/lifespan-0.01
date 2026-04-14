@@ -3,7 +3,7 @@
 `日期：2026-04-09`
 `状态：生效`
 
-当前最新生效结论锚点：`55-pre-trade-upstream-data-grade-baseline-gate-conclusion-20260414.md`
+当前最新生效结论锚点：`59-mainline-middle-ledger-2010-truthfulness-gate-conclusion-20260414.md`
 
 ## 正式结论目录
 
@@ -62,6 +62,10 @@
 53. `53-portfolio-plan-capacity-decision-ledger-hardening-conclusion-20260414.md`
 54. `54-portfolio-plan-data-grade-checkpoint-replay-and-freshness-conclusion-20260414.md`
 55. `55-pre-trade-upstream-data-grade-baseline-gate-conclusion-20260414.md`
+56. `56-mainline-official-middle-ledger-2010-pilot-scope-freeze-conclusion-20260414.md`
+57. `57-malf-canonical-official-2010-bootstrap-and-replay-conclusion-20260414.md`
+58. `58-structure-filter-alpha-official-2010-canonical-smoke-conclusion-20260414.md`
+59. `59-mainline-middle-ledger-2010-truthfulness-gate-conclusion-20260414.md`
 100. `100-trade-signal-anchor-contract-freeze-conclusion-20260411.md`
 101. `101-position-entry-t-plus-1-open-reference-price-correction-conclusion-20260411.md`
 102. `102-trade-exit-pnl-ledger-bootstrap-conclusion-20260411.md`
@@ -70,10 +74,10 @@
 105. `105-system-runtime-orchestration-bootstrap-conclusion-20260411.md`
 
 ## 主线状态
-1. `54` 已成为当前最新生效结论锚点。
-2. `54` 已正式完成 `portfolio_plan` data-grade `work_queue / checkpoint / replay / freshness` 收口，并把当前待施工卡前移到 `55`。
-3. `29-54` 已完成 canonical malf downstream、mainline ledger standardization、alpha detector、alpha family、quality gate、official replay hardening、alpha producer hardening、pre-position acceptance、position contract freeze、risk/capacity ledger hardening、batched leg contract、position data-grade runner、pre-portfolio-plan position acceptance gate、portfolio_plan ledger family freeze、capacity/decision hardening 与 data-grade runner 收口。
-4. 当前待施工卡已前移到 `55`；只有 `55` 接受后，才允许恢复 `100 -> 105` 的 trade/system 卡组。
+1. `59` 已成为当前最新生效结论锚点。
+2. `59` 已正式完成真实正式 `2010` pilot 的 truthfulness gate，并把当前待施工卡前移到 `60`。
+3. `29-59` 已完成 canonical malf downstream、mainline ledger standardization、alpha detector、alpha family、quality gate、official replay hardening、alpha producer hardening、pre-position acceptance、position contract freeze、risk/capacity ledger hardening、batched leg contract、position data-grade runner、pre-portfolio-plan position acceptance gate、portfolio_plan ledger family freeze、capacity/decision hardening、data-grade runner、official middle-ledger pilot freeze、official canonical malf bootstrap、official downstream canonical smoke 与 `2010` truthfulness gate 收口。
+4. 当前待施工卡已前移到 `60`；只有 `66` 接受后，才允许恢复 `100 -> 105` 的 trade/system 卡组。
 
 ## 图示
 ```mermaid
@@ -104,9 +108,12 @@ flowchart LR
         C48["48 risk/capacity ledger"]
         C49["49 batched entry/exit contract"]
     end
-    subgraph NEXT["100-105"]
-        C100["100-105 trade/system"]
+    subgraph MID["56-59 middle-ledger pilot"]
+        C56["56-59"]
     end
-    GOV --> MAIN --> DATA --> MALF --> DOWN --> C43 --> C44 --> C45 --> C46 --> C47 --> C48 --> C49 --> NEXT
+    subgraph NEXT["60-66 / 100-105"]
+        C100["60-66 -> 100-105"]
+    end
+    GOV --> MAIN --> DATA --> MALF --> DOWN --> C43 --> C44 --> C45 --> C46 --> C47 --> C48 --> C49 --> C56 --> C100
 ```
 

@@ -1,4 +1,4 @@
-"""覆盖 `market_base -> malf -> structure` 最小正式桥接。"""
+"""覆盖 `market_base -> malf snapshot` 与 canonical structure 对接回归。"""
 
 from __future__ import annotations
 
@@ -69,6 +69,55 @@ def _seed_market_base_rows(market_base_path: Path) -> None:
         conn.close()
 
 
+def _seed_canonical_malf_state_rows(
+    malf_path: Path,
+    rows: list[tuple[object, ...]],
+) -> None:
+    conn = duckdb.connect(str(malf_path))
+    try:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS malf_state_snapshot (
+                snapshot_nk TEXT NOT NULL,
+                asset_type TEXT NOT NULL,
+                code TEXT NOT NULL,
+                timeframe TEXT NOT NULL,
+                asof_bar_dt DATE NOT NULL,
+                major_state TEXT NOT NULL,
+                trend_direction TEXT NOT NULL,
+                reversal_stage TEXT NOT NULL,
+                wave_id BIGINT NOT NULL,
+                current_hh_count BIGINT NOT NULL,
+                current_ll_count BIGINT NOT NULL
+            )
+            """
+        )
+        for row in rows:
+            conn.execute(
+                """
+                INSERT INTO malf_state_snapshot (
+                    snapshot_nk,
+                    asset_type,
+                    code,
+                    timeframe,
+                    asof_bar_dt,
+                    major_state,
+                    trend_direction,
+                    reversal_stage,
+                    wave_id,
+                    current_hh_count,
+                    current_ll_count,
+                    first_seen_run_id,
+                    last_materialized_run_id
+                )
+                VALUES (?, 'stock', ?, ?, ?, ?, ?, ?, ?, ?, ?, 'test-canonical-seed', 'test-canonical-seed')
+                """,
+                row,
+            )
+    finally:
+        conn.close()
+
+
 def test_run_malf_snapshot_build_outputs_rows_consumable_by_structure(tmp_path: Path, monkeypatch) -> None:
     _clear_workspace_env(monkeypatch)
     repo_root = _bootstrap_repo_root(tmp_path)
@@ -93,18 +142,25 @@ def test_run_malf_snapshot_build_outputs_rows_consumable_by_structure(tmp_path: 
     assert first_summary.context_inserted_count == 3
     assert second_summary.context_reused_count == 3
 
+    _seed_canonical_malf_state_rows(
+        settings.databases.malf,
+        [
+            ("state-d-001", "600000.SH", "D", "2026-03-20", "牛顺", "up", "none", 7, 2, 0),
+            ("state-d-002", "600000.SH", "D", "2026-03-21", "牛顺", "up", "none", 7, 2, 0),
+            ("state-d-003", "600000.SH", "D", "2026-03-22", "牛顺", "up", "none", 7, 2, 0),
+        ],
+    )
+
     structure_summary = run_structure_snapshot_build(
         settings=settings,
         signal_start_date="2026-03-20",
         signal_end_date="2026-03-22",
         run_id="structure-test-001",
-        # bridge v1 兼容回退：此测试只 seed 了 pas_context_snapshot /
-        # structure_candidate_snapshot，没有 canonical malf 数据；
-        # 显式指定两个上游表以验证 bridge v1 路径仍可用。
-        source_context_table="pas_context_snapshot",
-        source_structure_input_table="structure_candidate_snapshot",
     )
+
     assert structure_summary.materialized_snapshot_count == 3
+    assert structure_summary.source_context_table == "malf_state_snapshot"
+    assert structure_summary.source_structure_input_table == "malf_state_snapshot"
 
     malf_conn = duckdb.connect(str(malf_ledger_path(settings)), read_only=True)
     structure_conn = duckdb.connect(str(structure_ledger_path(settings)), read_only=True)
@@ -118,7 +174,7 @@ def test_run_malf_snapshot_build_outputs_rows_consumable_by_structure(tmp_path: 
         ).fetchall()
         structure_rows = structure_conn.execute(
             """
-            SELECT instrument, structure_progress_state
+            SELECT instrument, source_context_nk, structure_progress_state
             FROM structure_snapshot
             ORDER BY signal_date
             """
@@ -128,7 +184,11 @@ def test_run_malf_snapshot_build_outputs_rows_consumable_by_structure(tmp_path: 
         structure_conn.close()
 
     assert all(row == ("600000.SH", "BULL_MAINSTREAM", 4) for row in context_rows)
-    assert len(structure_rows) == 3
+    assert structure_rows == [
+        ("600000.SH", "state-d-001", "advancing"),
+        ("600000.SH", "state-d-002", "advancing"),
+        ("600000.SH", "state-d-003", "advancing"),
+    ]
 
 
 def test_run_malf_snapshot_build_marks_rematerialized_when_market_base_changes(tmp_path: Path, monkeypatch) -> None:

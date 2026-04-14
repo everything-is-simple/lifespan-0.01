@@ -36,7 +36,7 @@
 补充理解：
 
 - `α / β / Ω` 三份路线图文档不只负责阶段进度，也负责说明各模块主要继承自哪些老仓来源、当前继承方式与置信度是什么。
-- 当前 `Ω` 文档还承担后半部施工指挥蓝图职责：它以 `28` 的 `checkpoint + dirty/work queue + replay/resume` 为统一基线，先做 `43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55` 的 pre-trade upstream 前置卡组，把 `data -> portfolio_plan` 打造成全 A baseline，再恢复 `100 -> 105`，并按纵向模块档案显式记录六条历史账本约束。
+- 当前 `Ω` 文档还承担后半部施工指挥蓝图职责：它以 `28` 的 `checkpoint + dirty/work queue + replay/resume` 为统一基线，先做 `43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55` 的 pre-trade upstream 前置卡组，再插入 `56 -> 57 -> 58 -> 59 -> 60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66` 这组真实正式库 middle-ledger 落地卡，最后才恢复 `100 -> 105`。
 
 ## 3. 五根目录纪律
 
@@ -139,8 +139,8 @@ flowchart LR
 1. `malf -> structure -> filter -> alpha` 默认使用 `adjust_method = backward`
 2. `position -> trade` 默认使用 `adjust_method = none`
 3. `adjust_method = forward` 当前只作为研究与展示保留，不作为正式执行口径
-4. 当前最新生效结论锚点已推进到 `50-position-data-grade-checkpoint-and-replay-runner-conclusion-20260414.md`；它已把 `position` 提升为带 `work_queue / checkpoint / replay / rematerialize` 的正式 data-grade 计划账本，并把当前待施工卡前移到 `51-pre-portfolio-plan-position-acceptance-gate-card-20260413.md`。其中 `29-50` 已完成并生效，`51 -> 52 -> 53 -> 54 -> 55` 成为进入 `trade` 前的前置卡组，`100-105` 退回到通过 `55` 之后才允许恢复的 trade/system 卡组。
-5. 当前主线系统级路线图必须以 `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 为准；该文档已把 `structure -> filter -> alpha -> position -> portfolio_plan` 识别为当前后半部最薄弱链段，并把 `43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55` 固定为进入 `trade` 前的前置卡组，不允许再仅凭旧宽表口径判断模块成熟度。
+4. 当前最新生效结论锚点已推进到 `59-mainline-middle-ledger-2010-truthfulness-gate-conclusion-20260414.md`；`59` 接受后把当前待施工卡前移到 `60-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`，并继续要求 `66` 通过后才恢复 `100`。
+5. 当前主线系统级路线图必须以 `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 为准；该文档现在把 `56 -> 66` 固定为 `100` 前的真实正式库 middle-ledger 落地卡组，不允许再把“代码已切 canonical”误当成“正式库已切 canonical”。
 
 ## 5. 历史账本原则
 
@@ -199,7 +199,7 @@ flowchart LR
 只要治理规则、环境脚手架、路径契约、测试入口、执行入口发生变化，就必须同步刷新这三个入口文件。
 其中 `docs/01-design/`、`docs/02-spec/` 与 `src/mlq/core/paths.py` 的正式口径变化，也视为入口变化。
 全仓 `python scripts/system/check_development_governance.py` 盘点允许通过 `scripts/system/development_governance_legacy_backlog.py` 显式登记历史债务；但按改动路径触发的严格治理检查，不得豁免新增违规。
-当前 `44` 施工已经收口，历史硬超长 backlog 与目标超长 backlog 均已清零；当前正式施工位前移到 `45`，并顺排进入 `46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55`，只有 `55` 接受后才恢复 `100-105`。每解决一项都必须同步回填 card / evidence / record / conclusion，并从 backlog 台账移除。
+当前 `59` 已接受，历史硬超长 backlog 与目标超长 backlog 均已清零；当前正式施工位前移到 `60`，并顺排进入 `61 -> 62 -> 63 -> 64 -> 65 -> 66`，只有 `66` 接受后才恢复 `100-105`。每解决一项都必须同步回填 card / evidence / record / conclusion，并从 backlog 台账移除。
 当前已完成的清债包括 `src/mlq/system/runner.py`、`src/mlq/trade/runner.py`、`src/mlq/alpha/trigger_runner.py`、`src/mlq/filter/runner.py`、`src/mlq/malf/mechanism_runner.py`、`src/mlq/malf/canonical_runner.py`、`src/mlq/structure/runner.py`、`src/mlq/alpha/runner.py`、`src/mlq/data/runner.py`、`tests/unit/data/test_data_runner.py`、`src/mlq/data/bootstrap.py`、`src/mlq/malf/runner.py`、`src/mlq/malf/bootstrap.py`、`src/mlq/alpha/family_runner.py`、`src/mlq/position/bootstrap.py` 与 `docs/03-execution/37-system-governance-historical-debt-backlog-burndown-card-20260412.md`；本卡后续 `pytest` 证据统一按串行口径执行，避免多个进程争用 `H:\Lifespan-temp\pytest-tmp`。
 
 ## 8. 文档规则

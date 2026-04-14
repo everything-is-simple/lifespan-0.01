@@ -1,39 +1,38 @@
 # 执行阅读顺序
 
-日期：`2026-04-09`  
-状态：`持续更新`
+`日期：2026-04-09`
+`状态：持续更新`
 
 ## 首读顺序
 
 1. `00-conclusion-catalog-20260409.md`
 2. `B-card-catalog-20260409.md`
 3. `C-system-completion-ledger-20260409.md`
-4. `52-portfolio-plan-official-ledger-family-and-natural-key-freeze-conclusion-20260414.md`
-5. `53-portfolio-plan-capacity-decision-ledger-hardening-card-20260413.md`
-6. `54-portfolio-plan-data-grade-checkpoint-replay-and-freshness-card-20260413.md`
-7. `55-pre-trade-upstream-data-grade-baseline-gate-card-20260413.md`
-8. `100-trade-signal-anchor-contract-freeze-card-20260411.md`
-9. `101-position-entry-t-plus-1-open-reference-price-correction-card-20260411.md`
+4. `59-mainline-middle-ledger-2010-truthfulness-gate-conclusion-20260414.md`
+5. `60-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`
+6. `64-mainline-middle-ledger-2023-2025-bootstrap-card-20260414.md`
+7. `65-mainline-middle-ledger-2026-ytd-incremental-alignment-card-20260414.md`
+8. `66-pre-trade-middle-ledger-official-cutover-gate-card-20260414.md`
 
 ## 当前正式口径
 
-1. 最新生效结论锚点已推进到 `52`。
-2. 当前正式主线待施工卡已切到 `53`，并顺排进入 `54 -> 55`。
-3. `29-52` 已完成并生效，当前主线后续卡组调整为：
-   - `53-55 portfolio_plan quality / hardening / acceptance`
-   - `100-105 trade/system 收口`
-4. `52` 已作为“portfolio_plan 官方账本族与自然键已冻结，并继续冻结 `100-105` 直到 `55`”的正式收口卡归档。
+1. 最新生效结论锚点已推进到 `59`。
+2. 当前正式主线待施工卡已切到 `60`，并顺排进入 `61 -> 62 -> 63 -> 64 -> 65 -> 66`。
+3. `29-59` 已完成并生效；当前主线后续卡组调整为：
+   - `60-64`：按三年窗口推进正式中间库初始建库
+   - `65`：`2026 YTD` 正式增量对齐
+   - `66`：official middle-ledger cutover gate
+   - `100-105`：只在 `66` 放行后恢复
+4. `59` 的正式裁决是“`2010` pilot 已足以作为 `60-65` 的真实正式库 middle-ledger 模板，但模板路径必须锁定为 `malf replay + structure/filter checkpoint_queue + alpha bounded full-window`”。
 
 ## 阅读顺序图
-
 ```mermaid
 flowchart LR
-    CONC["00 结论目录"] --> BCAT["B 卡片目录"]
+    CONC["00 结论目录"] --> BCAT["B 卡目录"]
     BCAT --> CLED["C 完成账本"]
-    CLED --> ANC["52 最新结论锚点"]
-    ANC --> G53["53 当前待施工卡"]
-    G53 --> G54["54"]
-    G54 --> G55["55"]
-    G55 --> NEXT["100 下一锚"]
-    NEXT --> POST["101-105 后续卡组"]
+    CLED --> ANC["59 最新结论锚点"]
+    ANC --> G60["60 当前待施工卡"]
+    G60 --> G65["61-65"]
+    G65 --> G66["66"]
+    G66 --> NEXT["100 下一锤"]
 ```

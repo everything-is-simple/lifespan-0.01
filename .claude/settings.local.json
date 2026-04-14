@@ -1,7 +1,16 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git commit -m ':*)"
+      "Bash(git commit -m ':*)",
+      "Bash(scoop --version)",
+      "Bash(rustc --version)",
+      "Bash(powershell.exe -Command \"Set-ExecutionPolicy RemoteSigned -Scope CurrentUser\")",
+      "Bash(powershell.exe -Command \"irm get.scoop.sh | iex\")",
+      "Bash(powershell.exe -Command \"irm get.scoop.sh -OutFile 'install-scoop.ps1'; .\\\\install-scoop.ps1 -ScoopDir 'C:\\\\Users\\\\Administrator\\\\scoop' -NoProxy\")",
+      "Bash(curl -sL \"https://api.github.com/repos/cubezhao/ai-tools-mng/releases/latest\")",
+      "Bash(cp /tmp/ATM.exe /c/Users/Administrator/AppData/Local/Temp/ATM.exe)",
+      "Read(//c/Users/Administrator/AppData/Local/Temp/**)",
+      "Bash(powershell.exe -Command \"Start-Process -FilePath 'C:\\\\Users\\\\Administrator\\\\AppData\\\\Local\\\\Temp\\\\ATM.exe' -Verb RunAs\")"
     ]
   }
 }

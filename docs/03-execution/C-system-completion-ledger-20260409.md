@@ -2,9 +2,9 @@
 `日期：2026-04-09`
 `状态：持续更新`
 
-1. 当前下一锤：`100-trade-signal-anchor-contract-freeze-card-20260411.md`
-2. 当前待施工卡：`100-trade-signal-anchor-contract-freeze-card-20260411.md`
-3. 正式主线剩余卡：`6`
+1. 当前下一锤：`60-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`
+2. 当前待施工卡：`60-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`
+3. 正式主线剩余卡：`13`
 4. 可选 Sidecar 剩余卡：`0`
 5. 历史治理 backlog：`0`
 
@@ -36,13 +36,17 @@
 24. `portfolio_plan capacity / decision hardening` 卡 `53`
 25. `portfolio_plan data-grade checkpoint / replay / freshness` 卡 `54`
 26. `pre-trade upstream data-grade baseline gate` 卡 `55`
+27. `mainline official middle-ledger 2010 pilot scope freeze` 卡 `56`
+28. `malf canonical official 2010 bootstrap and replay` 卡 `57`
+29. `structure filter alpha official 2010 canonical smoke` 卡 `58`
+30. `mainline middle-ledger 2010 truthfulness gate` 卡 `59`
 
 ## 当前阶段
 
-1. 最新生效结论锚点已推进到 `55-pre-trade-upstream-data-grade-baseline-gate-conclusion-20260414.md`。
-2. `55` 已完成并接受。
-3. 当前正式主线待施工卡已切到 `100`。
-4. `100 -> 105` 继续按既定顺序推进，`100-105` 已从 `55` 的冻结状态中恢复。
+1. 最新生效结论锚点已推进到 `59-mainline-middle-ledger-2010-truthfulness-gate-conclusion-20260414.md`。
+2. `59` 已完成并接受。
+3. 当前正式主线待施工卡已切到 `60`。
+4. `56 -> 66` 作为真实正式库 middle-ledger 落地卡组插入到 `100-105` 之前；只有 `66` 接受后，才恢复 `100`。
 
 ## 体系图
 
@@ -73,6 +77,7 @@ flowchart LR
     G52 --> G53["53 portfolio_plan capacity/decision"]
     G53 --> G54["54 portfolio_plan data-grade runner"]
     G54 --> G55["55 pre-trade baseline gate"]
-    G55 --> NEXT["100 anchor freeze"]
+    G55 --> G56["56-66 official middle-ledger landing"]
+    G56 --> NEXT["100 anchor freeze"]
     NEXT --> POST["101-105 trade/system 收口"]
 ```
