@@ -4,16 +4,29 @@
 `日期`：`2026-04-13`
 `状态`：`待施工`
 
-## 目标
+## 需求
 
-把 `portfolio_plan` 从最小 admitted/blocked/trimmed 结果，升级为足以支撑下游消费的厚账本。
+- 问题：
+  `52` 已冻结 `portfolio_plan` 官方账本族与自然键，但当前 `candidate_decision / capacity_snapshot / allocation_snapshot` 仍停留在最小 admitted/blocked/trimmed 结果，厚解释层还不足以支撑 `trade` 将来直接消费。
+- 目标结果：
+  把 `portfolio_plan` 升级为可解释 admitted / blocked / trimmed / deferred 与容量裁减原因的厚账本层。
+- 为什么现在做：
+  `53` 是 `52` 之后的第一张业务硬化卡；只有先把裁决厚度与容量解释做实，`54-55` 才有合法 data-grade runner 与 pre-trade baseline。
 
-## 依赖
+## 设计输入
 
-- [02-portfolio-plan-official-ledger-family-and-capacity-charter-20260413.md](/H:/lifespan-0.01/docs/01-design/modules/portfolio_plan/02-portfolio-plan-official-ledger-family-and-capacity-charter-20260413.md)
-- [02-portfolio-plan-official-ledger-family-and-capacity-spec-20260413.md](/H:/lifespan-0.01/docs/02-spec/modules/portfolio_plan/02-portfolio-plan-official-ledger-family-and-capacity-spec-20260413.md)
+- 设计文档：
+  `docs/01-design/modules/portfolio_plan/02-portfolio-plan-official-ledger-family-and-capacity-charter-20260413.md`
+- 设计文档链接：
+  [02-portfolio-plan-official-ledger-family-and-capacity-charter-20260413.md](/H:/lifespan-0.01/docs/01-design/modules/portfolio_plan/02-portfolio-plan-official-ledger-family-and-capacity-charter-20260413.md)
+- 规格文档：
+  `docs/02-spec/modules/portfolio_plan/02-portfolio-plan-official-ledger-family-and-capacity-spec-20260413.md`
+- 规格文档链接：
+  [02-portfolio-plan-official-ledger-family-and-capacity-spec-20260413.md](/H:/lifespan-0.01/docs/02-spec/modules/portfolio_plan/02-portfolio-plan-official-ledger-family-and-capacity-spec-20260413.md)
+- 上游结论：
+  [52-portfolio-plan-official-ledger-family-and-natural-key-freeze-conclusion-20260414.md](/H:/lifespan-0.01/docs/03-execution/52-portfolio-plan-official-ledger-family-and-natural-key-freeze-conclusion-20260414.md)
 
-## 任务
+## 任务分解
 
 1. 补齐组合层 admitted / blocked / trimmed / deferred 裁决账本。
 2. 补齐容量占用、剩余和裁减原因的正式物化。
@@ -21,18 +34,12 @@
 
 ## 历史账本约束
 
-1. `实体锚点`
-   - `portfolio_id`
-2. `业务自然键`
-   - `capacity_scope + reference_trade_date + portfolio_id`
-3. `批量建仓`
-   - 分组合、分日期、分候选回放
-4. `增量更新`
-   - 候选变更或容量合同变更触发
-5. `断点续跑`
-   - 后续由 `54` 接入 data-grade runner
-6. `审计账本`
-   - `run_snapshot` 明确 `inserted / reused / rematerialized`
+- 实体锚点：`portfolio_id`
+- 业务自然键：`capacity_scope + reference_trade_date + portfolio_id + plan_contract_version`
+- 批量建仓：支持分组合、分日期、分候选回放
+- 增量更新：候选变更或容量合同变更触发
+- 断点续跑：后续由 `54` 接入 data-grade runner
+- 审计账本：`portfolio_plan_run / run_snapshot / summary_json`
 
 ## A 级判定表
 

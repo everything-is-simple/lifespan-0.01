@@ -1,4 +1,4 @@
-"""覆盖最小正式 `portfolio_plan` bootstrap 契约。"""
+"""覆盖 `portfolio_plan` v2 官方账本族 bootstrap 契约。"""
 
 from __future__ import annotations
 
@@ -32,7 +32,7 @@ def _bootstrap_repo_root(tmp_path: Path) -> Path:
     return repo_root
 
 
-def test_bootstrap_portfolio_plan_ledger_creates_minimal_three_tables(
+def test_bootstrap_portfolio_plan_ledger_creates_official_v2_tables(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
@@ -79,10 +79,20 @@ def test_bootstrap_portfolio_plan_ledger_is_idempotent(tmp_path: Path, monkeypat
             SELECT COUNT(*)
             FROM information_schema.tables
             WHERE table_schema = 'main'
-              AND table_name IN ('portfolio_plan_run', 'portfolio_plan_snapshot', 'portfolio_plan_run_snapshot')
+              AND table_name IN (
+                  'portfolio_plan_run',
+                  'portfolio_plan_work_queue',
+                  'portfolio_plan_checkpoint',
+                  'portfolio_plan_candidate_decision',
+                  'portfolio_plan_capacity_snapshot',
+                  'portfolio_plan_allocation_snapshot',
+                  'portfolio_plan_snapshot',
+                  'portfolio_plan_run_snapshot',
+                  'portfolio_plan_freshness_audit'
+              )
             """
         ).fetchone()[0]
     finally:
         conn.close()
 
-    assert table_count == 3
+    assert table_count == 9

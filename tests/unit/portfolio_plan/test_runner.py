@@ -1,4 +1,4 @@
-"""覆盖正式 bounded 的 `position -> portfolio_plan` 物化。"""
+"""覆盖正式 bounded 的 `position -> portfolio_plan` v2 物化。"""
 
 from __future__ import annotations
 
@@ -9,7 +9,11 @@ import duckdb
 import pytest
 
 from mlq.core.paths import default_settings
-from mlq.portfolio_plan import portfolio_plan_ledger_path, run_portfolio_plan_build
+from mlq.portfolio_plan import (
+    DEFAULT_PORTFOLIO_PLAN_CONTRACT_VERSION,
+    portfolio_plan_ledger_path,
+    run_portfolio_plan_build,
+)
 from mlq.position import bootstrap_position_ledger, position_ledger_path
 
 
@@ -124,7 +128,7 @@ def _seed_position_bridge_rows(settings, rows: list[dict[str, object]]) -> None:
         conn.close()
 
 
-def test_run_portfolio_plan_build_materializes_admitted_trimmed_and_blocked_rows(
+def test_run_portfolio_plan_build_freezes_v2_ledgers_and_natural_keys(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
@@ -188,6 +192,7 @@ def test_run_portfolio_plan_build_materializes_admitted_trimmed_and_blocked_rows
     assert summary.admitted_count == 1
     assert summary.trimmed_count == 1
     assert summary.blocked_count == 2
+    assert summary.deferred_count == 0
     assert summary.inserted_count == 4
     assert summary.portfolio_gross_used_weight == 0.20
     assert summary.portfolio_gross_remaining_weight == 0.0
@@ -196,15 +201,36 @@ def test_run_portfolio_plan_build_materializes_admitted_trimmed_and_blocked_rows
     try:
         run_row = conn.execute(
             """
-            SELECT run_status, bounded_candidate_count, admitted_count, blocked_count, trimmed_count
+            SELECT run_status, bounded_candidate_count, admitted_count, blocked_count, trimmed_count, deferred_count
             FROM portfolio_plan_run
             WHERE run_id = 'portfolio-plan-test-001'
             """
         ).fetchone()
+        decision_rows = conn.execute(
+            """
+            SELECT candidate_decision_nk, candidate_nk, decision_status, decision_reason_code,
+                   requested_weight, admitted_weight, trimmed_weight
+            FROM portfolio_plan_candidate_decision
+            ORDER BY candidate_nk
+            """
+        ).fetchall()
+        capacity_row = conn.execute(
+            """
+            SELECT capacity_snapshot_nk, capacity_scope, admitted_candidate_count, blocked_candidate_count,
+                   trimmed_candidate_count, portfolio_gross_used_weight, portfolio_gross_remaining_weight
+            FROM portfolio_plan_capacity_snapshot
+            """
+        ).fetchone()
+        allocation_rows = conn.execute(
+            """
+            SELECT allocation_snapshot_nk, candidate_nk, allocation_scene, final_allocated_weight, plan_status
+            FROM portfolio_plan_allocation_snapshot
+            ORDER BY candidate_nk
+            """
+        ).fetchall()
         snapshot_rows = conn.execute(
             """
-            SELECT candidate_nk, plan_status, admitted_weight, trimmed_weight, blocking_reason_code,
-                   portfolio_gross_used_weight, portfolio_gross_remaining_weight
+            SELECT candidate_nk, candidate_decision_nk, capacity_snapshot_nk, allocation_snapshot_nk, plan_status
             FROM portfolio_plan_snapshot
             ORDER BY candidate_nk
             """
@@ -212,34 +238,115 @@ def test_run_portfolio_plan_build_materializes_admitted_trimmed_and_blocked_rows
     finally:
         conn.close()
 
-    assert run_row == ("completed", 4, 1, 2, 1)
-    assert snapshot_rows[0][0:5] == ("cand-001", "admitted", 0.15, 0.0, None)
-    assert snapshot_rows[0][5] == pytest.approx(0.15)
-    assert snapshot_rows[0][6] == pytest.approx(0.05)
-    assert snapshot_rows[1][0:2] == ("cand-002", "trimmed")
-    assert snapshot_rows[1][2] == pytest.approx(0.05)
-    assert snapshot_rows[1][3] == pytest.approx(0.05)
-    assert snapshot_rows[1][4] is None
-    assert snapshot_rows[1][5] == pytest.approx(0.20)
-    assert snapshot_rows[1][6] == pytest.approx(0.0)
-    assert snapshot_rows[2] == (
-        "cand-003",
-        "blocked",
-        0.0,
-        0.0,
-        "position_candidate_blocked",
+    contract_version = DEFAULT_PORTFOLIO_PLAN_CONTRACT_VERSION
+    assert run_row == ("completed", 4, 1, 2, 1, 0)
+    assert [row[:4] for row in decision_rows] == [
+        (
+            f"cand-001|main_book|2026-04-09|{contract_version}",
+            "cand-001",
+            "admitted",
+            "admitted_without_trim",
+        ),
+        (
+            f"cand-002|main_book|2026-04-09|{contract_version}",
+            "cand-002",
+            "trimmed",
+            "trimmed_by_portfolio_capacity",
+        ),
+        (
+            f"cand-003|main_book|2026-04-09|{contract_version}",
+            "cand-003",
+            "blocked",
+            "position_candidate_blocked",
+        ),
+        (
+            f"cand-004|main_book|2026-04-09|{contract_version}",
+            "cand-004",
+            "blocked",
+            "portfolio_capacity_exhausted",
+        ),
+    ]
+    assert decision_rows[0][4] == pytest.approx(0.15)
+    assert decision_rows[0][5] == pytest.approx(0.15)
+    assert decision_rows[0][6] == pytest.approx(0.0)
+    assert decision_rows[1][4] == pytest.approx(0.10)
+    assert decision_rows[1][5] == pytest.approx(0.05)
+    assert decision_rows[1][6] == pytest.approx(0.05)
+    assert decision_rows[2][4] == pytest.approx(0.08)
+    assert decision_rows[2][5] == pytest.approx(0.0)
+    assert decision_rows[2][6] == pytest.approx(0.0)
+    assert decision_rows[3][4] == pytest.approx(0.07)
+    assert decision_rows[3][5] == pytest.approx(0.0)
+    assert decision_rows[3][6] == pytest.approx(0.0)
+    assert capacity_row == (
+        f"main_book|portfolio_gross|2026-04-09|{contract_version}",
+        "portfolio_gross",
+        1,
+        2,
+        1,
         0.20,
         0.0,
     )
-    assert snapshot_rows[3] == (
-        "cand-004",
-        "blocked",
-        0.0,
-        0.0,
-        "portfolio_capacity_exhausted",
-        0.20,
-        0.0,
-    )
+    assert [row[:3] for row in allocation_rows] == [
+        (
+            f"cand-001|main_book|trade_ready|2026-04-09|{contract_version}",
+            "cand-001",
+            "trade_ready",
+        ),
+        (
+            f"cand-002|main_book|trade_ready|2026-04-09|{contract_version}",
+            "cand-002",
+            "trade_ready",
+        ),
+        (
+            f"cand-003|main_book|trade_ready|2026-04-09|{contract_version}",
+            "cand-003",
+            "trade_ready",
+        ),
+        (
+            f"cand-004|main_book|trade_ready|2026-04-09|{contract_version}",
+            "cand-004",
+            "trade_ready",
+        ),
+    ]
+    assert allocation_rows[0][3] == pytest.approx(0.15)
+    assert allocation_rows[0][4] == "admitted"
+    assert allocation_rows[1][3] == pytest.approx(0.05)
+    assert allocation_rows[1][4] == "trimmed"
+    assert allocation_rows[2][3] == pytest.approx(0.0)
+    assert allocation_rows[2][4] == "blocked"
+    assert allocation_rows[3][3] == pytest.approx(0.0)
+    assert allocation_rows[3][4] == "blocked"
+    assert snapshot_rows == [
+        (
+            "cand-001",
+            f"cand-001|main_book|2026-04-09|{contract_version}",
+            f"main_book|portfolio_gross|2026-04-09|{contract_version}",
+            f"cand-001|main_book|trade_ready|2026-04-09|{contract_version}",
+            "admitted",
+        ),
+        (
+            "cand-002",
+            f"cand-002|main_book|2026-04-09|{contract_version}",
+            f"main_book|portfolio_gross|2026-04-09|{contract_version}",
+            f"cand-002|main_book|trade_ready|2026-04-09|{contract_version}",
+            "trimmed",
+        ),
+        (
+            "cand-003",
+            f"cand-003|main_book|2026-04-09|{contract_version}",
+            f"main_book|portfolio_gross|2026-04-09|{contract_version}",
+            f"cand-003|main_book|trade_ready|2026-04-09|{contract_version}",
+            "blocked",
+        ),
+        (
+            "cand-004",
+            f"cand-004|main_book|2026-04-09|{contract_version}",
+            f"main_book|portfolio_gross|2026-04-09|{contract_version}",
+            f"cand-004|main_book|trade_ready|2026-04-09|{contract_version}",
+            "blocked",
+        ),
+    ]
 
 
 def test_run_portfolio_plan_build_marks_reused_and_rematerialized(
@@ -315,10 +422,17 @@ def test_run_portfolio_plan_build_marks_reused_and_rematerialized(
 
     conn = duckdb.connect(str(portfolio_plan_ledger_path(settings)), read_only=True)
     try:
-        snapshot_row = conn.execute(
+        decision_row = conn.execute(
             """
             SELECT admitted_weight, last_materialized_run_id
-            FROM portfolio_plan_snapshot
+            FROM portfolio_plan_candidate_decision
+            WHERE candidate_nk = 'cand-101'
+            """
+        ).fetchone()
+        allocation_row = conn.execute(
+            """
+            SELECT final_allocated_weight, last_materialized_run_id
+            FROM portfolio_plan_allocation_snapshot
             WHERE candidate_nk = 'cand-101'
             """
         ).fetchone()
@@ -332,7 +446,8 @@ def test_run_portfolio_plan_build_marks_reused_and_rematerialized(
     finally:
         conn.close()
 
-    assert snapshot_row == (0.12, "portfolio-plan-test-002c")
+    assert decision_row == (0.12, "portfolio-plan-test-002c")
+    assert allocation_row == (0.12, "portfolio-plan-test-002c")
     assert action_rows == [
         ("portfolio-plan-test-002a", "inserted"),
         ("portfolio-plan-test-002b", "reused"),
@@ -392,7 +507,14 @@ def test_run_portfolio_plan_build_uses_reference_trade_date_window(
             FROM portfolio_plan_snapshot
             """
         ).fetchall()
+        capacity_rows = conn.execute(
+            """
+            SELECT reference_trade_date
+            FROM portfolio_plan_capacity_snapshot
+            """
+        ).fetchall()
     finally:
         conn.close()
 
     assert snapshot_rows == [("cand-202", date(2026, 4, 9))]
+    assert capacity_rows == [(date(2026, 4, 9),)]

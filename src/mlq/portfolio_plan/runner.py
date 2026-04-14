@@ -1,38 +1,43 @@
-"""执行正式 bounded 的 `position -> portfolio_plan` 物化。"""
-
+﻿"""执行正式 bounded 的 `position -> portfolio_plan` v2 物化。"""
 from __future__ import annotations
-
 import json
+from collections import defaultdict
 from dataclasses import asdict, dataclass
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Final
-
 import duckdb
-
 from mlq.core.paths import WorkspaceRoots, default_settings
 from mlq.portfolio_plan.bootstrap import (
+    PORTFOLIO_PLAN_ALLOCATION_SNAPSHOT_TABLE,
+    PORTFOLIO_PLAN_CANDIDATE_DECISION_TABLE,
+    PORTFOLIO_PLAN_CAPACITY_SNAPSHOT_TABLE,
     PORTFOLIO_PLAN_RUN_SNAPSHOT_TABLE,
     PORTFOLIO_PLAN_RUN_TABLE,
     PORTFOLIO_PLAN_SNAPSHOT_TABLE,
     bootstrap_portfolio_plan_ledger,
     portfolio_plan_ledger_path,
 )
-
-
-DEFAULT_PORTFOLIO_PLAN_CONTRACT_VERSION: Final[str] = "portfolio-plan-v1"
+from mlq.portfolio_plan.materialization import (
+    DEFAULT_PORTFOLIO_CAPACITY_SCOPE,
+    _PositionBridgeRow,
+    _PortfolioCapacitySnapshotRow,
+    _aggregate_materialization_action,
+    _build_candidate_bundle,
+    _build_capacity_snapshot_nk,
+    _evaluate_candidate_decision,
+    _upsert_materialized_row,
+)
+DEFAULT_PORTFOLIO_PLAN_CONTRACT_VERSION: Final[str] = "portfolio-plan-v2"
 DEFAULT_SOURCE_POSITION_TABLE: Final[str] = (
     "position_candidate_audit+position_capacity_snapshot+position_sizing_snapshot"
 )
 DEFAULT_POSITION_CANDIDATE_AUDIT_TABLE: Final[str] = "position_candidate_audit"
 DEFAULT_POSITION_CAPACITY_TABLE: Final[str] = "position_capacity_snapshot"
 DEFAULT_POSITION_SIZING_TABLE: Final[str] = "position_sizing_snapshot"
-
-
 @dataclass(frozen=True)
 class PortfolioPlanBuildSummary:
-    """汇总一次 bounded `portfolio_plan` 物化运行。"""
-
+    """汇总一次 bounded `portfolio_plan` v2 物化运行。"""
     run_id: str
     runner_name: str
     runner_version: str
@@ -44,6 +49,7 @@ class PortfolioPlanBuildSummary:
     admitted_count: int
     blocked_count: int
     trimmed_count: int
+    deferred_count: int
     inserted_count: int
     reused_count: int
     rematerialized_count: int
@@ -56,46 +62,9 @@ class PortfolioPlanBuildSummary:
     source_position_table: str
     position_ledger_path: str
     portfolio_plan_ledger_path: str
-
     def as_dict(self) -> dict[str, object]:
         """返回适合写入 `summary_json` 的稳定字典。"""
-
         return asdict(self)
-
-
-@dataclass(frozen=True)
-class _PositionBridgeRow:
-    candidate_nk: str
-    instrument: str
-    policy_id: str
-    reference_trade_date: date
-    candidate_status: str
-    position_action_decision: str
-    final_allowed_position_weight: float
-    required_reduction_weight: float
-
-
-@dataclass(frozen=True)
-class _PortfolioPlanSnapshotRow:
-    plan_snapshot_nk: str
-    candidate_nk: str
-    portfolio_id: str
-    instrument: str
-    reference_trade_date: date
-    position_action_decision: str
-    requested_weight: float
-    admitted_weight: float
-    trimmed_weight: float
-    plan_status: str
-    blocking_reason_code: str | None
-    portfolio_gross_cap_weight: float
-    portfolio_gross_used_weight: float
-    portfolio_gross_remaining_weight: float
-    portfolio_plan_contract_version: str
-    first_seen_run_id: str
-    last_materialized_run_id: str
-
-
 def run_portfolio_plan_build(
     *,
     portfolio_id: str,
@@ -112,14 +81,12 @@ def run_portfolio_plan_build(
     source_position_table: str = DEFAULT_SOURCE_POSITION_TABLE,
     portfolio_plan_contract_version: str = DEFAULT_PORTFOLIO_PLAN_CONTRACT_VERSION,
     runner_name: str = "portfolio_plan_builder",
-    runner_version: str = "v1",
+    runner_version: str = "v2",
     summary_path: Path | None = None,
 ) -> PortfolioPlanBuildSummary:
-    """Read official `position` outputs and materialize portfolio plan decisions."""
-
+    """Read official `position` outputs and materialize `portfolio_plan` v2 ledgers."""
     workspace = settings or default_settings()
     workspace.ensure_directories()
-
     normalized_start_date = _coerce_date(signal_start_date)
     normalized_end_date = _coerce_date(signal_end_date)
     normalized_instruments = tuple(sorted({item for item in instruments or () if item}))
@@ -127,10 +94,8 @@ def run_portfolio_plan_build(
     normalized_limit = max(int(limit), 1)
     normalized_cap_weight = max(float(portfolio_gross_cap_weight), 0.0)
     planning_run_id = run_id or _build_portfolio_plan_run_id()
-
     resolved_position_path = Path(position_path or workspace.databases.position)
     resolved_portfolio_plan_path = Path(portfolio_plan_path or portfolio_plan_ledger_path(workspace))
-
     _ensure_database_exists(resolved_position_path, label="position")
     portfolio_plan_connection = duckdb.connect(str(resolved_portfolio_plan_path))
     try:
@@ -181,31 +146,24 @@ def run_portfolio_plan_build(
             admitted_count=0,
             blocked_count=0,
             trimmed_count=0,
+            deferred_count=0,
             summary_payload={"run_status": "failed"},
         )
         raise
     finally:
         portfolio_plan_connection.close()
-
-
 def _coerce_date(value: str | date | None) -> date | None:
     if value is None or value == "":
         return None
     if isinstance(value, date):
         return value
     return datetime.fromisoformat(str(value)).date()
-
-
 def _build_portfolio_plan_run_id() -> str:
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     return f"portfolio-plan-{timestamp}"
-
-
 def _ensure_database_exists(path: Path, *, label: str) -> None:
     if not path.exists():
         raise FileNotFoundError(f"Missing {label} database: {path}")
-
-
 def _load_position_bridge_rows(
     *,
     position_path: Path,
@@ -272,8 +230,6 @@ def _load_position_bridge_rows(
         ]
     finally:
         connection.close()
-
-
 def _ensure_bridge_tables_exist(connection: duckdb.DuckDBPyConnection) -> None:
     rows = connection.execute(
         """
@@ -293,8 +249,6 @@ def _ensure_bridge_tables_exist(connection: duckdb.DuckDBPyConnection) -> None:
         raise ValueError(
             "Missing required position bridge tables: " + ", ".join(missing_tables)
         )
-
-
 def _insert_run_row(
     connection: duckdb.DuckDBPyConnection,
     *,
@@ -336,8 +290,6 @@ def _insert_run_row(
             portfolio_plan_contract_version,
         ],
     )
-
-
 def _materialize_portfolio_plan_rows(
     *,
     connection: duckdb.DuckDBPyConnection,
@@ -357,66 +309,215 @@ def _materialize_portfolio_plan_rows(
     admitted_count = 0
     blocked_count = 0
     trimmed_count = 0
+    deferred_count = 0
     inserted_count = 0
     reused_count = 0
     rematerialized_count = 0
     requested_total_weight = 0.0
     admitted_total_weight = 0.0
     trimmed_total_weight = 0.0
-    portfolio_gross_used_weight = 0.0
-    portfolio_gross_remaining_weight = portfolio_gross_cap_weight
-
+    latest_used_weight = 0.0
+    latest_remaining_weight = portfolio_gross_cap_weight
+    rows_by_trade_date: dict[date, list[_PositionBridgeRow]] = defaultdict(list)
     for bridge_row in bridge_rows:
-        snapshot_row = _build_snapshot_row(
-            run_id=run_id,
-            bridge_row=bridge_row,
+        rows_by_trade_date[bridge_row.reference_trade_date].append(bridge_row)
+    for reference_trade_date in sorted(rows_by_trade_date):
+        date_rows = rows_by_trade_date[reference_trade_date]
+        capacity_snapshot_nk = _build_capacity_snapshot_nk(
             portfolio_id=portfolio_id,
+            capacity_scope=DEFAULT_PORTFOLIO_CAPACITY_SCOPE,
+            reference_trade_date=reference_trade_date,
             portfolio_plan_contract_version=portfolio_plan_contract_version,
-            portfolio_gross_cap_weight=portfolio_gross_cap_weight,
-            portfolio_gross_used_weight=portfolio_gross_used_weight,
-            portfolio_gross_remaining_weight=portfolio_gross_remaining_weight,
         )
-        materialization_action = _upsert_snapshot(connection, snapshot_row=snapshot_row)
-        connection.execute(
-            f"""
-            INSERT OR REPLACE INTO {PORTFOLIO_PLAN_RUN_SNAPSHOT_TABLE} (
-                run_id,
-                plan_snapshot_nk,
-                candidate_nk,
-                plan_status,
-                materialization_action
+        used_weight = 0.0
+        remaining_weight = portfolio_gross_cap_weight
+        date_admitted_count = 0
+        date_blocked_count = 0
+        date_trimmed_count = 0
+        date_deferred_count = 0
+        candidate_bundles: list[_CandidateLedgerBundle] = []
+        for bridge_row in date_rows:
+            evaluation = _evaluate_candidate_decision(
+                bridge_row=bridge_row,
+                portfolio_gross_cap_weight=portfolio_gross_cap_weight,
+                portfolio_gross_used_weight=used_weight,
+                portfolio_gross_remaining_weight=remaining_weight,
             )
-            VALUES (?, ?, ?, ?, ?)
-            """,
-            [
-                run_id,
-                snapshot_row.plan_snapshot_nk,
-                snapshot_row.candidate_nk,
-                snapshot_row.plan_status,
-                materialization_action,
-            ],
+            bundle = _build_candidate_bundle(
+                run_id=run_id,
+                bridge_row=bridge_row,
+                evaluation=evaluation,
+                portfolio_id=portfolio_id,
+                portfolio_plan_contract_version=portfolio_plan_contract_version,
+                capacity_snapshot_nk=capacity_snapshot_nk,
+                portfolio_gross_cap_weight=portfolio_gross_cap_weight,
+            )
+            candidate_bundles.append(bundle)
+            used_weight = evaluation.next_used_weight
+            remaining_weight = evaluation.next_remaining_weight
+            requested_total_weight += evaluation.requested_weight
+            admitted_total_weight += evaluation.admitted_weight
+            trimmed_total_weight += evaluation.trimmed_weight
+            if evaluation.decision_status == "admitted":
+                admitted_count += 1
+                date_admitted_count += 1
+            elif evaluation.decision_status == "trimmed":
+                trimmed_count += 1
+                date_trimmed_count += 1
+            elif evaluation.decision_status == "deferred":
+                deferred_count += 1
+                date_deferred_count += 1
+            else:
+                blocked_count += 1
+                date_blocked_count += 1
+        capacity_row = _PortfolioCapacitySnapshotRow(
+            capacity_snapshot_nk=capacity_snapshot_nk,
+            portfolio_id=portfolio_id,
+            capacity_scope=DEFAULT_PORTFOLIO_CAPACITY_SCOPE,
+            reference_trade_date=reference_trade_date,
+            portfolio_gross_cap_weight=portfolio_gross_cap_weight,
+            portfolio_gross_used_weight=used_weight,
+            portfolio_gross_remaining_weight=remaining_weight,
+            admitted_candidate_count=date_admitted_count,
+            blocked_candidate_count=date_blocked_count,
+            trimmed_candidate_count=date_trimmed_count,
+            deferred_candidate_count=date_deferred_count,
+            portfolio_plan_contract_version=portfolio_plan_contract_version,
+            first_seen_run_id=run_id,
+            last_materialized_run_id=run_id,
         )
-
-        requested_total_weight += snapshot_row.requested_weight
-        admitted_total_weight += snapshot_row.admitted_weight
-        trimmed_total_weight += snapshot_row.trimmed_weight
-        portfolio_gross_used_weight = snapshot_row.portfolio_gross_used_weight
-        portfolio_gross_remaining_weight = snapshot_row.portfolio_gross_remaining_weight
-
-        if snapshot_row.plan_status == "admitted":
-            admitted_count += 1
-        elif snapshot_row.plan_status == "trimmed":
-            trimmed_count += 1
-        else:
-            blocked_count += 1
-
-        if materialization_action == "inserted":
-            inserted_count += 1
-        elif materialization_action == "reused":
-            reused_count += 1
-        else:
-            rematerialized_count += 1
-
+        capacity_action = _upsert_materialized_row(
+            connection,
+            table_name=PORTFOLIO_PLAN_CAPACITY_SNAPSHOT_TABLE,
+            key_column="capacity_snapshot_nk",
+            key_value=capacity_row.capacity_snapshot_nk,
+            insert_payload=asdict(capacity_row),
+            compare_columns=(
+                "portfolio_id",
+                "capacity_scope",
+                "reference_trade_date",
+                "portfolio_gross_cap_weight",
+                "portfolio_gross_used_weight",
+                "portfolio_gross_remaining_weight",
+                "admitted_candidate_count",
+                "blocked_candidate_count",
+                "trimmed_candidate_count",
+                "deferred_candidate_count",
+                "portfolio_plan_contract_version",
+            ),
+        )
+        for bundle in candidate_bundles:
+            decision_action = _upsert_materialized_row(
+                connection,
+                table_name=PORTFOLIO_PLAN_CANDIDATE_DECISION_TABLE,
+                key_column="candidate_decision_nk",
+                key_value=bundle.decision_row.candidate_decision_nk,
+                insert_payload=asdict(bundle.decision_row),
+                compare_columns=(
+                    "candidate_nk",
+                    "portfolio_id",
+                    "instrument",
+                    "policy_id",
+                    "reference_trade_date",
+                    "position_action_decision",
+                    "decision_status",
+                    "decision_reason_code",
+                    "blocking_reason_code",
+                    "requested_weight",
+                    "admitted_weight",
+                    "trimmed_weight",
+                    "capacity_snapshot_nk",
+                    "portfolio_plan_contract_version",
+                ),
+            )
+            allocation_action = _upsert_materialized_row(
+                connection,
+                table_name=PORTFOLIO_PLAN_ALLOCATION_SNAPSHOT_TABLE,
+                key_column="allocation_snapshot_nk",
+                key_value=bundle.allocation_row.allocation_snapshot_nk,
+                insert_payload=asdict(bundle.allocation_row),
+                compare_columns=(
+                    "candidate_nk",
+                    "portfolio_id",
+                    "instrument",
+                    "allocation_scene",
+                    "reference_trade_date",
+                    "requested_weight",
+                    "admitted_weight",
+                    "trimmed_weight",
+                    "final_allocated_weight",
+                    "plan_status",
+                    "blocking_reason_code",
+                    "candidate_decision_nk",
+                    "capacity_snapshot_nk",
+                    "portfolio_plan_contract_version",
+                ),
+            )
+            snapshot_action = _upsert_materialized_row(
+                connection,
+                table_name=PORTFOLIO_PLAN_SNAPSHOT_TABLE,
+                key_column="plan_snapshot_nk",
+                key_value=bundle.snapshot_row.plan_snapshot_nk,
+                insert_payload=asdict(bundle.snapshot_row),
+                compare_columns=(
+                    "candidate_nk",
+                    "portfolio_id",
+                    "instrument",
+                    "reference_trade_date",
+                    "position_action_decision",
+                    "requested_weight",
+                    "admitted_weight",
+                    "trimmed_weight",
+                    "plan_status",
+                    "blocking_reason_code",
+                    "portfolio_gross_cap_weight",
+                    "portfolio_gross_used_weight",
+                    "portfolio_gross_remaining_weight",
+                    "candidate_decision_nk",
+                    "capacity_snapshot_nk",
+                    "allocation_snapshot_nk",
+                    "portfolio_plan_contract_version",
+                ),
+            )
+            materialization_action = _aggregate_materialization_action(
+                capacity_action,
+                decision_action,
+                allocation_action,
+                snapshot_action,
+            )
+            connection.execute(
+                f"""
+                INSERT OR REPLACE INTO {PORTFOLIO_PLAN_RUN_SNAPSHOT_TABLE} (
+                    run_id,
+                    plan_snapshot_nk,
+                    candidate_decision_nk,
+                    capacity_snapshot_nk,
+                    allocation_snapshot_nk,
+                    candidate_nk,
+                    plan_status,
+                    materialization_action
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                [
+                    run_id,
+                    bundle.snapshot_row.plan_snapshot_nk,
+                    bundle.decision_row.candidate_decision_nk,
+                    bundle.decision_row.capacity_snapshot_nk,
+                    bundle.allocation_row.allocation_snapshot_nk,
+                    bundle.decision_row.candidate_nk,
+                    bundle.decision_row.decision_status,
+                    materialization_action,
+                ],
+            )
+            if materialization_action == "inserted":
+                inserted_count += 1
+            elif materialization_action == "reused":
+                reused_count += 1
+            else:
+                rematerialized_count += 1
+        latest_used_weight = used_weight
+        latest_remaining_weight = remaining_weight
     return PortfolioPlanBuildSummary(
         run_id=run_id,
         runner_name=runner_name,
@@ -429,6 +530,7 @@ def _materialize_portfolio_plan_rows(
         admitted_count=admitted_count,
         blocked_count=blocked_count,
         trimmed_count=trimmed_count,
+        deferred_count=deferred_count,
         inserted_count=inserted_count,
         reused_count=reused_count,
         rematerialized_count=rematerialized_count,
@@ -436,226 +538,12 @@ def _materialize_portfolio_plan_rows(
         admitted_total_weight=admitted_total_weight,
         trimmed_total_weight=trimmed_total_weight,
         portfolio_gross_cap_weight=portfolio_gross_cap_weight,
-        portfolio_gross_used_weight=portfolio_gross_used_weight,
-        portfolio_gross_remaining_weight=portfolio_gross_remaining_weight,
+        portfolio_gross_used_weight=latest_used_weight,
+        portfolio_gross_remaining_weight=latest_remaining_weight,
         source_position_table=source_position_table,
         position_ledger_path=str(position_path),
         portfolio_plan_ledger_path=str(portfolio_plan_path),
     )
-
-
-def _build_snapshot_row(
-    *,
-    run_id: str,
-    bridge_row: _PositionBridgeRow,
-    portfolio_id: str,
-    portfolio_plan_contract_version: str,
-    portfolio_gross_cap_weight: float,
-    portfolio_gross_used_weight: float,
-    portfolio_gross_remaining_weight: float,
-) -> _PortfolioPlanSnapshotRow:
-    requested_weight = max(float(bridge_row.final_allowed_position_weight), 0.0)
-    blocking_reason_code: str | None = None
-    admitted_weight = 0.0
-    trimmed_weight = 0.0
-
-    if bridge_row.candidate_status != "admitted":
-        plan_status = "blocked"
-        blocking_reason_code = f"position_candidate_{bridge_row.candidate_status or 'blocked'}"
-    elif requested_weight <= 0:
-        plan_status = "blocked"
-        blocking_reason_code = "position_weight_not_positive"
-    elif portfolio_gross_remaining_weight >= requested_weight:
-        plan_status = "admitted"
-        admitted_weight = requested_weight
-    elif portfolio_gross_remaining_weight > 0:
-        plan_status = "trimmed"
-        admitted_weight = portfolio_gross_remaining_weight
-        trimmed_weight = max(requested_weight - admitted_weight, 0.0)
-    else:
-        plan_status = "blocked"
-        blocking_reason_code = "portfolio_capacity_exhausted"
-
-    next_used_weight = min(
-        portfolio_gross_used_weight + admitted_weight,
-        portfolio_gross_cap_weight,
-    )
-    next_remaining_weight = max(portfolio_gross_cap_weight - next_used_weight, 0.0)
-    return _PortfolioPlanSnapshotRow(
-        plan_snapshot_nk=_build_plan_snapshot_nk(
-            candidate_nk=bridge_row.candidate_nk,
-            portfolio_id=portfolio_id,
-            reference_trade_date=bridge_row.reference_trade_date,
-            portfolio_plan_contract_version=portfolio_plan_contract_version,
-        ),
-        candidate_nk=bridge_row.candidate_nk,
-        portfolio_id=portfolio_id,
-        instrument=bridge_row.instrument,
-        reference_trade_date=bridge_row.reference_trade_date,
-        position_action_decision=bridge_row.position_action_decision,
-        requested_weight=requested_weight,
-        admitted_weight=admitted_weight,
-        trimmed_weight=trimmed_weight,
-        plan_status=plan_status,
-        blocking_reason_code=blocking_reason_code,
-        portfolio_gross_cap_weight=portfolio_gross_cap_weight,
-        portfolio_gross_used_weight=next_used_weight,
-        portfolio_gross_remaining_weight=next_remaining_weight,
-        portfolio_plan_contract_version=portfolio_plan_contract_version,
-        first_seen_run_id=run_id,
-        last_materialized_run_id=run_id,
-    )
-
-
-def _build_plan_snapshot_nk(
-    *,
-    candidate_nk: str,
-    portfolio_id: str,
-    reference_trade_date: date,
-    portfolio_plan_contract_version: str,
-) -> str:
-    return "|".join(
-        [
-            candidate_nk,
-            portfolio_id,
-            reference_trade_date.isoformat(),
-            portfolio_plan_contract_version,
-        ]
-    )
-
-
-def _upsert_snapshot(
-    connection: duckdb.DuckDBPyConnection,
-    *,
-    snapshot_row: _PortfolioPlanSnapshotRow,
-) -> str:
-    existing_row = connection.execute(
-        f"""
-        SELECT
-            position_action_decision,
-            requested_weight,
-            admitted_weight,
-            trimmed_weight,
-            plan_status,
-            blocking_reason_code,
-            portfolio_gross_cap_weight,
-            portfolio_gross_used_weight,
-            portfolio_gross_remaining_weight,
-            first_seen_run_id
-        FROM {PORTFOLIO_PLAN_SNAPSHOT_TABLE}
-        WHERE plan_snapshot_nk = ?
-        """,
-        [snapshot_row.plan_snapshot_nk],
-    ).fetchone()
-    if existing_row is None:
-        connection.execute(
-            f"""
-            INSERT INTO {PORTFOLIO_PLAN_SNAPSHOT_TABLE} (
-                plan_snapshot_nk,
-                candidate_nk,
-                portfolio_id,
-                instrument,
-                reference_trade_date,
-                position_action_decision,
-                requested_weight,
-                admitted_weight,
-                trimmed_weight,
-                plan_status,
-                blocking_reason_code,
-                portfolio_gross_cap_weight,
-                portfolio_gross_used_weight,
-                portfolio_gross_remaining_weight,
-                portfolio_plan_contract_version,
-                first_seen_run_id,
-                last_materialized_run_id
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            [
-                snapshot_row.plan_snapshot_nk,
-                snapshot_row.candidate_nk,
-                snapshot_row.portfolio_id,
-                snapshot_row.instrument,
-                snapshot_row.reference_trade_date,
-                snapshot_row.position_action_decision,
-                snapshot_row.requested_weight,
-                snapshot_row.admitted_weight,
-                snapshot_row.trimmed_weight,
-                snapshot_row.plan_status,
-                snapshot_row.blocking_reason_code,
-                snapshot_row.portfolio_gross_cap_weight,
-                snapshot_row.portfolio_gross_used_weight,
-                snapshot_row.portfolio_gross_remaining_weight,
-                snapshot_row.portfolio_plan_contract_version,
-                snapshot_row.first_seen_run_id,
-                snapshot_row.last_materialized_run_id,
-            ],
-        )
-        return "inserted"
-
-    current_payload = (
-        _normalize_optional_str(existing_row[0]),
-        float(existing_row[1] or 0.0),
-        float(existing_row[2] or 0.0),
-        float(existing_row[3] or 0.0),
-        _normalize_optional_str(existing_row[4]).lower(),
-        None if existing_row[5] is None else str(existing_row[5]),
-        float(existing_row[6] or 0.0),
-        float(existing_row[7] or 0.0),
-        float(existing_row[8] or 0.0),
-    )
-    next_payload = (
-        snapshot_row.position_action_decision,
-        snapshot_row.requested_weight,
-        snapshot_row.admitted_weight,
-        snapshot_row.trimmed_weight,
-        snapshot_row.plan_status,
-        snapshot_row.blocking_reason_code,
-        snapshot_row.portfolio_gross_cap_weight,
-        snapshot_row.portfolio_gross_used_weight,
-        snapshot_row.portfolio_gross_remaining_weight,
-    )
-    first_seen_run_id = str(existing_row[9]) if existing_row[9] is not None else snapshot_row.first_seen_run_id
-    connection.execute(
-        f"""
-        UPDATE {PORTFOLIO_PLAN_SNAPSHOT_TABLE}
-        SET
-            instrument = ?,
-            position_action_decision = ?,
-            requested_weight = ?,
-            admitted_weight = ?,
-            trimmed_weight = ?,
-            plan_status = ?,
-            blocking_reason_code = ?,
-            portfolio_gross_cap_weight = ?,
-            portfolio_gross_used_weight = ?,
-            portfolio_gross_remaining_weight = ?,
-            first_seen_run_id = ?,
-            last_materialized_run_id = ?,
-            updated_at = CURRENT_TIMESTAMP
-        WHERE plan_snapshot_nk = ?
-        """,
-        [
-            snapshot_row.instrument,
-            snapshot_row.position_action_decision,
-            snapshot_row.requested_weight,
-            snapshot_row.admitted_weight,
-            snapshot_row.trimmed_weight,
-            snapshot_row.plan_status,
-            snapshot_row.blocking_reason_code,
-            snapshot_row.portfolio_gross_cap_weight,
-            snapshot_row.portfolio_gross_used_weight,
-            snapshot_row.portfolio_gross_remaining_weight,
-            first_seen_run_id,
-            snapshot_row.last_materialized_run_id,
-            snapshot_row.plan_snapshot_nk,
-        ],
-    )
-    if current_payload == next_payload:
-        return "reused"
-    return "rematerialized"
-
-
 def _mark_run_completed(
     connection: duckdb.DuckDBPyConnection,
     *,
@@ -669,10 +557,9 @@ def _mark_run_completed(
         admitted_count=summary.admitted_count,
         blocked_count=summary.blocked_count,
         trimmed_count=summary.trimmed_count,
+        deferred_count=summary.deferred_count,
         summary_payload=summary.as_dict(),
     )
-
-
 def _update_run_summary(
     connection: duckdb.DuckDBPyConnection,
     *,
@@ -681,6 +568,7 @@ def _update_run_summary(
     admitted_count: int,
     blocked_count: int,
     trimmed_count: int,
+    deferred_count: int,
     summary_payload: dict[str, object],
 ) -> None:
     connection.execute(
@@ -691,6 +579,7 @@ def _update_run_summary(
             admitted_count = ?,
             blocked_count = ?,
             trimmed_count = ?,
+            deferred_count = ?,
             completed_at = CURRENT_TIMESTAMP,
             summary_json = ?
         WHERE run_id = ?
@@ -700,12 +589,11 @@ def _update_run_summary(
             admitted_count,
             blocked_count,
             trimmed_count,
+            deferred_count,
             json.dumps(summary_payload, ensure_ascii=False, sort_keys=True),
             run_id,
         ],
     )
-
-
 def _normalize_date_value(value: object, *, field_name: str) -> date:
     if value is None:
         raise ValueError(f"Missing required date field: {field_name}")
@@ -714,14 +602,10 @@ def _normalize_date_value(value: object, *, field_name: str) -> date:
     if isinstance(value, date):
         return value
     return datetime.fromisoformat(str(value)).date()
-
-
 def _normalize_optional_str(value: object) -> str:
     if value is None:
         return ""
     return str(value).strip()
-
-
 def _write_summary(summary: PortfolioPlanBuildSummary, summary_path: Path | None) -> None:
     if summary_path is None:
         return
