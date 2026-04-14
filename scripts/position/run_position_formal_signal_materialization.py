@@ -24,6 +24,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--market-price-table", type=str, default="stock_daily_adjusted")
     parser.add_argument("--adjust-method", type=str, default="none")
     parser.add_argument("--allow-same-day-price-fallback", action="store_true")
+    parser.add_argument("--use-checkpoint-queue", action="store_true")
     parser.add_argument("--summary-path", type=Path, default=None)
     return parser.parse_args()
 
@@ -42,6 +43,7 @@ def main() -> None:
         market_price_table=args.market_price_table,
         adjust_method=args.adjust_method,
         allow_same_day_price_fallback=args.allow_same_day_price_fallback,
+        use_checkpoint_queue=True if args.use_checkpoint_queue else None,
         summary_path=args.summary_path,
     )
     print(json.dumps(summary.as_dict(), ensure_ascii=False, indent=2))

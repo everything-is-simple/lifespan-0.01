@@ -1,58 +1,53 @@
-"""执行 `position` 对官方 `alpha formal signal` 的 bounded 正式消费。"""
+"""执行 `position` 对官方 `alpha formal signal` 的正式 data-grade 物化。"""
 
 from __future__ import annotations
-
-import json
-from dataclasses import asdict, dataclass
-from datetime import date, datetime
-from pathlib import Path
-from typing import Final
 
 import duckdb
 
 from mlq.core.paths import WorkspaceRoots, default_settings
 from mlq.position.bootstrap import (
-    PositionFormalSignalInput,
-    PositionMaterializationSummary,
-    materialize_position_from_formal_signals,
+    bootstrap_position_ledger,
+    connect_position_ledger,
     position_ledger_path,
 )
-
-
-DEFAULT_ALPHA_FORMAL_SIGNAL_TABLE: Final[str] = "alpha_formal_signal_event"
-DEFAULT_MARKET_BASE_PRICE_TABLE: Final[str] = "stock_daily_adjusted"
-DEFAULT_MARKET_BASE_ADJUST_METHOD: Final[str] = "none"
-
-
-@dataclass(frozen=True)
-class PositionFormalSignalRunnerSummary:
-    """总结一次 bounded runner 对 `alpha -> position` 的正式桥接结果。"""
-
-    policy_id: str
-    position_run_id: str | None
-    alpha_signal_count: int
-    enriched_signal_count: int
-    missing_reference_price_count: int
-    candidate_count: int
-    admitted_count: int
-    blocked_count: int
-    risk_budget_count: int
-    sizing_count: int
-    family_snapshot_count: int
-    entry_leg_count: int
-    exit_plan_count: int
-    exit_leg_count: int
-    alpha_ledger_path: str
-    market_base_path: str
-    position_ledger_path: str
-    alpha_formal_signal_table: str
-    market_price_table: str
-    adjust_method: str
-
-    def as_dict(self) -> dict[str, object]:
-        """返回适合写入 summary JSON 的稳定字典。"""
-
-        return asdict(self)
+from mlq.position.position_materialization import (
+    fetch_policy_contract,
+    materialize_position_rows,
+)
+from mlq.position.position_runner_shared import (
+    DEFAULT_ALPHA_FORMAL_SIGNAL_TABLE,
+    DEFAULT_MARKET_BASE_ADJUST_METHOD,
+    DEFAULT_MARKET_BASE_PRICE_TABLE,
+    PositionFormalSignalRunnerSummary,
+    build_position_run_id,
+    coerce_date,
+    resolve_execution_mode,
+    write_summary,
+)
+from mlq.position.position_runner_audit import (
+    claim_position_queue_rows,
+    delete_position_candidate_scope,
+    enqueue_position_dirty_candidates,
+    insert_run_row,
+    insert_run_snapshot_row,
+    mark_position_queue_completed,
+    mark_position_queue_failed,
+    mark_run_completed,
+    mark_run_failed,
+    upsert_position_checkpoint,
+)
+from mlq.position.position_runner_support import (
+    build_candidate_inputs,
+    enrich_reference_prices,
+    load_alpha_formal_signal_rows,
+    load_candidate_scope_stats,
+    resolve_materialization_action,
+)
+from mlq.position.position_shared import (
+    PositionFormalSignalInput,
+    resolve_signal_contract_version,
+    resolve_signal_run_id,
+)
 
 
 def run_position_formal_signal_materialization(
@@ -60,10 +55,10 @@ def run_position_formal_signal_materialization(
     policy_id: str,
     capital_base_value: float,
     settings: WorkspaceRoots | None = None,
-    alpha_path: Path | None = None,
-    market_base_path: Path | None = None,
-    signal_start_date: str | date | None = None,
-    signal_end_date: str | date | None = None,
+    alpha_path=None,
+    market_base_path=None,
+    signal_start_date=None,
+    signal_end_date=None,
     instruments: list[str] | tuple[str, ...] | None = None,
     limit: int = 100,
     run_id: str | None = None,
@@ -71,21 +66,29 @@ def run_position_formal_signal_materialization(
     market_price_table: str = DEFAULT_MARKET_BASE_PRICE_TABLE,
     adjust_method: str = DEFAULT_MARKET_BASE_ADJUST_METHOD,
     allow_same_day_price_fallback: bool = False,
-    summary_path: Path | None = None,
+    summary_path=None,
+    use_checkpoint_queue: bool | None = None,
 ) -> PositionFormalSignalRunnerSummary:
-    """从官方 `alpha formal signal` 读取 bounded 样本并落入正式 `position` 账本。"""
+    """从官方 `alpha formal signal` 读取样本并落入正式 `position` 历史账本。"""
 
     workspace = settings or default_settings()
     normalized_instruments = tuple(sorted({instrument for instrument in instruments or () if instrument}))
     normalized_limit = max(int(limit), 1)
-    normalized_start_date = _coerce_date(signal_start_date)
-    normalized_end_date = _coerce_date(signal_end_date)
+    normalized_start_date = coerce_date(signal_start_date)
+    normalized_end_date = coerce_date(signal_end_date)
+    execution_mode = resolve_execution_mode(
+        use_checkpoint_queue=use_checkpoint_queue,
+        signal_start_date=normalized_start_date,
+        signal_end_date=normalized_end_date,
+        instruments=normalized_instruments,
+    )
 
-    resolved_alpha_path = Path(alpha_path or workspace.databases.alpha)
-    resolved_market_base_path = Path(market_base_path or workspace.databases.market_base)
+    resolved_alpha_path = alpha_path or workspace.databases.alpha
+    resolved_market_base_path = market_base_path or workspace.databases.market_base
     resolved_position_path = position_ledger_path(workspace)
+    materialization_run_id = run_id or build_position_run_id()
 
-    alpha_rows = _load_alpha_formal_signal_rows(
+    alpha_rows = load_alpha_formal_signal_rows(
         alpha_path=resolved_alpha_path,
         alpha_formal_signal_table=alpha_formal_signal_table,
         signal_start_date=normalized_start_date,
@@ -93,7 +96,7 @@ def run_position_formal_signal_materialization(
         instruments=normalized_instruments,
         limit=normalized_limit,
     )
-    enriched_signals, missing_reference_price_count = _enrich_reference_prices(
+    enriched_signals, missing_reference_price_count = enrich_reference_prices(
         alpha_rows=alpha_rows,
         market_base_path=resolved_market_base_path,
         market_price_table=market_price_table,
@@ -102,372 +105,302 @@ def run_position_formal_signal_materialization(
         allow_same_day_price_fallback=allow_same_day_price_fallback,
     )
 
-    materialization_summary = _maybe_materialize(
-        enriched_signals,
+    if execution_mode == "checkpoint_queue":
+        return _run_position_checkpoint_queue_build(
+            workspace=workspace,
+            policy_id=policy_id,
+            run_id=materialization_run_id,
+            enriched_signals=enriched_signals,
+            missing_reference_price_count=missing_reference_price_count,
+            alpha_rows=alpha_rows,
+            resolved_alpha_path=str(resolved_alpha_path),
+            resolved_market_base_path=str(resolved_market_base_path),
+            resolved_position_path=str(resolved_position_path),
+            alpha_formal_signal_table=alpha_formal_signal_table,
+            market_price_table=market_price_table,
+            adjust_method=adjust_method,
+            limit=normalized_limit,
+            summary_path=summary_path,
+        )
+    return _run_position_bounded_build(
+        workspace=workspace,
         policy_id=policy_id,
-        settings=workspace,
-        run_id=run_id,
-    )
-    summary = PositionFormalSignalRunnerSummary(
-        policy_id=policy_id,
-        position_run_id=materialization_summary.run_id if materialization_summary else None,
-        alpha_signal_count=len(alpha_rows),
-        enriched_signal_count=len(enriched_signals),
+        run_id=materialization_run_id,
+        enriched_signals=enriched_signals,
         missing_reference_price_count=missing_reference_price_count,
-        candidate_count=materialization_summary.candidate_count if materialization_summary else 0,
-        admitted_count=materialization_summary.admitted_count if materialization_summary else 0,
-        blocked_count=materialization_summary.blocked_count if materialization_summary else 0,
-        risk_budget_count=materialization_summary.risk_budget_count if materialization_summary else 0,
-        sizing_count=materialization_summary.sizing_count if materialization_summary else 0,
-        family_snapshot_count=materialization_summary.family_snapshot_count if materialization_summary else 0,
-        entry_leg_count=materialization_summary.entry_leg_count if materialization_summary else 0,
-        exit_plan_count=materialization_summary.exit_plan_count if materialization_summary else 0,
-        exit_leg_count=materialization_summary.exit_leg_count if materialization_summary else 0,
-        alpha_ledger_path=str(resolved_alpha_path),
-        market_base_path=str(resolved_market_base_path),
-        position_ledger_path=str(resolved_position_path),
+        alpha_rows=alpha_rows,
+        resolved_alpha_path=str(resolved_alpha_path),
+        resolved_market_base_path=str(resolved_market_base_path),
+        resolved_position_path=str(resolved_position_path),
         alpha_formal_signal_table=alpha_formal_signal_table,
         market_price_table=market_price_table,
         adjust_method=adjust_method,
+        summary_path=summary_path,
     )
-    _write_summary(summary, summary_path)
-    return summary
 
 
-def _coerce_date(value: str | date | None) -> date | None:
-    if value is None or value == "":
-        return None
-    if isinstance(value, date):
-        return value
-    return datetime.fromisoformat(str(value)).date()
-
-
-def _ensure_database_exists(path: Path, *, label: str) -> None:
-    if not path.exists():
-        raise FileNotFoundError(f"Missing {label} database: {path}")
-
-
-def _load_alpha_formal_signal_rows(
+def _run_position_bounded_build(
     *,
-    alpha_path: Path,
-    alpha_formal_signal_table: str,
-    signal_start_date: date | None,
-    signal_end_date: date | None,
-    instruments: tuple[str, ...],
-    limit: int,
-) -> list[dict[str, object]]:
-    _ensure_database_exists(alpha_path, label="alpha")
-    connection = duckdb.connect(str(alpha_path), read_only=True)
-    try:
-        available_columns = _load_table_columns(connection, alpha_formal_signal_table)
-        signal_date_column = _resolve_existing_column(
-            available_columns,
-            ("signal_date",),
-            field_name="signal_date",
-            table_name=alpha_formal_signal_table,
-        )
-        instrument_column = _resolve_existing_column(
-            available_columns,
-            ("instrument", "code"),
-            field_name="instrument",
-            table_name=alpha_formal_signal_table,
-        )
-        select_sql = _build_alpha_select_sql(
-            table_name=alpha_formal_signal_table,
-            available_columns=available_columns,
-        )
-        parameters: list[object] = []
-        where_clauses: list[str] = []
-        if signal_start_date is not None:
-            where_clauses.append(f"{signal_date_column} >= ?")
-            parameters.append(signal_start_date)
-        if signal_end_date is not None:
-            where_clauses.append(f"{signal_date_column} <= ?")
-            parameters.append(signal_end_date)
-        if instruments:
-            placeholders = ", ".join("?" for _ in instruments)
-            where_clauses.append(f"{instrument_column} IN ({placeholders})")
-            parameters.extend(instruments)
-        where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
-        rows = connection.execute(
-            f"""
-            {select_sql}
-            {where_sql}
-            ORDER BY signal_date, instrument, signal_nk
-            LIMIT ?
-            """,
-            [*parameters, limit],
-        ).fetchall()
-        return [
-            {
-                "signal_nk": row[0],
-                "instrument": row[1],
-                "signal_date": row[2],
-                "asof_date": row[3],
-                "trigger_family": row[4],
-                "trigger_type": row[5],
-                "pattern_code": row[6],
-                "formal_signal_status": row[7],
-                "trigger_admissible": row[8],
-                "malf_context_4": row[9],
-                "lifecycle_rank_high": row[10],
-                "lifecycle_rank_total": row[11],
-                "source_trigger_event_nk": row[12],
-                "signal_contract_version": row[13],
-                "source_signal_run_id": row[14],
-                "source_family_event_nk": row[15],
-                "source_family_contract_version": row[16],
-                "family_code": row[17],
-                "family_role": row[18],
-                "family_bias": row[19],
-                "malf_alignment": row[20],
-                "malf_phase_bucket": row[21],
-                "family_source_context_fingerprint": row[22],
-            }
-            for row in rows
-        ]
-    finally:
-        connection.close()
-
-
-def _load_table_columns(connection: duckdb.DuckDBPyConnection, table_name: str) -> set[str]:
-    rows = connection.execute(
-        """
-        SELECT column_name
-        FROM information_schema.columns
-        WHERE table_schema = 'main'
-          AND table_name = ?
-        """,
-        [table_name],
-    ).fetchall()
-    if not rows:
-        raise ValueError(f"Missing table in alpha ledger: {table_name}")
-    return {str(row[0]) for row in rows}
-
-
-def _resolve_existing_column(
-    available_columns: set[str],
-    candidates: tuple[str, ...],
-    *,
-    field_name: str,
-    table_name: str,
-) -> str:
-    for candidate in candidates:
-        if candidate in available_columns:
-            return candidate
-    raise ValueError(f"Missing required column `{field_name}` in table `{table_name}`.")
-
-
-def _build_alpha_select_sql(*, table_name: str, available_columns: set[str]) -> str:
-    mappings: dict[str, tuple[str, ...]] = {
-        "signal_nk": ("signal_nk", "signal_id"),
-        "instrument": ("instrument", "code"),
-        "signal_date": ("signal_date",),
-        "asof_date": ("asof_date",),
-        "trigger_type": ("trigger_type",),
-        "pattern_code": ("pattern_code", "pattern"),
-        "formal_signal_status": ("formal_signal_status", "admission_status"),
-        "trigger_admissible": ("trigger_admissible", "filter_trigger_admissible"),
-        "malf_context_4": ("malf_context_4",),
-        "lifecycle_rank_high": ("lifecycle_rank_high",),
-        "lifecycle_rank_total": ("lifecycle_rank_total",),
-        "source_trigger_event_nk": ("source_trigger_event_nk", "source_pas_signal_id"),
-        "signal_contract_version": ("signal_contract_version", "source_pas_contract_version"),
-    }
-    select_fields: list[str] = []
-    for alias, candidates in mappings.items():
-        column_name = _resolve_existing_column(
-            available_columns,
-            candidates,
-            field_name=alias,
-            table_name=table_name,
-        )
-        select_fields.append(f"{column_name} AS {alias}")
-    if "trigger_family" in available_columns:
-        select_fields.insert(4, "trigger_family AS trigger_family")
-    else:
-        select_fields.insert(4, "'PAS' AS trigger_family")
-    if "source_signal_run_id" in available_columns:
-        select_fields.append("source_signal_run_id AS source_signal_run_id")
-    elif "last_materialized_run_id" in available_columns:
-        select_fields.append("last_materialized_run_id AS source_signal_run_id")
-    else:
-        select_fields.append("NULL AS source_signal_run_id")
-    optional_family_columns = {
-        "source_family_event_nk": ("source_family_event_nk",),
-        "source_family_contract_version": ("source_family_contract_version",),
-        "family_code": ("family_code",),
-        "family_role": ("family_role",),
-        "family_bias": ("family_bias",),
-        "malf_alignment": ("malf_alignment",),
-        "malf_phase_bucket": ("malf_phase_bucket",),
-        "family_source_context_fingerprint": ("family_source_context_fingerprint",),
-    }
-    for alias, candidates in optional_family_columns.items():
-        column_name = next((candidate for candidate in candidates if candidate in available_columns), None)
-        if column_name is None:
-            select_fields.append(f"NULL AS {alias}")
-        else:
-            select_fields.append(f"{column_name} AS {alias}")
-    return f"SELECT {', '.join(select_fields)} FROM {table_name}"
-
-
-def _normalize_formal_signal_status(value: object) -> str:
-    normalized = str(value or "").strip().lower()
-    if normalized in {"admitted", "blocked", "deferred"}:
-        return normalized
-    if normalized in {"admit", "accepted"}:
-        return "admitted"
-    if normalized in {"reject", "rejected"}:
-        return "blocked"
-    return "blocked"
-
-
-def _enrich_reference_prices(
-    *,
-    alpha_rows: list[dict[str, object]],
-    market_base_path: Path,
-    market_price_table: str,
-    adjust_method: str,
-    capital_base_value: float,
-    allow_same_day_price_fallback: bool,
-) -> tuple[list[PositionFormalSignalInput], int]:
-    _ensure_database_exists(market_base_path, label="market_base")
-    connection = duckdb.connect(str(market_base_path), read_only=True)
-    try:
-        enriched_signals: list[PositionFormalSignalInput] = []
-        missing_reference_price_count = 0
-        for row in alpha_rows:
-            signal_date = _coerce_date(row["signal_date"])
-            instrument = str(row["instrument"])
-            reference_trade_date, reference_price = _load_reference_price(
-                connection,
-                market_price_table=market_price_table,
-                instrument=instrument,
-                signal_date=signal_date,
-                adjust_method=adjust_method,
-                allow_same_day_price_fallback=allow_same_day_price_fallback,
-            )
-            if reference_trade_date is None or reference_price is None:
-                missing_reference_price_count += 1
-                continue
-            enriched_signals.append(
-                PositionFormalSignalInput(
-                    signal_nk=str(row["signal_nk"]),
-                    instrument=instrument,
-                    signal_date=signal_date.isoformat(),
-                    asof_date=_coerce_date(row["asof_date"]).isoformat(),
-                    trigger_family=str(row["trigger_family"]),
-                    trigger_type=str(row["trigger_type"]),
-                    pattern_code=str(row["pattern_code"]),
-                    formal_signal_status=_normalize_formal_signal_status(row["formal_signal_status"]),
-                    trigger_admissible=bool(row["trigger_admissible"]),
-                    malf_context_4=str(row["malf_context_4"]),
-                    lifecycle_rank_high=int(row["lifecycle_rank_high"]),
-                    lifecycle_rank_total=int(row["lifecycle_rank_total"]),
-                    source_trigger_event_nk=str(row["source_trigger_event_nk"]),
-                    signal_contract_version=str(row["signal_contract_version"]),
-                    reference_trade_date=reference_trade_date.isoformat(),
-                    reference_price=reference_price,
-                    capital_base_value=capital_base_value,
-                    source_signal_run_id=None
-                    if row["source_signal_run_id"] is None
-                    else str(row["source_signal_run_id"]),
-                    source_family_event_nk=None
-                    if row["source_family_event_nk"] is None
-                    else str(row["source_family_event_nk"]),
-                    source_family_contract_version=None
-                    if row["source_family_contract_version"] is None
-                    else str(row["source_family_contract_version"]),
-                    family_code=None if row["family_code"] is None else str(row["family_code"]),
-                    family_role=None if row["family_role"] is None else str(row["family_role"]),
-                    family_bias=None if row["family_bias"] is None else str(row["family_bias"]),
-                    malf_alignment=None if row["malf_alignment"] is None else str(row["malf_alignment"]),
-                    malf_phase_bucket=None
-                    if row["malf_phase_bucket"] is None
-                    else str(row["malf_phase_bucket"]),
-                    family_source_context_fingerprint=None
-                    if row["family_source_context_fingerprint"] is None
-                    else str(row["family_source_context_fingerprint"]),
-                )
-            )
-        return enriched_signals, missing_reference_price_count
-    finally:
-        connection.close()
-
-
-def _load_reference_price(
-    connection: duckdb.DuckDBPyConnection,
-    *,
-    market_price_table: str,
-    instrument: str,
-    signal_date: date,
-    adjust_method: str,
-    allow_same_day_price_fallback: bool,
-) -> tuple[date | None, float | None]:
-    row = connection.execute(
-        f"""
-        SELECT trade_date, close
-        FROM {market_price_table}
-        WHERE code = ?
-          AND adjust_method = ?
-          AND trade_date > ?
-          AND close IS NOT NULL
-        ORDER BY trade_date
-        LIMIT 1
-        """,
-        [instrument, adjust_method, signal_date],
-    ).fetchone()
-    if row is None and allow_same_day_price_fallback:
-        row = connection.execute(
-            f"""
-            SELECT trade_date, close
-            FROM {market_price_table}
-            WHERE code = ?
-              AND adjust_method = ?
-              AND trade_date >= ?
-              AND close IS NOT NULL
-            ORDER BY trade_date
-            LIMIT 1
-            """,
-            [instrument, adjust_method, signal_date],
-        ).fetchone()
-    if row is None:
-        return None, None
-    trade_date_value = row[0]
-    if isinstance(trade_date_value, datetime):
-        normalized_trade_date = trade_date_value.date()
-    else:
-        normalized_trade_date = trade_date_value
-    return normalized_trade_date, float(row[1])
-
-
-def _maybe_materialize(
-    formal_signals: list[PositionFormalSignalInput],
-    *,
+    workspace: WorkspaceRoots,
     policy_id: str,
-    settings: WorkspaceRoots,
-    run_id: str | None,
-) -> PositionMaterializationSummary | None:
-    if not formal_signals:
-        return None
-    return materialize_position_from_formal_signals(
-        formal_signals,
-        policy_id=policy_id,
-        settings=settings,
-        run_id=run_id,
-    )
+    run_id: str,
+    enriched_signals: list[PositionFormalSignalInput],
+    missing_reference_price_count: int,
+    alpha_rows: list[dict[str, object]],
+    resolved_alpha_path: str,
+    resolved_market_base_path: str,
+    resolved_position_path: str,
+    alpha_formal_signal_table: str,
+    market_price_table: str,
+    adjust_method: str,
+    summary_path,
+) -> PositionFormalSignalRunnerSummary:
+    workspace.ensure_directories()
+    position_connection = connect_position_ledger(workspace)
+    try:
+        bootstrap_position_ledger(workspace, connection=position_connection)
+        insert_run_row(
+            position_connection,
+            run_id=run_id,
+            policy_id=policy_id,
+            execution_mode="bounded",
+            bounded_signal_count=len(enriched_signals),
+            source_signal_contract_version=resolve_signal_contract_version(enriched_signals),
+            source_signal_run_id=resolve_signal_run_id(enriched_signals),
+        )
+        counts = _materialize_candidate_scope(
+            connection=position_connection,
+            policy_id=policy_id,
+            run_id=run_id,
+            candidates=build_candidate_inputs(position_connection, enriched_signals, policy_id=policy_id),
+            queue_rows=None,
+        )
+        summary = PositionFormalSignalRunnerSummary(
+            policy_id=policy_id,
+            execution_mode="bounded",
+            position_run_id=run_id,
+            alpha_signal_count=len(alpha_rows),
+            enriched_signal_count=len(enriched_signals),
+            missing_reference_price_count=missing_reference_price_count,
+            candidate_count=counts["candidate_count"],
+            admitted_count=counts["admitted_count"],
+            blocked_count=counts["blocked_count"],
+            risk_budget_count=counts["risk_budget_count"],
+            sizing_count=counts["sizing_count"],
+            family_snapshot_count=counts["family_snapshot_count"],
+            entry_leg_count=counts["entry_leg_count"],
+            exit_plan_count=counts["exit_plan_count"],
+            exit_leg_count=counts["exit_leg_count"],
+            inserted_count=counts["inserted_count"],
+            reused_count=counts["reused_count"],
+            rematerialized_count=counts["rematerialized_count"],
+            queue_enqueued_count=0,
+            queue_claimed_count=0,
+            checkpoint_upserted_count=counts["checkpoint_upserted_count"],
+            alpha_ledger_path=resolved_alpha_path,
+            market_base_path=resolved_market_base_path,
+            position_ledger_path=resolved_position_path,
+            alpha_formal_signal_table=alpha_formal_signal_table,
+            market_price_table=market_price_table,
+            adjust_method=adjust_method,
+        )
+        mark_run_completed(position_connection, run_id=run_id, summary=summary)
+        write_summary(summary, summary_path)
+        return summary
+    except Exception:
+        mark_run_failed(position_connection, run_id=run_id)
+        raise
+    finally:
+        position_connection.close()
 
 
-def _write_summary(
-    summary: PositionFormalSignalRunnerSummary,
-    summary_path: Path | None,
-) -> None:
-    if summary_path is None:
-        return
-    output_path = Path(summary_path)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(
-        json.dumps(summary.as_dict(), ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
+def _run_position_checkpoint_queue_build(
+    *,
+    workspace: WorkspaceRoots,
+    policy_id: str,
+    run_id: str,
+    enriched_signals: list[PositionFormalSignalInput],
+    missing_reference_price_count: int,
+    alpha_rows: list[dict[str, object]],
+    resolved_alpha_path: str,
+    resolved_market_base_path: str,
+    resolved_position_path: str,
+    alpha_formal_signal_table: str,
+    market_price_table: str,
+    adjust_method: str,
+    limit: int,
+    summary_path,
+) -> PositionFormalSignalRunnerSummary:
+    workspace.ensure_directories()
+    position_connection = connect_position_ledger(workspace)
+    try:
+        bootstrap_position_ledger(workspace, connection=position_connection)
+        candidate_inputs = build_candidate_inputs(position_connection, enriched_signals, policy_id=policy_id)
+        insert_run_row(
+            position_connection,
+            run_id=run_id,
+            policy_id=policy_id,
+            execution_mode="checkpoint_queue",
+            bounded_signal_count=len(candidate_inputs),
+            source_signal_contract_version=resolve_signal_contract_version(enriched_signals),
+            source_signal_run_id=resolve_signal_run_id(enriched_signals),
+        )
+        queue_enqueued_count = enqueue_position_dirty_candidates(
+            position_connection,
+            candidates=candidate_inputs,
+            run_id=run_id,
+        )
+        claimed_queue_rows = claim_position_queue_rows(
+            position_connection,
+            run_id=run_id,
+            candidate_nks={candidate.candidate_nk for candidate in candidate_inputs},
+            limit=limit,
+        )
+        candidate_map = {candidate.candidate_nk: candidate for candidate in candidate_inputs}
+        claimed_candidates = [
+            candidate_map[str(queue_row["candidate_nk"])]
+            for queue_row in claimed_queue_rows
+            if str(queue_row["candidate_nk"]) in candidate_map
+        ]
+        counts = _materialize_candidate_scope(
+            connection=position_connection,
+            policy_id=policy_id,
+            run_id=run_id,
+            candidates=claimed_candidates,
+            queue_rows={str(row["candidate_nk"]): row for row in claimed_queue_rows},
+        )
+        summary = PositionFormalSignalRunnerSummary(
+            policy_id=policy_id,
+            execution_mode="checkpoint_queue",
+            position_run_id=run_id,
+            alpha_signal_count=len(alpha_rows),
+            enriched_signal_count=len(enriched_signals),
+            missing_reference_price_count=missing_reference_price_count,
+            candidate_count=counts["candidate_count"],
+            admitted_count=counts["admitted_count"],
+            blocked_count=counts["blocked_count"],
+            risk_budget_count=counts["risk_budget_count"],
+            sizing_count=counts["sizing_count"],
+            family_snapshot_count=counts["family_snapshot_count"],
+            entry_leg_count=counts["entry_leg_count"],
+            exit_plan_count=counts["exit_plan_count"],
+            exit_leg_count=counts["exit_leg_count"],
+            inserted_count=counts["inserted_count"],
+            reused_count=counts["reused_count"],
+            rematerialized_count=counts["rematerialized_count"],
+            queue_enqueued_count=queue_enqueued_count,
+            queue_claimed_count=len(claimed_candidates),
+            checkpoint_upserted_count=counts["checkpoint_upserted_count"],
+            alpha_ledger_path=resolved_alpha_path,
+            market_base_path=resolved_market_base_path,
+            position_ledger_path=resolved_position_path,
+            alpha_formal_signal_table=alpha_formal_signal_table,
+            market_price_table=market_price_table,
+            adjust_method=adjust_method,
+        )
+        mark_run_completed(position_connection, run_id=run_id, summary=summary)
+        write_summary(summary, summary_path)
+        return summary
+    except Exception:
+        mark_run_failed(position_connection, run_id=run_id)
+        raise
+    finally:
+        position_connection.close()
+
+
+def _materialize_candidate_scope(
+    *,
+    connection: duckdb.DuckDBPyConnection,
+    policy_id: str,
+    run_id: str,
+    candidates,
+    queue_rows,
+) -> dict[str, int]:
+    policy_contract = fetch_policy_contract(connection, policy_id)
+    counts = {
+        "candidate_count": 0,
+        "admitted_count": 0,
+        "blocked_count": 0,
+        "risk_budget_count": 0,
+        "sizing_count": 0,
+        "family_snapshot_count": 0,
+        "entry_leg_count": 0,
+        "exit_plan_count": 0,
+        "exit_leg_count": 0,
+        "inserted_count": 0,
+        "reused_count": 0,
+        "rematerialized_count": 0,
+        "checkpoint_upserted_count": 0,
+    }
+    for candidate in candidates:
+        queue_row = None if queue_rows is None else queue_rows.get(candidate.candidate_nk)
+        try:
+            action = resolve_materialization_action(
+                connection,
+                candidate_nk=candidate.candidate_nk,
+                checkpoint_nk=candidate.checkpoint_nk,
+                source_signal_fingerprint=candidate.source_signal_fingerprint,
+            )
+            if action == "rematerialized":
+                delete_position_candidate_scope(connection, candidate_nk=candidate.candidate_nk)
+            if action != "reused":
+                materialize_position_rows(
+                    connection,
+                    [candidate.signal],
+                    policy_id=policy_id,
+                    policy_contract=policy_contract,
+                    default_single_name_cap_weight=0.25,
+                    default_portfolio_cap_weight=0.50,
+                    share_lot_size=100,
+                )
+            candidate_stats = load_candidate_scope_stats(connection, candidate_nk=candidate.candidate_nk)
+            upsert_position_checkpoint(
+                connection,
+                checkpoint_nk=candidate.checkpoint_nk,
+                candidate_nk=candidate.candidate_nk,
+                instrument=candidate.signal.instrument,
+                checkpoint_scope=policy_id,
+                last_signal_nk=candidate.signal.signal_nk,
+                last_reference_trade_date=coerce_date(candidate.signal.reference_trade_date),
+                last_source_signal_fingerprint=candidate.source_signal_fingerprint,
+                last_run_id=run_id,
+            )
+            counts["checkpoint_upserted_count"] += 1
+            insert_run_snapshot_row(
+                connection,
+                run_id=run_id,
+                candidate_nk=candidate.candidate_nk,
+                signal_nk=candidate.signal.signal_nk,
+                reference_trade_date=coerce_date(candidate.signal.reference_trade_date),
+                materialization_action=action,
+                queue_row=queue_row,
+                candidate_status=candidate_stats["candidate_status"],
+                position_action_decision=candidate_stats["position_action_decision"],
+            )
+            if queue_row is not None:
+                mark_position_queue_completed(
+                    connection,
+                    queue_nk=str(queue_row["queue_nk"]),
+                    run_id=run_id,
+                )
+            counts["candidate_count"] += 1
+            counts["risk_budget_count"] += int(candidate_stats["risk_budget_count"])
+            counts["sizing_count"] += int(candidate_stats["sizing_count"])
+            counts["family_snapshot_count"] += int(candidate_stats["family_snapshot_count"])
+            counts["entry_leg_count"] += int(candidate_stats["entry_leg_count"])
+            counts["exit_plan_count"] += int(candidate_stats["exit_plan_count"])
+            counts["exit_leg_count"] += int(candidate_stats["exit_leg_count"])
+            if candidate_stats["candidate_status"] == "admitted":
+                counts["admitted_count"] += 1
+            else:
+                counts["blocked_count"] += 1
+            counts[f"{action}_count"] += 1
+        except Exception:
+            if queue_row is not None:
+                mark_position_queue_failed(
+                    connection,
+                    queue_nk=str(queue_row["queue_nk"]),
+                    run_id=run_id,
+                )
+            raise
+    return counts

@@ -122,7 +122,7 @@ flowchart LR
   - `alpha family` 的实现允许拆分为 `src/mlq/alpha/family_runner.py` 与同目录 helper 模块 `family_shared.py / family_source.py / family_materialization.py`；拆分只服务治理文件长度与职责收敛，外部正式脚本入口、表族契约与 bounded family ledger 语义不得变化。
    - 当前 `alpha` 的正式 bounded producer 入口为 `scripts/alpha/run_alpha_formal_signal_build.py`，只允许从官方触发事实与官方 `filter / structure snapshot` 上游物化 `alpha_formal_signal_run / event / run_event`，默认关闭 `pas_context_snapshot` fallback，不允许夹带 `position` sizing 或 `trade / system` 逻辑。
 7. `position` 负责单标的仓位计划与资金管理。
-   - 当前 `position` 的正式 bounded runner 入口为 `scripts/position/run_position_formal_signal_materialization.py`，只允许消费官方 `alpha formal signal` 与 `market_base.stock_daily_adjusted(adjust_method='none')` 参考价；脚本默认 `adjust_method` 也必须保持为 `none`，不允许回读 `alpha` 内部临时过程。
+  - 当前 `position` 的正式 data-grade runner 入口为 `scripts/position/run_position_formal_signal_materialization.py`，只允许消费官方 `alpha formal signal` 与 `market_base.stock_daily_adjusted(adjust_method='none')` 参考价，正式物化 `position_run / position_work_queue / position_checkpoint / position_run_snapshot` 与既有 candidate/risk/capacity/sizing/entry/exit 表族；脚本默认 `adjust_method` 也必须保持为 `none`，且默认无窗口调用走 queue/checkpoint 续跑，不允许回读 `alpha` 内部临时过程。
    - `position bootstrap` 的实现允许拆分为 `src/mlq/position/bootstrap.py` 与同目录 helper 模块 `position_shared.py / position_bootstrap_schema.py / position_materialization.py`；拆分只服务治理文件长度与职责收敛，对外导出的表名常量、输入/输出数据结构、bootstrap/连接/path 入口与 position materialization 语义不得变化。
 8. `portfolio_plan` 负责组合层计划、组合回测、容量协调。
    - 当前 `portfolio_plan` 的正式 bounded runner 入口为 `scripts/portfolio_plan/run_portfolio_plan_build.py`，只允许消费官方 `position_candidate_audit / position_capacity_snapshot / position_sizing_snapshot`，物化 `portfolio_plan_run / snapshot / run_snapshot`，不允许回读 `alpha` 内部过程，也不允许顺手夹带 `trade / system` 逻辑。
@@ -139,7 +139,7 @@ flowchart LR
 1. `malf -> structure -> filter -> alpha` 默认使用 `adjust_method = backward`
 2. `position -> trade` 默认使用 `adjust_method = none`
 3. `adjust_method = forward` 当前只作为研究与展示保留，不作为正式执行口径
-4. 当前最新生效结论锚点已推进到 `49-position-batched-entry-trim-and-partial-exit-contract-conclusion-20260414.md`；它已把 `position` 提升为带 batched entry / trim / partial-exit leg-aware 合同的正式计划账本，并把当前待施工卡前移到 `50-position-data-grade-checkpoint-and-replay-runner-card-20260413.md`。其中 `29-49` 已完成并生效，`50 -> 51 -> 52 -> 53 -> 54 -> 55` 成为进入 `trade` 前的前置卡组，`100-105` 退回到通过 `55` 之后才允许恢复的 trade/system 卡组。
+4. 当前最新生效结论锚点已推进到 `50-position-data-grade-checkpoint-and-replay-runner-conclusion-20260414.md`；它已把 `position` 提升为带 `work_queue / checkpoint / replay / rematerialize` 的正式 data-grade 计划账本，并把当前待施工卡前移到 `51-pre-portfolio-plan-position-acceptance-gate-card-20260413.md`。其中 `29-50` 已完成并生效，`51 -> 52 -> 53 -> 54 -> 55` 成为进入 `trade` 前的前置卡组，`100-105` 退回到通过 `55` 之后才允许恢复的 trade/system 卡组。
 5. 当前主线系统级路线图必须以 `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 为准；该文档已把 `structure -> filter -> alpha -> position -> portfolio_plan` 识别为当前后半部最薄弱链段，并把 `43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55` 固定为进入 `trade` 前的前置卡组，不允许再仅凭旧宽表口径判断模块成熟度。
 
 ## 5. 历史账本原则

@@ -4,16 +4,29 @@
 `日期`：`2026-04-13`
 `状态`：`待施工`
 
-## 问题
+## 需求
 
-- 只有在 `position` 达到与上半部一致的 data-grade 质量后，主线才有资格继续进入 `portfolio_plan / trade / system`。
+- 问题：
+  只有在 `position` 达到与上半部一致的 data-grade 质量后，主线才有资格继续进入 `portfolio_plan / trade / system`。
+- 目标结果：
+  汇总 `47-50` 的正式结论与证据，裁决 `position` 是否已达到进入 `portfolio_plan` 前的 A / A-acceptance 门槛。
+- 为什么现在做：
+  `50` 已把 `position` 升级为带 `work_queue / checkpoint / replay / rematerialize` 的正式 runner，如果不先做 acceptance gate，就无法合法推进 `52-55`。
 
-## 设计依据
+## 设计输入
 
-- [15-pre-portfolio-plan-position-acceptance-gate-charter-20260413.md](/H:/lifespan-0.01/docs/01-design/modules/system/15-pre-portfolio-plan-position-acceptance-gate-charter-20260413.md)
-- [15-pre-portfolio-plan-position-acceptance-gate-spec-20260413.md](/H:/lifespan-0.01/docs/02-spec/modules/system/15-pre-portfolio-plan-position-acceptance-gate-spec-20260413.md)
+- 设计文档：
+  `docs/01-design/modules/system/15-pre-portfolio-plan-position-acceptance-gate-charter-20260413.md`
+- 设计文档链接：
+  [15-pre-portfolio-plan-position-acceptance-gate-charter-20260413.md](/H:/lifespan-0.01/docs/01-design/modules/system/15-pre-portfolio-plan-position-acceptance-gate-charter-20260413.md)
+- 规格文档：
+  `docs/02-spec/modules/system/15-pre-portfolio-plan-position-acceptance-gate-spec-20260413.md`
+- 规格文档链接：
+  [15-pre-portfolio-plan-position-acceptance-gate-spec-20260413.md](/H:/lifespan-0.01/docs/02-spec/modules/system/15-pre-portfolio-plan-position-acceptance-gate-spec-20260413.md)
+- 上游结论：
+  [50-position-data-grade-checkpoint-and-replay-runner-conclusion-20260414.md](/H:/lifespan-0.01/docs/03-execution/50-position-data-grade-checkpoint-and-replay-runner-conclusion-20260414.md)
 
-## 任务
+## 任务分解
 
 1. 汇总 `47-50` 的结论。
 2. 判断 `position` 是否已经达到与 `data -> alpha` 同级的正式质量。
@@ -21,18 +34,12 @@
 
 ## 历史账本约束
 
-1. `实体锚点`
-   - 以 `position` 的正式候选、计划腿和 checkpoint 实体为准。
-2. `业务自然键`
-   - acceptance readout 不得用 `run_id` 代替 position 自然键。
-3. `批量建仓`
-   - 必须验证历史回灌可复现。
-4. `增量更新`
-   - 必须验证增量挂脏与局部重算可复现。
-5. `断点续跑`
-   - 必须验证 resume 有效。
-6. `审计账本`
-   - 必须形成 evidence / record / conclusion。
+- 实体锚点：`position` 的正式候选、计划腿和 checkpoint 实体
+- 业务自然键：`candidate_nk / checkpoint_nk / entry_leg_nk / exit_plan_nk / exit_leg_nk`
+- 批量建仓：必须验证历史回灌可复现
+- 增量更新：必须验证增量挂脏与局部重算可复现
+- 断点续跑：必须验证 `work_queue / checkpoint / replay / resume` 有效
+- 审计账本：必须形成 evidence / record / conclusion，并以 `position_run / position_run_snapshot` 与 acceptance readout 为准
 
 ## A 级判定表
 

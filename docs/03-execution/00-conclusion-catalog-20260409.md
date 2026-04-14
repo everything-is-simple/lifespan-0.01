@@ -3,7 +3,7 @@
 `日期：2026-04-09`
 `状态：生效`
 
-当前最新生效结论锚点：`49-position-batched-entry-trim-and-partial-exit-contract-conclusion-20260414.md`
+当前最新生效结论锚点：`51-pre-portfolio-plan-position-acceptance-gate-conclusion-20260414.md`
 
 ## 正式结论目录
 
@@ -56,6 +56,8 @@
 47. `47-position-malf-context-driven-sizing-and-batch-contract-conclusion-20260414.md`
 48. `48-position-risk-budget-and-capacity-ledger-hardening-conclusion-20260414.md`
 49. `49-position-batched-entry-trim-and-partial-exit-contract-conclusion-20260414.md`
+50. `50-position-data-grade-checkpoint-and-replay-runner-conclusion-20260414.md`
+51. `51-pre-portfolio-plan-position-acceptance-gate-conclusion-20260414.md`
 100. `100-trade-signal-anchor-contract-freeze-conclusion-20260411.md`
 101. `101-position-entry-t-plus-1-open-reference-price-correction-conclusion-20260411.md`
 102. `102-trade-exit-pnl-ledger-bootstrap-conclusion-20260411.md`
@@ -64,10 +66,10 @@
 105. `105-system-runtime-orchestration-bootstrap-conclusion-20260411.md`
 
 ## 主线状态
-1. `49` 已成为当前最新生效结论锚点。
-2. `49` 已把 `position` 中的 batched entry / trim / partial-exit leg-aware 合同升级为正式账本，并把当前待施工卡前移到 `50`。
-3. `29-49` 已完成 canonical malf downstream、mainline ledger standardization、alpha detector、alpha family、quality gate、official replay hardening、alpha producer hardening、pre-position acceptance、position contract freeze、risk/capacity ledger hardening与 batched leg contract 收口。
-4. 当前待施工卡已前移到 `50`；只有 `55` 接受后，才允许恢复 `100 -> 105` 的 trade/system 卡组。
+1. `51` 已成为当前最新生效结论锚点。
+2. `51` 已正式接受 `position` 进入 `portfolio_plan` 前的 A 级 gate，并把当前待施工卡前移到 `52`。
+3. `29-51` 已完成 canonical malf downstream、mainline ledger standardization、alpha detector、alpha family、quality gate、official replay hardening、alpha producer hardening、pre-position acceptance、position contract freeze、risk/capacity ledger hardening、batched leg contract、position data-grade runner 与 pre-portfolio-plan position acceptance gate 收口。
+4. 当前待施工卡已前移到 `52`；只有 `55` 接受后，才允许恢复 `100 -> 105` 的 trade/system 卡组。
 
 ## 图示
 ```mermaid

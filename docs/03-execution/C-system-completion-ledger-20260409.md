@@ -2,9 +2,9 @@
 `日期：2026-04-09`
 `状态：持续更新`
 
-1. 当前下一锤：`50-position-data-grade-checkpoint-and-replay-runner-card-20260413.md`
-2. 当前待施工卡：`50-position-data-grade-checkpoint-and-replay-runner-card-20260413.md`
-3. 正式主线剩余卡：`12`
+1. 当前下一锤：`52-portfolio-plan-official-ledger-family-and-natural-key-freeze-card-20260413.md`
+2. 当前待施工卡：`52-portfolio-plan-official-ledger-family-and-natural-key-freeze-card-20260413.md`
+3. 正式主线剩余卡：`10`
 4. 可选 Sidecar 剩余卡：`0`
 5. backlog：`0`
 
@@ -29,12 +29,14 @@
 18. `position MALF sizing / batch contract freeze` 卡 `47`
 19. `position risk budget / capacity ledger hardening` 卡 `48`
 20. `position batched entry / trim / partial-exit contract` 卡 `49`
+21. `position data-grade checkpoint / replay runner` 卡 `50`
+22. `pre-portfolio-plan position acceptance gate` 卡 `51`
 
 ## 当前阶段
-1. 最新生效结论锚点已推进到 `49-position-batched-entry-trim-and-partial-exit-contract-conclusion-20260414.md`。
-2. `49` 已完成对 `position` batched entry / trim / partial-exit 合同的正式硬化，并把当前待施工卡前移到 `50`。
-3. 当前主线已从 `49 position batched entry / trim / partial-exit contract` 前移到 `50 position data-grade checkpoint / replay runner`。
-4. `50 -> 55` 现在可以继续推进；`100-105` 仍必须等待 `55` 接受后再恢复。
+1. 最新生效结论锚点已推进到 `51-pre-portfolio-plan-position-acceptance-gate-conclusion-20260414.md`。
+2. `51` 已完成对 `position` 进入 `portfolio_plan` 前的 acceptance gate 裁决，并把当前待施工卡前移到 `52`。
+3. 当前主线已从 `51 pre-portfolio-plan position acceptance gate` 前移到 `52 portfolio_plan official ledger family / natural key freeze`。
+4. `52 -> 55` 现在可以继续推进；`100-105` 仍必须等待 `55` 接受后再恢复。
 
 ## 完成阶段图
 ```mermaid

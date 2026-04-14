@@ -10,9 +10,17 @@ import duckdb
 
 DEFAULT_POSITION_CONTRACT_VERSION: Final[str] = "position-malf-batched-entry-exit-v2"
 
+POSITION_RUN_TABLE: Final[str] = "position_run"
+POSITION_WORK_QUEUE_TABLE: Final[str] = "position_work_queue"
+POSITION_CHECKPOINT_TABLE: Final[str] = "position_checkpoint"
+POSITION_RUN_SNAPSHOT_TABLE: Final[str] = "position_run_snapshot"
+
 
 POSITION_LEDGER_TABLE_NAMES: Final[tuple[str, ...]] = (
-    "position_run",
+    POSITION_RUN_TABLE,
+    POSITION_WORK_QUEUE_TABLE,
+    POSITION_CHECKPOINT_TABLE,
+    POSITION_RUN_SNAPSHOT_TABLE,
     "position_policy_registry",
     "position_candidate_audit",
     "position_risk_budget_snapshot",
@@ -27,15 +35,76 @@ POSITION_LEDGER_TABLE_NAMES: Final[tuple[str, ...]] = (
 
 
 POSITION_LEDGER_DDL: Final[dict[str, str]] = {
-    "position_run": """
+    POSITION_RUN_TABLE: """
         CREATE TABLE IF NOT EXISTS position_run (
             run_id TEXT PRIMARY KEY,
+            runner_name TEXT,
+            runner_version TEXT,
             run_status TEXT NOT NULL,
+            execution_mode TEXT,
+            policy_id TEXT,
+            bounded_signal_count BIGINT NOT NULL DEFAULT 0,
             source_signal_contract_version TEXT,
             source_signal_run_id TEXT,
             run_started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             run_completed_at TIMESTAMP,
-            notes TEXT
+            inserted_count BIGINT NOT NULL DEFAULT 0,
+            reused_count BIGINT NOT NULL DEFAULT 0,
+            rematerialized_count BIGINT NOT NULL DEFAULT 0,
+            queue_enqueued_count BIGINT NOT NULL DEFAULT 0,
+            queue_claimed_count BIGINT NOT NULL DEFAULT 0,
+            checkpoint_upserted_count BIGINT NOT NULL DEFAULT 0,
+            notes TEXT,
+            summary_json TEXT
+        )
+    """,
+    POSITION_WORK_QUEUE_TABLE: """
+        CREATE TABLE IF NOT EXISTS position_work_queue (
+            queue_nk TEXT PRIMARY KEY,
+            candidate_nk TEXT NOT NULL,
+            checkpoint_nk TEXT NOT NULL,
+            signal_nk TEXT NOT NULL,
+            instrument TEXT NOT NULL,
+            reference_trade_date DATE NOT NULL,
+            source_signal_fingerprint TEXT NOT NULL,
+            queue_reason TEXT NOT NULL,
+            queue_status TEXT NOT NULL,
+            queued_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            claimed_at TIMESTAMP,
+            completed_at TIMESTAMP,
+            first_seen_run_id TEXT,
+            last_claimed_run_id TEXT,
+            last_materialized_run_id TEXT,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """,
+    POSITION_CHECKPOINT_TABLE: """
+        CREATE TABLE IF NOT EXISTS position_checkpoint (
+            checkpoint_nk TEXT PRIMARY KEY,
+            candidate_nk TEXT NOT NULL,
+            instrument TEXT NOT NULL,
+            checkpoint_scope TEXT NOT NULL,
+            last_signal_nk TEXT NOT NULL,
+            last_reference_trade_date DATE NOT NULL,
+            last_source_signal_fingerprint TEXT NOT NULL,
+            last_completed_at TIMESTAMP,
+            last_run_id TEXT,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """,
+    POSITION_RUN_SNAPSHOT_TABLE: """
+        CREATE TABLE IF NOT EXISTS position_run_snapshot (
+            run_id TEXT NOT NULL,
+            candidate_nk TEXT NOT NULL,
+            signal_nk TEXT NOT NULL,
+            reference_trade_date DATE NOT NULL,
+            materialization_action TEXT NOT NULL,
+            queue_nk TEXT,
+            queue_reason TEXT,
+            candidate_status TEXT,
+            position_action_decision TEXT,
+            recorded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (run_id, candidate_nk)
         )
     """,
     "position_policy_registry": """
@@ -242,6 +311,20 @@ POSITION_LEDGER_DDL: Final[dict[str, str]] = {
 
 
 POSITION_LEDGER_EVOLUTION_DDL: Final[dict[str, tuple[str, ...]]] = {
+    POSITION_RUN_TABLE: (
+        "ALTER TABLE position_run ADD COLUMN IF NOT EXISTS runner_name TEXT",
+        "ALTER TABLE position_run ADD COLUMN IF NOT EXISTS runner_version TEXT",
+        "ALTER TABLE position_run ADD COLUMN IF NOT EXISTS execution_mode TEXT",
+        "ALTER TABLE position_run ADD COLUMN IF NOT EXISTS policy_id TEXT",
+        "ALTER TABLE position_run ADD COLUMN IF NOT EXISTS bounded_signal_count BIGINT DEFAULT 0",
+        "ALTER TABLE position_run ADD COLUMN IF NOT EXISTS inserted_count BIGINT DEFAULT 0",
+        "ALTER TABLE position_run ADD COLUMN IF NOT EXISTS reused_count BIGINT DEFAULT 0",
+        "ALTER TABLE position_run ADD COLUMN IF NOT EXISTS rematerialized_count BIGINT DEFAULT 0",
+        "ALTER TABLE position_run ADD COLUMN IF NOT EXISTS queue_enqueued_count BIGINT DEFAULT 0",
+        "ALTER TABLE position_run ADD COLUMN IF NOT EXISTS queue_claimed_count BIGINT DEFAULT 0",
+        "ALTER TABLE position_run ADD COLUMN IF NOT EXISTS checkpoint_upserted_count BIGINT DEFAULT 0",
+        "ALTER TABLE position_run ADD COLUMN IF NOT EXISTS summary_json TEXT",
+    ),
     "position_policy_registry": (
         f"ALTER TABLE position_policy_registry ADD COLUMN IF NOT EXISTS position_contract_version TEXT DEFAULT '{DEFAULT_POSITION_CONTRACT_VERSION}'",
         "ALTER TABLE position_policy_registry ADD COLUMN IF NOT EXISTS entry_schedule_stage_default TEXT DEFAULT 't+1'",

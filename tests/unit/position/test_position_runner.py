@@ -8,7 +8,14 @@ from pathlib import Path
 import duckdb
 
 from mlq.core.paths import default_settings
-from mlq.position import position_ledger_path, run_position_formal_signal_materialization
+from mlq.position import (
+    POSITION_CHECKPOINT_TABLE,
+    POSITION_RUN_SNAPSHOT_TABLE,
+    POSITION_RUN_TABLE,
+    POSITION_WORK_QUEUE_TABLE,
+    position_ledger_path,
+    run_position_formal_signal_materialization,
+)
 
 
 def _clear_workspace_env(monkeypatch) -> None:
@@ -157,10 +164,14 @@ def test_run_position_formal_signal_materialization_reads_official_alpha_and_enr
     )
 
     assert summary.position_run_id == "position-runner-test-001"
+    assert summary.execution_mode == "bounded"
     assert summary.alpha_signal_count == 1
     assert summary.enriched_signal_count == 1
     assert summary.missing_reference_price_count == 0
     assert summary.candidate_count == 1
+    assert summary.inserted_count == 1
+    assert summary.reused_count == 0
+    assert summary.rematerialized_count == 0
     assert summary.risk_budget_count == 1
     assert summary.entry_leg_count == 3
     assert summary.exit_plan_count == 0
@@ -263,6 +274,7 @@ def test_run_position_formal_signal_materialization_accepts_family_aware_alpha_c
     )
 
     assert summary.position_run_id == "position-runner-test-family-aware-001"
+    assert summary.execution_mode == "bounded"
     assert summary.alpha_signal_count == 1
     assert summary.enriched_signal_count == 1
     assert summary.risk_budget_count == 1
@@ -438,6 +450,7 @@ def test_run_position_formal_signal_materialization_accepts_legacy_alpha_column_
     )
 
     assert summary.position_run_id == "position-runner-test-003"
+    assert summary.execution_mode == "checkpoint_queue"
     assert summary.alpha_signal_count == 1
     assert summary.enriched_signal_count == 1
     assert summary.risk_budget_count == 1
@@ -455,3 +468,245 @@ def test_run_position_formal_signal_materialization_accepts_legacy_alpha_column_
         conn.close()
 
     assert candidate_row == ("sig-301", "000003.SZ", "alpha-run-legacy-001")
+
+
+def test_run_position_formal_signal_materialization_checkpoint_queue_bootstraps_queue_and_checkpoint(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+
+    _seed_alpha_formal_signal_table(
+        settings.databases.alpha,
+        [
+            (
+                "sig-401",
+                "000001.SZ",
+                "2026-04-08",
+                "2026-04-08",
+                "PAS",
+                "bof",
+                "BOF",
+                "admitted",
+                True,
+                "BULL_MAINSTREAM",
+                1,
+                4,
+                "evt-401",
+                "alpha-formal-signal-v1",
+            )
+        ],
+    )
+    _seed_market_base_prices(
+        settings.databases.market_base,
+        [("000001.SZ", "2026-04-09", "none", 10.5)],
+    )
+
+    summary = run_position_formal_signal_materialization(
+        policy_id="fixed_notional_full_exit_v1",
+        capital_base_value=1_000_000.0,
+        settings=settings,
+        limit=10,
+        run_id="position-runner-queue-001",
+    )
+
+    assert summary.execution_mode == "checkpoint_queue"
+    assert summary.inserted_count == 1
+    assert summary.queue_enqueued_count == 1
+    assert summary.queue_claimed_count == 1
+    assert summary.checkpoint_upserted_count == 1
+
+    conn = duckdb.connect(str(position_ledger_path(settings)), read_only=True)
+    try:
+        queue_row = conn.execute(
+            f"""
+            SELECT queue_status, queue_reason
+            FROM {POSITION_WORK_QUEUE_TABLE}
+            WHERE signal_nk = 'sig-401'
+            """
+        ).fetchone()
+        checkpoint_row = conn.execute(
+            f"""
+            SELECT checkpoint_scope, last_signal_nk
+            FROM {POSITION_CHECKPOINT_TABLE}
+            WHERE candidate_nk = 'sig-401|fixed_notional_full_exit_v1|2026-04-09'
+            """
+        ).fetchone()
+        run_snapshot_row = conn.execute(
+            f"""
+            SELECT materialization_action, candidate_status
+            FROM {POSITION_RUN_SNAPSHOT_TABLE}
+            WHERE run_id = 'position-runner-queue-001'
+              AND candidate_nk = 'sig-401|fixed_notional_full_exit_v1|2026-04-09'
+            """
+        ).fetchone()
+        run_row = conn.execute(
+            f"""
+            SELECT execution_mode, inserted_count, queue_enqueued_count, checkpoint_upserted_count
+            FROM {POSITION_RUN_TABLE}
+            WHERE run_id = 'position-runner-queue-001'
+            """
+        ).fetchone()
+    finally:
+        conn.close()
+
+    assert queue_row == ("completed", "bootstrap_missing_checkpoint")
+    assert checkpoint_row == ("fixed_notional_full_exit_v1", "sig-401")
+    assert run_snapshot_row == ("inserted", "admitted")
+    assert run_row == ("checkpoint_queue", 1, 1, 1)
+
+
+def test_run_position_formal_signal_materialization_reuses_unchanged_candidate_on_bounded_replay(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+
+    _seed_alpha_formal_signal_table(
+        settings.databases.alpha,
+        [
+            (
+                "sig-402",
+                "000001.SZ",
+                "2026-04-08",
+                "2026-04-08",
+                "PAS",
+                "bof",
+                "BOF",
+                "admitted",
+                True,
+                "BULL_MAINSTREAM",
+                1,
+                4,
+                "evt-402",
+                "alpha-formal-signal-v1",
+            )
+        ],
+    )
+    _seed_market_base_prices(
+        settings.databases.market_base,
+        [("000001.SZ", "2026-04-09", "none", 10.5)],
+    )
+
+    first_summary = run_position_formal_signal_materialization(
+        policy_id="fixed_notional_full_exit_v1",
+        capital_base_value=1_000_000.0,
+        settings=settings,
+        signal_start_date="2026-04-08",
+        signal_end_date="2026-04-08",
+        limit=10,
+        run_id="position-runner-bounded-001",
+    )
+    second_summary = run_position_formal_signal_materialization(
+        policy_id="fixed_notional_full_exit_v1",
+        capital_base_value=1_000_000.0,
+        settings=settings,
+        signal_start_date="2026-04-08",
+        signal_end_date="2026-04-08",
+        limit=10,
+        run_id="position-runner-bounded-002",
+    )
+
+    assert first_summary.inserted_count == 1
+    assert second_summary.reused_count == 1
+    assert second_summary.inserted_count == 0
+    assert second_summary.rematerialized_count == 0
+
+
+def test_run_position_formal_signal_materialization_rematerializes_when_reference_price_changes(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+
+    _seed_alpha_formal_signal_table(
+        settings.databases.alpha,
+        [
+            (
+                "sig-403",
+                "000001.SZ",
+                "2026-04-08",
+                "2026-04-08",
+                "PAS",
+                "bof",
+                "BOF",
+                "admitted",
+                True,
+                "BULL_MAINSTREAM",
+                1,
+                4,
+                "evt-403",
+                "alpha-formal-signal-v1",
+            )
+        ],
+    )
+    _seed_market_base_prices(
+        settings.databases.market_base,
+        [("000001.SZ", "2026-04-09", "none", 10.5)],
+    )
+
+    run_position_formal_signal_materialization(
+        policy_id="fixed_notional_full_exit_v1",
+        capital_base_value=1_000_000.0,
+        settings=settings,
+        signal_start_date="2026-04-08",
+        signal_end_date="2026-04-08",
+        limit=10,
+        run_id="position-runner-remat-001",
+    )
+
+    conn = duckdb.connect(str(settings.databases.market_base))
+    try:
+        conn.execute(
+            """
+            UPDATE stock_daily_adjusted
+            SET close = 11.0
+            WHERE code = '000001.SZ'
+              AND trade_date = '2026-04-09'
+              AND adjust_method = 'none'
+            """
+        )
+    finally:
+        conn.close()
+
+    summary = run_position_formal_signal_materialization(
+        policy_id="fixed_notional_full_exit_v1",
+        capital_base_value=1_000_000.0,
+        settings=settings,
+        signal_start_date="2026-04-08",
+        signal_end_date="2026-04-08",
+        limit=10,
+        run_id="position-runner-remat-002",
+    )
+
+    assert summary.rematerialized_count == 1
+    assert summary.reused_count == 0
+
+    conn = duckdb.connect(str(position_ledger_path(settings)), read_only=True)
+    try:
+        sizing_row = conn.execute(
+            """
+            SELECT reference_price, target_shares
+            FROM position_sizing_snapshot
+            WHERE candidate_nk = 'sig-403|fixed_notional_full_exit_v1|2026-04-09'
+            """
+        ).fetchone()
+        run_snapshot_row = conn.execute(
+            f"""
+            SELECT materialization_action
+            FROM {POSITION_RUN_SNAPSHOT_TABLE}
+            WHERE run_id = 'position-runner-remat-002'
+              AND candidate_nk = 'sig-403|fixed_notional_full_exit_v1|2026-04-09'
+            """
+        ).fetchone()
+    finally:
+        conn.close()
+
+    assert sizing_row == (11.0, 17000)
+    assert run_snapshot_row == ("rematerialized",)
