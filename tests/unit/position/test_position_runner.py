@@ -283,7 +283,7 @@ def test_run_position_formal_signal_materialization_accepts_family_aware_alpha_c
     assert candidate_row == (
         "admitted",
         "alpha-formal-run-111",
-        "position-malf-sizing-batch-v1",
+        "position-malf-batched-entry-exit-v2",
     )
 
 

@@ -127,7 +127,7 @@ flowchart LR
   - `malf -> structure -> filter -> alpha` 默认消费 `adjust_method='backward'`
   - `position -> trade` 默认消费 `adjust_method='none'`
   - `forward` 当前只作研究与展示保留
-- 当前最新生效结论锚点已推进到 `47-position-malf-context-driven-sizing-and-batch-contract-conclusion-20260414.md`：`47` 已正式冻结 `position` 的 MALF context sizing / batch contract；当前待施工卡前移到 `48-position-risk-budget-and-capacity-ledger-hardening-card-20260413.md`
+- 当前最新生效结论锚点已推进到 `49-position-batched-entry-trim-and-partial-exit-contract-conclusion-20260414.md`：`49` 已正式冻结 `position` 的 batched entry / trim / partial-exit leg-aware 合同；当前待施工卡前移到 `50-position-data-grade-checkpoint-and-replay-runner-card-20260413.md`
 - `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 现已升级为后半部施工的正式指挥蓝图：以 `28` 的 `checkpoint + dirty/work queue + replay/resume` 为统一基线，先完成 `43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55` 的 pre-trade upstream 前置卡组，把 `data -> portfolio_plan` 打造成全 A baseline，再恢复 `100 -> 105`，并以纵向模块档案显式记录六条历史账本约束
 - `55` 通过后恢复的 `100 -> 105` 当前正式口径已进一步写实：`100` 冻结 `signal_low / last_higher_low` anchor 合同，`102` 补齐 `trade_exit_ledger / trade_realized_pnl_ledger`，`103` 把 `trade` 升级为带 `work_queue / checkpoint / replay / freshness` 的 progression runner，`105` 再把 `system` 从 bounded readout 升级为只读消费官方 child ledger 的 orchestration / freeze 入口
 - `txt -> raw_market -> market_base` 继续保留为正式 fallback

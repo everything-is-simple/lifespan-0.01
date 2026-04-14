@@ -48,6 +48,7 @@
 46. `46-pre-position-upstream-acceptance-gate-evidence-20260413.md`
 47. `47-position-malf-context-driven-sizing-and-batch-contract-evidence-20260414.md`
 48. `48-position-risk-budget-and-capacity-ledger-hardening-evidence-20260414.md`
+49. `49-position-batched-entry-trim-and-partial-exit-contract-evidence-20260414.md`
 100. `100-trade-signal-anchor-contract-freeze-evidence-20260411.md`
 101. `101-position-entry-t-plus-1-open-reference-price-correction-evidence-20260411.md`
 102. `102-trade-exit-pnl-ledger-bootstrap-evidence-20260411.md`

@@ -17,7 +17,7 @@ from .position_contract_logic import (
     build_candidate_nk,
     build_capacity_snapshot_nk,
     build_entry_leg_plans,
-    build_exit_plan,
+    build_exit_plan_bundles,
     build_family_snapshot_nk,
     build_risk_budget_snapshot_nk,
     build_sizing_snapshot_nk,
@@ -251,7 +251,7 @@ def materialize_position_rows(
             final_allowed_position_weight=final_allowed_position_weight,
             share_lot_size=share_lot_size,
         )
-        exit_plan, exit_legs = build_exit_plan(
+        exit_plan_bundles = build_exit_plan_bundles(
             signal=signal,
             candidate_nk=candidate_nk,
             policy_contract=policy_contract,
@@ -260,6 +260,7 @@ def materialize_position_rows(
             final_allowed_position_weight=final_allowed_position_weight,
             required_reduction_weight=required_reduction_weight,
             target_shares=target_shares,
+            share_lot_size=share_lot_size,
         )
 
         _insert_position_candidate_audit(
@@ -301,7 +302,7 @@ def materialize_position_rows(
             sizing_schedule_stage=sizing_schedule_stage,
             sizing_schedule_lag_days=sizing_schedule_lag_days,
             entry_leg_count=len(entry_leg_plans),
-            exit_plan_required=exit_plan is not None,
+            exit_plan_required=bool(exit_plan_bundles),
             target_weight=target_weight,
             target_notional=target_notional,
             target_shares=target_shares,
@@ -329,23 +330,23 @@ def materialize_position_rows(
             target_shares_before_lot=target_shares_before_lot,
             final_target_shares=target_shares,
         )
-        if exit_plan is not None:
+        for exit_plan_bundle in exit_plan_bundles:
             _insert_position_exit_plan(
                 connection,
                 candidate_nk=candidate_nk,
                 policy_id=policy_id,
                 policy_contract=policy_contract,
-                exit_plan=exit_plan,
+                exit_plan=exit_plan_bundle.exit_plan,
             )
             exit_plan_count += 1
-        for exit_leg in exit_legs:
-            _insert_position_exit_leg(
-                connection,
-                policy_contract=policy_contract,
-                exit_plan_nk=exit_plan.exit_plan_nk if exit_plan is not None else "",
-                exit_leg=exit_leg,
-            )
-            exit_leg_count += 1
+            for exit_leg in exit_plan_bundle.exit_legs:
+                _insert_position_exit_leg(
+                    connection,
+                    policy_contract=policy_contract,
+                    exit_plan_nk=exit_plan_bundle.exit_plan.exit_plan_nk,
+                    exit_leg=exit_leg,
+                )
+                exit_leg_count += 1
 
         entry_leg_count += len(entry_leg_plans)
         risk_budget_count += 1
@@ -506,7 +507,7 @@ def _insert_position_sizing_snapshot(
     sizing_snapshot_nk = build_sizing_snapshot_nk(
         candidate_nk,
         sizing_leg_role=sizing_leg_role,
-        policy_version=policy_contract.policy_version,
+        contract_version=policy_contract.position_contract_version,
     )
     _insert_once(
         connection,
@@ -674,13 +675,14 @@ def _insert_position_exit_leg(
         key_value=exit_leg.exit_leg_nk,
         columns=(
             "exit_leg_nk", "exit_plan_nk", "exit_leg_seq", "leg_role", "schedule_stage",
-            "schedule_lag_days", "exit_reason_code", "target_weight_after_leg",
+            "schedule_lag_days", "leg_gate_reason", "exit_reason_code", "target_weight_after_leg",
             "target_qty_after", "is_partial_exit", "fallback_to_full_exit",
             "plan_contract_version",
         ),
         values=(
             exit_leg.exit_leg_nk, exit_plan_nk, exit_leg.exit_leg_seq, exit_leg.leg_role,
-            exit_leg.schedule_stage, exit_leg.schedule_lag_days, exit_leg.exit_reason_code,
+            exit_leg.schedule_stage, exit_leg.schedule_lag_days, exit_leg.leg_gate_reason,
+            exit_leg.exit_reason_code,
             exit_leg.target_weight_after_leg, exit_leg.target_qty_after,
             exit_leg.is_partial_exit, exit_leg.fallback_to_full_exit,
             policy_contract.position_contract_version,

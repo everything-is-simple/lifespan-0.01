@@ -156,11 +156,20 @@ class PositionExitLeg:
     leg_role: str
     schedule_stage: str
     schedule_lag_days: int
+    leg_gate_reason: str | None
     exit_reason_code: str
     target_weight_after_leg: float
     target_qty_after: int
     is_partial_exit: bool
     fallback_to_full_exit: bool
+
+
+@dataclass(frozen=True)
+class PositionExitPlanBundle:
+    """把一条退出计划头与其退出腿绑定成可落表的正式 bundle。"""
+
+    exit_plan: PositionExitPlan
+    exit_legs: tuple[PositionExitLeg, ...]
 
 
 def resolve_candidate_status(signal: PositionFormalSignalInput) -> str:
@@ -199,9 +208,9 @@ def build_sizing_snapshot_nk(
     candidate_nk: str,
     *,
     sizing_leg_role: str,
-    policy_version: str,
+    contract_version: str,
 ) -> str:
-    return f"{candidate_nk}|{sizing_leg_role}|{policy_version}"
+    return f"{candidate_nk}|{sizing_leg_role}|{contract_version}"
 
 
 def build_entry_leg_nk(
@@ -228,8 +237,14 @@ def build_exit_plan_nk(
     return f"{candidate_nk}|{plan_role}|{schedule_stage}|{contract_version}"
 
 
-def build_exit_leg_nk(exit_plan_nk: str, *, exit_leg_seq: int) -> str:
-    return f"{exit_plan_nk}|{exit_leg_seq}"
+def build_exit_leg_nk(
+    candidate_nk: str,
+    *,
+    leg_role: str,
+    schedule_stage: str,
+    contract_version: str,
+) -> str:
+    return f"{candidate_nk}|{leg_role}|{schedule_stage}|{contract_version}"
 
 
 def resolve_context_contract(signal: PositionFormalSignalInput) -> PositionContextContract:
@@ -505,7 +520,7 @@ def build_entry_leg_plans(
     return tuple(plans)
 
 
-def build_exit_plan(
+def build_exit_plan_bundles(
     *,
     signal: PositionFormalSignalInput,
     candidate_nk: str,
@@ -515,7 +530,9 @@ def build_exit_plan(
     final_allowed_position_weight: float,
     required_reduction_weight: float,
     target_shares: int,
-) -> tuple[PositionExitPlan | None, tuple[PositionExitLeg, ...]]:
+    share_lot_size: int,
+) -> tuple[PositionExitPlanBundle, ...]:
+    bundles: list[PositionExitPlanBundle] = []
     if position_action_decision == "trim_to_context_cap":
         exit_plan = PositionExitPlan(
             exit_plan_nk=build_exit_plan_nk(
@@ -534,18 +551,105 @@ def build_exit_plan(
             hard_close_guard_active=False,
         )
         exit_leg = PositionExitLeg(
-            exit_leg_nk=build_exit_leg_nk(exit_plan.exit_plan_nk, exit_leg_seq=1),
+            exit_leg_nk=build_exit_leg_nk(
+                candidate_nk,
+                leg_role="trim",
+                schedule_stage=policy_contract.trim_schedule_stage_default,
+                contract_version=policy_contract.position_contract_version,
+            ),
             exit_leg_seq=1,
-            leg_role="protective_trim",
+            leg_role="trim",
             schedule_stage=policy_contract.trim_schedule_stage_default,
             schedule_lag_days=policy_contract.trim_schedule_lag_days_default,
+            leg_gate_reason="required_reduction_weight_positive",
             exit_reason_code="required_reduction_weight_positive",
             target_weight_after_leg=final_allowed_position_weight,
             target_qty_after=target_shares,
             is_partial_exit=True,
             fallback_to_full_exit=False,
         )
-        return exit_plan, (exit_leg,)
+        bundles.append(PositionExitPlanBundle(exit_plan=exit_plan, exit_legs=(exit_leg,)))
+    if (
+        policy_contract.exit_family == "NAIVE_TRAIL_SCALE_OUT_50_50_CONTROL"
+        and position_action_decision in {"open_up_to_context_cap", "hold_at_cap", "trim_to_context_cap"}
+        and final_allowed_position_weight > 0
+    ):
+        first_stage = policy_contract.exit_schedule_stage_default
+        first_lag_days = policy_contract.exit_schedule_lag_days_default
+        second_stage, second_lag_days = _advance_schedule_stage(
+            schedule_stage=first_stage,
+            schedule_lag_days=first_lag_days,
+            offset_days=1,
+        )
+        scale_out_half_weight = max(final_allowed_position_weight * 0.5, 0.0)
+        scale_out_half_shares = apply_share_lot_floor(
+            resolve_target_shares_before_lot(
+                signal,
+                target_notional=resolve_target_notional(
+                    signal,
+                    target_weight=scale_out_half_weight,
+                ),
+            ),
+            share_lot_size=share_lot_size,
+        )
+        exit_plan = PositionExitPlan(
+            exit_plan_nk=build_exit_plan_nk(
+                candidate_nk,
+                plan_role="scale_out",
+                schedule_stage=first_stage,
+                contract_version=policy_contract.position_contract_version,
+            ),
+            plan_role="scale_out",
+            exit_status="planned",
+            schedule_stage=first_stage,
+            schedule_lag_days=first_lag_days,
+            planned_leg_count=2,
+            required_reduction_weight=final_allowed_position_weight,
+            target_weight_after_exit=0.0,
+            hard_close_guard_active=False,
+        )
+        first_leg = PositionExitLeg(
+            exit_leg_nk=build_exit_leg_nk(
+                candidate_nk,
+                leg_role="scale_out",
+                schedule_stage=first_stage,
+                contract_version=policy_contract.position_contract_version,
+            ),
+            exit_leg_seq=1,
+            leg_role="scale_out",
+            schedule_stage=first_stage,
+            schedule_lag_days=first_lag_days,
+            leg_gate_reason="policy_scale_out_50_50_leg_1",
+            exit_reason_code="policy_scale_out_50_50_leg_1",
+            target_weight_after_leg=scale_out_half_weight,
+            target_qty_after=scale_out_half_shares,
+            is_partial_exit=True,
+            fallback_to_full_exit=False,
+        )
+        second_leg = PositionExitLeg(
+            exit_leg_nk=build_exit_leg_nk(
+                candidate_nk,
+                leg_role="terminal_exit",
+                schedule_stage=second_stage,
+                contract_version=policy_contract.position_contract_version,
+            ),
+            exit_leg_seq=2,
+            leg_role="terminal_exit",
+            schedule_stage=second_stage,
+            schedule_lag_days=second_lag_days,
+            leg_gate_reason="policy_scale_out_50_50_leg_2",
+            exit_reason_code="policy_scale_out_50_50_leg_2",
+            target_weight_after_leg=0.0,
+            target_qty_after=0,
+            is_partial_exit=False,
+            fallback_to_full_exit=False,
+        )
+        bundles.append(
+            PositionExitPlanBundle(
+                exit_plan=exit_plan,
+                exit_legs=(first_leg, second_leg),
+            )
+        )
     if position_action_decision == "closeout_by_exit_plan":
         exit_plan = PositionExitPlan(
             exit_plan_nk=build_exit_plan_nk(
@@ -564,19 +668,25 @@ def build_exit_plan(
             hard_close_guard_active=True,
         )
         exit_leg = PositionExitLeg(
-            exit_leg_nk=build_exit_leg_nk(exit_plan.exit_plan_nk, exit_leg_seq=1),
+            exit_leg_nk=build_exit_leg_nk(
+                candidate_nk,
+                leg_role="terminal_exit",
+                schedule_stage=policy_contract.exit_schedule_stage_default,
+                contract_version=policy_contract.position_contract_version,
+            ),
             exit_leg_seq=1,
             leg_role="terminal_exit",
             schedule_stage=policy_contract.exit_schedule_stage_default,
             schedule_lag_days=policy_contract.exit_schedule_lag_days_default,
+            leg_gate_reason=blocked_reason_code or "context_disallows_new_long",
             exit_reason_code=blocked_reason_code or "context_disallows_new_long",
             target_weight_after_leg=0.0,
             target_qty_after=0,
             is_partial_exit=False,
             fallback_to_full_exit=True,
         )
-        return exit_plan, (exit_leg,)
-    return None, ()
+        bundles.append(PositionExitPlanBundle(exit_plan=exit_plan, exit_legs=(exit_leg,)))
+    return tuple(bundles)
 
 
 def _resolve_entry_leg_status(
@@ -597,3 +707,20 @@ def _resolve_entry_leg_status(
     if active_stage_order >= required_stage_order:
         return "planned", None
     return "deferred", "await_future_lifecycle_window"
+
+
+def _advance_schedule_stage(
+    *,
+    schedule_stage: str,
+    schedule_lag_days: int,
+    offset_days: int,
+) -> tuple[str, int]:
+    normalized_stage = schedule_stage.strip().lower()
+    if normalized_stage.startswith("t+"):
+        try:
+            base_offset = int(normalized_stage[2:])
+        except ValueError:
+            base_offset = schedule_lag_days
+        next_offset = max(base_offset + offset_days, 0)
+        return f"t+{next_offset}", max(schedule_lag_days + offset_days, 0)
+    return schedule_stage, max(schedule_lag_days + offset_days, 0)

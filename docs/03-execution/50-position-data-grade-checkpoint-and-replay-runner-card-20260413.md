@@ -4,17 +4,25 @@
 `日期`：`2026-04-13`
 `状态`：`待施工`
 
-## 问题
+## 需求
 
-- `position` 仍缺少与 `structure / filter / alpha` 同级的 `work_queue + checkpoint + replay/resume`。
-- 这使得 `position` 无法成为真正的主线历史账本 runner。
+- 问题：
+  `position` 仍缺少与 `structure / filter / alpha` 同级的 `work_queue + checkpoint + replay/resume`，导致当前 runner 仍停留在 bounded materialization。
+- 目标结果：
+  把 `position` 升级为带 `work_queue / checkpoint / replay / rematerialize audit` 的正式 data-grade runner，为 `51` 的 acceptance gate 提供可续跑、可复算、可审计的主线账本能力。
+- 为什么现在做：
+  `49` 已冻结 leg-aware `entry / trim / scale_out / terminal_exit` 合同；如果不先补齐 queue/checkpoint/replay，`position` 仍无法把这些正式计划腿稳定纳入主线增量更新。
 
-## 设计依据
+## 设计输入
 
-- [03-position-data-grade-ledger-and-runner-charter-20260413.md](/H:/lifespan-0.01/docs/01-design/modules/position/03-position-data-grade-ledger-and-runner-charter-20260413.md)
-- [05-position-data-grade-ledger-and-runner-spec-20260413.md](/H:/lifespan-0.01/docs/02-spec/modules/position/05-position-data-grade-ledger-and-runner-spec-20260413.md)
+- 设计文档：
+  `docs/01-design/modules/position/03-position-data-grade-ledger-and-runner-charter-20260413.md`
+- 规格文档：
+  `docs/02-spec/modules/position/05-position-data-grade-ledger-and-runner-spec-20260413.md`
+- 上游结论：
+  `docs/03-execution/49-position-batched-entry-trim-and-partial-exit-contract-conclusion-20260414.md`
 
-## 任务
+## 任务分解
 
 1. 新增 `position_work_queue / position_checkpoint`。
 2. 升级 `scripts/position/run_position_formal_signal_materialization.py` 为正式 data-grade runner。
@@ -23,18 +31,12 @@
 
 ## 历史账本约束
 
-1. `实体锚点`
-   - `asset_type + code` 与 `candidate_nk`。
-2. `业务自然键`
-   - `queue_nk / checkpoint_nk / candidate_nk`。
-3. `批量建仓`
-   - 对历史 formal signal 一次性建仓。
-4. `增量更新`
-   - 对脏 signal 和脏参考价局部重算。
-5. `断点续跑`
-   - 正式交付 `work_queue + checkpoint + replay/resume`。
-6. `审计账本`
-   - `position_run` 记录 inserted / reused / rematerialized。
+- 实体锚点：`asset_type + code` 与 `candidate_nk`
+- 业务自然键：`queue_nk / checkpoint_nk / candidate_nk`
+- 批量建仓：对历史 formal signal 一次性建仓
+- 增量更新：对脏 signal 和脏参考价局部重算
+- 断点续跑：正式交付 `work_queue + checkpoint + replay/resume`
+- 审计账本：`position_run / position_run_snapshot` 记录 `inserted / reused / rematerialized`
 
 ## A 级判定表
 

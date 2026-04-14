@@ -386,7 +386,91 @@ def test_materialize_position_from_formal_signals_marks_trim_when_current_positi
     assert capacity_row == (0.25, 0.125, 0.2, 0.3, 0.125, 0.07500000000000001, "context_cap")
     assert sizing_row == ("trim_to_context_cap", 0.125, True)
     assert exit_plan_row == ("trim", "planned", 0.07500000000000001, 0.125)
-    assert exit_leg_row == ("protective_trim", "required_reduction_weight_positive", 0.125, True)
+    assert exit_leg_row == ("trim", "required_reduction_weight_positive", 0.125, True)
+
+
+def test_materialize_position_from_formal_signals_writes_scale_out_plan_for_partial_exit_policy(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+
+    bootstrap_position_ledger(settings=settings)
+    summary = materialize_position_from_formal_signals(
+        [
+            PositionFormalSignalInput(
+                signal_nk="sig-003b",
+                instrument="000003.SZ",
+                signal_date="2026-04-08",
+                asof_date="2026-04-08",
+                trigger_family="PAS",
+                trigger_type="pb",
+                pattern_code="PB",
+                formal_signal_status="admitted",
+                trigger_admissible=True,
+                malf_context_4="BULL_MAINSTREAM",
+                lifecycle_rank_high=1,
+                lifecycle_rank_total=4,
+                source_trigger_event_nk="evt-003b",
+                signal_contract_version="pas-formal-signal-v1",
+                reference_trade_date="2026-04-09",
+                reference_price=20.0,
+                capital_base_value=1_000_000.0,
+            )
+        ],
+        policy_id="fixed_notional_naive_trail_scale_out_50_50_v1",
+        settings=settings,
+        run_id="position-bootstrap-test-run-scale-out",
+    )
+
+    assert summary.exit_plan_count == 1
+    assert summary.exit_leg_count == 2
+
+    conn = duckdb.connect(str(position_ledger_path(settings)), read_only=True)
+    try:
+        exit_plan_row = conn.execute(
+            """
+            SELECT plan_role, planned_leg_count, required_reduction_weight, target_weight_after_exit
+            FROM position_exit_plan
+            WHERE candidate_nk = 'sig-003b|fixed_notional_naive_trail_scale_out_50_50_v1|2026-04-09'
+            """
+        ).fetchone()
+        exit_leg_rows = conn.execute(
+            """
+            SELECT exit_leg_nk, leg_role, schedule_stage, leg_gate_reason, target_weight_after_leg, is_partial_exit
+            FROM position_exit_leg
+            WHERE exit_plan_nk = (
+                SELECT exit_plan_nk
+                FROM position_exit_plan
+                WHERE candidate_nk = 'sig-003b|fixed_notional_naive_trail_scale_out_50_50_v1|2026-04-09'
+            )
+            ORDER BY exit_leg_seq
+            """
+        ).fetchall()
+    finally:
+        conn.close()
+
+    assert exit_plan_row == ("scale_out", 2, 0.1875, 0.0)
+    assert exit_leg_rows == [
+        (
+            "sig-003b|fixed_notional_naive_trail_scale_out_50_50_v1|2026-04-09|scale_out|t+1|position-malf-batched-entry-exit-v2",
+            "scale_out",
+            "t+1",
+            "policy_scale_out_50_50_leg_1",
+            0.09375,
+            True,
+        ),
+        (
+            "sig-003b|fixed_notional_naive_trail_scale_out_50_50_v1|2026-04-09|terminal_exit|t+2|position-malf-batched-entry-exit-v2",
+            "terminal_exit",
+            "t+2",
+            "policy_scale_out_50_50_leg_2",
+            0.0,
+            False,
+        ),
+    ]
 
 
 def test_materialize_position_from_formal_signals_marks_closeout_when_blocked_signal_hits_existing_position(

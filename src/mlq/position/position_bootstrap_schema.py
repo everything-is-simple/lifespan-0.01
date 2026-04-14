@@ -8,7 +8,7 @@ from typing import Final
 import duckdb
 
 
-DEFAULT_POSITION_CONTRACT_VERSION: Final[str] = "position-malf-sizing-batch-v1"
+DEFAULT_POSITION_CONTRACT_VERSION: Final[str] = "position-malf-batched-entry-exit-v2"
 
 
 POSITION_LEDGER_TABLE_NAMES: Final[tuple[str, ...]] = (
@@ -43,7 +43,7 @@ POSITION_LEDGER_DDL: Final[dict[str, str]] = {
             policy_id TEXT PRIMARY KEY,
             policy_family TEXT NOT NULL,
             policy_version TEXT NOT NULL,
-            position_contract_version TEXT NOT NULL DEFAULT 'position-malf-sizing-batch-v1',
+            position_contract_version TEXT NOT NULL DEFAULT 'position-malf-batched-entry-exit-v2',
             entry_leg_role_default TEXT NOT NULL,
             entry_schedule_stage_default TEXT NOT NULL DEFAULT 't+1',
             entry_schedule_lag_days_default INTEGER NOT NULL DEFAULT 1,
@@ -72,7 +72,7 @@ POSITION_LEDGER_DDL: Final[dict[str, str]] = {
             context_code TEXT,
             context_behavior_profile TEXT,
             deployment_stage TEXT,
-            candidate_contract_version TEXT NOT NULL DEFAULT 'position-malf-sizing-batch-v1',
+            candidate_contract_version TEXT NOT NULL DEFAULT 'position-malf-batched-entry-exit-v2',
             audit_note TEXT,
             source_signal_run_id TEXT,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -106,7 +106,7 @@ POSITION_LEDGER_DDL: Final[dict[str, str]] = {
             source_policy_version TEXT NOT NULL,
             source_signal_contract_version TEXT,
             source_context_fingerprint TEXT,
-            risk_budget_contract_version TEXT NOT NULL DEFAULT 'position-malf-sizing-batch-v1',
+            risk_budget_contract_version TEXT NOT NULL DEFAULT 'position-malf-batched-entry-exit-v2',
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
     """,
@@ -144,7 +144,7 @@ POSITION_LEDGER_DDL: Final[dict[str, str]] = {
             deployment_stage TEXT,
             schedule_stage TEXT NOT NULL DEFAULT 't+1',
             schedule_lag_days INTEGER NOT NULL DEFAULT 1,
-            sizing_contract_version TEXT NOT NULL DEFAULT 'position-malf-sizing-batch-v1',
+            sizing_contract_version TEXT NOT NULL DEFAULT 'position-malf-batched-entry-exit-v2',
             entry_leg_count INTEGER NOT NULL DEFAULT 1,
             exit_plan_required BOOLEAN NOT NULL DEFAULT FALSE,
             position_action_decision TEXT NOT NULL,
@@ -173,7 +173,7 @@ POSITION_LEDGER_DDL: Final[dict[str, str]] = {
             target_shares_after_leg BIGINT NOT NULL DEFAULT 0,
             context_behavior_profile TEXT,
             deployment_stage TEXT,
-            plan_contract_version TEXT NOT NULL DEFAULT 'position-malf-sizing-batch-v1',
+            plan_contract_version TEXT NOT NULL DEFAULT 'position-malf-batched-entry-exit-v2',
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
     """,
@@ -215,7 +215,7 @@ POSITION_LEDGER_DDL: Final[dict[str, str]] = {
             planned_leg_count INTEGER NOT NULL DEFAULT 1,
             required_reduction_weight DOUBLE NOT NULL DEFAULT 0,
             target_weight_after_exit DOUBLE NOT NULL DEFAULT 0,
-            plan_contract_version TEXT NOT NULL DEFAULT 'position-malf-sizing-batch-v1',
+            plan_contract_version TEXT NOT NULL DEFAULT 'position-malf-batched-entry-exit-v2',
             hard_close_guard_active BOOLEAN NOT NULL DEFAULT TRUE,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
@@ -228,12 +228,13 @@ POSITION_LEDGER_DDL: Final[dict[str, str]] = {
             leg_role TEXT NOT NULL DEFAULT 'closeout',
             schedule_stage TEXT NOT NULL DEFAULT 't+1',
             schedule_lag_days INTEGER NOT NULL DEFAULT 1,
+            leg_gate_reason TEXT,
             exit_reason_code TEXT NOT NULL,
             target_weight_after_leg DOUBLE NOT NULL DEFAULT 0,
             target_qty_after BIGINT NOT NULL DEFAULT 0,
             is_partial_exit BOOLEAN NOT NULL DEFAULT FALSE,
             fallback_to_full_exit BOOLEAN NOT NULL DEFAULT FALSE,
-            plan_contract_version TEXT NOT NULL DEFAULT 'position-malf-sizing-batch-v1',
+            plan_contract_version TEXT NOT NULL DEFAULT 'position-malf-batched-entry-exit-v2',
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
     """,
@@ -290,6 +291,7 @@ POSITION_LEDGER_EVOLUTION_DDL: Final[dict[str, tuple[str, ...]]] = {
         "ALTER TABLE position_exit_leg ADD COLUMN IF NOT EXISTS leg_role TEXT DEFAULT 'closeout'",
         "ALTER TABLE position_exit_leg ADD COLUMN IF NOT EXISTS schedule_stage TEXT DEFAULT 't+1'",
         "ALTER TABLE position_exit_leg ADD COLUMN IF NOT EXISTS schedule_lag_days INTEGER DEFAULT 1",
+        "ALTER TABLE position_exit_leg ADD COLUMN IF NOT EXISTS leg_gate_reason TEXT",
         "ALTER TABLE position_exit_leg ADD COLUMN IF NOT EXISTS target_weight_after_leg DOUBLE DEFAULT 0",
         f"ALTER TABLE position_exit_leg ADD COLUMN IF NOT EXISTS plan_contract_version TEXT DEFAULT '{DEFAULT_POSITION_CONTRACT_VERSION}'",
     ),
@@ -395,7 +397,7 @@ DEFAULT_POSITION_POLICY_SEEDS: Final[tuple[PositionPolicySeed, ...]] = (
 
 
 def apply_position_schema_evolution(connection: duckdb.DuckDBPyConnection) -> None:
-    """对已有 `position` 账本执行幂等补列，确保卡 47 合同可被旧库消费。"""
+    """对已有 `position` 账本执行幂等补列，确保当前卡组合同可被旧库消费。"""
 
     existing_tables = {
         str(row[0])
@@ -448,6 +450,46 @@ def seed_default_policies(connection: duckdb.DuckDBPyConnection) -> None:
             insert_sql,
             [
                 seed.policy_id,
+                seed.policy_family,
+                seed.policy_version,
+                seed.position_contract_version,
+                seed.entry_leg_role_default,
+                seed.entry_schedule_stage_default,
+                seed.entry_schedule_lag_days_default,
+                seed.trim_schedule_stage_default,
+                seed.trim_schedule_lag_days_default,
+                seed.exit_schedule_stage_default,
+                seed.exit_schedule_lag_days_default,
+                seed.exit_family,
+                seed.is_active,
+                seed.effective_from,
+                seed.effective_to,
+                seed.notes,
+                seed.policy_id,
+            ],
+        )
+        connection.execute(
+            """
+            UPDATE position_policy_registry
+            SET
+                policy_family = ?,
+                policy_version = ?,
+                position_contract_version = ?,
+                entry_leg_role_default = ?,
+                entry_schedule_stage_default = ?,
+                entry_schedule_lag_days_default = ?,
+                trim_schedule_stage_default = ?,
+                trim_schedule_lag_days_default = ?,
+                exit_schedule_stage_default = ?,
+                exit_schedule_lag_days_default = ?,
+                exit_family = ?,
+                is_active = ?,
+                effective_from = ?,
+                effective_to = ?,
+                notes = ?
+            WHERE policy_id = ?
+            """,
+            [
                 seed.policy_family,
                 seed.policy_version,
                 seed.position_contract_version,
