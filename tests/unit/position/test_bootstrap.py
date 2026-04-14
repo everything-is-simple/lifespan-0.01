@@ -133,6 +133,7 @@ def test_materialize_position_from_formal_signals_writes_candidate_capacity_and_
 
     assert summary.candidate_count == 1
     assert summary.admitted_count == 1
+    assert summary.risk_budget_count == 1
     assert summary.family_snapshot_count == 1
     assert summary.entry_leg_count == 3
     assert summary.exit_plan_count == 0
@@ -149,8 +150,16 @@ def test_materialize_position_from_formal_signals_writes_candidate_capacity_and_
         ).fetchone()
         capacity_row = conn.execute(
             """
-            SELECT final_allowed_position_weight, required_reduction_weight, capacity_source_code
+            SELECT risk_budget_snapshot_nk, final_allowed_position_weight, required_reduction_weight, capacity_source_code
             FROM position_capacity_snapshot
+            WHERE candidate_nk = 'sig-001|fixed_notional_full_exit_v1|2026-04-09'
+            """
+        ).fetchone()
+        risk_budget_row = conn.execute(
+            """
+            SELECT risk_budget_weight, context_cap_weight, single_name_cap_weight, portfolio_cap_weight,
+                   final_allowed_position_weight, binding_cap_code, capacity_source_code
+            FROM position_risk_budget_snapshot
             WHERE candidate_nk = 'sig-001|fixed_notional_full_exit_v1|2026-04-09'
             """
         ).fetchone()
@@ -186,13 +195,19 @@ def test_materialize_position_from_formal_signals_writes_candidate_capacity_and_
         "trend_following_expansion",
         "initial_entry_window",
     )
-    assert capacity_row == (0.1875, 0.0, "bootstrap_default_capacity")
+    assert capacity_row == (
+        "sig-001|fixed_notional_full_exit_v1|2026-04-09|default",
+        0.1875,
+        0.0,
+        "bootstrap_default_capacity",
+    )
+    assert risk_budget_row == (0.25, 0.1875, 0.25, 0.5, 0.1875, "context_cap", "bootstrap_default_capacity")
     assert sizing_row == ("open_up_to_context_cap", 0.1875, 187500.0, 18700, "t+1", 3, False)
     assert entry_leg_rows[0] == ("initial_entry", "planned", "t+1", 0.09375)
     assert entry_leg_rows[1][0:3] == ("add_on_confirmation", "deferred", "t+2")
     assert entry_leg_rows[1][3] == pytest.approx(0.15)
     assert entry_leg_rows[2] == ("add_on_continuation", "deferred", "t+3", 0.1875)
-    assert family_row == (False, 18700)
+    assert family_row == (True, 18700)
 
 
 def test_materialize_position_from_formal_signals_writes_blocked_single_lot_snapshot(
@@ -233,12 +248,20 @@ def test_materialize_position_from_formal_signals_writes_blocked_single_lot_snap
     )
 
     assert summary.blocked_count == 1
+    assert summary.risk_budget_count == 1
     assert summary.entry_leg_count == 3
     assert summary.exit_plan_count == 0
     assert summary.exit_leg_count == 0
 
     conn = duckdb.connect(str(position_ledger_path(settings)), read_only=True)
     try:
+        risk_budget_row = conn.execute(
+            """
+            SELECT risk_budget_weight, final_allowed_position_weight, binding_cap_code
+            FROM position_risk_budget_snapshot
+            WHERE candidate_nk = 'sig-002|single_lot_full_exit_v1|2026-04-09'
+            """
+        ).fetchone()
         candidate_row = conn.execute(
             """
             SELECT candidate_status, blocked_reason_code
@@ -272,6 +295,7 @@ def test_materialize_position_from_formal_signals_writes_blocked_single_lot_snap
         conn.close()
 
     assert candidate_row == ("blocked", "alpha_not_admitted")
+    assert risk_budget_row == (0.25, 0.0, "alpha_not_admitted")
     assert sizing_row == ("reject_open", 0.0, 0)
     assert family_row == (100, False, 0, None)
     assert entry_leg_rows == [
@@ -324,7 +348,9 @@ def test_materialize_position_from_formal_signals_marks_trim_when_current_positi
     try:
         capacity_row = conn.execute(
             """
-            SELECT final_allowed_position_weight, required_reduction_weight
+            SELECT risk_budget_weight, context_max_position_weight, single_name_cap_weight,
+                   portfolio_cap_weight, final_allowed_position_weight, required_reduction_weight,
+                   binding_cap_code
             FROM position_capacity_snapshot
             WHERE candidate_nk = 'sig-003|fixed_notional_full_exit_v1|2026-04-09'
             """
@@ -357,7 +383,7 @@ def test_materialize_position_from_formal_signals_marks_trim_when_current_positi
     finally:
         conn.close()
 
-    assert capacity_row == (0.125, 0.07500000000000001)
+    assert capacity_row == (0.25, 0.125, 0.2, 0.3, 0.125, 0.07500000000000001, "context_cap")
     assert sizing_row == ("trim_to_context_cap", 0.125, True)
     assert exit_plan_row == ("trim", "planned", 0.07500000000000001, 0.125)
     assert exit_leg_row == ("protective_trim", "required_reduction_weight_positive", 0.125, True)

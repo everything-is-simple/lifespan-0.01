@@ -161,6 +161,7 @@ def test_run_position_formal_signal_materialization_reads_official_alpha_and_enr
     assert summary.enriched_signal_count == 1
     assert summary.missing_reference_price_count == 0
     assert summary.candidate_count == 1
+    assert summary.risk_budget_count == 1
     assert summary.entry_leg_count == 3
     assert summary.exit_plan_count == 0
     assert summary.exit_leg_count == 0
@@ -264,6 +265,7 @@ def test_run_position_formal_signal_materialization_accepts_family_aware_alpha_c
     assert summary.position_run_id == "position-runner-test-family-aware-001"
     assert summary.alpha_signal_count == 1
     assert summary.enriched_signal_count == 1
+    assert summary.risk_budget_count == 1
     assert summary.entry_leg_count == 3
 
     conn = duckdb.connect(str(position_ledger_path(settings)), read_only=True)
@@ -351,6 +353,7 @@ def test_run_position_formal_signal_materialization_skips_signals_without_refere
     assert summary.enriched_signal_count == 1
     assert summary.missing_reference_price_count == 1
     assert summary.candidate_count == 1
+    assert summary.risk_budget_count == 1
 
     conn = duckdb.connect(str(position_ledger_path(settings)), read_only=True)
     try:
@@ -437,6 +440,7 @@ def test_run_position_formal_signal_materialization_accepts_legacy_alpha_column_
     assert summary.position_run_id == "position-runner-test-003"
     assert summary.alpha_signal_count == 1
     assert summary.enriched_signal_count == 1
+    assert summary.risk_budget_count == 1
 
     conn = duckdb.connect(str(position_ledger_path(settings)), read_only=True)
     try:

@@ -104,6 +104,7 @@ def materialize_position_from_formal_signals(
             candidate_count=len(formal_signals),
             admitted_count=counts.admitted_count,
             blocked_count=counts.blocked_count,
+            risk_budget_count=counts.risk_budget_count,
             sizing_count=len(formal_signals),
             family_snapshot_count=counts.family_snapshot_count,
             entry_leg_count=counts.entry_leg_count,

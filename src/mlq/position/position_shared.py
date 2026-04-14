@@ -58,6 +58,7 @@ class PositionMaterializationSummary:
     candidate_count: int
     admitted_count: int
     blocked_count: int
+    risk_budget_count: int
     sizing_count: int
     family_snapshot_count: int
     entry_leg_count: int

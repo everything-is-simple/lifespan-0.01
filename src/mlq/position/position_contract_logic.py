@@ -97,6 +97,27 @@ class PositionContextContract:
 
 
 @dataclass(frozen=True)
+class PositionRiskBudgetSnapshot:
+    """描述 `48` 冻结后的 risk budget / capacity 分层快照。"""
+
+    risk_budget_snapshot_nk: str
+    risk_budget_weight: float
+    risk_budget_reason_code: str
+    context_cap_weight: float
+    context_cap_reason_code: str
+    single_name_cap_weight: float
+    single_name_cap_reason_code: str
+    portfolio_cap_weight: float
+    portfolio_cap_reason_code: str
+    remaining_single_name_capacity_weight: float
+    remaining_portfolio_capacity_weight: float
+    final_allowed_position_weight: float
+    required_reduction_weight: float
+    binding_cap_code: str
+    capacity_source_code: str
+
+
+@dataclass(frozen=True)
 class PositionEntryLegPlan:
     """描述一条正式入场计划腿。"""
 
@@ -167,6 +188,10 @@ def build_candidate_nk(signal: PositionFormalSignalInput, policy_id: str) -> str
 
 
 def build_capacity_snapshot_nk(candidate_nk: str) -> str:
+    return f"{candidate_nk}|default"
+
+
+def build_risk_budget_snapshot_nk(candidate_nk: str) -> str:
     return f"{candidate_nk}|default"
 
 
@@ -257,6 +282,10 @@ def resolve_context_max_position_weight(
     return _PROFILE_STAGE_WEIGHT.get((context_behavior_profile, deployment_stage), 0.0)
 
 
+def resolve_risk_budget_weight(*, default_single_name_cap_weight: float) -> float:
+    return max(default_single_name_cap_weight, 0.0)
+
+
 def resolve_single_name_capacity_weight(
     signal: PositionFormalSignalInput,
     *,
@@ -280,20 +309,55 @@ def resolve_portfolio_capacity_weight(
 def resolve_final_allowed_position_weight(
     *,
     candidate_status: str,
+    risk_budget_weight: float,
     context_max_position_weight: float,
-    remaining_single_name_capacity_weight: float,
-    remaining_portfolio_capacity_weight: float,
+    single_name_cap_weight: float,
+    portfolio_cap_weight: float,
 ) -> float:
     if candidate_status != "admitted":
         return 0.0
     return max(
         min(
+            risk_budget_weight,
             context_max_position_weight,
-            remaining_single_name_capacity_weight,
-            remaining_portfolio_capacity_weight,
+            single_name_cap_weight,
+            portfolio_cap_weight,
         ),
         0.0,
     )
+
+
+def resolve_binding_cap_code(
+    *,
+    candidate_status: str,
+    blocked_reason_code: str | None,
+    risk_budget_weight: float,
+    context_max_position_weight: float,
+    single_name_cap_weight: float,
+    portfolio_cap_weight: float,
+    final_allowed_position_weight: float,
+) -> str:
+    if candidate_status != "admitted":
+        return blocked_reason_code or f"candidate_{candidate_status}"
+    cap_candidates = (
+        ("risk_budget_cap", risk_budget_weight),
+        ("context_cap", context_max_position_weight),
+        ("single_name_cap", single_name_cap_weight),
+        ("portfolio_cap", portfolio_cap_weight),
+    )
+    for binding_cap_code, cap_weight in cap_candidates:
+        if abs(cap_weight - final_allowed_position_weight) < 1e-12:
+            return binding_cap_code
+    return "no_binding_cap"
+
+
+def resolve_capacity_source_code(signal: PositionFormalSignalInput) -> str:
+    if (
+        signal.remaining_single_name_capacity_weight is not None
+        or signal.remaining_portfolio_capacity_weight is not None
+    ):
+        return "formal_position_capacity"
+    return "bootstrap_default_capacity"
 
 
 def resolve_position_action_decision(

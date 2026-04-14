@@ -15,6 +15,7 @@ POSITION_LEDGER_TABLE_NAMES: Final[tuple[str, ...]] = (
     "position_run",
     "position_policy_registry",
     "position_candidate_audit",
+    "position_risk_budget_snapshot",
     "position_capacity_snapshot",
     "position_sizing_snapshot",
     "position_entry_leg_plan",
@@ -77,19 +78,56 @@ POSITION_LEDGER_DDL: Final[dict[str, str]] = {
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
     """,
-    "position_capacity_snapshot": """
-        CREATE TABLE IF NOT EXISTS position_capacity_snapshot (
-            capacity_snapshot_nk TEXT PRIMARY KEY,
+    "position_risk_budget_snapshot": """
+        CREATE TABLE IF NOT EXISTS position_risk_budget_snapshot (
+            risk_budget_snapshot_nk TEXT PRIMARY KEY,
             candidate_nk TEXT NOT NULL,
-            capacity_snapshot_role TEXT NOT NULL,
+            policy_id TEXT NOT NULL,
+            risk_budget_snapshot_role TEXT NOT NULL DEFAULT 'default',
             current_position_weight DOUBLE NOT NULL DEFAULT 0,
             context_behavior_profile TEXT,
             deployment_stage TEXT,
-            context_max_position_weight DOUBLE NOT NULL DEFAULT 0,
+            risk_budget_weight DOUBLE NOT NULL DEFAULT 0,
+            risk_budget_reason_code TEXT NOT NULL,
+            context_cap_weight DOUBLE NOT NULL DEFAULT 0,
+            context_cap_reason_code TEXT NOT NULL,
+            single_name_cap_weight DOUBLE NOT NULL DEFAULT 0,
+            single_name_cap_reason_code TEXT NOT NULL,
+            portfolio_cap_weight DOUBLE NOT NULL DEFAULT 0,
+            portfolio_cap_reason_code TEXT NOT NULL,
             remaining_single_name_capacity_weight DOUBLE NOT NULL DEFAULT 0,
             remaining_portfolio_capacity_weight DOUBLE NOT NULL DEFAULT 0,
             final_allowed_position_weight DOUBLE NOT NULL DEFAULT 0,
             required_reduction_weight DOUBLE NOT NULL DEFAULT 0,
+            binding_cap_code TEXT NOT NULL,
+            capacity_source_code TEXT NOT NULL,
+            context_weight_rule_code TEXT,
+            source_policy_family TEXT NOT NULL,
+            source_policy_version TEXT NOT NULL,
+            source_signal_contract_version TEXT,
+            source_context_fingerprint TEXT,
+            risk_budget_contract_version TEXT NOT NULL DEFAULT 'position-malf-sizing-batch-v1',
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """,
+    "position_capacity_snapshot": """
+        CREATE TABLE IF NOT EXISTS position_capacity_snapshot (
+            capacity_snapshot_nk TEXT PRIMARY KEY,
+            candidate_nk TEXT NOT NULL,
+            risk_budget_snapshot_nk TEXT,
+            capacity_snapshot_role TEXT NOT NULL,
+            current_position_weight DOUBLE NOT NULL DEFAULT 0,
+            context_behavior_profile TEXT,
+            deployment_stage TEXT,
+            risk_budget_weight DOUBLE NOT NULL DEFAULT 0,
+            context_max_position_weight DOUBLE NOT NULL DEFAULT 0,
+            single_name_cap_weight DOUBLE NOT NULL DEFAULT 0,
+            portfolio_cap_weight DOUBLE NOT NULL DEFAULT 0,
+            remaining_single_name_capacity_weight DOUBLE NOT NULL DEFAULT 0,
+            remaining_portfolio_capacity_weight DOUBLE NOT NULL DEFAULT 0,
+            final_allowed_position_weight DOUBLE NOT NULL DEFAULT 0,
+            required_reduction_weight DOUBLE NOT NULL DEFAULT 0,
+            binding_cap_code TEXT NOT NULL DEFAULT 'no_binding_cap',
             context_weight_rule_code TEXT,
             capacity_source_code TEXT NOT NULL,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -99,6 +137,7 @@ POSITION_LEDGER_DDL: Final[dict[str, str]] = {
         CREATE TABLE IF NOT EXISTS position_sizing_snapshot (
             sizing_snapshot_nk TEXT PRIMARY KEY,
             candidate_nk TEXT NOT NULL,
+            risk_budget_snapshot_nk TEXT,
             policy_id TEXT NOT NULL,
             entry_leg_role TEXT NOT NULL,
             context_behavior_profile TEXT,
@@ -219,11 +258,17 @@ POSITION_LEDGER_EVOLUTION_DDL: Final[dict[str, tuple[str, ...]]] = {
         f"ALTER TABLE position_candidate_audit ADD COLUMN IF NOT EXISTS candidate_contract_version TEXT DEFAULT '{DEFAULT_POSITION_CONTRACT_VERSION}'",
     ),
     "position_capacity_snapshot": (
+        "ALTER TABLE position_capacity_snapshot ADD COLUMN IF NOT EXISTS risk_budget_snapshot_nk TEXT",
         "ALTER TABLE position_capacity_snapshot ADD COLUMN IF NOT EXISTS context_behavior_profile TEXT",
         "ALTER TABLE position_capacity_snapshot ADD COLUMN IF NOT EXISTS deployment_stage TEXT",
+        "ALTER TABLE position_capacity_snapshot ADD COLUMN IF NOT EXISTS risk_budget_weight DOUBLE DEFAULT 0",
+        "ALTER TABLE position_capacity_snapshot ADD COLUMN IF NOT EXISTS single_name_cap_weight DOUBLE DEFAULT 0",
+        "ALTER TABLE position_capacity_snapshot ADD COLUMN IF NOT EXISTS portfolio_cap_weight DOUBLE DEFAULT 0",
+        "ALTER TABLE position_capacity_snapshot ADD COLUMN IF NOT EXISTS binding_cap_code TEXT DEFAULT 'no_binding_cap'",
         "ALTER TABLE position_capacity_snapshot ADD COLUMN IF NOT EXISTS context_weight_rule_code TEXT",
     ),
     "position_sizing_snapshot": (
+        "ALTER TABLE position_sizing_snapshot ADD COLUMN IF NOT EXISTS risk_budget_snapshot_nk TEXT",
         "ALTER TABLE position_sizing_snapshot ADD COLUMN IF NOT EXISTS context_behavior_profile TEXT",
         "ALTER TABLE position_sizing_snapshot ADD COLUMN IF NOT EXISTS deployment_stage TEXT",
         "ALTER TABLE position_sizing_snapshot ADD COLUMN IF NOT EXISTS schedule_stage TEXT DEFAULT 't+1'",
@@ -421,4 +466,3 @@ def seed_default_policies(connection: duckdb.DuckDBPyConnection) -> None:
                 seed.policy_id,
             ],
         )
-

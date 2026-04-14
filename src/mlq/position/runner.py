@@ -36,6 +36,7 @@ class PositionFormalSignalRunnerSummary:
     candidate_count: int
     admitted_count: int
     blocked_count: int
+    risk_budget_count: int
     sizing_count: int
     family_snapshot_count: int
     entry_leg_count: int
@@ -116,6 +117,7 @@ def run_position_formal_signal_materialization(
         candidate_count=materialization_summary.candidate_count if materialization_summary else 0,
         admitted_count=materialization_summary.admitted_count if materialization_summary else 0,
         blocked_count=materialization_summary.blocked_count if materialization_summary else 0,
+        risk_budget_count=materialization_summary.risk_budget_count if materialization_summary else 0,
         sizing_count=materialization_summary.sizing_count if materialization_summary else 0,
         family_snapshot_count=materialization_summary.family_snapshot_count if materialization_summary else 0,
         entry_leg_count=materialization_summary.entry_leg_count if materialization_summary else 0,
