@@ -1,12 +1,15 @@
 ﻿"""执行正式 bounded 的 `position -> portfolio_plan` v2 物化。"""
 from __future__ import annotations
+
 import json
 from collections import defaultdict
 from dataclasses import asdict, dataclass
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Final
+
 import duckdb
+
 from mlq.core.paths import WorkspaceRoots, default_settings
 from mlq.portfolio_plan.bootstrap import (
     PORTFOLIO_PLAN_ALLOCATION_SNAPSHOT_TABLE,
@@ -20,14 +23,20 @@ from mlq.portfolio_plan.bootstrap import (
 )
 from mlq.portfolio_plan.materialization import (
     DEFAULT_PORTFOLIO_CAPACITY_SCOPE,
+    _CandidateLedgerBundle,
     _PositionBridgeRow,
     _PortfolioCapacitySnapshotRow,
     _aggregate_materialization_action,
+    _build_capacity_reason_summary,
     _build_candidate_bundle,
     _build_capacity_snapshot_nk,
+    _decision_sort_key,
     _evaluate_candidate_decision,
+    _resolve_binding_constraint_code,
+    _resolve_capacity_decision_reason_code,
     _upsert_materialized_row,
 )
+
 DEFAULT_PORTFOLIO_PLAN_CONTRACT_VERSION: Final[str] = "portfolio-plan-v2"
 DEFAULT_SOURCE_POSITION_TABLE: Final[str] = (
     "position_candidate_audit+position_capacity_snapshot+position_sizing_snapshot"
@@ -35,9 +44,12 @@ DEFAULT_SOURCE_POSITION_TABLE: Final[str] = (
 DEFAULT_POSITION_CANDIDATE_AUDIT_TABLE: Final[str] = "position_candidate_audit"
 DEFAULT_POSITION_CAPACITY_TABLE: Final[str] = "position_capacity_snapshot"
 DEFAULT_POSITION_SIZING_TABLE: Final[str] = "position_sizing_snapshot"
+
+
 @dataclass(frozen=True)
 class PortfolioPlanBuildSummary:
     """汇总一次 bounded `portfolio_plan` v2 物化运行。"""
+
     run_id: str
     runner_name: str
     runner_version: str
@@ -56,14 +68,20 @@ class PortfolioPlanBuildSummary:
     requested_total_weight: float
     admitted_total_weight: float
     trimmed_total_weight: float
+    blocked_total_weight: float
+    deferred_total_weight: float
+    decision_reason_counts: dict[str, int]
+    trade_readiness_counts: dict[str, int]
     portfolio_gross_cap_weight: float
     portfolio_gross_used_weight: float
     portfolio_gross_remaining_weight: float
     source_position_table: str
     position_ledger_path: str
     portfolio_plan_ledger_path: str
+
     def as_dict(self) -> dict[str, object]:
         """返回适合写入 `summary_json` 的稳定字典。"""
+
         return asdict(self)
 def run_portfolio_plan_build(
     *,
@@ -201,9 +219,16 @@ def _load_position_bridge_rows(
                 a.policy_id,
                 s.reference_trade_date,
                 a.candidate_status,
+                a.blocked_reason_code,
                 s.position_action_decision,
+                COALESCE(s.schedule_stage, 't+1'),
+                COALESCE(s.schedule_lag_days, 1),
                 c.final_allowed_position_weight,
-                COALESCE(s.required_reduction_weight, c.required_reduction_weight, 0)
+                COALESCE(s.required_reduction_weight, c.required_reduction_weight, 0),
+                COALESCE(c.remaining_single_name_capacity_weight, 0),
+                COALESCE(c.remaining_portfolio_capacity_weight, 0),
+                COALESCE(c.binding_cap_code, 'no_binding_cap'),
+                COALESCE(c.capacity_source_code, 'unknown')
             FROM {DEFAULT_POSITION_CANDIDATE_AUDIT_TABLE} AS a
             INNER JOIN {DEFAULT_POSITION_CAPACITY_TABLE} AS c
                 ON c.candidate_nk = a.candidate_nk
@@ -222,9 +247,16 @@ def _load_position_bridge_rows(
                 policy_id=str(row[2]),
                 reference_trade_date=_normalize_date_value(row[3], field_name="reference_trade_date"),
                 candidate_status=_normalize_optional_str(row[4]).lower(),
-                position_action_decision=_normalize_optional_str(row[5]),
-                final_allowed_position_weight=float(row[6] or 0.0),
-                required_reduction_weight=float(row[7] or 0.0),
+                blocked_reason_code=_normalize_optional_str(row[5]) or None,
+                position_action_decision=_normalize_optional_str(row[6]),
+                schedule_stage=_normalize_optional_str(row[7]) or "t+1",
+                schedule_lag_days=max(int(row[8] or 1), 0),
+                final_allowed_position_weight=float(row[9] or 0.0),
+                required_reduction_weight=float(row[10] or 0.0),
+                remaining_single_name_capacity_weight=float(row[11] or 0.0),
+                remaining_portfolio_capacity_weight=float(row[12] or 0.0),
+                binding_cap_code=_normalize_optional_str(row[13]) or "no_binding_cap",
+                capacity_source_code=_normalize_optional_str(row[14]) or "unknown",
             )
             for row in rows
         ]
@@ -316,13 +348,17 @@ def _materialize_portfolio_plan_rows(
     requested_total_weight = 0.0
     admitted_total_weight = 0.0
     trimmed_total_weight = 0.0
+    blocked_total_weight = 0.0
+    deferred_total_weight = 0.0
     latest_used_weight = 0.0
     latest_remaining_weight = portfolio_gross_cap_weight
+    decision_reason_counts: defaultdict[str, int] = defaultdict(int)
+    trade_readiness_counts: defaultdict[str, int] = defaultdict(int)
     rows_by_trade_date: dict[date, list[_PositionBridgeRow]] = defaultdict(list)
     for bridge_row in bridge_rows:
         rows_by_trade_date[bridge_row.reference_trade_date].append(bridge_row)
     for reference_trade_date in sorted(rows_by_trade_date):
-        date_rows = rows_by_trade_date[reference_trade_date]
+        date_rows = sorted(rows_by_trade_date[reference_trade_date], key=_decision_sort_key)
         capacity_snapshot_nk = _build_capacity_snapshot_nk(
             portfolio_id=portfolio_id,
             capacity_scope=DEFAULT_PORTFOLIO_CAPACITY_SCOPE,
@@ -331,12 +367,18 @@ def _materialize_portfolio_plan_rows(
         )
         used_weight = 0.0
         remaining_weight = portfolio_gross_cap_weight
+        date_requested_candidate_count = len(date_rows)
         date_admitted_count = 0
         date_blocked_count = 0
         date_trimmed_count = 0
         date_deferred_count = 0
+        date_requested_total_weight = 0.0
+        date_admitted_total_weight = 0.0
+        date_trimmed_total_weight = 0.0
+        date_blocked_total_weight = 0.0
+        date_deferred_total_weight = 0.0
         candidate_bundles: list[_CandidateLedgerBundle] = []
-        for bridge_row in date_rows:
+        for decision_rank, bridge_row in enumerate(date_rows, start=1):
             evaluation = _evaluate_candidate_decision(
                 bridge_row=bridge_row,
                 portfolio_gross_cap_weight=portfolio_gross_cap_weight,
@@ -351,6 +393,7 @@ def _materialize_portfolio_plan_rows(
                 portfolio_plan_contract_version=portfolio_plan_contract_version,
                 capacity_snapshot_nk=capacity_snapshot_nk,
                 portfolio_gross_cap_weight=portfolio_gross_cap_weight,
+                decision_rank=decision_rank,
             )
             candidate_bundles.append(bundle)
             used_weight = evaluation.next_used_weight
@@ -358,6 +401,11 @@ def _materialize_portfolio_plan_rows(
             requested_total_weight += evaluation.requested_weight
             admitted_total_weight += evaluation.admitted_weight
             trimmed_total_weight += evaluation.trimmed_weight
+            date_requested_total_weight += evaluation.requested_weight
+            date_admitted_total_weight += evaluation.admitted_weight
+            date_trimmed_total_weight += evaluation.trimmed_weight
+            decision_reason_counts[evaluation.decision_reason_code] += 1
+            trade_readiness_counts[evaluation.trade_readiness_status] += 1
             if evaluation.decision_status == "admitted":
                 admitted_count += 1
                 date_admitted_count += 1
@@ -367,9 +415,13 @@ def _materialize_portfolio_plan_rows(
             elif evaluation.decision_status == "deferred":
                 deferred_count += 1
                 date_deferred_count += 1
+                deferred_total_weight += evaluation.requested_weight
+                date_deferred_total_weight += evaluation.requested_weight
             else:
                 blocked_count += 1
                 date_blocked_count += 1
+                blocked_total_weight += evaluation.requested_weight
+                date_blocked_total_weight += evaluation.requested_weight
         capacity_row = _PortfolioCapacitySnapshotRow(
             capacity_snapshot_nk=capacity_snapshot_nk,
             portfolio_id=portfolio_id,
@@ -378,10 +430,21 @@ def _materialize_portfolio_plan_rows(
             portfolio_gross_cap_weight=portfolio_gross_cap_weight,
             portfolio_gross_used_weight=used_weight,
             portfolio_gross_remaining_weight=remaining_weight,
+            requested_candidate_count=date_requested_candidate_count,
             admitted_candidate_count=date_admitted_count,
             blocked_candidate_count=date_blocked_count,
             trimmed_candidate_count=date_trimmed_count,
             deferred_candidate_count=date_deferred_count,
+            requested_total_weight=date_requested_total_weight,
+            admitted_total_weight=date_admitted_total_weight,
+            trimmed_total_weight=date_trimmed_total_weight,
+            blocked_total_weight=date_blocked_total_weight,
+            deferred_total_weight=date_deferred_total_weight,
+            binding_constraint_code=_resolve_binding_constraint_code(candidate_bundles),
+            capacity_decision_reason_code=_resolve_capacity_decision_reason_code(
+                candidate_bundles
+            ),
+            capacity_reason_summary_json=_build_capacity_reason_summary(candidate_bundles),
             portfolio_plan_contract_version=portfolio_plan_contract_version,
             first_seen_run_id=run_id,
             last_materialized_run_id=run_id,
@@ -399,10 +462,19 @@ def _materialize_portfolio_plan_rows(
                 "portfolio_gross_cap_weight",
                 "portfolio_gross_used_weight",
                 "portfolio_gross_remaining_weight",
+                "requested_candidate_count",
                 "admitted_candidate_count",
                 "blocked_candidate_count",
                 "trimmed_candidate_count",
                 "deferred_candidate_count",
+                "requested_total_weight",
+                "admitted_total_weight",
+                "trimmed_total_weight",
+                "blocked_total_weight",
+                "deferred_total_weight",
+                "binding_constraint_code",
+                "capacity_decision_reason_code",
+                "capacity_reason_summary_json",
                 "portfolio_plan_contract_version",
             ),
         )
@@ -423,6 +495,20 @@ def _materialize_portfolio_plan_rows(
                     "decision_status",
                     "decision_reason_code",
                     "blocking_reason_code",
+                    "decision_rank",
+                    "decision_order_code",
+                    "source_candidate_status",
+                    "source_blocked_reason_code",
+                    "source_binding_cap_code",
+                    "source_capacity_source_code",
+                    "source_required_reduction_weight",
+                    "source_remaining_single_name_capacity_weight",
+                    "source_remaining_portfolio_capacity_weight",
+                    "capacity_before_weight",
+                    "capacity_after_weight",
+                    "trade_readiness_status",
+                    "schedule_stage",
+                    "schedule_lag_days",
                     "requested_weight",
                     "admitted_weight",
                     "trimmed_weight",
@@ -447,7 +533,14 @@ def _materialize_portfolio_plan_rows(
                     "trimmed_weight",
                     "final_allocated_weight",
                     "plan_status",
+                    "decision_reason_code",
                     "blocking_reason_code",
+                    "decision_rank",
+                    "decision_order_code",
+                    "trade_readiness_status",
+                    "schedule_stage",
+                    "schedule_lag_days",
+                    "source_binding_cap_code",
                     "candidate_decision_nk",
                     "capacity_snapshot_nk",
                     "portfolio_plan_contract_version",
@@ -469,7 +562,14 @@ def _materialize_portfolio_plan_rows(
                     "admitted_weight",
                     "trimmed_weight",
                     "plan_status",
+                    "decision_reason_code",
                     "blocking_reason_code",
+                    "decision_rank",
+                    "decision_order_code",
+                    "trade_readiness_status",
+                    "schedule_stage",
+                    "schedule_lag_days",
+                    "source_binding_cap_code",
                     "portfolio_gross_cap_weight",
                     "portfolio_gross_used_weight",
                     "portfolio_gross_remaining_weight",
@@ -495,9 +595,11 @@ def _materialize_portfolio_plan_rows(
                     allocation_snapshot_nk,
                     candidate_nk,
                     plan_status,
+                    decision_reason_code,
+                    trade_readiness_status,
                     materialization_action
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 [
                     run_id,
@@ -507,6 +609,8 @@ def _materialize_portfolio_plan_rows(
                     bundle.allocation_row.allocation_snapshot_nk,
                     bundle.decision_row.candidate_nk,
                     bundle.decision_row.decision_status,
+                    bundle.decision_row.decision_reason_code,
+                    bundle.decision_row.trade_readiness_status,
                     materialization_action,
                 ],
             )
@@ -537,6 +641,10 @@ def _materialize_portfolio_plan_rows(
         requested_total_weight=requested_total_weight,
         admitted_total_weight=admitted_total_weight,
         trimmed_total_weight=trimmed_total_weight,
+        blocked_total_weight=blocked_total_weight,
+        deferred_total_weight=deferred_total_weight,
+        decision_reason_counts=dict(sorted(decision_reason_counts.items())),
+        trade_readiness_counts=dict(sorted(trade_readiness_counts.items())),
         portfolio_gross_cap_weight=portfolio_gross_cap_weight,
         portfolio_gross_used_weight=latest_used_weight,
         portfolio_gross_remaining_weight=latest_remaining_weight,

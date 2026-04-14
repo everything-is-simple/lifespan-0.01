@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import date
 from pathlib import Path
 
@@ -76,23 +77,32 @@ def _seed_position_bridge_rows(settings, rows: list[dict[str, object]]) -> None:
                     candidate_nk,
                     capacity_snapshot_role,
                     current_position_weight,
+                    risk_budget_weight,
                     context_max_position_weight,
+                    single_name_cap_weight,
+                    portfolio_cap_weight,
                     remaining_single_name_capacity_weight,
                     remaining_portfolio_capacity_weight,
                     final_allowed_position_weight,
                     required_reduction_weight,
+                    binding_cap_code,
                     capacity_source_code
                 )
-                VALUES (?, ?, 'default', 0, ?, ?, ?, ?, ?, 'unit_test_seed')
+                VALUES (?, ?, 'default', 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 [
                     f"{row['candidate_nk']}|capacity|{index}",
                     row["candidate_nk"],
+                    row.get("risk_budget_weight", row["final_allowed_position_weight"]),
                     row.get("context_max_position_weight", row["final_allowed_position_weight"]),
+                    row.get("single_name_cap_weight", row["final_allowed_position_weight"]),
+                    row.get("portfolio_cap_weight", row["final_allowed_position_weight"]),
                     row.get("remaining_single_name_capacity_weight", row["final_allowed_position_weight"]),
                     row.get("remaining_portfolio_capacity_weight", row["final_allowed_position_weight"]),
                     row["final_allowed_position_weight"],
                     row.get("required_reduction_weight", 0.0),
+                    row.get("binding_cap_code", "no_binding_cap"),
+                    row.get("capacity_source_code", "unit_test_seed"),
                 ],
             )
             conn.execute(
@@ -102,6 +112,8 @@ def _seed_position_bridge_rows(settings, rows: list[dict[str, object]]) -> None:
                     candidate_nk,
                     policy_id,
                     entry_leg_role,
+                    schedule_stage,
+                    schedule_lag_days,
                     position_action_decision,
                     target_weight,
                     target_notional,
@@ -111,12 +123,14 @@ def _seed_position_bridge_rows(settings, rows: list[dict[str, object]]) -> None:
                     reference_price,
                     reference_trade_date
                 )
-                VALUES (?, ?, ?, 'base_entry', ?, ?, 0, 0, ?, ?, 10.0, ?)
+                VALUES (?, ?, ?, 'base_entry', ?, ?, ?, ?, 0, 0, ?, ?, 10.0, ?)
                 """,
                 [
                     f"{row['candidate_nk']}|sizing|{index}",
                     row["candidate_nk"],
                     row["policy_id"],
+                    row.get("schedule_stage", "t+1"),
+                    row.get("schedule_lag_days", 1),
                     row["position_action_decision"],
                     row["final_allowed_position_weight"],
                     row["final_allowed_position_weight"],
@@ -165,6 +179,7 @@ def test_run_portfolio_plan_build_freezes_v2_ledgers_and_natural_keys(
                 "candidate_status": "blocked",
                 "position_action_decision": "reject_open",
                 "final_allowed_position_weight": 0.08,
+                "blocked_reason_code": "position_precheck_failed",
             },
             {
                 "candidate_nk": "cand-004",
@@ -174,6 +189,17 @@ def test_run_portfolio_plan_build_freezes_v2_ledgers_and_natural_keys(
                 "candidate_status": "admitted",
                 "position_action_decision": "open_up_to_context_cap",
                 "final_allowed_position_weight": 0.07,
+            },
+            {
+                "candidate_nk": "cand-005",
+                "instrument": "000005.SZ",
+                "policy_id": "fixed_notional_full_exit_v1",
+                "reference_trade_date": "2026-04-09",
+                "candidate_status": "admitted",
+                "position_action_decision": "open_up_to_context_cap",
+                "final_allowed_position_weight": 0.06,
+                "schedule_stage": "t+2",
+                "schedule_lag_days": 2,
             },
         ],
     )
@@ -188,14 +214,28 @@ def test_run_portfolio_plan_build_freezes_v2_ledgers_and_natural_keys(
         limit=10,
     )
 
-    assert summary.bounded_candidate_count == 4
+    assert summary.bounded_candidate_count == 5
     assert summary.admitted_count == 1
     assert summary.trimmed_count == 1
     assert summary.blocked_count == 2
-    assert summary.deferred_count == 0
-    assert summary.inserted_count == 4
+    assert summary.deferred_count == 1
+    assert summary.inserted_count == 5
     assert summary.portfolio_gross_used_weight == 0.20
     assert summary.portfolio_gross_remaining_weight == 0.0
+    assert summary.blocked_total_weight == pytest.approx(0.15)
+    assert summary.deferred_total_weight == pytest.approx(0.06)
+    assert summary.decision_reason_counts == {
+        "admitted_without_trim": 1,
+        "await_future_schedule_stage": 1,
+        "portfolio_capacity_exhausted": 1,
+        "position_precheck_failed": 1,
+        "trimmed_by_portfolio_capacity": 1,
+    }
+    assert summary.trade_readiness_counts == {
+        "await_schedule": 1,
+        "blocked": 2,
+        "trade_ready": 2,
+    }
 
     conn = duckdb.connect(str(portfolio_plan_ledger_path(settings)), read_only=True)
     try:
@@ -209,6 +249,8 @@ def test_run_portfolio_plan_build_freezes_v2_ledgers_and_natural_keys(
         decision_rows = conn.execute(
             """
             SELECT candidate_decision_nk, candidate_nk, decision_status, decision_reason_code,
+                   decision_rank, trade_readiness_status, source_binding_cap_code,
+                   capacity_before_weight, capacity_after_weight,
                    requested_weight, admitted_weight, trimmed_weight
             FROM portfolio_plan_candidate_decision
             ORDER BY candidate_nk
@@ -216,21 +258,32 @@ def test_run_portfolio_plan_build_freezes_v2_ledgers_and_natural_keys(
         ).fetchall()
         capacity_row = conn.execute(
             """
-            SELECT capacity_snapshot_nk, capacity_scope, admitted_candidate_count, blocked_candidate_count,
-                   trimmed_candidate_count, portfolio_gross_used_weight, portfolio_gross_remaining_weight
+            SELECT capacity_snapshot_nk, capacity_scope, requested_candidate_count, admitted_candidate_count,
+                   blocked_candidate_count, trimmed_candidate_count, deferred_candidate_count,
+                   requested_total_weight, blocked_total_weight, deferred_total_weight,
+                   binding_constraint_code, capacity_decision_reason_code,
+                   portfolio_gross_used_weight, portfolio_gross_remaining_weight
             FROM portfolio_plan_capacity_snapshot
             """
         ).fetchone()
+        capacity_summary_json = conn.execute(
+            """
+            SELECT capacity_reason_summary_json
+            FROM portfolio_plan_capacity_snapshot
+            """
+        ).fetchone()[0]
         allocation_rows = conn.execute(
             """
-            SELECT allocation_snapshot_nk, candidate_nk, allocation_scene, final_allocated_weight, plan_status
+            SELECT allocation_snapshot_nk, candidate_nk, allocation_scene, final_allocated_weight, plan_status,
+                   decision_reason_code, decision_rank, trade_readiness_status, schedule_stage
             FROM portfolio_plan_allocation_snapshot
             ORDER BY candidate_nk
             """
         ).fetchall()
         snapshot_rows = conn.execute(
             """
-            SELECT candidate_nk, candidate_decision_nk, capacity_snapshot_nk, allocation_snapshot_nk, plan_status
+            SELECT candidate_nk, candidate_decision_nk, capacity_snapshot_nk, allocation_snapshot_nk,
+                   plan_status, decision_reason_code, decision_rank, trade_readiness_status
             FROM portfolio_plan_snapshot
             ORDER BY candidate_nk
             """
@@ -239,7 +292,7 @@ def test_run_portfolio_plan_build_freezes_v2_ledgers_and_natural_keys(
         conn.close()
 
     contract_version = DEFAULT_PORTFOLIO_PLAN_CONTRACT_VERSION
-    assert run_row == ("completed", 4, 1, 2, 1, 0)
+    assert run_row == ("completed", 5, 1, 2, 1, 1)
     assert [row[:4] for row in decision_rows] == [
         (
             f"cand-001|main_book|2026-04-09|{contract_version}",
@@ -257,7 +310,7 @@ def test_run_portfolio_plan_build_freezes_v2_ledgers_and_natural_keys(
             f"cand-003|main_book|2026-04-09|{contract_version}",
             "cand-003",
             "blocked",
-            "position_candidate_blocked",
+            "position_precheck_failed",
         ),
         (
             f"cand-004|main_book|2026-04-09|{contract_version}",
@@ -265,28 +318,70 @@ def test_run_portfolio_plan_build_freezes_v2_ledgers_and_natural_keys(
             "blocked",
             "portfolio_capacity_exhausted",
         ),
+        (
+            f"cand-005|main_book|2026-04-09|{contract_version}",
+            "cand-005",
+            "deferred",
+            "await_future_schedule_stage",
+        ),
     ]
-    assert decision_rows[0][4] == pytest.approx(0.15)
-    assert decision_rows[0][5] == pytest.approx(0.15)
-    assert decision_rows[0][6] == pytest.approx(0.0)
-    assert decision_rows[1][4] == pytest.approx(0.10)
-    assert decision_rows[1][5] == pytest.approx(0.05)
-    assert decision_rows[1][6] == pytest.approx(0.05)
-    assert decision_rows[2][4] == pytest.approx(0.08)
-    assert decision_rows[2][5] == pytest.approx(0.0)
-    assert decision_rows[2][6] == pytest.approx(0.0)
-    assert decision_rows[3][4] == pytest.approx(0.07)
-    assert decision_rows[3][5] == pytest.approx(0.0)
-    assert decision_rows[3][6] == pytest.approx(0.0)
-    assert capacity_row == (
+    assert decision_rows[0][4:7] == (1, "trade_ready", "no_binding_cap")
+    assert decision_rows[0][7] == pytest.approx(0.20)
+    assert decision_rows[0][8] == pytest.approx(0.05)
+    assert decision_rows[0][9] == pytest.approx(0.15)
+    assert decision_rows[0][10] == pytest.approx(0.15)
+    assert decision_rows[0][11] == pytest.approx(0.0)
+    assert decision_rows[1][4:7] == (2, "trade_ready", "no_binding_cap")
+    assert decision_rows[1][7] == pytest.approx(0.05)
+    assert decision_rows[1][8] == pytest.approx(0.0)
+    assert decision_rows[1][9] == pytest.approx(0.10)
+    assert decision_rows[1][10] == pytest.approx(0.05)
+    assert decision_rows[1][11] == pytest.approx(0.05)
+    assert decision_rows[2][4:7] == (3, "blocked", "no_binding_cap")
+    assert decision_rows[2][7] == pytest.approx(0.0)
+    assert decision_rows[2][8] == pytest.approx(0.0)
+    assert decision_rows[2][9] == pytest.approx(0.08)
+    assert decision_rows[2][10] == pytest.approx(0.0)
+    assert decision_rows[2][11] == pytest.approx(0.0)
+    assert decision_rows[3][4:7] == (4, "blocked", "no_binding_cap")
+    assert decision_rows[3][7] == pytest.approx(0.0)
+    assert decision_rows[3][8] == pytest.approx(0.0)
+    assert decision_rows[3][9] == pytest.approx(0.07)
+    assert decision_rows[3][10] == pytest.approx(0.0)
+    assert decision_rows[3][11] == pytest.approx(0.0)
+    assert decision_rows[4][4:7] == (5, "await_schedule", "no_binding_cap")
+    assert decision_rows[4][7] == pytest.approx(0.0)
+    assert decision_rows[4][8] == pytest.approx(0.0)
+    assert decision_rows[4][9] == pytest.approx(0.06)
+    assert decision_rows[4][10] == pytest.approx(0.0)
+    assert decision_rows[4][11] == pytest.approx(0.0)
+    assert capacity_row[:7] == (
         f"main_book|portfolio_gross|2026-04-09|{contract_version}",
         "portfolio_gross",
+        5,
         1,
         2,
         1,
+        1,
+    )
+    assert capacity_row[7] == pytest.approx(0.46)
+    assert capacity_row[8] == pytest.approx(0.15)
+    assert capacity_row[9] == pytest.approx(0.06)
+    assert capacity_row[10:] == (
+        "portfolio_gross_cap",
+        "portfolio_capacity_binding",
         0.20,
         0.0,
     )
+    capacity_summary = json.loads(capacity_summary_json)
+    assert capacity_summary["status_counts"] == {
+        "admitted": 1,
+        "blocked": 2,
+        "deferred": 1,
+        "trimmed": 1,
+    }
+    assert capacity_summary["decision_reason_counts"]["await_future_schedule_stage"] == 1
+    assert capacity_summary["trimmed_candidates"][0]["candidate_nk"] == "cand-002"
     assert [row[:3] for row in allocation_rows] == [
         (
             f"cand-001|main_book|trade_ready|2026-04-09|{contract_version}",
@@ -308,15 +403,22 @@ def test_run_portfolio_plan_build_freezes_v2_ledgers_and_natural_keys(
             "cand-004",
             "trade_ready",
         ),
+        (
+            f"cand-005|main_book|trade_ready|2026-04-09|{contract_version}",
+            "cand-005",
+            "trade_ready",
+        ),
     ]
     assert allocation_rows[0][3] == pytest.approx(0.15)
-    assert allocation_rows[0][4] == "admitted"
+    assert allocation_rows[0][4:] == ("admitted", "admitted_without_trim", 1, "trade_ready", "t+1")
     assert allocation_rows[1][3] == pytest.approx(0.05)
-    assert allocation_rows[1][4] == "trimmed"
+    assert allocation_rows[1][4:] == ("trimmed", "trimmed_by_portfolio_capacity", 2, "trade_ready", "t+1")
     assert allocation_rows[2][3] == pytest.approx(0.0)
-    assert allocation_rows[2][4] == "blocked"
+    assert allocation_rows[2][4:] == ("blocked", "position_precheck_failed", 3, "blocked", "t+1")
     assert allocation_rows[3][3] == pytest.approx(0.0)
-    assert allocation_rows[3][4] == "blocked"
+    assert allocation_rows[3][4:] == ("blocked", "portfolio_capacity_exhausted", 4, "blocked", "t+1")
+    assert allocation_rows[4][3] == pytest.approx(0.0)
+    assert allocation_rows[4][4:] == ("deferred", "await_future_schedule_stage", 5, "await_schedule", "t+2")
     assert snapshot_rows == [
         (
             "cand-001",
@@ -324,6 +426,9 @@ def test_run_portfolio_plan_build_freezes_v2_ledgers_and_natural_keys(
             f"main_book|portfolio_gross|2026-04-09|{contract_version}",
             f"cand-001|main_book|trade_ready|2026-04-09|{contract_version}",
             "admitted",
+            "admitted_without_trim",
+            1,
+            "trade_ready",
         ),
         (
             "cand-002",
@@ -331,12 +436,18 @@ def test_run_portfolio_plan_build_freezes_v2_ledgers_and_natural_keys(
             f"main_book|portfolio_gross|2026-04-09|{contract_version}",
             f"cand-002|main_book|trade_ready|2026-04-09|{contract_version}",
             "trimmed",
+            "trimmed_by_portfolio_capacity",
+            2,
+            "trade_ready",
         ),
         (
             "cand-003",
             f"cand-003|main_book|2026-04-09|{contract_version}",
             f"main_book|portfolio_gross|2026-04-09|{contract_version}",
             f"cand-003|main_book|trade_ready|2026-04-09|{contract_version}",
+            "blocked",
+            "position_precheck_failed",
+            3,
             "blocked",
         ),
         (
@@ -345,6 +456,19 @@ def test_run_portfolio_plan_build_freezes_v2_ledgers_and_natural_keys(
             f"main_book|portfolio_gross|2026-04-09|{contract_version}",
             f"cand-004|main_book|trade_ready|2026-04-09|{contract_version}",
             "blocked",
+            "portfolio_capacity_exhausted",
+            4,
+            "blocked",
+        ),
+        (
+            "cand-005",
+            f"cand-005|main_book|2026-04-09|{contract_version}",
+            f"main_book|portfolio_gross|2026-04-09|{contract_version}",
+            f"cand-005|main_book|trade_ready|2026-04-09|{contract_version}",
+            "deferred",
+            "await_future_schedule_stage",
+            5,
+            "await_schedule",
         ),
     ]
 

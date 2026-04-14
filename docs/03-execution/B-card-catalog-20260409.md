@@ -2,9 +2,9 @@
 `日期：2026-04-09`
 `状态：持续更新`
 
-1. 当前下一锚：`53-portfolio-plan-capacity-decision-ledger-hardening-card-20260413.md`
-2. 当前待施工卡：`53-portfolio-plan-capacity-decision-ledger-hardening-card-20260413.md`
-3. 正式主线剩余卡：`9`
+1. 当前下一锚：`54-portfolio-plan-data-grade-checkpoint-replay-and-freshness-card-20260413.md`
+2. 当前待施工卡：`54-portfolio-plan-data-grade-checkpoint-replay-and-freshness-card-20260413.md`
+3. 正式主线剩余卡：`8`
 4. 可选 Sidecar 剩余卡：`0`
 5. 历史治理 backlog：`0`
 
@@ -72,9 +72,9 @@
 105. `105-system-runtime-orchestration-bootstrap-card-20260411.md`
 
 ## 当前说明
-1. 最新生效结论锚点已推进到 `52-portfolio-plan-official-ledger-family-and-natural-key-freeze-conclusion-20260414.md`。
-2. `52-portfolio-plan-official-ledger-family-and-natural-key-freeze-card-20260413.md` 已完成并接受。
-3. 当前正式主线待施工卡已切到 `53`；`53 -> 55` 现在按既定顺序继续推进。
+1. 最新生效结论锚点已推进到 `53-portfolio-plan-capacity-decision-ledger-hardening-conclusion-20260414.md`。
+2. `53-portfolio-plan-capacity-decision-ledger-hardening-card-20260413.md` 已完成并接受。
+3. 当前正式主线待施工卡已切到 `54`；`54 -> 55` 现在按既定顺序继续推进。
 4. 当前卡组顺序维持为 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。
 
 ## 卡组路线图
