@@ -188,6 +188,12 @@ def _build_fake_client() -> FakeTushareClient:
                     suspend_timing="全天停牌",
                     suspend_type="S",
                 ),
+                TushareSuspendRow(
+                    ts_code="300001.SZ",
+                    trade_date=date(2026, 4, 8),
+                    suspend_timing="全天停牌",
+                    suspend_type="S",
+                ),
             ),
         },
         stock_st_rows={
@@ -195,6 +201,13 @@ def _build_fake_client() -> FakeTushareClient:
                 TushareStockStRow(
                     ts_code="000002.SZ",
                     name="ST万科A",
+                    trade_date=date(2026, 4, 8),
+                    type="1",
+                    type_name="ST",
+                ),
+                TushareStockStRow(
+                    ts_code="300001.SZ",
+                    name="ST特锐德",
                     trade_date=date(2026, 4, 8),
                     type="1",
                     type_name="ST",
