@@ -84,6 +84,7 @@
 103. `103-trade-backtest-progression-runner-conclusion-20260411.md`
 104. `104-mainline-real-data-smoke-regression-conclusion-20260411.md`
 105. `105-system-runtime-orchestration-bootstrap-conclusion-20260411.md`
+106. `72-historical-objective-profile-backfill-execution-conclusion-20260415.md`
 ## 主线状态
 1. `69` 已成为当前最新生效结论锚点。
 2. `60` 已完成整改批次登记与施工顺序冻结，`61` 已收紧 `truthfulness ≠ completeness` 的执行口径，`62` 已把 `filter` 重置回 pre-trigger 边界，`63` 已把 `wave_life` 官方空表与 bootstrap/replay 边界正式裁清，`64` 已把 `stage × percentile` 的正式接入层冻结在 `alpha formal signal`，`65` 已把 final admission authority 从 `filter` 正式收回到 `alpha formal signal`，`66` 已正式把这些整改结论统一收口为 resume gate。

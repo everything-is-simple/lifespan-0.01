@@ -1,8 +1,8 @@
 ﻿# 执行卡目录 `日期：2026-04-09`
 `状态：持续更新`
 
-1. 当前下一锚：`71-tushare-objective-source-ledger-and-profile-materialization-card-20260415.md`
-2. 当前待施工卡：`71-tushare-objective-source-ledger-and-profile-materialization-card-20260415.md`
+1. 当前下一锚：`72-historical-objective-profile-backfill-execution-card-20260415.md`
+2. 当前待施工卡：`72-historical-objective-profile-backfill-execution-card-20260415.md`
 3. 正式主线剩余卡：`14`
 4. 可选 Sidecar 剩余卡：`0`
 5. 历史治理 backlog：`0`
@@ -93,6 +93,7 @@
 103. `103-trade-backtest-progression-runner-card-20260411.md`
 104. `104-mainline-real-data-smoke-regression-card-20260411.md`
 105. `105-system-runtime-orchestration-bootstrap-card-20260411.md`
+106. `72-historical-objective-profile-backfill-execution-card-20260415.md`
 ## 当前说明
 
 1. 最新生效结论锚点已推进到 `69-filter-objective-tradability-and-universe-gate-freeze-conclusion-20260415.md`。
