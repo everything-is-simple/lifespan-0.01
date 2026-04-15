@@ -108,7 +108,12 @@ def find_section_bounds(lines: list[str], section_title: str) -> tuple[int, int]
     return heading_index, section_end
 
 
-def insert_numbered_entry(catalog_path: Path, section_title: str, entry_name: str, dry_run: bool) -> None:
+def insert_numbered_entry(
+    catalog_path: Path,
+    section_title: str | tuple[str, ...],
+    entry_name: str,
+    dry_run: bool,
+) -> None:
     """向目录分栏插入新的编号项。"""
 
     text = catalog_path.read_text(encoding="utf-8")
@@ -117,7 +122,17 @@ def insert_numbered_entry(catalog_path: Path, section_title: str, entry_name: st
         return
 
     lines = text.splitlines()
-    _, section_end = find_section_bounds(lines, section_title)
+    titles = (section_title,) if isinstance(section_title, str) else section_title
+    last_error: ValueError | None = None
+    section_end = -1
+    for title in titles:
+        try:
+            _, section_end = find_section_bounds(lines, title)
+            break
+        except ValueError as exc:
+            last_error = exc
+    if section_end == -1:
+        raise last_error or ValueError("未找到可用分栏标题")
 
     last_number = 0
     insert_index = section_end
@@ -133,7 +148,7 @@ def insert_numbered_entry(catalog_path: Path, section_title: str, entry_name: st
             break
 
     new_line = f"{last_number + 1}. `{entry_name}`"
-    print(f"- 预填索引：{catalog_path.name} [{section_title}] += {entry_name}")
+    print(f"- 预填索引：{catalog_path.name} [{titles[0]}] += {entry_name}")
     if dry_run:
         return
 
@@ -186,7 +201,7 @@ def register_indexes(targets: dict[str, Path], dry_run: bool, *, set_current_car
     print("开始回填索引：")
     insert_numbered_entry(CONCLUSION_CATALOG, "正式结论目录", targets["conclusion"].name, dry_run)
     insert_numbered_entry(EVIDENCE_CATALOG, "正式证据目录", targets["evidence"].name, dry_run)
-    insert_numbered_entry(CARD_CATALOG, "正式卡目录", targets["card"].name, dry_run)
+    insert_numbered_entry(CARD_CATALOG, ("正式执行卡", "正式卡目录"), targets["card"].name, dry_run)
     if set_current_card:
         sync_current_card(targets["card"].name, dry_run)
 

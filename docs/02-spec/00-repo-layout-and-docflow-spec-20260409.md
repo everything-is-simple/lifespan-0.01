@@ -41,6 +41,17 @@
 2. 记录
 3. 结论
 
+## `03-execution` 正式目录布局
+
+`docs/03-execution/` 的正式目录边界固定为：
+
+1. 根目录只允许放 `card / conclusion / index / template / README`
+2. `evidence` 只能放在 `docs/03-execution/evidence/`
+3. `record` 只能放在 `docs/03-execution/records/`
+4. 执行闭环文档的正式身份由 `card_no + slug + doc_kind + 目录位置` 共同定义
+5. 把 `*-evidence-*` 或 `*-record-*` 放回根目录，视为治理违规，不得带着错位目录继续推进后续卡
+6. 新增执行四件套默认必须由正式 bundle 入口生成，并接受 execution index governance 检查
+
 ## 流程图
 
 ```mermaid

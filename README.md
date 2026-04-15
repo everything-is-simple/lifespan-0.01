@@ -134,8 +134,8 @@ flowchart LR
   - `malf -> structure -> filter -> alpha` 默认消费 `adjust_method='backward'`
   - `position -> trade` 默认消费 `adjust_method='none'`
   - `forward` 当前只作研究与展示保留
-- 当前最新生效结论锚点已推进到 `67-historical-file-length-debt-burndown-conclusion-20260415.md`；当前待施工卡恢复为 `80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`。
-- `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 现已把 `60 -> 66` 视为已完成整改卡组，但在恢复 `80 -> 86` 之前重新插入 `67` 处理历史 file-length 治理债务。
+- 当前最新生效结论锚点已推进到 `68-execution-doc-layout-governance-restoration-conclusion-20260415.md`；当前待施工卡恢复为 `80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`。
+- `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 现已把 `60 -> 66` 视为已完成整改卡组，并在恢复 `80 -> 86` 之前依次插入并完成 `67` 历史 file-length 治理债务卡与 `68` 执行文档目录治理卡。
 - `100 -> 105` 仍然保留为 `trade/system` 恢复卡组，但只有 `86-pre-trade-middle-ledger-official-cutover-gate-card-20260414.md` 接受后才允许恢复。
 - `txt -> raw_market -> market_base` 继续保留为正式 fallback
 
@@ -195,7 +195,8 @@ flowchart LR
 6. 正式文档默认多用图：涉及模块边界、数据流、状态机、账本表族或施工顺序时，至少提供一张与正文一致的图，优先使用 Mermaid。
 7. 全仓 `python scripts/system/check_development_governance.py` 盘点允许通过 `scripts/system/development_governance_legacy_backlog.py` 登记历史债务；按改动路径触发的严格治理检查仍直接拦截新增违规。
 8. `37` 卡收口时，每解决一项历史债务，都必须同步更新 `development_governance_legacy_backlog.py` 与 `37` 对应的 card / evidence / record / conclusion。
-9. 当前已完成的清债包括 `src/mlq/system/runner.py`、`src/mlq/trade/runner.py`、`src/mlq/alpha/trigger_runner.py`、`src/mlq/filter/runner.py`、`src/mlq/malf/mechanism_runner.py`、`src/mlq/malf/canonical_runner.py`、`src/mlq/structure/runner.py`、`src/mlq/alpha/runner.py`、`src/mlq/data/runner.py`、`tests/unit/data/test_data_runner.py`、`src/mlq/data/bootstrap.py`、`src/mlq/malf/runner.py`、`src/mlq/malf/bootstrap.py`、`src/mlq/alpha/family_runner.py`、`src/mlq/position/bootstrap.py`、`src/mlq/data/data_mainline_incremental_sync.py`、`src/mlq/portfolio_plan/runner.py`、`src/mlq/data/data_market_base_materialization.py`、`src/mlq/data/data_tdxquant.py` 与 `tests/unit/data/test_market_base_runner.py`；当前历史 file-length backlog 已由 `67` 正式清零，`56-59` 已作为真实正式库 middle-ledger `2010` pilot 卡组完成；当前正式施工位已恢复到 `80`，只有 `86` 接受后才恢复 `100-105` trade/system 卡组，本仓 `pytest` 证据仍统一按串行命令登记，避免多个进程争用 `H:\Lifespan-temp\pytest-tmp`。
+9. 当前已完成的清债包括 `src/mlq/system/runner.py`、`src/mlq/trade/runner.py`、`src/mlq/alpha/trigger_runner.py`、`src/mlq/filter/runner.py`、`src/mlq/malf/mechanism_runner.py`、`src/mlq/malf/canonical_runner.py`、`src/mlq/structure/runner.py`、`src/mlq/alpha/runner.py`、`src/mlq/data/runner.py`、`tests/unit/data/test_data_runner.py`、`src/mlq/data/bootstrap.py`、`src/mlq/malf/runner.py`、`src/mlq/malf/bootstrap.py`、`src/mlq/alpha/family_runner.py`、`src/mlq/position/bootstrap.py`、`src/mlq/data/data_mainline_incremental_sync.py`、`src/mlq/portfolio_plan/runner.py`、`src/mlq/data/data_market_base_materialization.py`、`src/mlq/data/data_tdxquant.py` 与 `tests/unit/data/test_market_base_runner.py`；当前历史 file-length backlog 已由 `67` 正式清零，`68` 已把执行文档目录纪律恢复到 `root/card-conclusion-index-template + evidence/ + records/`，`56-59` 已作为真实正式库 middle-ledger `2010` pilot 卡组完成；当前正式施工位已恢复到 `80`，只有 `86` 接受后才恢复 `100-105` trade/system 卡组，本仓 `pytest` 证据仍统一按串行命令登记，避免多个进程争用 `H:\Lifespan-temp\pytest-tmp`。
+10. `docs/03-execution/` 根目录只允许保留 `card / conclusion / index / template / README`；正式 `evidence` 与 `record` 必须分别落在 `docs/03-execution/evidence/` 与 `docs/03-execution/records/`，不得再回根目录漂移。
 
 ## 建议阅读顺序
 

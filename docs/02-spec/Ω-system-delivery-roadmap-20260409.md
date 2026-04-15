@@ -15,7 +15,7 @@
 
 1. 历史账本硬约束来自 `docs/01-design/03-historical-ledger-shared-contract-charter-20260409.md`
 2. 全系统统一治理基线来自 `28-system-wide-checkpoint-and-dirty-queue-alignment-conclusion-20260411.md`
-3. 当前最新生效结论锚点为 `67-historical-file-length-debt-burndown-conclusion-20260415.md`
+3. 当前最新生效结论锚点为 `68-execution-doc-layout-governance-restoration-conclusion-20260415.md`
 4. 当前待施工卡为 `80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`
 5. 当前连续前置卡组为 `80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86`
 
@@ -89,8 +89,9 @@ flowchart LR
 5. `52 -> 53 -> 54 -> 55`
 6. `60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66`
 7. `67`
-8. `80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86`
-9. `100 -> 101 -> 102 -> 103 -> 104 -> 105`
+8. `68`
+9. `80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86`
+10. `100 -> 101 -> 102 -> 103 -> 104 -> 105`
 
 其中：
 
@@ -102,9 +103,10 @@ flowchart LR
 6. `52 -> 55` 是 `portfolio_plan` A 级硬化与 pre-trade gate
 7. `60 -> 66` 是 `59` 后的主线整改与恢复闸门卡组
 8. `67` 是已完成的历史 file-length 治理债务重登记与清理卡
-9. `80 -> 86` 是治理收口后的 official middle-ledger 恢复与 cutover gate 卡组
-10. `100 -> 105` 是 `trade/system` 恢复卡组
-11. `105` 明确固定为最后一张后置卡
+9. `68` 是已完成的执行文档目录治理恢复与固化卡
+10. `80 -> 86` 是治理收口后的 official middle-ledger 恢复与 cutover gate 卡组
+11. `100 -> 105` 是 `trade/system` 恢复卡组
+12. `105` 明确固定为最后一张后置卡
 
 ```mermaid
 flowchart LR
@@ -124,8 +126,9 @@ flowchart LR
     G53 --> G54["54 portfolio_plan data-grade runner"]
     G54 --> G55["55 pre-trade upstream baseline gate"]
     G55 --> G6066["60-66 mainline rectification"]
-G6066 --> G67["67 file-length debt cleanup accepted"]
-    G67 --> G8086["80-86 official middle-ledger resume"]
+    G6066 --> G67["67 file-length debt cleanup accepted"]
+    G67 --> G68["68 execution doc layout governance accepted"]
+    G68 --> G8086["80-86 official middle-ledger resume"]
     G8086 --> G100105["100-105 trade/system 恢复卡组"]
     G100105 --> C100["100 signal anchor freeze"]
     C100 --> C101["101 T+1 open 参考价修正"]
@@ -139,11 +142,11 @@ G6066 --> G67["67 file-length debt cleanup accepted"]
 
 1. `29-32` 不是“历史已完成就可忽略”的旧卡组，而是后半部一切恢复卡的前置逻辑顺序。
 2. `43-45` 任何一张未通过前，都不允许进入 `46`。
-3. `55` 接受后并不直接恢复 `100`；真实正式库主线已先经过 `60-67` 整改与治理收口，当前正式恢复路径为 `80-86`。
+3. `55` 接受后并不直接恢复 `100`；真实正式库主线已先经过 `60-68` 整改与治理收口，当前正式恢复路径为 `80-86`。
 4. `100-105` 当前必须在 `86` 接受后按自然数顺排推进，不允许跳过 `100/101` 直接做 `105`。
 5. `47-51` 属于 `position` 追平 `data -> malf` 事实标准的正式卡组，不允许把 `position` 继续当成 bounded skeleton 直接越过。
 6. `52-54` 属于 `portfolio_plan` 追平 `data -> malf` 事实标准的正式卡组，不允许继续把组合层当成最小桥接层直接越过。
-7. `66` 已正式判断无需继续追加整改前置卡；`67` 已完成 file-length 治理收口，不得再以口头状态把历史治理债务挂回 `80-86` 之前。
+7. `66` 已正式判断无需继续追加整改前置卡；`67` 已完成 file-length 治理收口，`68` 已完成执行文档目录治理收口，不得再以口头状态把历史治理债务或目录漂移挂回 `80-86` 之前。
 
 ## 增量更新 / 断点续跑 / 审计依赖图
 
@@ -365,7 +368,7 @@ flowchart TD
 
 影响：
 
-1. `67` 已把历史 file-length backlog 清零，治理阻塞已解除
+1. `67` 已把历史 file-length backlog 清零，`68` 已把执行文档目录治理恢复到正式布局，治理阻塞已解除
 2. 当前主线阻塞重新回到 `80-86` 本身的 official middle-ledger 建库与 cutover
 
 ### 阻塞 2：`100-105` 仍需等待 `86` 放行
@@ -426,7 +429,7 @@ flowchart TD
 - 当前状态：
   `已完成`
 - 下一步依赖：
-`67` 已收口，当前进入 `80-86` official middle-ledger resume
+`68` 已收口，当前进入 `80-86` official middle-ledger resume
 
 ### `M3 alpha 解释层收口`
 
@@ -444,7 +447,7 @@ flowchart TD
 - 当前状态：
   `未完成`
 - 下一步依赖：
-  `67 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 100 -> 104`
+  `68 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 100 -> 104`
 
 ### `M5 system orchestration 收口`
 
@@ -453,7 +456,7 @@ flowchart TD
 - 当前状态：
   `未完成`
 - 下一步依赖：
-  `67 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 104 -> 105`
+  `68 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 104 -> 105`
 
 ## 系统审计依赖图
 

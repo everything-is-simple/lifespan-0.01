@@ -36,7 +36,7 @@
 补充理解：
 
 - `α / β / Ω` 三份路线图文档不只负责阶段进度，也负责说明各模块主要继承自哪些老仓来源、当前继承方式与置信度是什么。
-- 当前 `Ω` 文档还承担后半部施工指挥蓝图职责：它以 `28` 的 `checkpoint + dirty/work queue + replay/resume` 为统一基线，先做 `43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55` 的 pre-trade upstream 前置卡组，再完成 `56 -> 57 -> 58 -> 59` 的 `2010` pilot truthfulness gate，随后插入 `60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66` 主线整改卡组，并在恢复 `80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86` 前插入 `67` 处理历史 file-length 治理债务，最后才进入 `100 -> 105`。
+- 当前 `Ω` 文档还承担后半部施工指挥蓝图职责：它以 `28` 的 `checkpoint + dirty/work queue + replay/resume` 为统一基线，先做 `43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55` 的 pre-trade upstream 前置卡组，再完成 `56 -> 57 -> 58 -> 59` 的 `2010` pilot truthfulness gate，随后插入 `60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66` 主线整改卡组，并在恢复 `80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86` 前依次插入并完成 `67` 历史 file-length 治理债务卡与 `68` 执行文档目录治理卡，最后才进入 `100 -> 105`。
 
 ## 3. 五根目录纪律
 
@@ -143,8 +143,8 @@ flowchart LR
 1. `malf -> structure -> filter -> alpha` 默认使用 `adjust_method = backward`
 2. `position -> trade` 默认使用 `adjust_method = none`
 3. `adjust_method = forward` 当前只作为研究与展示保留，不作为正式执行口径
-4. 当前最新生效结论锚点已推进到 `67-historical-file-length-debt-burndown-conclusion-20260415.md`；`66` 已正式把 `60-65` 的整改结论统一收口为 resume gate，`67` 已完成历史 file-length 治理收口，当前待施工卡恢复为 `80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`，继续要求 `86` 通过后才恢复 `100`。
-5. 当前主线系统级路线图必须以 `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 为准；该文档现在把 `60 -> 66` 固定为 `80-86` 前的主线整改卡组，把 `67` 固定为已完成的历史 file-length 治理卡，把 `80 -> 86` 固定为治理收口后的真实正式库 middle-ledger 恢复卡组，不允许再把“代码已切 canonical”误当成“正式库已切 canonical”，也不允许绕过 `80-86` 直接续推 `100-105`。
+4. 当前最新生效结论锚点已推进到 `68-execution-doc-layout-governance-restoration-conclusion-20260415.md`；`66` 已正式把 `60-65` 的整改结论统一收口为 resume gate，`67` 已完成历史 file-length 治理收口，`68` 已完成执行文档目录治理收口，当前待施工卡恢复为 `80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`，继续要求 `86` 通过后才恢复 `100`。
+5. 当前主线系统级路线图必须以 `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 为准；该文档现在把 `60 -> 66` 固定为 `80-86` 前的主线整改卡组，把 `67` 固定为已完成的历史 file-length 治理卡，把 `68` 固定为已完成的执行文档目录治理卡，把 `80 -> 86` 固定为治理收口后的真实正式库 middle-ledger 恢复卡组，不允许再把“代码已切 canonical”误当成“正式库已切 canonical”，也不允许绕过 `80-86` 直接续推 `100-105`。
 
 ## 5. 历史账本原则
 
@@ -203,7 +203,7 @@ flowchart LR
 只要治理规则、环境脚手架、路径契约、测试入口、执行入口发生变化，就必须同步刷新这三个入口文件。
 其中 `docs/01-design/`、`docs/02-spec/` 与 `src/mlq/core/paths.py` 的正式口径变化，也视为入口变化。
 全仓 `python scripts/system/check_development_governance.py` 盘点允许通过 `scripts/system/development_governance_legacy_backlog.py` 显式登记历史债务；但按改动路径触发的严格治理检查，不得豁免新增违规。
-当前 `66` 与 `67` 均已接受；历史 file-length backlog 已清零。当前正式施工位已恢复到 `80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86`，再由 `86` 接受后恢复 `100-105`。`67` 已完成的清债包括 `src/mlq/data/data_mainline_incremental_sync.py`、`src/mlq/portfolio_plan/runner.py`、`src/mlq/data/data_market_base_materialization.py`、`src/mlq/data/data_tdxquant.py` 与 `tests/unit/data/test_market_base_runner.py`。本仓 `pytest` 证据仍统一按串行口径执行，避免多个进程争用 `H:\Lifespan-temp\pytest-tmp`。
+当前 `66`、`67` 与 `68` 均已接受；历史 file-length backlog 已清零，执行文档目录治理也已恢复。当前正式施工位已恢复到 `80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86`，再由 `86` 接受后恢复 `100-105`。`67` 已完成的清债包括 `src/mlq/data/data_mainline_incremental_sync.py`、`src/mlq/portfolio_plan/runner.py`、`src/mlq/data/data_market_base_materialization.py`、`src/mlq/data/data_tdxquant.py` 与 `tests/unit/data/test_market_base_runner.py`；`68` 已把 `docs/03-execution/` 目录纪律重新冻结为 `root/card-conclusion-index-template-README + evidence/ + records/`。本仓 `pytest` 证据仍统一按串行口径执行，避免多个进程争用 `H:\Lifespan-temp\pytest-tmp`。
 
 ## 8. 文档规则
 
@@ -215,6 +215,7 @@ flowchart LR
 3. 当前正式事实必须写在 `design / spec / execution conclusion` 中。
 4. 执行区默认先读 `conclusion`，不要把历史 `card` 当成当前真相。
 5. 正式文档、设计解释与执行卡在涉及模块边界、数据流、状态机、账本表族或施工顺序时，默认必须提供图示；优先使用 Mermaid，并保证图与正文口径一致。
+6. `docs/03-execution/` 根目录只允许保留 `card / conclusion / index / template / README`；正式 `evidence` 与 `record` 必须分别进入 `docs/03-execution/evidence/` 与 `docs/03-execution/records/`，不得再漂回根目录。
 
 ## 9. 代码规则
 

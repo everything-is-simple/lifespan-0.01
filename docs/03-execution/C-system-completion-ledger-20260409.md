@@ -48,13 +48,14 @@
 36. `formal signal admission boundary reallocation` 卡 `65`
 37. `mainline rectification resume gate` 卡 `66`
 38. `historical file-length debt burndown` 卡 `67`
+39. `execution doc layout governance restoration` 卡 `68`
 
 ## 当前阶段
 
-1. 最新生效结论锚点已推进到 `67-historical-file-length-debt-burndown-conclusion-20260415.md`。
+1. 最新生效结论锚点已推进到 `68-execution-doc-layout-governance-restoration-conclusion-20260415.md`。
 2. `60`、`61`、`62`、`63`、`64`、`65` 与 `66` 已完成并接受。
 3. 当前正式主线待施工卡已恢复到 `80`。
-4. `67` 已完成历史 file-length 债务治理；`80 -> 86` 现恢复为当前 active 的 official middle-ledger resume 卡组，`100` 仍只有在 `86` 接受后才允许恢复。
+4. `67` 已完成历史 file-length 债务治理，`68` 已完成文档目录治理回迁与固化；当前恢复 `80 -> 86` official middle-ledger resume 卡组，`100` 仍只有在 `86` 接受后才允许恢复。
 
 ## 体系图
 
@@ -87,7 +88,8 @@ flowchart LR
     G54 --> G55["55 pre-trade baseline gate"]
     G55 --> G60["60-66 mainline rectification"]
     G60 --> G67["67 file-length debt cleanup accepted"]
-    G67 --> G80["80-86 official middle-ledger resume"]
+    G67 --> G68["68 execution doc layout governance accepted"]
+    G68 --> G80["80-86 official middle-ledger resume"]
     G80 --> NEXT["100 anchor freeze"]
     NEXT --> POST["101-105 trade/system 收口"]
 ```

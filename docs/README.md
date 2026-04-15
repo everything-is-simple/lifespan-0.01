@@ -62,6 +62,14 @@
 如果只是追当前正式口径，先看 `conclusion`；
 如果要继续某一项正式实现，再回到对应 `card / evidence / record`。
 
+执行区目录还有一条不能遗忘的正式纪律：
+
+1. `docs/03-execution/` 根目录只保留 `card / conclusion / index / template / README`
+2. `evidence` 只能进入 `docs/03-execution/evidence/`
+3. `record` 只能进入 `docs/03-execution/records/`
+4. 把 `*-evidence-*` 或 `*-record-*` 直接放回根目录，属于正式治理违规，必须先回迁再继续施工
+5. 后续新增执行文档默认通过执行文档 bundle 脚本生成，并由执行索引检查器持续守护
+
 ### `docs/04-reference/`
 
 这里存放外部资料、书籍笔记、旧系统上下文和第三方材料。
