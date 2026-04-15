@@ -75,6 +75,7 @@
 68. `68-execution-doc-layout-governance-restoration-evidence-20260415.md`
 69. `69-filter-objective-tradability-and-universe-gate-freeze-evidence-20260415.md`
 70. `70-historical-objective-profile-backfill-source-selection-and-governance-evidence-20260415.md`
+71. `71-tushare-objective-source-ledger-and-profile-materialization-evidence-20260415.md`
 100. `100-trade-signal-anchor-contract-freeze-evidence-20260411.md`
 101. `101-position-entry-t-plus-1-open-reference-price-correction-evidence-20260411.md`
 102. `102-trade-exit-pnl-ledger-bootstrap-evidence-20260411.md`

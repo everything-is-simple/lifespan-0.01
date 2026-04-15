@@ -2,8 +2,8 @@
 `日期：2026-04-09`
 `状态：持续更新`
 
-1. 当前下一锤：`70-historical-objective-profile-backfill-source-selection-and-governance-card-20260415.md`
-2. 当前待施工卡：`70-historical-objective-profile-backfill-source-selection-and-governance-card-20260415.md`
+1. 当前下一锤：`71-tushare-objective-source-ledger-and-profile-materialization-card-20260415.md`
+2. 当前待施工卡：`71-tushare-objective-source-ledger-and-profile-materialization-card-20260415.md`
 3. 正式主线剩余卡：`14`
 4. 可选 Sidecar 剩余卡：`0`
 5. 历史治理 backlog：`0`
