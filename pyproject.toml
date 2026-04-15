@@ -67,6 +67,8 @@ formal_runner_scripts = [
     "scripts/data/run_tdx_asset_raw_ingest.py",
     "scripts/data/run_tdx_stock_raw_ingest.py",
     "scripts/data/run_tdxquant_daily_raw_sync.py",
+    "scripts/data/run_tushare_objective_source_sync.py",
+    "scripts/data/run_tushare_objective_profile_materialization.py",
     "scripts/data/run_market_base_build.py",
     "scripts/data/run_mainline_local_ledger_standardization_bootstrap.py",
     "scripts/data/run_mainline_local_ledger_incremental_sync.py",

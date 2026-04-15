@@ -23,9 +23,15 @@ from mlq.data.data_raw_runner import (
 )
 from mlq.data.data_shared import (
     MarketBaseBuildSummary,
+    ObjectiveProfileMaterializationSummary,
     TdxQuantDailyRawSyncSummary,
     TdxStockRawIngestSummary,
+    TushareObjectiveSourceSyncSummary,
     mark_base_instrument_dirty,
+)
+from mlq.data.data_tushare_objective import (
+    run_tushare_objective_profile_materialization,
+    run_tushare_objective_source_sync,
 )
 from mlq.data.data_tdxquant import run_tdxquant_daily_raw_sync
 
@@ -33,8 +39,10 @@ __all__ = [
     "MainlineLocalLedgerIncrementalSyncSummary",
     "MainlineLocalLedgerStandardizationSummary",
     "MarketBaseBuildSummary",
+    "ObjectiveProfileMaterializationSummary",
     "TdxQuantDailyRawSyncSummary",
     "TdxStockRawIngestSummary",
+    "TushareObjectiveSourceSyncSummary",
     "bootstrap_mainline_local_ledger_sync_control",
     "connect_mainline_local_ledger_sync_control",
     "mainline_local_ledger_sync_control_path",
@@ -46,4 +54,6 @@ __all__ = [
     "run_tdx_asset_raw_ingest",
     "run_tdx_stock_raw_ingest",
     "run_tdxquant_daily_raw_sync",
+    "run_tushare_objective_profile_materialization",
+    "run_tushare_objective_source_sync",
 ]

@@ -8,6 +8,19 @@ from typing import Final
 import duckdb
 
 from mlq.core.paths import WorkspaceRoots, default_settings
+from mlq.data.bootstrap_objective_tables import (
+    OBJECTIVE_LEDGER_TABLES,
+    OBJECTIVE_NOT_NULL_COLUMNS,
+    OBJECTIVE_PROFILE_MATERIALIZATION_CHECKPOINT_TABLE,
+    OBJECTIVE_PROFILE_MATERIALIZATION_RUN_PROFILE_TABLE,
+    OBJECTIVE_PROFILE_MATERIALIZATION_RUN_TABLE,
+    OBJECTIVE_REQUIRED_COLUMNS,
+    OBJECTIVE_UNIQUE_INDEXES,
+    TUSHARE_OBJECTIVE_CHECKPOINT_TABLE,
+    TUSHARE_OBJECTIVE_EVENT_TABLE,
+    TUSHARE_OBJECTIVE_REQUEST_TABLE,
+    TUSHARE_OBJECTIVE_RUN_TABLE,
+)
 
 
 RAW_STOCK_FILE_REGISTRY_TABLE: Final[str] = "stock_file_registry"
@@ -107,14 +120,22 @@ _RAW_TDXQUANT_INSTRUMENT_PROFILE_REQUIRED_COLUMNS: Final[dict[str, str]] = {
     "asset_type": "TEXT",
     "observed_trade_date": "DATE",
     "name": "TEXT",
+    "instrument_name": "TEXT",
     "market_type": "TEXT",
     "security_type": "TEXT",
+    "list_status": "TEXT",
+    "list_date": "DATE",
+    "delist_date": "DATE",
     "suspension_status": "TEXT",
     "risk_warning_status": "TEXT",
     "delisting_status": "TEXT",
     "is_suspended_or_unresumed": "BOOLEAN",
     "is_risk_warning_excluded": "BOOLEAN",
     "is_delisting_arrangement": "BOOLEAN",
+    "source_owner": "TEXT",
+    "source_detail_json": "TEXT",
+    "first_seen_run_id": "TEXT",
+    "last_materialized_run_id": "TEXT",
     "source_run_id": "TEXT",
     "source_request_nk": "TEXT",
     "raw_payload_json": "TEXT",
@@ -302,14 +323,22 @@ RAW_MARKET_LEDGER_TABLES: Final[dict[str, str]] = {
             asset_type TEXT NOT NULL,
             observed_trade_date DATE NOT NULL,
             name TEXT,
+            instrument_name TEXT,
             market_type TEXT,
             security_type TEXT,
+            list_status TEXT,
+            list_date DATE,
+            delist_date DATE,
             suspension_status TEXT,
             risk_warning_status TEXT,
             delisting_status TEXT,
             is_suspended_or_unresumed BOOLEAN NOT NULL DEFAULT FALSE,
             is_risk_warning_excluded BOOLEAN NOT NULL DEFAULT FALSE,
             is_delisting_arrangement BOOLEAN NOT NULL DEFAULT FALSE,
+            source_owner TEXT,
+            source_detail_json TEXT,
+            first_seen_run_id TEXT,
+            last_materialized_run_id TEXT,
             source_run_id TEXT NOT NULL,
             source_request_nk TEXT NOT NULL,
             raw_payload_json TEXT,
@@ -317,6 +346,7 @@ RAW_MARKET_LEDGER_TABLES: Final[dict[str, str]] = {
             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
     """,
+    **OBJECTIVE_LEDGER_TABLES,
 }
 
 
@@ -477,6 +507,7 @@ RAW_MARKET_REQUIRED_COLUMNS: Final[dict[str, dict[str, str]]] = {
         "updated_at_utc": "TIMESTAMP",
     },
     RAW_TDXQUANT_INSTRUMENT_PROFILE_TABLE: dict(_RAW_TDXQUANT_INSTRUMENT_PROFILE_REQUIRED_COLUMNS),
+    **OBJECTIVE_REQUIRED_COLUMNS,
 }
 
 
@@ -622,6 +653,7 @@ RAW_MARKET_NOT_NULL_COLUMNS: Final[dict[str, tuple[str, ...]]] = {
         "recorded_at",
         "updated_at",
     ),
+    **OBJECTIVE_NOT_NULL_COLUMNS,
 }
 
 
@@ -664,6 +696,7 @@ RAW_MARKET_UNIQUE_INDEXES: Final[dict[str, tuple[tuple[str, tuple[str, ...]], ..
     RAW_TDXQUANT_INSTRUMENT_PROFILE_TABLE: (
         ("ux_raw_tdxquant_instrument_profile_profile_nk", ("profile_nk",)),
     ),
+    **OBJECTIVE_UNIQUE_INDEXES,
 }
 
 

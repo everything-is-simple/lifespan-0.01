@@ -87,6 +87,12 @@ flowchart LR
   - 把 `TdxQuant(dividend_type='none')` 作为股票日更原始事实桥接进 `raw_market.stock_daily_bar(adjust_method='none')`
   - 只标记 `base_dirty_instrument(adjust_method='none')`
   - 同步把 `get_stock_info` 的官方客观状态沉淀进 `raw_market.raw_tdxquant_instrument_profile`，供 `filter` 只读消费 objective gate
+- `scripts/data/run_tushare_objective_source_sync.py`
+  - 把 `Tushare stock_basic / suspend_d / stock_st / namechange` 有边界地同步进 `raw_market.tushare_objective_{run,request,checkpoint,event}`
+  - 正式 CLI 必须显式二选一：传入 `signal_start_date / signal_end_date` 走 bounded window，或显式传入 `--use-checkpoint-queue`
+- `scripts/data/run_tushare_objective_profile_materialization.py`
+  - 把 `tushare_objective_event` 有边界地物化进 `raw_market.raw_tdxquant_instrument_profile`
+  - 正式 CLI 必须显式二选一：传入 `signal_start_date / signal_end_date` 走 bounded window，或显式传入 `--use-checkpoint-queue`
 - `scripts/data/run_market_base_build.py`
   - 从官方 `raw_market` 物化 `market_base.{stock,index,block}_daily_adjusted`
   - 支持 `--asset-type {stock,index,block}`

@@ -32,6 +32,13 @@ from mlq.data.bootstrap import (
     RAW_INGEST_RUN_TABLE,
     RAW_STOCK_DAILY_BAR_TABLE,
     RAW_STOCK_FILE_REGISTRY_TABLE,
+    TUSHARE_OBJECTIVE_CHECKPOINT_TABLE,
+    TUSHARE_OBJECTIVE_EVENT_TABLE,
+    TUSHARE_OBJECTIVE_REQUEST_TABLE,
+    TUSHARE_OBJECTIVE_RUN_TABLE,
+    OBJECTIVE_PROFILE_MATERIALIZATION_CHECKPOINT_TABLE,
+    OBJECTIVE_PROFILE_MATERIALIZATION_RUN_PROFILE_TABLE,
+    OBJECTIVE_PROFILE_MATERIALIZATION_RUN_TABLE,
     RAW_TDXQUANT_INSTRUMENT_CHECKPOINT_TABLE,
     RAW_TDXQUANT_INSTRUMENT_PROFILE_TABLE,
     RAW_TDXQUANT_REQUEST_TABLE,
@@ -66,6 +73,10 @@ RAW_INGEST_RUNNER_NAME: Final[str] = "run_tdx_stock_raw_ingest"
 RAW_INGEST_RUNNER_VERSION: Final[str] = "2026-04-10-card17-slice5"
 TDXQUANT_DAILY_RAW_SYNC_RUNNER_NAME: Final[str] = "run_tdxquant_daily_raw_sync"
 TDXQUANT_DAILY_RAW_SYNC_RUNNER_VERSION: Final[str] = "2026-04-10-card19-slice2"
+TUSHARE_OBJECTIVE_SOURCE_SYNC_RUNNER_NAME: Final[str] = "run_tushare_objective_source_sync"
+TUSHARE_OBJECTIVE_SOURCE_SYNC_RUNNER_VERSION: Final[str] = "2026-04-15-card71-slice1"
+OBJECTIVE_PROFILE_MATERIALIZATION_RUNNER_NAME: Final[str] = "run_tushare_objective_profile_materialization"
+OBJECTIVE_PROFILE_MATERIALIZATION_RUNNER_VERSION: Final[str] = "2026-04-15-card71-slice1"
 BASE_BUILD_RUNNER_NAME: Final[str] = "run_market_base_build"
 BASE_BUILD_RUNNER_VERSION: Final[str] = "2026-04-10-card17-slice1"
 
@@ -129,6 +140,41 @@ class TdxQuantDailyRawSyncSummary:
     dirty_mark_count: int
     raw_market_path: str
     market_base_path: str
+
+    def as_dict(self) -> dict[str, object]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class TushareObjectiveSourceSyncSummary:
+    run_id: str
+    source_api_scope: tuple[str, ...]
+    signal_start_date: str | None
+    signal_end_date: str | None
+    candidate_cursor_count: int
+    processed_request_count: int
+    successful_request_count: int
+    failed_request_count: int
+    inserted_event_count: int
+    reused_event_count: int
+    rematerialized_event_count: int
+    raw_market_path: str
+
+    def as_dict(self) -> dict[str, object]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class ObjectiveProfileMaterializationSummary:
+    run_id: str
+    signal_start_date: str | None
+    signal_end_date: str | None
+    candidate_profile_count: int
+    processed_profile_count: int
+    inserted_profile_count: int
+    reused_profile_count: int
+    rematerialized_profile_count: int
+    raw_market_path: str
 
     def as_dict(self) -> dict[str, object]:
         return asdict(self)
