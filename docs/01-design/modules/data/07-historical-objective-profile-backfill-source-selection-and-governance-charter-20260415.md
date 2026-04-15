@@ -1,5 +1,4 @@
 # data 模块历史 objective profile 回补源选型与治理章程
-
 `日期：2026-04-15`
 `状态：生效中`
 
@@ -13,7 +12,7 @@
 
 这说明当前缺口已经不再是 `filter` 合同冻结问题，而是独立的“历史 objective profile 回补 / 覆盖率治理”问题。
 
-同时，当前 `run_tdxquant_daily_raw_sync(...)` 里的 `get_stock_info(code)` 更像“当前观测快照按 `observed_trade_date` 记账”，尚未证明它能回放历史时点的停牌、ST、退市整理等状态。直接把今天查到的状态回填到历史日期，会破坏历史账本真值语义。
+同时，当前 `run_tdxquant_daily_raw_sync(...)` 内的 `get_stock_info(code)` 更像“当前观测快照按 `observed_trade_date` 记账”，尚未证明它能回放历史时点的停牌、ST、退市整理、证券类型与市场类型。直接把今天查到的状态回填到历史日期，会破坏历史账本真值语义。
 
 ## 设计输入
 
@@ -24,76 +23,102 @@
 5. `docs/02-spec/Ω-system-delivery-roadmap-20260409.md`
 6. `docs/03-execution/69-filter-objective-tradability-and-universe-gate-freeze-conclusion-20260415.md`
 7. `docs/03-execution/evidence/69-filter-objective-tradability-and-universe-gate-freeze-evidence-20260415.md`
+8. `docs/03-execution/evidence/70-historical-objective-profile-backfill-source-selection-and-governance-evidence-20260415.md`
 
 ## 裁决
 
-### 裁决一：`70` 是选型与治理卡，不是正式 backfill runner 卡
+### 裁决一：`70` 是 source-selection + 字段映射 + 账本化设计卡，不是正式 backfill runner 卡
 
 本轮先冻结：
 
 1. 候选历史源的真值能力。
-2. 候选历史源与正式账本的契约映射。
-3. 后续实现卡的边界与风险。
+2. 候选历史源与正式账本的字段映射。
+3. 后续实现卡的表族、批量建仓、增量与 checkpoint 口径。
 
 本轮不直接新增正式回补 runner，也不把任何第三方数据直接写成正式历史真值。
 
-### 裁决二：objective 字段必须分层，不得把静态字段和时变状态混成一类
+### 裁决二：`Tushare` 暂定为主源，`Baostock` 只保留侧证职责
 
-本轮至少区分两类信息：
+当前书面裁定：
 
-1. 低频或静态字段：`name / market_type / security_type / list_status / list_date / delist_date` 一类。
-2. 时变状态字段：`suspension_status / risk_warning_status / delisting_arrangement` 一类。
+1. `Tushare stock_basic + suspend_d + stock_st + namechange` 组成主源候选组合。
+2. `Baostock` 仅用于 `tradestatus / isST` 的日级交叉验证和审计侧证。
+3. `TdxQuant get_stock_info(...)` 仅保留为面向未来的当前观测快照候选，不外推成历史真值源。
 
-如果上游源只能提供“当前快照”而不能提供“历史生效时点”，则它最多只能作为向前增量沉淀的来源，不能直接当作历史回补真值源。
+### 裁决三：objective 信息必须拆成“源事件账本”和“官方消费快照”两层
 
-### 裁决三：候选源优先按“历史时点真值能力”排序，不按单次抓取便利性排序
+后续正式实现优先采用两层结构：
 
-本轮比较维度固定为：
+1. `raw_market.tushare_objective_run / request / checkpoint / event`
+   - 记录外部源抓取过程、请求窗口、断点、原始归一化事件。
+2. `raw_market.raw_tdxquant_instrument_profile`
+   - 继续作为 `filter` 的官方 objective 日级消费快照。
+   - 虽然表名带 `tdxquant`，但在后续实现卡落地前先视为“官方 objective profile 快照合同”的现役名称，不在 `70` 内改合同名。
 
-1. 是否有按日期或生效日的历史接口。
-2. 是否能覆盖 `2010-01-04 -> 2026-04-08` 最小缺口窗口。
-3. 是否能稳定支持 A 股 universe、停复牌、ST、退市整理等正式 gate 字段。
-4. 是否能沉淀成可审计、可续跑的正式账本，而不是临时 DataFrame。
+这意味着：
 
-### 裁决四：`Tushare` 与 `Baostock` 必须并列做 bounded probe
+1. 外部源抓取不能直接写成下游消费快照。
+2. `filter` 不直接依赖 `Tushare` 在线接口。
+3. 历史回补和未来日更可以共用一套 normalized objective event 账本。
 
-当前候选源冻结为：
+### 裁决四：四个 `Tushare` 接口的职责边界必须拆开
 
-1. `Tushare`
-2. `Baostock`
+1. `stock_basic`
+   - 承担 universe、`market_type`、`security_type`、`list_status`、`list_date`、`delist_date` 的主数据来源。
+2. `suspend_d`
+   - 承担 `suspension_status` 的日期事件来源。
+3. `stock_st`
+   - 承担 `2016-01-01` 之后 `risk_warning_status` 的日级事实来源。
+4. `namechange`
+   - 承担 `2016-01-01` 之前 `risk_warning_status` 的补齐来源，并作为 `delisting_arrangement` 候选来源之一。
 
-其中：
+其中 `namechange` 只提供名称区间与变更原因，不是天然干净的状态事实，因此后续实现卡必须先定义：
 
-1. `Tushare` 重点验证 `stock_basic / suspend_d / st` 三类历史接口及权限门槛。
-2. `Baostock` 重点验证 `query_all_stock(day)`、`query_stock_basic(...)`、`query_history_k_data_plus(..., tradestatus, isST)` 是否足以承担日级快照或交叉验证职责。
+1. `ST/*ST/SST/撤销ST` 的模式识别规则。
+2. 重复行去重规则。
+3. `退`、`退市整理` 等名称区间是否足以支撑 `delisting_arrangement` 的最低合同。
 
-### 裁决五：`TdxQuant get_stock_info(...)` 当前只保留为“向前观测快照候选”，不自动外推成历史真值
+### 裁决五：字段映射优先按“历史真值粒度”设计，不按接口原始返回形状设计
 
-在证明其支持历史时点查询前：
+后续正式账本必须区分：
 
-1. 不把 `get_stock_info(...)` 当作 `2010-01-04 -> 2026-04-08` 的历史回补真值源。
-2. 允许它继续作为未来每日增量沉淀的候选快照源。
-3. 历史回补需要另行选源，或采取“事件源 + 日快照物化”的正式方案。
+1. 低频属性：
+   - `instrument_name`
+   - `market_type`
+   - `security_type`
+   - `list_status`
+   - `list_date`
+   - `delist_date`
+2. 时变 objective 状态：
+   - `suspension_status`
+   - `risk_warning_status`
+   - `delisting_arrangement`
 
-### 裁决六：后续正式实现优先考虑“外部事件账本 -> objective profile 日快照物化”
+因此 `stock_basic` 更适合被规范化为开区间属性事件，`suspend_d / stock_st` 更适合被规范化为交易日事件，`namechange` 更适合被规范化为区间补充事件。
 
-如果候选源成立，后续实现优先考虑：
+### 裁决六：后续实现卡必须支持“历史批量回补”和“未来日更沉淀”两条路径
 
-1. 先沉淀外部事件账本或日级状态账本。
-2. 再统一物化到正式 `objective profile` 日快照。
+最低实现要求：
 
-不直接把各外部源耦合进 `filter` runner。
+1. 批量建仓：
+   - `stock_basic` 以交易所 / `list_status` 维度批量拉取；
+   - `suspend_d / stock_st` 按交易日窗口拉取；
+   - `namechange` 按 bootstrap universe 批量标的拉取。
+2. 增量更新：
+   - `suspend_d / stock_st` 按每日交易日滚动；
+   - `stock_basic` 按低频刷新；
+   - `namechange` 只对新增标的、状态变化标的或审计异常标的定向刷新。
+3. 断点续跑：
+   - checkpoint 至少细化到 `source_api + cursor_type(date/instrument/exchange_status) + cursor_value`。
 
-## 评估维度
+## 预期产出
 
-1. `历史时点能力`
-2. `字段覆盖完整度`
-3. `2010 起最小窗口可回补性`
-4. `A 股 universe / 停牌 / ST / 退市整理覆盖`
-5. `许可证与接入稳定性`
-6. `账本化适配度`
-7. `checkpoint / replay / 审计适配度`
-8. `长期维护成本`
+`70` 的正式产出应至少回答：
+
+1. `Tushare` 四接口各自沉淀到哪个 objective 维度。
+2. 后续实现卡的最小表族与自然键是什么。
+3. 批量建仓、增量更新、checkpoint / replay 如何分层。
+4. `filter` 当前消费合同如何在不改在线依赖的前提下接收历史回补结果。
 
 ## 模块边界
 
@@ -101,7 +126,7 @@
 
 1. `Tushare / Baostock` 双源选型。
 2. objective 字段分层。
-3. 正式账本落地方案比较。
+3. `Tushare` 主源字段映射与账本化形态。
 4. bounded probe、证据、记录、结论。
 
 ### 范围外
@@ -109,21 +134,19 @@
 1. 正式历史 backfill runner 实现。
 2. `filter`、`alpha`、`position` 行为改写。
 3. 大规模历史灌库。
-4. 生产库 schema 改写。
+4. `raw_market` 生产 schema 真正落库。
 
 ## 一句话收口
 
-`70` 的目标不是马上回补历史数据，而是先用正式账本标准裁清：`Tushare / Baostock / TdxQuant` 各自能不能提供历史 objective 真值，哪些字段可以回补，哪些字段只能从现在开始积累。
+`70` 的目标不是马上回补历史数据，而是先把 `Tushare` 四接口如何沉淀成“可审计的源事件账本 + 可消费的 objective 日级快照”裁清，再交给下一张实现卡施工。
 
 ## 流程图
 
 ```mermaid
 flowchart LR
-    AUDIT["69 coverage audit 缺口量化"] --> LAYER["objective 字段分层"]
-    LAYER --> TSH["Tushare bounded probe"]
-    LAYER --> BSK["Baostock bounded probe"]
-    TSH --> CMP["正式账本适配比较"]
-    BSK --> CMP
-    CMP --> DEC["70 结论裁决"]
-    DEC --> NEXT["后续 backfill 实现卡"]
+    AUDIT["69 coverage audit 缺口量化"] --> PROBE["70 双源 probe"]
+    PROBE --> MAP["Tushare 四接口字段映射"]
+    MAP --> LEDGER["源事件账本设计"]
+    LEDGER --> SNAP["官方 objective 日级 snapshot"]
+    SNAP --> NEXT["后续实现卡"]
 ```
