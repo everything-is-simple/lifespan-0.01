@@ -1,7 +1,7 @@
 # mainline middle-ledger 2010 truthfulness gate 卡
 `卡号`：`59`
 `日期`：`2026-04-14`
-`状态`：`待施工`
+`状态`：`已完成`
 
 ## 需求
 
@@ -20,7 +20,7 @@
 
 1. 汇总 `2010` pilot 的 canonical/downstream 正式 row-count 与 scope-count。
 2. 选取代表性样本做 truthfulness / readout spot-check。
-3. 对 `60-65` 是否放行给出正式裁决。
+3. 对 `60-66` 是否放行给出正式裁决。
 
 ## 实现边界
 
@@ -40,7 +40,7 @@
 
 1. `2010` pilot 的正式读数与落表事实完成审计。
 2. 代表性样本抽查通过或明确挂账。
-3. 明确写出是否放行 `60-65`。
+3. 明确写出是否放行 `60-66`。
 4. 若不放行，必须把阻断点写成后续新增卡候选。
 
 ## 卡片结构图
@@ -49,5 +49,5 @@
 flowchart LR
     P57["57 canonical malf"] --> G59["59 pilot gate"]
     P58["58 downstream smoke"] --> G59
-    G59 --> NEXT["60-65 or new cards"]
+    G59 --> NEXT["60-66 or new cards"]
 ```

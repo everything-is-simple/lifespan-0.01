@@ -3,7 +3,7 @@
 `日期：2026-04-09`
 `状态：生效`
 
-当前最新生效结论锚点：`59-mainline-middle-ledger-2010-truthfulness-gate-conclusion-20260414.md`
+当前最新生效结论锚点：`61-structure-filter-tail-coverage-truthfulness-rectification-conclusion-20260415.md`
 
 ## 正式结论目录
 
@@ -66,6 +66,8 @@
 57. `57-malf-canonical-official-2010-bootstrap-and-replay-conclusion-20260414.md`
 58. `58-structure-filter-alpha-official-2010-canonical-smoke-conclusion-20260414.md`
 59. `59-mainline-middle-ledger-2010-truthfulness-gate-conclusion-20260414.md`
+60. `60-mainline-rectification-batch-registration-and-scope-freeze-conclusion-20260415.md`
+61. `61-structure-filter-tail-coverage-truthfulness-rectification-conclusion-20260415.md`
 100. `100-trade-signal-anchor-contract-freeze-conclusion-20260411.md`
 101. `101-position-entry-t-plus-1-open-reference-price-correction-conclusion-20260411.md`
 102. `102-trade-exit-pnl-ledger-bootstrap-conclusion-20260411.md`
@@ -74,10 +76,10 @@
 105. `105-system-runtime-orchestration-bootstrap-conclusion-20260411.md`
 
 ## 主线状态
-1. `59` 已成为当前最新生效结论锚点。
-2. `59` 已正式完成真实正式 `2010` pilot 的 truthfulness gate，但当前待施工卡已改为 `60`，先处理 `60-66` 主线整改卡组。
-3. `29-59` 已完成 canonical malf downstream、mainline ledger standardization、alpha detector、alpha family、quality gate、official replay hardening、alpha producer hardening、pre-position acceptance、position contract freeze、risk/capacity ledger hardening、batched leg contract、position data-grade runner、pre-portfolio-plan position acceptance gate、portfolio_plan ledger family freeze、capacity/decision hardening、data-grade runner、official middle-ledger pilot freeze、official canonical malf bootstrap、official downstream canonical smoke 与 `2010` truthfulness gate 收口。
-4. 当前执行顺序已改为 `60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 100 -> 105`；只有 `66` 接受后才允许恢复 `80-86`，只有 `86` 接受后才允许恢复 `100 -> 105` 的 trade/system 卡组。
+1. `61` 已成为当前最新生效结论锚点。
+2. `60` 已完成整改批次登记与施工顺序冻结，`61` 已正式把 `truthfulness ≠ completeness` 收紧为主线整改口径，当前待施工卡推进到 `62`。
+3. `29-61` 已完成 canonical malf downstream、mainline ledger standardization、alpha detector、alpha family、quality gate、official replay hardening、alpha producer hardening、pre-position acceptance、position contract freeze、risk/capacity ledger hardening、batched leg contract、position data-grade runner、pre-portfolio-plan position acceptance gate、portfolio_plan ledger family freeze、capacity/decision hardening、data-grade runner、official middle-ledger pilot freeze、official canonical malf bootstrap、official downstream canonical smoke、`2010` truthfulness gate 与 tail coverage rectification 收口。
+4. 当前执行顺序保持为 `62 -> 63 -> 64 -> 65 -> 66 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 100 -> 105`；只有 `66` 接受后才允许恢复 `80-86`，只有 `86` 接受后才允许恢复 `100 -> 105` 的 trade/system 卡组。
 
 ## 图示
 ```mermaid

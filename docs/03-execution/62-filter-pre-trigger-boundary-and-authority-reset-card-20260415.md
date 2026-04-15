@@ -5,16 +5,19 @@
 `状态：待施工`
 
 ## 需求
-
-- 当前 `filter` 的正式硬拦截包含 `structure_progress_failed` 与 `reversal_stage_pending`，带有结构裁决色彩。
-- 用户原始意图中的 `filter` 更接近停牌、`ST`、流动性、数据异常、执行不可达等 pre-trigger 准入门，而不是替 `alpha` 提前给出结构性 verdict。
-- 需要正式裁决 `filter` 应保留哪些非结构门控、哪些结构字段应降为 note/risk flag，以及与 `alpha formal signal` 的职责边界如何重分配。
+- 问题：当前 `filter` 的正式硬拦截包含 `structure_progress_failed` 与 `reversal_stage_pending`，带有结构裁决色彩；这使 `filter` 越过 pre-trigger admission 边界，提前替 `alpha` 给出结构性 hard verdict。
+- 目标结果：正式裁决 `filter` 只保留哪些非结构准入门，哪些结构字段必须降为 note/risk flag，并明确 `filter -> alpha formal signal` 的 admission authority 分界。
+- 为什么现在做：`61` 已经确认 truthfulness 不等于 completeness；如果不先把 `filter` 的职责边界掰正，后续 `63 -> 65` 会继续把 coverage 修复、wave_life 接入和 formal signal 分权混写在同一层，主线整改无法稳定收口。
 
 ## 设计输入
 
+- `docs/01-design/modules/filter/00-filter-module-lessons-20260409.md`
+- `docs/01-design/modules/alpha/01-alpha-formal-signal-output-charter-20260409.md`
+- `docs/01-design/modules/malf/08-structure-filter-alpha-rebind-to-canonical-malf-charter-20260411.md`
 - `docs/03-execution/11-structure-filter-formal-contract-and-minimal-snapshot-conclusion-20260409.md`
 - `docs/03-execution/31-structure-filter-alpha-rebind-to-canonical-malf-conclusion-20260411.md`
 - `docs/03-execution/59-mainline-middle-ledger-2010-truthfulness-gate-conclusion-20260414.md`
+- `docs/03-execution/61-structure-filter-tail-coverage-truthfulness-rectification-conclusion-20260415.md`
 - `docs/02-spec/Ω-system-delivery-roadmap-20260409.md`
 
 ## 任务分解
@@ -26,7 +29,7 @@
 ## 实现边界
 
 - 本卡只处理 `filter` 的 pre-trigger 职责边界与合同。
-- 本卡不直接扩成 `alpha detector` 逻辑重写。
+- 本卡不直接扩改 `alpha detector` 逻辑重写。
 - 如需新增非结构门控，必须保持 bounded runner、自然键和审计语义不变。
 
 ## 历史账本约束
@@ -45,7 +48,6 @@
 3. 与 `alpha formal signal` 的 admission authority 交界已明确标注。
 
 ## 卡片结构图
-
 ```mermaid
 flowchart LR
     STR["structure snapshot"] --> FLT["filter pre-trigger gate"]

@@ -6,8 +6,9 @@
 ## 裁决
 
 - 接受：`2010` pilot truthfulness gate 通过，允许按同一正式模板在整改后推进 `80 -> 85`。
-- 接受：`80-85` 的唯一正式模板锁定为 `57/58/59` 已验证路径，即 `malf canonical bootstrap + replay`、`structure/filter checkpoint_queue`、`alpha bounded full-window`。
+- 接受：`80-86` 的唯一正式模板锁定为 `57/58/59` 已验证路径经整改收紧后的版本，即 `malf canonical bootstrap + replay`、`structure/filter bounded full-window（历史建库）+ checkpoint_queue（增量续跑）`、`alpha bounded full-window`。
 - 接受：当前待施工卡前移到 `60-mainline-rectification-batch-registration-and-scope-freeze-card-20260415.md`。
+- 拒绝：把 `59` 解读为 middle-ledger 的 completeness gate；`59` 只证明 truthfulness，不证明 `2010` 全年 `structure/filter` admission 覆盖已经完整。
 - 拒绝：把 `59` 解读为 `position / portfolio_plan / trade / system` 的 `2010` 官方落表已完成；`59` 只证明 middle-ledger 分段建库模板成立，但 `80-85` 仍需先经过 `60-66` 整改闸门，`100-105` 仍要等 `86`。
 
 ## 原因
@@ -24,7 +25,7 @@
 3. 模板路径已经被真实执行事实验证，而不是只被代码设计验证。
    - `57` 的 replay 为严格 no-op，说明 `malf` checkpoint 成立；
    - `58` 的 `structure / filter` 在 `1,833` scope 上完成 queue/checkpoint 正式续跑；
-   - `58` 同时证明 `structure` bounded full-window 应视为失败审计事实，而不是 `80-85` 默认路径。
+   - `58` 同时暴露出 `structure/filter` 的历史建库不能默认依赖 checkpoint_queue；历史窗口必须走 bounded full-window，checkpoint_queue 只保留为增量续跑路径。
 4. middle-ledger 对执行侧的只读消费前提已经成立。
    - `22` 个 admitted signal 全部能在 `market_base(stock_daily_adjusted, adjust_method='none')` 找到正式参考价；
    - 这足以证明 `2010` pilot 之后的 `80-85` 不会因为执行价口径缺失而天然失真。
@@ -37,10 +38,11 @@
 
 1. 当前最新生效结论锚点推进到 `59-mainline-middle-ledger-2010-truthfulness-gate-conclusion-20260414.md`。
 2. 当前待施工卡前移到 `60-mainline-rectification-batch-registration-and-scope-freeze-card-20260415.md`。
-3. `80-85` 必须逐窗复用 `59` 的判据输出：
+3. `80-86` 必须逐窗复用 `59` 的判据输出，并继承整改后的 downstream 建库口径：
    - 正式 row-count / scope-count
    - queue/checkpoint 稳定性
    - 全链路自然键 truthfulness
+   - `structure/filter` 历史窗口 bounded full-window 完整覆盖
    - `market_base(none)` 只读 acceptance
 4. `86` 之前仍不得恢复 `100-105`。
 

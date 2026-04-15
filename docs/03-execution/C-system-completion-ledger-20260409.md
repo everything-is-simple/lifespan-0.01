@@ -2,9 +2,9 @@
 `日期：2026-04-09`
 `状态：持续更新`
 
-1. 当前下一锤：`60-mainline-rectification-batch-registration-and-scope-freeze-card-20260415.md`
-2. 当前待施工卡：`60-mainline-rectification-batch-registration-and-scope-freeze-card-20260415.md`
-3. 正式主线剩余卡：`20`
+1. 当前下一锤：`62-filter-pre-trigger-boundary-and-authority-reset-card-20260415.md`
+2. 当前待施工卡：`62-filter-pre-trigger-boundary-and-authority-reset-card-20260415.md`
+3. 正式主线剩余卡：`18`
 4. 可选 Sidecar 剩余卡：`0`
 5. 历史治理 backlog：`0`
 
@@ -40,12 +40,14 @@
 28. `malf canonical official 2010 bootstrap and replay` 卡 `57`
 29. `structure filter alpha official 2010 canonical smoke` 卡 `58`
 30. `mainline middle-ledger 2010 truthfulness gate` 卡 `59`
+31. `mainline rectification batch registration and scope freeze` 卡 `60`
+32. `structure filter tail coverage truthfulness rectification` 卡 `61`
 
 ## 当前阶段
 
-1. 最新生效结论锚点已推进到 `59-mainline-middle-ledger-2010-truthfulness-gate-conclusion-20260414.md`。
-2. `59` 已完成并接受。
-3. 当前正式主线待施工卡已切到 `60`。
+1. 最新生效结论锚点已推进到 `61-structure-filter-tail-coverage-truthfulness-rectification-conclusion-20260415.md`。
+2. `60` 与 `61` 已完成并接受。
+3. 当前正式主线待施工卡已切到 `62`。
 4. `60 -> 66` 作为主线整改卡组插入到 `80-86` 之前；只有 `66` 接受后，才恢复 `80`，且只有 `86` 接受后，才恢复 `100`。
 
 ## 体系图

@@ -15,8 +15,8 @@
 
 1. 历史账本硬约束来自 `docs/01-design/03-historical-ledger-shared-contract-charter-20260409.md`
 2. 全系统统一治理基线来自 `28-system-wide-checkpoint-and-dirty-queue-alignment-conclusion-20260411.md`
-3. 当前最新生效结论锚点为 `59-mainline-middle-ledger-2010-truthfulness-gate-conclusion-20260414.md`
-4. 当前待施工卡为 `60-mainline-rectification-batch-registration-and-scope-freeze-card-20260415.md`
+3. 当前最新生效结论锚点为 `61-structure-filter-tail-coverage-truthfulness-rectification-conclusion-20260415.md`
+4. 当前待施工卡为 `62-filter-pre-trigger-boundary-and-authority-reset-card-20260415.md`
 5. 当前连续前置卡组为 `60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86`
 
 ## 当前正式判断

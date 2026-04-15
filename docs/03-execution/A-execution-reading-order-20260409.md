@@ -8,9 +8,9 @@
 1. `00-conclusion-catalog-20260409.md`
 2. `B-card-catalog-20260409.md`
 3. `C-system-completion-ledger-20260409.md`
-4. `59-mainline-middle-ledger-2010-truthfulness-gate-conclusion-20260414.md`
-5. `60-mainline-rectification-batch-registration-and-scope-freeze-card-20260415.md`
-6. `61-structure-filter-tail-coverage-truthfulness-rectification-card-20260415.md`
+4. `61-structure-filter-tail-coverage-truthfulness-rectification-conclusion-20260415.md`
+5. `60-mainline-rectification-batch-registration-and-scope-freeze-conclusion-20260415.md`
+6. `59-mainline-middle-ledger-2010-truthfulness-gate-conclusion-20260414.md`
 7. `62-filter-pre-trigger-boundary-and-authority-reset-card-20260415.md`
 8. `63-wave-life-official-ledger-truthfulness-and-bootstrap-card-20260415.md`
 9. `64-alpha-stage-percentile-decision-matrix-integration-card-20260415.md`
@@ -20,15 +20,15 @@
 
 ## 当前正式口径
 
-1. 最新生效结论锚点已推进到 `59`。
-2. 当前正式主线待施工卡已切到 `60`，并顺排进入 `61 -> 62 -> 63 -> 64 -> 65 -> 66`。
-3. `29-59` 已完成并生效；当前主线后续卡组调整为：
+1. 最新生效结论锚点已推进到 `61`。
+2. 当前正式主线待施工卡已切到 `62`，并顺排进入 `63 -> 64 -> 65 -> 66`。
+3. `29-61` 已完成并生效；当前主线后续卡组调整为：
    - `60-66`：主线整改、覆盖真值、职责边界与恢复闸门
    - `80-84`：整改后按三年窗口恢复正式中间库初始建库
    - `85`：整改后 `2026 YTD` 正式增量对齐
    - `86`：整改后 official middle-ledger cutover gate
    - `100-105`：只在 `86` 放行后恢复
-4. `59` 的正式裁决仍是 `2010` pilot 的 truthfulness gate，但在 `60-66` 收口前，不再直接视为 `80-85` 可续推的充分条件。
+4. `59` 的正式裁决仍是 `2010` pilot 的 truthfulness gate，但经 `61` 收紧后，只能被解释为 truthfulness，不得再外推成 completeness；`80-86` 的 structure/filter 历史建库默认必须走 bounded full-window。
 
 ## 阅读顺序图
 ```mermaid
@@ -36,8 +36,8 @@ flowchart LR
     CONC["00 结论目录"] --> BCAT["B 卡目录"]
     BCAT --> CLED["C 完成账本"]
     CLED --> ANC["59 最新结论锚点"]
-    ANC --> G60["60 当前待施工卡"]
-    G60 --> G65["61-65"]
+    ANC --> G60["62 当前待施工卡"]
+    G60 --> G65["63-65"]
     G65 --> G66["66 恢复闸门"]
     G66 --> G80["80-86"]
     G80 --> NEXT["100 下一锤"]
