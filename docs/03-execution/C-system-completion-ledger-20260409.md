@@ -2,9 +2,9 @@
 `日期：2026-04-09`
 `状态：持续更新`
 
-1. 当前下一锤：`66-mainline-rectification-resume-gate-card-20260415.md`
-2. 当前待施工卡：`66-mainline-rectification-resume-gate-card-20260415.md`
-3. 正式主线剩余卡：`14`
+1. 当前下一锤：`80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`
+2. 当前待施工卡：`80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`
+3. 正式主线剩余卡：`13`
 4. 可选 Sidecar 剩余卡：`0`
 5. 历史治理 backlog：`0`
 
@@ -46,13 +46,15 @@
 34. `wave life official ledger truthfulness and bootstrap` 卡 `63`
 35. `alpha stage percentile decision matrix integration` 卡 `64`
 36. `formal signal admission boundary reallocation` 卡 `65`
+37. `mainline rectification resume gate` 卡 `66`
+38. `historical file-length debt burndown` 卡 `67`
 
 ## 当前阶段
 
-1. 最新生效结论锚点已推进到 `65-formal-signal-admission-boundary-reallocation-conclusion-20260415.md`。
-2. `60`、`61`、`62`、`63`、`64` 与 `65` 已完成并接受。
-3. 当前正式主线待施工卡已切到 `66`。
-4. `60 -> 66` 作为主线整改卡组插入到 `80-86` 之前；只有 `66` 接受后，才恢复 `80`，且只有 `86` 接受后，才恢复 `100`。
+1. 最新生效结论锚点已推进到 `67-historical-file-length-debt-burndown-conclusion-20260415.md`。
+2. `60`、`61`、`62`、`63`、`64`、`65` 与 `66` 已完成并接受。
+3. 当前正式主线待施工卡已恢复到 `80`。
+4. `67` 已完成历史 file-length 债务治理；`80 -> 86` 现恢复为当前 active 的 official middle-ledger resume 卡组，`100` 仍只有在 `86` 接受后才允许恢复。
 
 ## 体系图
 
@@ -84,7 +86,8 @@ flowchart LR
     G53 --> G54["54 portfolio_plan data-grade runner"]
     G54 --> G55["55 pre-trade baseline gate"]
     G55 --> G60["60-66 mainline rectification"]
-    G60 --> G80["80-86 official middle-ledger resume"]
+    G60 --> G67["67 file-length debt cleanup accepted"]
+    G67 --> G80["80-86 official middle-ledger resume"]
     G80 --> NEXT["100 anchor freeze"]
     NEXT --> POST["101-105 trade/system 收口"]
 ```

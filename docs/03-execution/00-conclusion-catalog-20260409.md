@@ -3,7 +3,7 @@
 `日期：2026-04-09`
 `状态：生效`
 
-当前最新生效结论锚点：`65-formal-signal-admission-boundary-reallocation-conclusion-20260415.md`
+当前最新生效结论锚点：`67-historical-file-length-debt-burndown-conclusion-20260415.md`
 
 ## 正式结论目录
 
@@ -72,6 +72,8 @@
 63. `63-wave-life-official-ledger-truthfulness-and-bootstrap-conclusion-20260415.md`
 64. `64-alpha-stage-percentile-decision-matrix-integration-conclusion-20260415.md`
 65. `65-formal-signal-admission-boundary-reallocation-conclusion-20260415.md`
+66. `66-mainline-rectification-resume-gate-conclusion-20260415.md`
+67. `67-historical-file-length-debt-burndown-conclusion-20260415.md`
 100. `100-trade-signal-anchor-contract-freeze-conclusion-20260411.md`
 101. `101-position-entry-t-plus-1-open-reference-price-correction-conclusion-20260411.md`
 102. `102-trade-exit-pnl-ledger-bootstrap-conclusion-20260411.md`
@@ -80,10 +82,10 @@
 105. `105-system-runtime-orchestration-bootstrap-conclusion-20260411.md`
 
 ## 主线状态
-1. `65` 已成为当前最新生效结论锚点。
-2. `60` 已完成整改批次登记与施工顺序冻结，`61` 已收紧 `truthfulness ≠ completeness` 的执行口径，`62` 已把 `filter` 重置回 pre-trigger 边界，`63` 已把 `wave_life` 官方空表与 bootstrap/replay 边界正式裁清，`64` 已把 `stage × percentile` 的正式接入层冻结在 `alpha formal signal`，`65` 已把 final admission authority 从 `filter` 正式收回到 `alpha formal signal`，当前待施工卡推进到 `66`。
-3. `29-65` 已完成 canonical malf downstream、mainline ledger standardization、alpha detector、alpha family、quality gate、official replay hardening、alpha producer hardening、pre-position acceptance、position contract freeze、risk/capacity ledger hardening、batched leg contract、position data-grade runner、pre-portfolio-plan position acceptance gate、portfolio_plan ledger family freeze、capacity/decision hardening、data-grade runner、official middle-ledger pilot freeze、official canonical malf bootstrap、official downstream canonical smoke、`2010` truthfulness gate、tail coverage rectification、filter authority reset、stage-percentile decision matrix 与 formal signal admission authority 收口。
-4. 当前执行顺序保持为 `66 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 100 -> 105`；只有 `66` 接受后才允许恢复 `80-86`，只有 `86` 接受后才允许恢复 `100 -> 105` 的 trade/system 卡组。
+1. `67` 已成为当前最新生效结论锚点。
+2. `60` 已完成整改批次登记与施工顺序冻结，`61` 已收紧 `truthfulness ≠ completeness` 的执行口径，`62` 已把 `filter` 重置回 pre-trigger 边界，`63` 已把 `wave_life` 官方空表与 bootstrap/replay 边界正式裁清，`64` 已把 `stage × percentile` 的正式接入层冻结在 `alpha formal signal`，`65` 已把 final admission authority 从 `filter` 正式收回到 `alpha formal signal`，`66` 已正式把这些整改结论统一收口为 resume gate。
+3. `29-66` 已完成 canonical malf downstream、mainline ledger standardization、alpha detector、alpha family、quality gate、official replay hardening、alpha producer hardening、pre-position acceptance、position contract freeze、risk/capacity ledger hardening、batched leg contract、position data-grade runner、pre-portfolio-plan position acceptance gate、portfolio_plan ledger family freeze、capacity/decision hardening、data-grade runner、official middle-ledger pilot freeze、official canonical malf bootstrap、official downstream canonical smoke、`2010` truthfulness gate、整改批次登记、tail coverage rectification、filter authority reset、wave-life truthfulness、stage-percentile decision matrix、formal signal admission authority 与 resume gate 收口。
+4. 当前执行顺序保持为 `80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 100 -> 105`；`67` 已完成 file-length 治理收口，`80-86` 重新成为当前 active 卡组，`100 -> 105` 仍只有在 `86` 接受后才允许恢复。
 
 ## 图示
 ```mermaid

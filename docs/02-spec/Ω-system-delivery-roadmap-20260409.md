@@ -15,9 +15,9 @@
 
 1. 历史账本硬约束来自 `docs/01-design/03-historical-ledger-shared-contract-charter-20260409.md`
 2. 全系统统一治理基线来自 `28-system-wide-checkpoint-and-dirty-queue-alignment-conclusion-20260411.md`
-3. 当前最新生效结论锚点为 `65-formal-signal-admission-boundary-reallocation-conclusion-20260415.md`
-4. 当前待施工卡为 `66-mainline-rectification-resume-gate-card-20260415.md`
-5. 当前连续前置卡组为 `60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86`
+3. 当前最新生效结论锚点为 `67-historical-file-length-debt-burndown-conclusion-20260415.md`
+4. 当前待施工卡为 `80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`
+5. 当前连续前置卡组为 `80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86`
 
 ## 当前正式判断
 
@@ -41,9 +41,9 @@
 
 ### 当前阶段
 
-1. 当前 active 卡：`66`
-2. 当前 active 卡组：`60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`
-3. 当前系统级目标：先完成主线整改范围、覆盖真值、职责边界与寿命决策面裁决，再恢复 `80-86` 的真实正式库 middle-ledger 推进，并在 `86` 后决定是否恢复 `trade -> system`
+1. 当前 active 卡：`80`
+2. 当前 active 卡组：`80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`
+3. 当前系统级目标：恢复 `2011-2026 YTD` official middle-ledger 分窗建库与 cutover gate，并在 `86` 后决定是否恢复 `trade -> system`
 
 ## 系统当前剖面图
 
@@ -55,18 +55,15 @@ flowchart LR
 
     subgraph ALIGNED["已对齐区域"]
         DATA["data\nCanonical data-grade\n39/40 已冻结官方 ledger + 增量续跑"]
-        MALF["malf\nCanonical data-grade\n29/30/36 已形成 core + sidecar"]
-        STR["structure\nOfficial ledger hardening accepted\n31/35/38/44 已完成 canonical rebind + replay smoke"]
-        FLT["filter\nOfficial ledger hardening accepted\n31/35/38/44 已完成 canonical rebind + replay smoke"]
-    end
-
-    subgraph PARTIAL["部分对齐区域"]
-        ALPHA["alpha\nCanonical downstream\n41/42 已收口 detector/family\n100 signal anchor 待冻结"]
+        MALF["malf\nCanonical data-grade\n29/30/36/63 已形成 core + sidecar + official bootstrap truth"]
+        STR["structure\nOfficial ledger hardening accepted\n31/35/38/44/61 已完成 canonical rebind + replay smoke + CLI guardrail"]
+        FLT["filter\nOfficial ledger hardening accepted\n31/35/38/44/61/62 已完成 canonical rebind + boundary reset"]
+        ALPHA["alpha\nCanonical downstream\n41/42/45/64/65 已完成 detector/family/admission 收口"]
+        POS["position\nCanonical downstream\n47-51/55 已形成 checkpoint/replay 与 alpha-owned verdict 消费"]
+        PLAN["portfolio_plan\nCanonical downstream\n52-55 已形成 ledger family + checkpoint/replay/freshness"]
     end
 
     subgraph PENDING["待治理区域"]
-        POS["position\nBounded materialization\n47-51 待抬升到 A"]
-        PLAN["portfolio_plan\nBounded materialization\n52-55 待抬升到 A"]
         TRADE["trade\nRecovery planned\n100-104 待完成合同/exit/progression/smoke"]
         SYS["system\nBounded acceptance\n27 readout/audit 已有\n105 orchestration 待完成"]
     end
@@ -74,11 +71,9 @@ flowchart LR
     DATA --> MALF --> STR --> FLT --> ALPHA --> POS --> PLAN --> TRADE --> SYS
 
     classDef aligned fill:#d5f5e3,stroke:#1e8449,color:#000;
-    classDef partial fill:#fcf3cf,stroke:#b7950b,color:#000;
     classDef pending fill:#f5c6cb,stroke:#c0392b,color:#000;
-    class DATA,MALF,STR,FLT aligned;
-    class ALPHA partial;
-    class POS,PLAN,TRADE,SYS pending;
+    class DATA,MALF,STR,FLT,ALPHA,POS,PLAN aligned;
+    class TRADE,SYS pending;
 ```
 
 ## 后半部施工指挥蓝图
@@ -92,8 +87,10 @@ flowchart LR
 3. `43 -> 44 -> 45 -> 46`
 4. `47 -> 48 -> 49 -> 50 -> 51`
 5. `52 -> 53 -> 54 -> 55`
-6. `60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86`
-7. `100 -> 101 -> 102 -> 103 -> 104 -> 105`
+6. `60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66`
+7. `67`
+8. `80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86`
+9. `100 -> 101 -> 102 -> 103 -> 104 -> 105`
 
 其中：
 
@@ -104,9 +101,10 @@ flowchart LR
 5. `47 -> 51` 是 `position` A 级硬化卡组
 6. `52 -> 55` 是 `portfolio_plan` A 级硬化与 pre-trade gate
 7. `60 -> 66` 是 `59` 后的主线整改与恢复闸门卡组
-8. `80 -> 86` 是整改后的 official middle-ledger 恢复与 cutover gate 卡组
-9. `100 -> 105` 是 `trade/system` 恢复卡组
-10. `105` 明确固定为最后一张后置卡
+8. `67` 是已完成的历史 file-length 治理债务重登记与清理卡
+9. `80 -> 86` 是治理收口后的 official middle-ledger 恢复与 cutover gate 卡组
+10. `100 -> 105` 是 `trade/system` 恢复卡组
+11. `105` 明确固定为最后一张后置卡
 
 ```mermaid
 flowchart LR
@@ -126,7 +124,8 @@ flowchart LR
     G53 --> G54["54 portfolio_plan data-grade runner"]
     G54 --> G55["55 pre-trade upstream baseline gate"]
     G55 --> G6066["60-66 mainline rectification"]
-    G6066 --> G8086["80-86 official middle-ledger resume"]
+G6066 --> G67["67 file-length debt cleanup accepted"]
+    G67 --> G8086["80-86 official middle-ledger resume"]
     G8086 --> G100105["100-105 trade/system 恢复卡组"]
     G100105 --> C100["100 signal anchor freeze"]
     C100 --> C101["101 T+1 open 参考价修正"]
@@ -140,11 +139,11 @@ flowchart LR
 
 1. `29-32` 不是“历史已完成就可忽略”的旧卡组，而是后半部一切恢复卡的前置逻辑顺序。
 2. `43-45` 任何一张未通过前，都不允许进入 `46`。
-3. `55` 接受后并不直接恢复 `100`；若真实正式库主线仍有整改缺口，必须先完成 `60-66`，再恢复 `80-86`。
+3. `55` 接受后并不直接恢复 `100`；真实正式库主线已先经过 `60-67` 整改与治理收口，当前正式恢复路径为 `80-86`。
 4. `100-105` 当前必须在 `86` 接受后按自然数顺排推进，不允许跳过 `100/101` 直接做 `105`。
 5. `47-51` 属于 `position` 追平 `data -> malf` 事实标准的正式卡组，不允许把 `position` 继续当成 bounded skeleton 直接越过。
 6. `52-54` 属于 `portfolio_plan` 追平 `data -> malf` 事实标准的正式卡组，不允许继续把组合层当成最小桥接层直接越过。
-7. `59` 暴露出的主线整改缺口已登记为 `60-66`；在 `60-66` 收口前，不允许直接续推 `80-86` 或 `100-105`。
+7. `66` 已正式判断无需继续追加整改前置卡；`67` 已完成 file-length 治理收口，不得再以口头状态把历史治理债务挂回 `80-86` 之前。
 
 ## 增量更新 / 断点续跑 / 审计依赖图
 
@@ -224,9 +223,9 @@ flowchart TD
 - 审计账本：
   `structure_run / snapshot / run_snapshot`
 - 当前结论：
-  `31 / 35 / 38 / 44` 已完成 canonical rebind、queue/checkpoint 对齐、legacy `malf` purge 与 official copy replay/smoke 硬化
+  `31 / 35 / 38 / 44 / 61` 已完成 canonical rebind、queue/checkpoint 对齐、legacy `malf` purge、official copy replay/smoke 硬化与历史窗口 CLI guardrail
 - 后续动作：
-  保持 canonical 主线输入；后续聚焦 `45` 的 `alpha formal signal` producer 稳定性
+  以 `61` 的显式 bounded/queue 入口作为 `80-86` 历史建库模板，禁止无参 queue
 
 ### `filter`
 
@@ -246,15 +245,15 @@ flowchart TD
 - 审计账本：
   `filter_run / snapshot / run_snapshot`
 - 当前结论：
-  `31 / 35 / 38 / 44` 已完成 canonical rebind、queue/checkpoint 对齐、bridge-era purge 与 official copy replay/smoke 硬化
+  `31 / 35 / 38 / 44 / 61 / 62` 已完成 canonical rebind、queue/checkpoint 对齐、bridge-era purge、official copy replay/smoke 硬化与 pre-trigger boundary reset
 - 后续动作：
-  保持 pre-trigger 边界，等待 `45/46` 把 `alpha` 与 integrated acceptance 收口
+  保持 pre-trigger 边界与显式 bounded/queue 入口；不得把结构风险字段回抬成 `filter` hard block
 
 ### `alpha`
 
 - 当前状态：`主线已接`
 - 实现深度：`Canonical downstream`
-- 成熟度：`B`
+- 成熟度：`A`
 - 实体锚点：
   默认按 `asset_type + code + timeframe='D'` 对齐到上游 dirty 单元；在事件层再叠加 `trigger / family / signal` 语义
 - 业务自然键对齐：
@@ -268,53 +267,53 @@ flowchart TD
 - 审计账本：
   `alpha_*_run / event / run_event`
 - 当前结论：
-  `35 / 41 / 42` 已完成 queue 对齐、PAS detector、family role 与 canonical `malf` 协同语义
+  `35 / 41 / 42 / 45 / 64 / 65` 已完成 queue 对齐、PAS detector、family role、formal signal producer hardening、`stage_percentile` matrix 与 alpha-owned admission authority
 - 后续动作：
-  `43-46` 的 upstream 质量闸门已完成；当前进入 `47-51` 的 `position` 质量对齐与 `52-54` 的 `portfolio_plan` data-grade 硬化，再由 `55` 决定是否允许进入 `100`
+  以 `alpha-formal-signal-v5` 作为 `80-86` 的正式 downstream 模板，继续保持 final admission authority 在 `alpha formal signal`
 
 ### `position`
 
-- 当前状态：`主线待接`
-- 实现深度：`Bounded materialization -> A-grade hardening planned`
-- 成熟度：`C+`
+- 当前状态：`主线已接`
+- 实现深度：`Canonical downstream`
+- 成熟度：`A`
 - 实体锚点：
   单标的主语仍以 `asset_type + code` 为基础，再叠加 `portfolio_id + signal_date / reference_trade_date + position scene`
 - 业务自然键对齐：
-  已固定执行参考价口径使用 `market_base(none)`；但尚未像 `35` 那样形成独立 dirty 单元与 checkpoint 主语义
+  已固定执行参考价口径使用 `market_base(none)`；`position_candidate_nk / capacity_nk / sizing_nk` 与 `alpha formal signal` 的稳定事件语义已完成对齐
 - 批量建仓：
   `position bootstrap` 与 `run_position_formal_signal_materialization.py`
 - 增量更新：
-  当前主要依赖新到达的 `alpha formal signal` 做 bounded materialization
+  `position_work_queue` 由官方 `alpha formal signal` 与 `market_base(none)` 参考价驱动
 - 断点续跑：
-  尚未正式补齐独立 `work_queue + checkpoint + replay`
+  `position_work_queue + position_checkpoint + replay` 已成立
 - 审计账本：
   `position` 正式账本、candidate audit、capacity/sizing snapshot 与 `position` run 审计
 - 当前结论：
-  `08 / 09` 已把 `position` 建成正式 bounded runner，但尚未升级为与 `structure / filter / alpha` 同等级的 data-grade 模块
+  `47 / 48 / 49 / 50 / 51 / 55` 已完成 MALF context sizing/batch contract、risk/capacity ledger、batched leg contract、data-grade runner、acceptance gate 与 pre-trade baseline gate
 - 后续动作：
-  `101` 之前需明确 T+1 开盘参考价修正；若执行侧恢复阶段暴露 queue 缺口，应优先补 position data-grade runner
+  保持 `adjust_method='none'` 与 alpha-owned verdict 的消费边界；`80-86` 阶段不得回退为 bounded skeleton
 
 ### `portfolio_plan`
 
-- 当前状态：`主线待接`
-- 实现深度：`Bounded materialization -> A-grade hardening planned`
-- 成熟度：`C+`
+- 当前状态：`主线已接`
+- 实现深度：`Canonical downstream`
+- 成熟度：`A`
 - 实体锚点：
   `portfolio_id`
 - 业务自然键对齐：
-  以 `portfolio_id + snapshot_date + plan scene` 叠加；当前主要依赖上游 `position` rematerialize 传播，而非自身独立 dirty 单元
+  以 `portfolio_id + snapshot_date + plan scene` 叠加；官方 ledger family 与 decision/capacity 自然键已冻结
 - 批量建仓：
   `scripts/portfolio_plan/run_portfolio_plan_build.py`
 - 增量更新：
-  当前按上游 `position_candidate_audit / capacity / sizing` 有界重物化
+  `portfolio_plan_work_queue` 由官方 `position_candidate_audit / position_capacity_snapshot / position_sizing_snapshot` 驱动
 - 断点续跑：
-  尚未正式补齐独立 `work_queue + checkpoint + replay`
+  `portfolio_plan_work_queue + portfolio_plan_checkpoint + replay + freshness` 已成立
 - 审计账本：
   `portfolio_plan_run / snapshot / run_snapshot`
 - 当前结论：
-  `14` 已完成最小组合裁决账本，但执行层以下仍未形成独立 data-grade 治理
+  `52 / 53 / 54 / 55` 已完成官方 ledger family、capacity/decision hardening、data-grade runner 与 pre-trade baseline gate
 - 后续动作：
-  通过 `52-54` 补齐官方账本族、容量裁决厚账本、data-grade runner 与 freshness，再由 `55` 裁决是否允许进入 `100`
+  保持 official ledger family 与 freshness contract；`80-86` 阶段不得回退为上游 bounded rematerialize 的附属层
 
 ### `trade`
 
@@ -362,28 +361,29 @@ flowchart TD
 
 ## 当前阻塞项
 
-### 阻塞 1：`alpha` 正式信号锚点仍未冻结
+### 阻塞 1：`80-86` official middle-ledger 恢复仍未完成
 
 影响：
 
-1. `position` 当前消费的最末端正式合同仍不够稳定
-2. `43-55` 与 `100-105` 无法稳健起步
+1. `67` 已把历史 file-length backlog 清零，治理阻塞已解除
+2. 当前主线阻塞重新回到 `80-86` 本身的 official middle-ledger 建库与 cutover
 
-### 阻塞 2：`position / portfolio_plan` 仍缺少与 `35` 同等级的独立 data-grade 续跑语义
+### 阻塞 2：`100-105` 仍需等待 `86` 放行
 
 影响：
 
-1. 执行侧无法像上游一样自洽地解释 dirty propagation
-2. `trade` 的增量一致性与 `system` 的系统级复算能力都会受影响
+1. `59` 已验证的 `2010` template 尚未在 `2011-2026 YTD` 分窗复制完成
+2. `86` official cutover gate 还无法正式判定
 
 ### 阻塞 3：`trade` 恢复卡组仍未完成
 
 影响：
 
-1. exit PnL
-2. progression
-3. real-data smoke
-4. execution-side replay
+1. signal anchor
+2. exit PnL
+3. progression
+4. real-data smoke
+5. execution-side replay
 
 ### 阻塞 4：`system` 仍停在 bounded acceptance，而不是 runtime/orchestration
 
@@ -394,10 +394,10 @@ flowchart TD
 
 ## 当前不敢写死的点
 
-1. `position` 是否必须先开独立 data-grade checkpoint 对齐卡，才能继续推进 `102-105`
-2. `portfolio_plan` 是否需要在执行侧恢复期内同步补齐独立 queue/checkpoint
-3. `alpha_formal_signal_event` 对 family 正式解释键的物理消费收口，是否全部放入 `100`
-4. `104` 真正执行后，真实官方库 smoke 是否会暴露新的 `position / trade / system` 合同缺口
+1. `80-86` 的 official middle-ledger 分窗建库顺序，是否还会暴露新的真实库治理阻塞
+2. `80-85` 分窗执行后，是否还会暴露新的 `structure / filter` coverage 尾部缺口
+3. `86` 真正执行后，真实官方库 cutover 是否会暴露新的 `position / trade / system` 合同缺口
+4. `104` 真正执行后，真实官方库 smoke 是否会继续暴露新的执行侧回归问题
 
 ## 里程碑
 
@@ -415,9 +415,9 @@ flowchart TD
 - 判定条件：
   `data -> malf -> structure -> filter -> alpha` 已具备官方主链与 data-grade 续跑语义
 - 当前状态：
-  `已完成，但进入 position 前仍需 43 质量闸门裁决`
+  `已完成`
 - 下一步依赖：
-  `43`
+  无
 
 ### `M2 canonical downstream 收口`
 
@@ -426,16 +426,16 @@ flowchart TD
 - 当前状态：
   `已完成`
 - 下一步依赖：
-  `33-42` 稳定化已完成，当前切换到执行侧恢复
+`67` 已收口，当前进入 `80-86` official middle-ledger resume
 
 ### `M3 alpha 解释层收口`
 
 - 判定条件：
-  PAS detector、family role、canonical `malf` 协同解释已成立
+  PAS detector、family role、`stage_percentile` matrix 与 alpha-owned admission authority 已成立
 - 当前状态：
   `已完成`
 - 下一步依赖：
-  `47-51 -> 52-55 -> 100`
+`80-86 -> 100`
 
 ### `M4 执行侧合同与 runtime 收口`
 
@@ -444,7 +444,7 @@ flowchart TD
 - 当前状态：
   `未完成`
 - 下一步依赖：
-  `43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55 -> 100 -> 104`
+  `67 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 100 -> 104`
 
 ### `M5 system orchestration 收口`
 
@@ -453,7 +453,7 @@ flowchart TD
 - 当前状态：
   `未完成`
 - 下一步依赖：
-  `43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55 -> 104 -> 105`
+  `67 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 104 -> 105`
 
 ## 系统审计依赖图
 

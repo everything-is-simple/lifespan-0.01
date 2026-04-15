@@ -18,6 +18,17 @@ from mlq.data.data_mainline_standardization import (
     _normalize_source_map,
     _path_size_bytes,
 )
+from mlq.data.data_mainline_sync_support import (
+    derive_dirty_reason,
+    dump_date,
+    load_checkpoint,
+    normalize_date_map,
+    resolve_source_state,
+    resolve_tail_dates,
+    to_date,
+    upsert_checkpoint,
+    write_reports,
+)
 
 
 MAINLINE_LOCAL_LEDGER_SYNC_RUN_TABLE = "mainline_local_ledger_sync_run"
@@ -25,51 +36,6 @@ MAINLINE_LOCAL_LEDGER_SYNC_CHECKPOINT_TABLE = "mainline_local_ledger_sync_checkp
 MAINLINE_LOCAL_LEDGER_SYNC_DIRTY_QUEUE_TABLE = "mainline_local_ledger_sync_dirty_queue"
 MAINLINE_LOCAL_LEDGER_FRESHNESS_READOUT_TABLE = "mainline_local_ledger_freshness_readout"
 MAINLINE_LOCAL_LEDGER_SYNC_CONTROL_FILENAME = "mainline_local_ledger_sync.duckdb"
-
-MAINLINE_LEDGER_LATEST_BAR_DATE_CANDIDATES: dict[str, tuple[tuple[str, tuple[str, ...]], ...]] = {
-    "raw_market": (
-        ("stock_daily_bar", ("trade_date",)),
-        ("index_daily_bar", ("trade_date",)),
-        ("block_daily_bar", ("trade_date",)),
-    ),
-    "market_base": (
-        ("stock_daily_adjusted", ("trade_date",)),
-        ("index_daily_adjusted", ("trade_date",)),
-        ("block_daily_adjusted", ("trade_date",)),
-    ),
-    "malf": (
-        ("malf_state_snapshot", ("asof_bar_dt",)),
-        ("malf_wave_life_snapshot", ("asof_bar_dt",)),
-        ("malf_wave_ledger", ("end_bar_dt", "start_bar_dt")),
-    ),
-    "structure": (
-        ("structure_snapshot", ("signal_date", "asof_date")),
-        ("structure_run", ("signal_end_date", "signal_start_date")),
-    ),
-    "filter": (
-        ("filter_snapshot", ("signal_date", "asof_date")),
-        ("filter_run", ("signal_end_date", "signal_start_date")),
-    ),
-    "alpha": (
-        ("alpha_formal_signal_event", ("signal_date", "asof_date")),
-        ("alpha_family_event", ("signal_date", "asof_date")),
-        ("alpha_trigger_event", ("signal_date", "asof_date")),
-    ),
-    "position": (
-        ("position_candidate_audit", ("reference_trade_date",)),
-        ("position_sizing_snapshot", ("reference_trade_date",)),
-    ),
-    "portfolio_plan": (("portfolio_plan_snapshot", ("reference_trade_date",)),),
-    "trade_runtime": (
-        ("trade_execution_plan", ("planned_entry_trade_date", "signal_date")),
-        ("trade_position_leg", ("entry_trade_date",)),
-        ("trade_carry_snapshot", ("snapshot_date",)),
-    ),
-    "system": (
-        ("system_mainline_snapshot", ("snapshot_date",)),
-        ("system_run", ("snapshot_date",)),
-    ),
-}
 
 CONTROL_DDL: dict[str, str] = {
     MAINLINE_LOCAL_LEDGER_SYNC_RUN_TABLE: """
@@ -171,10 +137,10 @@ class MainlineLocalLedgerSyncResult:
             "sync_action": self.sync_action,
             "source_path": str(self.source_path),
             "target_path": str(self.target_path),
-            "source_latest_bar_dt": _dump_date(self.source_latest_bar_dt),
-            "last_completed_bar_dt": _dump_date(self.last_completed_bar_dt),
-            "tail_start_bar_dt": _dump_date(self.tail_start_bar_dt),
-            "tail_confirm_until_dt": _dump_date(self.tail_confirm_until_dt),
+            "source_latest_bar_dt": dump_date(self.source_latest_bar_dt),
+            "last_completed_bar_dt": dump_date(self.last_completed_bar_dt),
+            "tail_start_bar_dt": dump_date(self.tail_start_bar_dt),
+            "tail_confirm_until_dt": dump_date(self.tail_confirm_until_dt),
             "source_fingerprint": self.source_fingerprint,
             "table_count_after": self.table_count_after,
             "total_row_count_after": self.total_row_count_after,
@@ -204,8 +170,8 @@ class MainlineLocalLedgerFreshnessRow:
             "target_path": str(self.target_path),
             "source_exists": self.source_exists,
             "target_exists": self.target_exists,
-            "source_latest_bar_dt": _dump_date(self.source_latest_bar_dt),
-            "last_completed_bar_dt": _dump_date(self.last_completed_bar_dt),
+            "source_latest_bar_dt": dump_date(self.source_latest_bar_dt),
+            "last_completed_bar_dt": dump_date(self.last_completed_bar_dt),
             "freshness_lag_days": self.freshness_lag_days,
             "freshness_status": self.freshness_status,
             "last_dirty_reason": self.last_dirty_reason,
@@ -312,9 +278,9 @@ def run_mainline_local_ledger_incremental_sync(
     workspace.ensure_directories()
     selected_ledgers = _normalize_selected_ledgers(ledgers)
     source_map = _normalize_source_map(source_ledger_paths)
-    source_latest_map = _normalize_date_map(source_latest_bar_dates)
-    replay_start_map = _normalize_date_map(replay_start_dates)
-    replay_confirm_map = _normalize_date_map(replay_confirm_until_dates)
+    source_latest_map = normalize_date_map(source_latest_bar_dates)
+    replay_start_map = normalize_date_map(replay_start_dates)
+    replay_confirm_map = normalize_date_map(replay_confirm_until_dates)
     effective_run_id = run_id or f"mainline-local-ledger-sync-{datetime.now(timezone.utc):%Y%m%d%H%M%S}"
     replay_requested_count = sum(
         1
@@ -359,18 +325,19 @@ def run_mainline_local_ledger_incremental_sync(
                     source_path=Path(str(scope_row["source_path"])),
                     target_path=Path(str(scope_row["target_path"])),
                 )
-                state = _resolve_source_state(
+                state = resolve_source_state(
                     ledger_name=str(scope_row["ledger_name"]),
                     source_path=Path(str(scope_row["source_path"])),
                     explicit_latest_bar_dt=source_latest_map.get(str(scope_row["ledger_name"])),
                 )
-                last_completed_bar_dt, tail_start_bar_dt, tail_confirm_until_dt = _resolve_tail_dates(
+                last_completed_bar_dt, tail_start_bar_dt, tail_confirm_until_dt = resolve_tail_dates(
                     source_latest_bar_dt=state["source_latest_bar_dt"],
-                    replay_start_bar_dt=_to_date(scope_row["replay_start_bar_dt"]),
-                    replay_confirm_until_dt=_to_date(scope_row["replay_confirm_until_dt"]),
+                    replay_start_bar_dt=to_date(scope_row["replay_start_bar_dt"]),
+                    replay_confirm_until_dt=to_date(scope_row["replay_confirm_until_dt"]),
                 )
-                _upsert_checkpoint(
+                upsert_checkpoint(
                     connection=connection,
+                    checkpoint_table=MAINLINE_LOCAL_LEDGER_SYNC_CHECKPOINT_TABLE,
                     ledger_name=str(scope_row["ledger_name"]),
                     module_name=str(scope_row["module_name"]),
                     source_path=Path(str(scope_row["source_path"])),
@@ -439,7 +406,7 @@ def run_mainline_local_ledger_incremental_sync(
             dirty_reason_map={str(row["ledger_name"]): row["dirty_reason"] for row in scope_rows},
             run_id=effective_run_id,
         )
-        report_json_path, report_markdown_path = _write_reports(
+        report_json_path, report_markdown_path = write_reports(
             settings=workspace,
             run_id=effective_run_id,
             sync_results=sync_results,
@@ -521,13 +488,17 @@ def _collect_scope_rows(
         spec = MAINLINE_LEDGER_SPEC_BY_NAME[ledger_name]
         target_path = spec.target_path(settings)
         source_path = source_map.get(ledger_name, target_path)
-        state = _resolve_source_state(
+        state = resolve_source_state(
             ledger_name=ledger_name,
             source_path=source_path,
             explicit_latest_bar_dt=source_latest_map.get(ledger_name),
         )
-        checkpoint = _load_checkpoint(connection=connection, ledger_name=ledger_name)
-        dirty_reason = _derive_dirty_reason(
+        checkpoint = load_checkpoint(
+            connection=connection,
+            checkpoint_table=MAINLINE_LOCAL_LEDGER_SYNC_CHECKPOINT_TABLE,
+            ledger_name=ledger_name,
+        )
+        dirty_reason = derive_dirty_reason(
             checkpoint=checkpoint,
             same_path=source_path.resolve() == target_path.resolve(),
             source_exists=bool(state["source_exists"]),
@@ -586,9 +557,9 @@ def _enqueue_dirty_scopes(
                     str(row["source_path"]),
                     str(row["target_path"]),
                     str(row["dirty_reason"]),
-                    _to_date(row["source_latest_bar_dt"]),
-                    _to_date(row["replay_start_bar_dt"]),
-                    _to_date(row["replay_confirm_until_dt"]),
+                    to_date(row["source_latest_bar_dt"]),
+                    to_date(row["replay_start_bar_dt"]),
+                    to_date(row["replay_confirm_until_dt"]),
                     str(row["source_fingerprint"]),
                     run_id,
                     run_id,
@@ -612,9 +583,9 @@ def _enqueue_dirty_scopes(
             [
                 str(row["source_path"]),
                 str(row["target_path"]),
-                _to_date(row["source_latest_bar_dt"]),
-                _to_date(row["replay_start_bar_dt"]),
-                _to_date(row["replay_confirm_until_dt"]),
+                    to_date(row["source_latest_bar_dt"]),
+                    to_date(row["replay_start_bar_dt"]),
+                    to_date(row["replay_confirm_until_dt"]),
                 str(row["source_fingerprint"]),
                 str(row["queue_nk"]),
             ],
@@ -663,9 +634,9 @@ def _claim_scopes(
                 "source_path": Path(str(row[3])).resolve(),
                 "target_path": Path(str(row[4])).resolve(),
                 "dirty_reason": str(row[5]),
-                "source_latest_bar_dt": _to_date(row[6]),
-                "replay_start_bar_dt": _to_date(row[7]),
-                "replay_confirm_until_dt": _to_date(row[8]),
+                "source_latest_bar_dt": to_date(row[6]),
+                "replay_start_bar_dt": to_date(row[7]),
+                "replay_confirm_until_dt": to_date(row[8]),
                 "source_fingerprint": str(row[9]),
             }
         )
@@ -698,12 +669,16 @@ def _write_freshness_readout(
         spec = MAINLINE_LEDGER_SPEC_BY_NAME[ledger_name]
         target_path = spec.target_path(settings)
         source_path = source_map.get(ledger_name, target_path)
-        state = _resolve_source_state(
+        state = resolve_source_state(
             ledger_name=ledger_name,
             source_path=source_path,
             explicit_latest_bar_dt=source_latest_map.get(ledger_name),
         )
-        checkpoint = _load_checkpoint(connection=connection, ledger_name=ledger_name)
+        checkpoint = load_checkpoint(
+            connection=connection,
+            checkpoint_table=MAINLINE_LOCAL_LEDGER_SYNC_CHECKPOINT_TABLE,
+            ledger_name=ledger_name,
+        )
         last_completed_bar_dt = None if checkpoint is None else checkpoint["last_completed_bar_dt"]
         lag_days = None
         if state["source_latest_bar_dt"] is not None and last_completed_bar_dt is not None:
@@ -760,254 +735,3 @@ def _write_freshness_readout(
         )
         rows.append(freshness_row)
     return rows
-
-
-def _load_checkpoint(
-    *,
-    connection: duckdb.DuckDBPyConnection,
-    ledger_name: str,
-) -> dict[str, object] | None:
-    row = connection.execute(
-        f"""
-        SELECT last_completed_bar_dt, tail_start_bar_dt, tail_confirm_until_dt, source_fingerprint
-        FROM {MAINLINE_LOCAL_LEDGER_SYNC_CHECKPOINT_TABLE}
-        WHERE ledger_name = ?
-        """,
-        [ledger_name],
-    ).fetchone()
-    if row is None:
-        return None
-    return {
-        "last_completed_bar_dt": _to_date(row[0]),
-        "tail_start_bar_dt": _to_date(row[1]),
-        "tail_confirm_until_dt": _to_date(row[2]),
-        "source_fingerprint": "" if row[3] is None else str(row[3]),
-    }
-
-
-def _derive_dirty_reason(
-    *,
-    checkpoint: dict[str, object] | None,
-    same_path: bool,
-    source_exists: bool,
-    target_exists: bool,
-    source_latest_bar_dt: date | None,
-    replay_start_bar_dt: date | None,
-    replay_confirm_until_dt: date | None,
-    source_fingerprint: str,
-) -> str | None:
-    if not source_exists:
-        return "bootstrap_missing_target" if same_path and not target_exists else None
-    if not target_exists:
-        return "target_missing"
-    if checkpoint is None:
-        return "bootstrap_missing_checkpoint"
-    if str(checkpoint["source_fingerprint"]) != source_fingerprint:
-        return "source_fingerprint_changed"
-    last_completed_bar_dt = _to_date(checkpoint["last_completed_bar_dt"])
-    if last_completed_bar_dt is None:
-        return "checkpoint_incomplete"
-    if source_latest_bar_dt is not None and source_latest_bar_dt > last_completed_bar_dt:
-        return "source_advanced"
-    tail_start_bar_dt = _to_date(checkpoint["tail_start_bar_dt"])
-    if replay_start_bar_dt is not None and (tail_start_bar_dt is None or replay_start_bar_dt < tail_start_bar_dt):
-        return "source_replayed"
-    tail_confirm_until_dt = _to_date(checkpoint["tail_confirm_until_dt"])
-    if replay_confirm_until_dt is not None and (
-        tail_confirm_until_dt is None or replay_confirm_until_dt > tail_confirm_until_dt
-    ):
-        return "tail_confirm_advanced"
-    return None
-
-
-def _upsert_checkpoint(
-    *,
-    connection: duckdb.DuckDBPyConnection,
-    ledger_name: str,
-    module_name: str,
-    source_path: Path,
-    target_path: Path,
-    last_completed_bar_dt: date | None,
-    tail_start_bar_dt: date | None,
-    tail_confirm_until_dt: date | None,
-    source_fingerprint: str,
-    last_run_id: str,
-) -> None:
-    connection.execute(
-        f"""
-        INSERT OR REPLACE INTO {MAINLINE_LOCAL_LEDGER_SYNC_CHECKPOINT_TABLE} (
-            ledger_name, module_name, source_path, target_path, last_completed_bar_dt,
-            tail_start_bar_dt, tail_confirm_until_dt, source_fingerprint, last_run_id, updated_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-        """,
-        [
-            ledger_name,
-            module_name,
-            str(source_path),
-            str(target_path),
-            last_completed_bar_dt,
-            tail_start_bar_dt,
-            tail_confirm_until_dt,
-            source_fingerprint,
-            last_run_id,
-        ],
-    )
-
-
-def _resolve_tail_dates(
-    *,
-    source_latest_bar_dt: date | None,
-    replay_start_bar_dt: date | None,
-    replay_confirm_until_dt: date | None,
-) -> tuple[date | None, date | None, date | None]:
-    last_completed_bar_dt = replay_confirm_until_dt or source_latest_bar_dt
-    tail_start_bar_dt = replay_start_bar_dt or last_completed_bar_dt
-    tail_confirm_until_dt = replay_confirm_until_dt or last_completed_bar_dt
-    return last_completed_bar_dt, tail_start_bar_dt, tail_confirm_until_dt
-
-
-def _resolve_source_state(
-    *,
-    ledger_name: str,
-    source_path: Path,
-    explicit_latest_bar_dt: date | None,
-) -> dict[str, object]:
-    source_exists = source_path.exists()
-    latest_bar_dt = explicit_latest_bar_dt
-    if source_exists and latest_bar_dt is None:
-        latest_bar_dt = _detect_latest_bar_date(ledger_name=ledger_name, database_path=source_path)
-    return {
-        "source_exists": source_exists,
-        "source_latest_bar_dt": latest_bar_dt,
-        "source_fingerprint": _build_source_fingerprint(source_path=source_path, source_latest_bar_dt=latest_bar_dt),
-    }
-
-
-def _detect_latest_bar_date(*, ledger_name: str, database_path: Path) -> date | None:
-    if not database_path.exists():
-        return None
-    candidates = MAINLINE_LEDGER_LATEST_BAR_DATE_CANDIDATES.get(ledger_name, ())
-    if not candidates:
-        return None
-    connection = duckdb.connect(str(database_path), read_only=True)
-    try:
-        latest_values: list[date] = []
-        for table_name, column_names in candidates:
-            available_columns = {
-                str(row[0])
-                for row in connection.execute(
-                    """
-                    SELECT column_name
-                    FROM information_schema.columns
-                    WHERE table_schema = 'main'
-                      AND table_name = ?
-                    """,
-                    [table_name],
-                ).fetchall()
-            }
-            if not available_columns:
-                continue
-            for column_name in column_names:
-                if column_name not in available_columns:
-                    continue
-                value = connection.execute(
-                    f'SELECT MAX(CAST("{column_name}" AS DATE)) FROM "{table_name}"'
-                ).fetchone()
-                candidate = _to_date(None if value is None else value[0])
-                if candidate is not None:
-                    latest_values.append(candidate)
-        return max(latest_values) if latest_values else None
-    finally:
-        connection.close()
-
-
-def _build_source_fingerprint(*, source_path: Path, source_latest_bar_dt: date | None) -> str:
-    if not source_path.exists():
-        return json.dumps(
-            {"exists": False, "path": str(source_path), "source_latest_bar_dt": _dump_date(source_latest_bar_dt)},
-            ensure_ascii=False,
-            sort_keys=True,
-        )
-    stat = source_path.stat()
-    return json.dumps(
-        {
-            "exists": True,
-            "path": str(source_path),
-            "size_bytes": int(stat.st_size),
-            "mtime_ns": int(stat.st_mtime_ns),
-            "source_latest_bar_dt": _dump_date(source_latest_bar_dt),
-        },
-        ensure_ascii=False,
-        sort_keys=True,
-    )
-
-
-def _normalize_date_map(raw_map: dict[str, str | date] | None) -> dict[str, date]:
-    normalized: dict[str, date] = {}
-    for ledger_name, raw_value in (raw_map or {}).items():
-        normalized[ledger_name] = _to_date(raw_value)  # type: ignore[assignment]
-    return {key: value for key, value in normalized.items() if value is not None}
-
-
-def _write_reports(
-    *,
-    settings: WorkspaceRoots,
-    run_id: str,
-    sync_results: list[MainlineLocalLedgerSyncResult],
-    freshness_rows: list[MainlineLocalLedgerFreshnessRow],
-    summary_path: Path | None,
-) -> tuple[Path, Path]:
-    report_root = settings.module_report_root("data") / "mainline_local_ledger_incremental_sync"
-    report_root.mkdir(parents=True, exist_ok=True)
-    report_json_path = (summary_path or (report_root / f"{run_id}.json")).resolve()
-    report_json_path.parent.mkdir(parents=True, exist_ok=True)
-    report_markdown_path = report_json_path.with_suffix(".md")
-    payload = {
-        "run_id": run_id,
-        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
-        "sync_results": [row.as_dict() for row in sync_results],
-        "freshness_rows": [row.as_dict() for row in freshness_rows],
-    }
-    report_json_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    lines = [
-        "# mainline local ledger incremental sync",
-        "",
-        f"- run_id: `{run_id}`",
-        f"- generated_at_utc: `{datetime.now(timezone.utc).isoformat()}`",
-        "",
-        "## sync_results",
-    ]
-    for row in sync_results:
-        lines.append(
-            "- "
-            + f"`{row.ledger_name}` dirty_reason={row.dirty_reason} | sync_action={row.sync_action} | "
-            + f"last_completed_bar_dt={_dump_date(row.last_completed_bar_dt)} | "
-            + f"tail_start_bar_dt={_dump_date(row.tail_start_bar_dt)} | "
-            + f"tail_confirm_until_dt={_dump_date(row.tail_confirm_until_dt)}"
-        )
-    lines.extend(["", "## freshness"])
-    for row in freshness_rows:
-        lines.append(
-            "- "
-            + f"`{row.ledger_name}` freshness_status={row.freshness_status} | "
-            + f"source_latest_bar_dt={_dump_date(row.source_latest_bar_dt)} | "
-            + f"last_completed_bar_dt={_dump_date(row.last_completed_bar_dt)} | "
-            + f"freshness_lag_days={row.freshness_lag_days}"
-        )
-    report_markdown_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return report_json_path, report_markdown_path
-
-
-def _to_date(value: object) -> date | None:
-    if value is None or value == "":
-        return None
-    if isinstance(value, datetime):
-        return value.date()
-    if isinstance(value, date):
-        return value
-    return date.fromisoformat(str(value))
-
-
-def _dump_date(value: date | None) -> str | None:
-    return None if value is None else value.isoformat()
