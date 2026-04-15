@@ -134,8 +134,8 @@ flowchart LR
   - `malf -> structure -> filter -> alpha` 默认消费 `adjust_method='backward'`
   - `position -> trade` 默认消费 `adjust_method='none'`
   - `forward` 当前只作研究与展示保留
-- 当前最新生效结论锚点已推进到 `68-execution-doc-layout-governance-restoration-conclusion-20260415.md`；当前待施工卡恢复为 `80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`。
-- `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 现已把 `60 -> 66` 视为已完成整改卡组，并在恢复 `80 -> 86` 之前依次插入并完成 `67` 历史 file-length 治理债务卡与 `68` 执行文档目录治理卡。
+- 当前最新生效结论锚点已推进到 `68-execution-doc-layout-governance-restoration-conclusion-20260415.md`；当前待施工卡已切到 `69-filter-objective-tradability-and-universe-gate-freeze-card-20260415.md`。
+- `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 现已把 `60 -> 66` 视为已完成整改卡组，并在恢复 `80 -> 86` 之前依次插入并完成 `67` 历史 file-length 治理债务卡、`68` 执行文档目录治理卡，当前再插入 `69` 冻结 `filter` 的客观可交易性与标的宇宙 gate。
 - `100 -> 105` 仍然保留为 `trade/system` 恢复卡组，但只有 `86-pre-trade-middle-ledger-official-cutover-gate-card-20260414.md` 接受后才允许恢复。
 - `txt -> raw_market -> market_base` 继续保留为正式 fallback
 
