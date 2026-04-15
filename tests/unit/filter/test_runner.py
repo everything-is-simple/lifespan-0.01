@@ -469,6 +469,51 @@ def test_run_filter_snapshot_build_uses_checkpoint_queue_by_default(
     assert snapshot_row == ("\u718a\u9006", "filter-snapshot-test-queue-001b")
 
 
+def test_run_filter_snapshot_build_requires_explicit_queue_mode_when_requested(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+
+    with pytest.raises(ValueError, match="explicit bounded window"):
+        run_filter_snapshot_build(
+            settings=settings,
+            run_id="filter-snapshot-test-explicit-queue-001",
+            require_explicit_queue_mode=True,
+        )
+
+
+def test_run_filter_snapshot_build_allows_explicit_checkpoint_queue_when_required(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+    _seed_structure_snapshots(settings)
+    _seed_context_rows(settings.databases.malf)
+    _seed_structure_checkpoints(
+        settings.databases.structure,
+        [
+            ("stock", "000001.SZ", "D", "2026-04-08", "2026-04-08", "2026-04-08", "structure-source-explicit", "structure-run-explicit"),
+            ("stock", "000002.SZ", "D", "2026-04-08", "2026-04-08", "2026-04-08", "structure-source-explicit", "structure-run-explicit"),
+        ],
+    )
+
+    summary = run_filter_snapshot_build(
+        settings=settings,
+        run_id="filter-snapshot-test-explicit-queue-002",
+        use_checkpoint_queue=True,
+        require_explicit_queue_mode=True,
+    )
+
+    assert summary.execution_mode == "checkpoint_queue"
+    assert summary.queue_claimed_count == 2
+    assert summary.checkpoint_upserted_count == 2
+
+
 def test_run_filter_snapshot_build_bootstraps_queue_tables_on_legacy_official_db(
     tmp_path: Path,
     monkeypatch,

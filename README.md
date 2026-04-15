@@ -102,7 +102,9 @@ flowchart LR
 - `scripts/malf/run_malf_wave_life_build.py`
   - 正式脚本入口保持不变；实现允许拆分到 `src/mlq/malf/wave_life_runner.py` 与同目录 helper 模块 `wave_life_shared.py / wave_life_source.py / wave_life_materialization.py`，用于满足治理文件长度约束而不改变外部契约。
 - `scripts/structure/run_structure_snapshot_build.py`
+  - 正式 CLI 必须显式选择执行模式：传入 `signal_start_date / signal_end_date` 走 bounded full-window，或显式传入 `--use-checkpoint-queue` 走 checkpoint queue；无参调用不再静默进入 queue。
 - `scripts/filter/run_filter_snapshot_build.py`
+  - 正式 CLI 必须显式选择执行模式：传入 `signal_start_date / signal_end_date` 走 bounded full-window，或显式传入 `--use-checkpoint-queue` 走 checkpoint queue；无参调用不再静默进入 queue。
 - `scripts/alpha/run_alpha_pas_five_trigger_build.py`
 - `scripts/alpha/run_alpha_trigger_ledger_build.py`
 - `scripts/alpha/run_alpha_family_build.py`

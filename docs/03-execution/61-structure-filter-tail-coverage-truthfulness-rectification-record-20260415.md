@@ -2,54 +2,72 @@
 `记录编号`：`61`
 `日期`：`2026-04-15`
 
-## 执行过程概述
+## 重开原因
 
-本卡核心工作为分析与裁决，不涉及 schema 或 runner 代码改写。主要步骤：
+`61` 首轮收口解决了“truthfulness 不等于 completeness”的系统级裁决，但没有把这条裁决落到正式脚本入口：
 
-1. **查询正式库数据**：写临时脚本 `scripts/system/card61_evidence_query.py`，分别读取 `structure.duckdb` 和 `filter.duckdb` 的覆盖统计与 checkpoint 状态。
-2. **机制溯源**：对照 `src/mlq/structure/runner.py` 与 `src/mlq/filter/runner.py` 中的 `_load_*_dirty_scopes`、`_upsert_*_checkpoint` 逻辑，确认 bounded/queue 两条路径在 checkpoint 写入上的差异。
-3. **定性 truthfulness vs completeness**：基于数据事实作出正式裁决并写入 conclusion。
+1. `structure/filter` 的 CLI 仍允许无参默认走 queue
+2. 这会让历史窗口建库继续存在“误把增量续跑路径当历史建库路径”的执行风险
+3. `pyproject.toml` 仍停留在 `59 -> 60` 的旧锚点，违反入口文件同步规则
 
-## 关键发现
+因此本轮按“重开 61”处理，不把问题推迟到 `62`，避免 `62` 的 filter 职责整改混入 `61` 的执行入口缺口。
 
-### 发现 1：checkpoint_queue 机制不写历史，只记 tail 点
+## 本轮执行步骤
 
-`_load_filter_dirty_scopes` 从 `structure_checkpoint` 读取，将每个标的的 `tail_start_bar_dt -> last_completed_bar_dt` 作为 filter 的 replay 窗口。由于 structure_checkpoint 中 `tail_start == last_completed`（queue 模式在完成 scope 后写入同一日期），filter queue 每个 scope 实际只处理 1 天的结构数据。这是 queue 机制的设计决定：它是为增量 dirty 更新设计的，而不是为历史全量建库设计的。
+1. 复核 `61` 既有 evidence / record / conclusion，确认上一轮确实只完成了裁决和数据分析，未改正式入口代码。
+2. 复核 `scripts/structure/run_structure_snapshot_build.py` 与 `scripts/filter/run_filter_snapshot_build.py`，确认两者无参调用均会默认走 queue。
+3. 在 `src/mlq/structure/runner.py` 与 `src/mlq/filter/runner.py` 增加“显式 queue 模式”防呆支持，但不改 queue 引擎本体。
+4. 在两个正式脚本入口增加 `--use-checkpoint-queue`，并把“无 window 且未显式 queue”改为直接报错。
+5. 为 `structure/filter` 补齐显式 queue 模式单测，并为新增测试文件补齐中文说明。
+6. 重写 `pyproject.toml`，同步 `61/62` 当前正式口径并清理乱码注释。
+7. 同步刷新 `AGENTS.md` 与 `README.md`，把 `structure/filter` 正式 CLI 必须显式声明 bounded window 或 `--use-checkpoint-queue` 的口径写回入口文件。
+8. 运行 pytest 与治理检查，确认没有引入新的触达文件超长违规，也没有新增入口联动遗漏。
 
-### 发现 2：两套 bounded run 来源不对等
+## 关键实现取舍
 
-- Structure bounded run：Jan-Apr 2010，产出 120,641 行密集覆盖，**无 checkpoint**
-- Filter bounded run：Jan 4-7 2010（仅 4 天），产出 5,000 行，**无 checkpoint**
+### 1. 只收紧正式脚本入口，不重写 queue 语义
 
-Filter bounded run 的时间窗口远窄于 structure bounded run，导致 Filter 在 Feb/Mar/Apr 共约 59 个 signal_dates（~87,851 行 structure 数据）上没有任何 admission 判定。
+本轮没有把 queue 默认语义从 runner API 中删除，原因是：
 
-### 发现 3：filter_checkpoint 精确镜像 structure_checkpoint
+1. checkpoint queue 仍是 daily incremental / replay 的正式路径
+2. 直接改写 API 默认行为会扩大影响面，超出 `61` 的“rectification”边界
+3. 本轮真正需要落地的是“正式脚本入口不得再把无参 queue 当历史建库默认路径”
 
-两者的 `last_completed_bar_dt` / `tail_start_bar_dt` 分布完全一致（1,833 entries，min=2010-03-19，max=2010-12-31，31 distinct dates），说明 filter queue run 完全依赖 structure queue 的 tail 状态来驱动自身范围。
+因此采用分层方案：
 
-### 发现 4：结构性 completeness 缺口
+- runner：保留原语义，只增加 `require_explicit_queue_mode=True` 防呆能力
+- script：正式入口默认启用该防呆
 
-2010 全年 filter 覆盖只有 6,833 行 / 35 signal_dates，其中 5,000 行（73%）来自 Jan 4-7 bounded run，其余 1,833 行（27%）来自 queue tail（每标的 1 天）。filter 对 Jan 5-7 以后、全年绝大多数 structure 密集事实的 admission 判定是**缺失的**，而不是 blocked。
+### 2. 不在 61 内提前处理 62 的 filter authority 重置
 
-## 无代码改写原因
+虽然本轮触达了 `filter` runner，但只处理执行模式防呆，不处理：
 
-本卡的范围是裁决和文档，不是修复。修复路径（即 `80-86` 的全量 bounded 重建）将在后续卡中执行。当前正式库的 structure/filter 数据不做破坏性修改；修复只会在正式建库时以全量 bounded run 覆盖现有 tail-sparse 状态。
+1. `structure_progress_failed`
+2. `reversal_stage_pending`
+3. `filter -> alpha` admission authority 边界
 
-## 对 59 结论表述的收紧
+这些仍留在 `62`，以免把“coverage / execution-mode”问题和“authority / verdict”问题混写。
 
-59 结论中描述 "structure_snapshot(2010) 落表 125,516 行" 和 "filter_snapshot(2010) 落表 6,833 行"，并把两者并列列为 "2010 pilot 的真实正式库表事实已经完整闭环" 的证据。本卡明确：
-- 上述行数是准确的，但 "完整闭环" 仅指 **truthfulness**（引用链完整），不指 **completeness**（全历史覆盖）。
-- filter 的 6,833 行主要来自 Jan 4-7（4 天）+ queue tail（31 天），**Feb-Apr 的密集 structure 事实在 filter 层完全缺失**。
-- 正式收紧表述：`59` 证明了 middle-ledger truthfulness gate 通过，但 **2010 全年 filter completeness** 未被 `59` 证明，且当前状态明确为"不完整"。
+## 结果
 
-## 变更清单
+1. `61` 的系统级裁决已落到正式脚本入口。
+2. 历史窗口建库不能再通过“无参默认 queue”静默启动。
+3. `AGENTS.md / README.md / pyproject.toml` 已与 `Ω / 00 / B / C` 对齐到 `61/62` 口径，并补齐 `structure/filter` 正式 CLI 的显式执行模式说明。
+4. 当前最新生效结论锚点仍为 `61`，当前待施工卡仍为 `62`，无需回退执行索引。
 
-| 类型 | 路径 | 说明 |
-| --- | --- | --- |
-| 新增 evidence | `docs/03-execution/61-*..-evidence-20260415.md` | 数据事实固化 |
-| 新增 record | `docs/03-execution/61-*..-record-20260415.md` | 本文件 |
-| 新增 conclusion | `docs/03-execution/61-*..-conclusion-20260415.md` | 正式裁决 |
-| card 状态更新 | `61-...-card-20260415.md` | 改为已完成 |
-| 临时脚本 | `scripts/system/card61_evidence_query.py` | 用后删除 |
-| 无 | `src/mlq/structure/runner.py` | 本卡不改代码 |
-| 无 | `src/mlq/filter/runner.py` | 本卡不改代码 |
+## 残留项
+
+1. 全仓治理盘点仍存在历史 file-length backlog，但与本轮改动无直接关系。
+2. `62` 仍是下一张正式施工卡，继续负责 filter pre-trigger boundary 与 authority reset。
+
+## 记录结构图
+
+```mermaid
+flowchart LR
+    R61["重开 61"] --> GAP1["补 CLI 执行入口防呆"]
+    R61 --> GAP2["同步 pyproject 入口口径"]
+    GAP1 --> SAFE["历史建库必须显式 bounded\n增量续跑必须显式 queue"]
+    GAP2 --> IDX["入口文件与 61/62 索引一致"]
+    SAFE --> NEXT["继续推进 62"]
+    IDX --> NEXT
+```

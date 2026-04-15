@@ -70,6 +70,7 @@ def run_structure_snapshot_build(
     runner_version: str = "v1",
     summary_path: Path | None = None,
     use_checkpoint_queue: bool | None = None,
+    require_explicit_queue_mode: bool = False,
 ) -> StructureSnapshotBuildSummary:
     """从官方 `malf` 上游物化 `structure snapshot`。"""
 
@@ -82,12 +83,21 @@ def run_structure_snapshot_build(
         source_structure_input_table=source_structure_input_table,
         source_timeframe=normalized_timeframe,
     )
-    if _should_use_queue_execution(
+    queue_execution = _should_use_queue_execution(
         use_checkpoint_queue=use_checkpoint_queue,
         signal_start_date=normalized_start_date,
         signal_end_date=normalized_end_date,
         instruments=normalized_instruments,
-    ):
+    )
+    _validate_structure_execution_mode(
+        use_checkpoint_queue=use_checkpoint_queue,
+        signal_start_date=normalized_start_date,
+        signal_end_date=normalized_end_date,
+        instruments=normalized_instruments,
+        queue_execution=queue_execution,
+        require_explicit_queue_mode=require_explicit_queue_mode,
+    )
+    if queue_execution:
         return _run_structure_queue_build(
             settings=settings,
             structure_path=structure_path,
@@ -143,6 +153,25 @@ def _validate_structure_mainline_contract(
         )
     if source_timeframe != DEFAULT_STRUCTURE_SOURCE_TIMEFRAME:
         raise ValueError("structure mainline only accepts canonical timeframe `D`.")
+
+
+def _validate_structure_execution_mode(
+    *,
+    use_checkpoint_queue: bool | None,
+    signal_start_date: date | None,
+    signal_end_date: date | None,
+    instruments: tuple[str, ...],
+    queue_execution: bool,
+    require_explicit_queue_mode: bool,
+) -> None:
+    if not require_explicit_queue_mode or not queue_execution or use_checkpoint_queue is not None:
+        return
+    if signal_start_date is None and signal_end_date is None and not instruments:
+        raise ValueError(
+            "structure official script requires an explicit bounded window for historical builds; "
+            "pass `signal_start_date/signal_end_date` for bounded full-window materialization or "
+            "set `use_checkpoint_queue=True` for incremental checkpoint queue execution."
+        )
 
 
 def _run_structure_bounded_build(

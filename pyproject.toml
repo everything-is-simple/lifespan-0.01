@@ -30,23 +30,33 @@ addopts = "--basetemp=H:/Lifespan-temp/pytest-tmp"
 cache_dir = "H:/Lifespan-temp/pytest-cache"
 
 [tool.mlq.governance]
-# 全仓治理盘点允许通过 `scripts/system/development_governance_legacy_backlog.py` 显式登记历史债务，但按改动路径触发的严格检查不得豁免新增违规。
-# `scripts/malf/run_malf_wave_life_build.py` 的外部正式入口保持不变；实现可拆分为 `wave_life_runner.py` 与同目录 helper 模块。
-# `scripts/system/run_system_mainline_readout_build.py` 的外部正式入口保持不变；实现可拆分为 `runner.py` 与同目录 readout helper 模块。
-# 当前 malf 口径：`pivot-confirmed break` 与 `same-timeframe stats sidecar` 只属于只读机制层 sidecar，不得回写 `malf core`。
+# 全仓治理盘点允许通过 `scripts/system/development_governance_legacy_backlog.py` 显式登记历史债务，
+# 但按改动路径触发的严格检查不得豁免新增违规。
+# `scripts/malf/run_malf_wave_life_build.py` 的外部正式入口保持不变；实现可拆分为
+# `wave_life_runner.py` 与同目录 helper 模块。
+# `scripts/system/run_system_mainline_readout_build.py` 的外部正式入口保持不变；实现可拆分为
+# `runner.py` 与同目录 readout helper 模块。
+# 当前 malf 口径：`pivot-confirmed break` 与 `same-timeframe stats sidecar` 只属于只读机制层 sidecar，
+# 不得回写 `malf core`。
 execution_index_files = [
     "docs/03-execution/A-execution-reading-order-20260409.md",
     "docs/03-execution/B-card-catalog-20260409.md",
     "docs/03-execution/C-system-completion-ledger-20260409.md",
 ]
-# 系统路线图文件不仅追踪阶段进度，也承担老仓来源分层、模块继承方式、实现深度与后半部施工蓝图口径；模块状态默认采用纵向档案，不再使用横向宽表。
+# 系统路线图文件既承担阶段追踪，也承担模块继承方式、实现深度与后半部施工蓝图口径。
 system_tracker_files = [
     "docs/01-design/α-system-roadmap-and-progress-tracker-charter-20260409.md",
     "docs/02-spec/β-system-roadmap-and-progress-tracker-spec-20260409.md",
     "docs/02-spec/Ω-system-delivery-roadmap-20260409.md",
 ]
-# 当前最新生效结论已推进到 `59-mainline-middle-ledger-2010-truthfulness-gate-conclusion-20260414.md`；当前待施工卡前移到 `60-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`。系统路线图现以 `28` 为统一 data-grade 基线，先完成 `56 -> 66` 这组真实正式库 middle-ledger 落地卡，再恢复 `100 -> 105` trade/system 卡组；其中 `100` 冻结 signal anchor、`102` 补齐 exit/pnl 账本、`103` 交付 trade progression queue/checkpoint/freshness、`105` 再升级 system orchestration；`position / trade` 的正式执行口径继续固定为 `adjust_method='none'`。
-# `37` 卡的 pytest 证据统一按串行命令执行，避免多个进程争用 `H:/Lifespan-temp/pytest-tmp`。
+# 当前最新生效结论已推进到
+# `61-structure-filter-tail-coverage-truthfulness-rectification-conclusion-20260415.md`；
+# 当前待施工卡已切到 `62-filter-pre-trigger-boundary-and-authority-reset-card-20260415.md`。
+# 系统路线图现以 `28` 为统一 data-grade 基线，先完成 `60 -> 66` 主线整改卡组，
+# 再恢复 `80 -> 86` official middle-ledger 卡组，最后在 `86` 接受后恢复
+# `100 -> 105` trade/system 卡组；其中 `position / trade` 的正式执行口径继续固定为
+# `adjust_method='none'`。
+# `37` 卡后的 pytest 证据统一按串行命令执行，避免多个进程争用 `H:/Lifespan-temp/pytest-tmp`。
 formal_runner_scripts = [
     "scripts/data/run_tdx_asset_raw_ingest.py",
     "scripts/data/run_tdx_stock_raw_ingest.py",

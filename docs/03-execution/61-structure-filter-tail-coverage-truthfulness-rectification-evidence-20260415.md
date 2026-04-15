@@ -2,138 +2,118 @@
 `证据编号`：`61`
 `日期`：`2026-04-15`
 
-## 实现与验证命令
+## 本轮重开范围
 
-1. 正式库查询脚本 `scripts/system/card61_evidence_query.py`（临时辅助，用后删除）
-   - 结果：通过，JSON 报告写入 `H:\Lifespan-report\system\card61\card61-structure-filter-coverage-evidence.json`
-   - 说明：顺序读取 `structure.duckdb` 和 `filter.duckdb`，导出覆盖统计、checkpoint tail 分布与 admissibility 细目，不修改任何正式账本。
+`61` 首轮收口已经完成了 truthfulness 与 completeness 的口径裁决，但执行入口仍存在一个落地缺口：
 
-## structure_snapshot 2010 覆盖摘要
+1. `scripts/structure/run_structure_snapshot_build.py`
+2. `scripts/filter/run_filter_snapshot_build.py`
 
-| 指标 | 值 |
-| --- | --- |
-| 总行数 | 125,516 |
-| distinct signal_dates | 106 |
-| distinct instruments | 1,833 |
-| 日期范围 | 2010-01-04 ~ 2010-12-31 |
+两者在无参调用时都会默认走 checkpoint queue。该行为对“每日增量续跑”是正确的，但对 `80-86` 的历史窗口建库并不安全，因为它会把 `61` 已经裁决的“bounded full-window 才是历史建库主路径”停留在文档层，而没有落到正式脚本入口层。
 
-### 按月分布（关键事实）
+## 本轮实现与验证命令
 
-| 月份 | signal_dates | rows | 均值 rows/date |
-| --- | --- | --- | --- |
-| 2010-01 | 20 | 29,790 | ≈1,490 |
-| 2010-02 | 15 | 22,839 | ≈1,523 |
-| 2010-03 | 23 | 35,489 | ≈1,543 |
-| 2010-04 | 21 | 32,523 | ≈1,549 |
-| 2010-05 | 4  | 3,053  | ≈763   |
-| 2010-06 | 1  | 1      | 1      |
-| 2010-07 | 1  | 1      | 1      |
-| 2010-08 | 1  | 1      | 1      |
-| 2010-09 | 1  | 1      | 1      |
-| 2010-10 | 3  | 3      | 1      |
-| 2010-11 | 5  | 6      | ≈1.2   |
-| 2010-12 | 11 | 1,809  | ≈164   |
+1. 结构 / filter 相关单测
 
-**关键结论**：Jan-Apr 为全覆盖密集段（共 83 个 signal_dates、120,641 行，约全部 1,833 个标的/天），来自 bounded full-window run；May-Nov 几乎为空（每月 1-5 行），来自 checkpoint_queue tail 跑；Dec 为部分恢复（1,809 行）。
+```bash
+python -m pytest tests/unit/structure/test_runner.py tests/unit/structure/test_explicit_queue_mode.py tests/unit/filter/test_runner.py
+```
 
-## structure_checkpoint 状态摘要
+- 结果：通过
+- 摘要：`17 passed in 9.57s`
 
-| 指标 | 值 |
-| --- | --- |
-| checkpoint 总数 | 1,833（= distinct instruments） |
-| distinct last_completed_bar_dt | 31 |
-| last_completed min/max | 2010-03-19 / 2010-12-31 |
-| tail_start min/max | 2010-03-19 / 2010-12-31 |
-| tail_confirm min/max | 2010-03-19 / 2010-12-31 |
+2. 当前待施工卡文档门禁
 
-**关键事实**：对所有 1,833 个标的，`tail_start_bar_dt == last_completed_bar_dt`。这意味着 queue 模式下每个 scope 的 replay 窗口长度为 1 天（从 tail_start 到 last_completed 都是同一日期）。这是 checkpoint_queue 机制在首次建库时的固有特征：它只记录"最后完成到的日期"作为 tail，不保留建库期间跨过的完整历史段。
+```bash
+python scripts/system/check_doc_first_gating_governance.py
+```
 
-## filter_snapshot 2010 覆盖摘要
+- 结果：通过
+- 摘要：当前待施工卡 `62-filter-pre-trigger-boundary-and-authority-reset-card-20260415.md` 已具备 requirement / design / spec / task breakdown 与历史账本约束
 
-| 指标 | 值 |
-| --- | --- |
-| 总行数 | 6,833 |
-| distinct signal_dates | 35 |
-| distinct instruments | 1,833 |
-| 日期范围 | 2010-01-04 ~ 2010-12-31 |
+3. 全仓治理盘点
 
-### 按月分布
+```bash
+python scripts/system/check_development_governance.py
+```
 
-| 月份 | signal_dates | rows | 来源 |
-| --- | --- | --- | --- |
-| 2010-01 | 4 | 5,000 | **bounded filter run**（Jan 4-7，不写 checkpoint） |
-| 2010-03 | 2 | 2 | queue tail |
-| 2010-04 | 4 | 7 | queue tail |
-| 2010-05 | 2 | 2 | queue tail |
-| 2010-06 | 1 | 1 | queue tail |
-| 2010-07 | 1 | 1 | queue tail |
-| 2010-08 | 1 | 1 | queue tail |
-| 2010-09 | 1 | 1 | queue tail |
-| 2010-10 | 3 | 3 | queue tail |
-| 2010-11 | 5 | 6 | queue tail |
-| 2010-12 | 11 | 1,809 | queue tail |
+- 结果：未通过，但失败原因为历史 file-length backlog，而非本轮新增违规
+- 盘点摘要：
+  - 硬上限遗留：`src/mlq/data/data_mainline_incremental_sync.py`、`src/mlq/portfolio_plan/runner.py`
+  - 目标上限遗留：`src/mlq/alpha/bootstrap.py`、`src/mlq/data/data_market_base_materialization.py`、`src/mlq/data/data_tdxquant.py`、`tests/unit/alpha/test_runner.py`、`tests/unit/data/test_market_base_runner.py`
+  - 本轮触达文件已回到目标线以内：`src/mlq/filter/runner.py = 788 行`、`tests/unit/structure/test_runner.py = 768 行`
 
-### 1 月 4 天明细
+4. 按本轮改动范围执行严格治理检查
 
-| signal_date | instruments | rows |
+```bash
+python scripts/system/check_development_governance.py AGENTS.md README.md pyproject.toml scripts/filter/run_filter_snapshot_build.py scripts/structure/run_structure_snapshot_build.py src/mlq/filter/runner.py src/mlq/structure/runner.py tests/unit/filter/test_runner.py tests/unit/structure/test_explicit_queue_mode.py docs/03-execution/61-structure-filter-tail-coverage-truthfulness-rectification-conclusion-20260415.md docs/03-execution/61-structure-filter-tail-coverage-truthfulness-rectification-evidence-20260415.md docs/03-execution/61-structure-filter-tail-coverage-truthfulness-rectification-record-20260415.md
+```
+
+- 结果：通过
+- 摘要：
+  - 本轮改动范围没有文件超过 1000 行硬上限
+  - 新增测试文件已补齐中文注释
+  - `AGENTS.md / README.md / pyproject.toml` 已同步刷新，入口联动检查通过
+
+## 落地事实
+
+### 1. 正式脚本入口不再允许“无参静默 queue”
+
+本轮为两个正式入口增加显式 queue 开关：
+
+1. `scripts/structure/run_structure_snapshot_build.py`
+2. `scripts/filter/run_filter_snapshot_build.py`
+
+新口径：
+
+- 显式给出 `signal_start_date / signal_end_date`：走 bounded full-window
+- 显式给出 `--use-checkpoint-queue`：走 checkpoint queue
+- 既不给 bounded window，也不给 `--use-checkpoint-queue`：直接报错，不再静默进入 queue
+
+### 2. runner 层保留原有增量语义
+
+本轮没有改写 queue 引擎本身，只新增了“正式脚本入口可要求显式 queue”的防呆参数：
+
+1. `src/mlq/structure/runner.py`
+2. `src/mlq/filter/runner.py`
+
+因此：
+
+- 正式 CLI 入口更安全
+- 既有内部调用与单测仍可继续使用 queue default / `use_checkpoint_queue=True`
+- `61` 的裁决第一次落到“执行口径”而不是只停留在文档口径
+
+### 3. 入口文件同步已补齐
+
+`AGENTS.md`、`README.md` 与 `pyproject.toml` 已同步到当前正式口径：
+
+- 最新生效结论锚点：`61-structure-filter-tail-coverage-truthfulness-rectification-conclusion-20260415.md`
+- 当前待施工卡：`62-filter-pre-trigger-boundary-and-authority-reset-card-20260415.md`
+- `structure/filter` 正式 CLI：必须显式选择 bounded full-window 或 `--use-checkpoint-queue`
+
+## 变更文件
+
+| 类型 | 路径 | 说明 |
 | --- | --- | --- |
-| 2010-01-04 | 1,477 | 1,477 |
-| 2010-01-05 | 1,474 | 1,474 |
-| 2010-01-06 | 1,475 | 1,475 |
-| 2010-01-07 | 574   | 574   |
-
-### admissibility 分布
-
-| trigger_admissible | count |
-| --- | --- |
-| false | 2,593 |
-| true  | 4,240 |
-
-## filter_checkpoint 状态摘要
-
-| 指标 | 值 |
-| --- | --- |
-| checkpoint 总数 | 1,833 |
-| last_completed min/max | 2010-03-19 / 2010-12-31 |
-| tail_start min/max | 2010-03-19 / 2010-12-31 |
-
-**filter_checkpoint 精确镜像 structure_checkpoint**：两者的 last_completed/tail_start 分布完全相同。filter bounded Jan run（产出 5,000 行）未写入 filter_checkpoint；filter checkpoint 只反映 queue 模式产出的 31 个 tail 日期。
-
-## 机制诊断
-
-```
-bounded structure run (Jan-Apr)  →  structure_snapshot: 120,641 rows, NO structure_checkpoint
-bounded filter run   (Jan 4-7)   →  filter_snapshot:      5,000 rows, NO filter_checkpoint
-                                    ↑ 这是 filter 唯一的密集覆盖，且窗口极窄（仅 4 天）
-
-queue structure run (malf checkpoint tail Mar-Dec)
-  → structure_snapshot: 875 rows (sparse tail)
-  → structure_checkpoint: 1,833 entries (tail=last_completed, 点状覆盖)
-
-queue filter run (structure_checkpoint tail)
-  → filter_snapshot:  1,833 rows (each instrument 1 day only)
-  → filter_checkpoint: 1,833 entries (mirror of structure_checkpoint)
-```
+| 代码 | `src/mlq/structure/runner.py` | 增加显式 queue 模式校验 |
+| 代码 | `src/mlq/filter/runner.py` | 增加显式 queue 模式校验 |
+| 脚本 | `scripts/structure/run_structure_snapshot_build.py` | 暴露 `--use-checkpoint-queue`，并要求 CLI 显式选择 queue |
+| 脚本 | `scripts/filter/run_filter_snapshot_build.py` | 暴露 `--use-checkpoint-queue`，并要求 CLI 显式选择 queue |
+| 测试 | `tests/unit/structure/test_explicit_queue_mode.py` | 覆盖 structure 显式 queue 入口 |
+| 测试 | `tests/unit/filter/test_runner.py` | 覆盖 filter 显式 queue 入口 |
+| 入口 | `AGENTS.md` | 同步 `61/62` 执行索引与 structure/filter 显式执行模式要求 |
+| 入口 | `README.md` | 同步 `61/62` 执行索引与 structure/filter 显式执行模式要求 |
+| 入口 | `pyproject.toml` | 同步到 `61/62` 当前口径 |
+| 文档 | `docs/03-execution/61-*.md` | 回填重开后的 evidence / record / conclusion |
 
 ## 证据结构图
 
 ```mermaid
 flowchart LR
-    BSR["bounded structure run\nJan-Apr 2010\n120,641 rows"] --> SS["structure_snapshot\n125,516 rows\n106 signal_dates"]
-    QSR["queue structure run\nMar-Dec tail\n875 rows"] --> SS
-    QSR --> SC["structure_checkpoint\n1,833 entries\ntail=last_completed"]
-    BFR["bounded filter run\nJan 4-7 only\n5,000 rows"] --> FS["filter_snapshot\n6,833 rows\n35 signal_dates"]
-    SC --> QFR["queue filter run\n1,833 rows (1 day/instrument)"]
-    QFR --> FS
-    QFR --> FC["filter_checkpoint\n1,833 entries\n= structure_checkpoint mirror"]
+    D61["61 口径裁决\ntruthfulness != completeness"] --> SCLI["structure/filter 正式脚本入口"]
+    SCLI -->|bounded window| BF["bounded full-window 历史建库"]
+    SCLI -->|--use-checkpoint-queue| Q["checkpoint queue 增量续跑"]
+    SCLI -->|无参且未显式 queue| ERR["直接报错"]
+    BF --> T["pytest 17 passed"]
+    Q --> T
 ```
-
-## 核心差距量化
-
-| 区段 | structure 覆盖 | filter 覆盖 | 差距 |
-| --- | --- | --- | --- |
-| Jan 全月 (20 dates) | 29,790 rows | 5,000 rows (4 dates) | **缺 16 dates** |
-| Feb 全月 (15 dates) | 22,839 rows | 0 rows | **缺 15 dates** |
-| Mar 全月 (23 dates) | 35,489 rows | 2 rows (2 tail) | **实质缺 23 dates** |
-| Apr 全月 (21 dates) | 32,523 rows | 7 rows (4 tail) | **实质缺 21 dates** |
-| 合计 Jan-Apr dense | 120,641 rows | 5,009 rows | **filter 缺漏约 96%** |

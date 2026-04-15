@@ -111,9 +111,11 @@ flowchart LR
   - `wave life` 的实现允许拆分为 `src/mlq/malf/wave_life_runner.py` 与同目录 helper 模块 `wave_life_shared.py / wave_life_source.py / wave_life_materialization.py`；拆分只服务治理文件长度与职责收敛，外部正式脚本入口、表族契约与只读 sidecar 边界不得变化。
 4. `structure` 负责把 `malf` 结构语义沉淀为官方结构事实层。
    - 当前 `structure` 的正式 bounded runner 入口为 `scripts/structure/run_structure_snapshot_build.py`，默认只允许从官方 canonical `malf_state_snapshot(timeframe='D')` 物化 `structure_run / snapshot / run_snapshot`；如消费 `pivot_confirmed_break_ledger / same_timeframe_stats_snapshot`，也只允许按只读 sidecar 附加，不允许夹带 `filter / alpha / position` 判定逻辑。
+   - 自 `61` 起，`scripts/structure/run_structure_snapshot_build.py` 的正式 CLI 调用必须显式二选一：要么提供 `signal_start_date / signal_end_date` 执行 bounded full-window，要么显式传入 `--use-checkpoint-queue` 执行 checkpoint queue；无参调用不再允许静默进入 queue。
    - bridge v1 `structure_candidate_snapshot / pas_context_snapshot` 只允许作为 canonical 表缺失时的兼容回退，不再承担默认正式上游职责。
 5. `filter` 负责 pre-trigger 准入。
    - 当前 `filter` 的正式 bounded runner 入口为 `scripts/filter/run_filter_snapshot_build.py`，只允许消费官方 `structure snapshot` 与 canonical `malf_state_snapshot(timeframe='D')` 最小执行上下文物化 `filter_run / snapshot / run_snapshot`；如携带 `break / stats` sidecar 字段，也只允许只读透传和提示，不允许硬拦截研究观察或夹带 `alpha detector / position / trade` 逻辑。
+   - 自 `61` 起，`scripts/filter/run_filter_snapshot_build.py` 的正式 CLI 调用必须显式二选一：要么提供 `signal_start_date / signal_end_date` 执行 bounded full-window，要么显式传入 `--use-checkpoint-queue` 执行 checkpoint queue；无参调用不再允许静默进入 queue。
    - bridge v1 `pas_context_snapshot` 只允许作为 canonical 表缺失时的兼容回退，不再承担默认正式上游职责。
 6. `alpha` 负责对下游冻结正式 `formal signal` 事实。
   - 当前 `alpha` 的正式 bounded PAS detector 入口为 `scripts/alpha/run_alpha_pas_five_trigger_build.py`，只允许消费官方 `filter / structure snapshot` 与 `market_base.stock_daily_adjusted(adjust_method='backward')`，物化 `alpha_pas_trigger_run / alpha_pas_trigger_work_queue / alpha_pas_trigger_checkpoint / alpha_trigger_candidate / alpha_pas_trigger_run_candidate`，不允许回读 bridge-era `pas_context_snapshot / structure_candidate_snapshot`，也不允许夹带 `position / trade / system` 逻辑。

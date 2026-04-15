@@ -66,6 +66,7 @@ def run_filter_snapshot_build(
     runner_version: str = "v1",
     summary_path: Path | None = None,
     use_checkpoint_queue: bool | None = None,
+    require_explicit_queue_mode: bool = False,
 ) -> FilterSnapshotBuildSummary:
     """从官方 `structure snapshot` 物化 `filter snapshot`。"""
 
@@ -78,12 +79,26 @@ def run_filter_snapshot_build(
         source_context_table=source_context_table,
         source_timeframe=normalized_timeframe,
     )
-    if _should_use_queue_execution(
+    queue_execution = _should_use_queue_execution(
         use_checkpoint_queue=use_checkpoint_queue,
         signal_start_date=normalized_start_date,
         signal_end_date=normalized_end_date,
         instruments=normalized_instruments,
+    )
+    if (
+        require_explicit_queue_mode
+        and queue_execution
+        and use_checkpoint_queue is None
+        and normalized_start_date is None
+        and normalized_end_date is None
+        and not normalized_instruments
     ):
+        raise ValueError(
+            "filter official script requires an explicit bounded window for historical builds; "
+            "pass `signal_start_date/signal_end_date` for bounded full-window materialization or "
+            "set `use_checkpoint_queue=True` for incremental checkpoint queue execution."
+        )
+    if queue_execution:
         return _run_filter_queue_build(
             settings=settings,
             filter_path=filter_path,
