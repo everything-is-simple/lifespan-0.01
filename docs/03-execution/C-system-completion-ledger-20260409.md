@@ -2,9 +2,9 @@
 `日期：2026-04-09`
 `状态：持续更新`
 
-1. 当前下一锤：`60-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`
-2. 当前待施工卡：`60-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`
-3. 正式主线剩余卡：`13`
+1. 当前下一锤：`60-mainline-rectification-batch-registration-and-scope-freeze-card-20260415.md`
+2. 当前待施工卡：`60-mainline-rectification-batch-registration-and-scope-freeze-card-20260415.md`
+3. 正式主线剩余卡：`20`
 4. 可选 Sidecar 剩余卡：`0`
 5. 历史治理 backlog：`0`
 
@@ -46,7 +46,7 @@
 1. 最新生效结论锚点已推进到 `59-mainline-middle-ledger-2010-truthfulness-gate-conclusion-20260414.md`。
 2. `59` 已完成并接受。
 3. 当前正式主线待施工卡已切到 `60`。
-4. `56 -> 66` 作为真实正式库 middle-ledger 落地卡组插入到 `100-105` 之前；只有 `66` 接受后，才恢复 `100`。
+4. `60 -> 66` 作为主线整改卡组插入到 `80-86` 之前；只有 `66` 接受后，才恢复 `80`，且只有 `86` 接受后，才恢复 `100`。
 
 ## 体系图
 
@@ -77,7 +77,8 @@ flowchart LR
     G52 --> G53["53 portfolio_plan capacity/decision"]
     G53 --> G54["54 portfolio_plan data-grade runner"]
     G54 --> G55["55 pre-trade baseline gate"]
-    G55 --> G56["56-66 official middle-ledger landing"]
-    G56 --> NEXT["100 anchor freeze"]
+    G55 --> G60["60-66 mainline rectification"]
+    G60 --> G80["80-86 official middle-ledger resume"]
+    G80 --> NEXT["100 anchor freeze"]
     NEXT --> POST["101-105 trade/system 收口"]
 ```

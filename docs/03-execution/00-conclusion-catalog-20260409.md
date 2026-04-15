@@ -75,9 +75,9 @@
 
 ## 主线状态
 1. `59` 已成为当前最新生效结论锚点。
-2. `59` 已正式完成真实正式 `2010` pilot 的 truthfulness gate，并把当前待施工卡前移到 `60`。
+2. `59` 已正式完成真实正式 `2010` pilot 的 truthfulness gate，但当前待施工卡已改为 `60`，先处理 `60-66` 主线整改卡组。
 3. `29-59` 已完成 canonical malf downstream、mainline ledger standardization、alpha detector、alpha family、quality gate、official replay hardening、alpha producer hardening、pre-position acceptance、position contract freeze、risk/capacity ledger hardening、batched leg contract、position data-grade runner、pre-portfolio-plan position acceptance gate、portfolio_plan ledger family freeze、capacity/decision hardening、data-grade runner、official middle-ledger pilot freeze、official canonical malf bootstrap、official downstream canonical smoke 与 `2010` truthfulness gate 收口。
-4. 当前待施工卡已前移到 `60`；只有 `66` 接受后，才允许恢复 `100 -> 105` 的 trade/system 卡组。
+4. 当前执行顺序已改为 `60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 100 -> 105`；只有 `66` 接受后才允许恢复 `80-86`，只有 `86` 接受后才允许恢复 `100 -> 105` 的 trade/system 卡组。
 
 ## 图示
 ```mermaid
@@ -111,8 +111,8 @@ flowchart LR
     subgraph MID["56-59 middle-ledger pilot"]
         C56["56-59"]
     end
-    subgraph NEXT["60-66 / 100-105"]
-        C100["60-66 -> 100-105"]
+    subgraph NEXT["60-66 / 80-86 / 100-105"]
+        C100["60-66 -> 80-86 -> 100-105"]
     end
     GOV --> MAIN --> DATA --> MALF --> DOWN --> C43 --> C44 --> C45 --> C46 --> C47 --> C48 --> C49 --> C56 --> C100
 ```

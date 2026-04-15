@@ -1,11 +1,11 @@
 # pre-trade middle-ledger official cutover gate 卡
-`卡号`：`66`
+`卡号`：`86`
 `日期`：`2026-04-14`
 `状态`：`待施工`
 
 ## 需求
 
-- 问题：即使 `56-65` 全部执行，也仍需要正式裁决真实正式库是否已经从 bridge-v1 切到 canonical mainline。
+- 问题：即使 `56-59`、`60-66` 与 `80-85` 全部执行，也仍需要正式裁决真实正式库是否已经从 bridge-v1 切到 canonical mainline。
 - 目标结果：给出 official middle-ledger cutover 的正式 gate，并决定是否恢复 `100`。
 - 为什么现在做：`100-105` 不能建立在“可能已经切换”的状态之上。
 

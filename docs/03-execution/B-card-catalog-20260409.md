@@ -1,9 +1,9 @@
 ﻿# 执行卡目录 `日期：2026-04-09`
 `状态：持续更新`
 
-1. 当前下一锚：`60-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`
-2. 当前待施工卡：`60-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`
-3. 正式主线剩余卡：`13`
+1. 当前下一锚：`60-mainline-rectification-batch-registration-and-scope-freeze-card-20260415.md`
+2. 当前待施工卡：`60-mainline-rectification-batch-registration-and-scope-freeze-card-20260415.md`
+3. 正式主线剩余卡：`20`
 4. 可选 Sidecar 剩余卡：`0`
 5. 历史治理 backlog：`0`
 
@@ -68,13 +68,20 @@
 57. `57-malf-canonical-official-2010-bootstrap-and-replay-card-20260414.md`
 58. `58-structure-filter-alpha-official-2010-canonical-smoke-card-20260414.md`
 59. `59-mainline-middle-ledger-2010-truthfulness-gate-card-20260414.md`
-60. `60-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`
-61. `61-mainline-middle-ledger-2014-2016-bootstrap-card-20260414.md`
-62. `62-mainline-middle-ledger-2017-2019-bootstrap-card-20260414.md`
-63. `63-mainline-middle-ledger-2020-2022-bootstrap-card-20260414.md`
-64. `64-mainline-middle-ledger-2023-2025-bootstrap-card-20260414.md`
-65. `65-mainline-middle-ledger-2026-ytd-incremental-alignment-card-20260414.md`
-66. `66-pre-trade-middle-ledger-official-cutover-gate-card-20260414.md`
+60. `60-mainline-rectification-batch-registration-and-scope-freeze-card-20260415.md`
+61. `61-structure-filter-tail-coverage-truthfulness-rectification-card-20260415.md`
+62. `62-filter-pre-trigger-boundary-and-authority-reset-card-20260415.md`
+63. `63-wave-life-official-ledger-truthfulness-and-bootstrap-card-20260415.md`
+64. `64-alpha-stage-percentile-decision-matrix-integration-card-20260415.md`
+65. `65-formal-signal-admission-boundary-reallocation-card-20260415.md`
+66. `66-mainline-rectification-resume-gate-card-20260415.md`
+80. `80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`
+81. `81-mainline-middle-ledger-2014-2016-bootstrap-card-20260414.md`
+82. `82-mainline-middle-ledger-2017-2019-bootstrap-card-20260414.md`
+83. `83-mainline-middle-ledger-2020-2022-bootstrap-card-20260414.md`
+84. `84-mainline-middle-ledger-2023-2025-bootstrap-card-20260414.md`
+85. `85-mainline-middle-ledger-2026-ytd-incremental-alignment-card-20260414.md`
+86. `86-pre-trade-middle-ledger-official-cutover-gate-card-20260414.md`
 100. `100-trade-signal-anchor-contract-freeze-card-20260411.md`
 101. `101-position-entry-t-plus-1-open-reference-price-correction-card-20260411.md`
 102. `102-trade-exit-pnl-ledger-bootstrap-card-20260411.md`
@@ -86,8 +93,8 @@
 
 1. 最新生效结论锚点已推进到 `59-mainline-middle-ledger-2010-truthfulness-gate-conclusion-20260414.md`。
 2. `59-mainline-middle-ledger-2010-truthfulness-gate-card-20260414.md` 已完成并接受。
-3. 当前正式主线待施工卡已切到 `60`，`56 -> 66` 作为真实正式库 middle-ledger 落地卡组继续位于 `100` 之前。
-4. 当前卡组顺序维持为 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55 -> 56 -> 57 -> 58 -> 59 -> 60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。
+3. 当前正式主线待施工卡已切到 `60`，`60 -> 66` 作为 `59` 之后、`80 -> 86` 之前的主线整改卡组位于 `100` 之前。
+4. 当前卡组顺序调整为 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55 -> 56 -> 57 -> 58 -> 59 -> 60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。
 
 ## 卡组路线图
 ```mermaid
@@ -117,8 +124,9 @@ flowchart LR
     G52 --> G53["53 portfolio_plan decision/capacity"]
     G53 --> G54["54 portfolio_plan data-grade runner"]
     G54 --> G55["55 pre-trade baseline gate"]
-    G55 --> G56["56-66 official middle-ledger landing"]
-    G56 --> POST["100-105 trade/system 收口"]
+    G55 --> G60["60-66 mainline rectification"]
+    G60 --> G80["80-86 official middle-ledger resume"]
+    G80 --> POST["100-105 trade/system 收口"]
 ```
 
 

@@ -16,8 +16,8 @@
 1. 历史账本硬约束来自 `docs/01-design/03-historical-ledger-shared-contract-charter-20260409.md`
 2. 全系统统一治理基线来自 `28-system-wide-checkpoint-and-dirty-queue-alignment-conclusion-20260411.md`
 3. 当前最新生效结论锚点为 `59-mainline-middle-ledger-2010-truthfulness-gate-conclusion-20260414.md`
-4. 当前待施工卡为 `60-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`
-5. 当前连续前置卡组为 `56 -> 57 -> 58 -> 59 -> 60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66`
+4. 当前待施工卡为 `60-mainline-rectification-batch-registration-and-scope-freeze-card-20260415.md`
+5. 当前连续前置卡组为 `60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86`
 
 ## 当前正式判断
 
@@ -42,8 +42,8 @@
 ### 当前阶段
 
 1. 当前 active 卡：`60`
-2. 当前 active 卡组：`60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`
-3. 当前系统级目标：先把 canonical `malf` 与 `structure / filter / alpha` 在真实正式库 `H:\Lifespan-data` 落地，再决定是否恢复 `trade -> system`
+2. 当前 active 卡组：`60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`
+3. 当前系统级目标：先完成主线整改范围、覆盖真值、职责边界与寿命决策面裁决，再恢复 `80-86` 的真实正式库 middle-ledger 推进，并在 `86` 后决定是否恢复 `trade -> system`
 
 ## 系统当前剖面图
 
@@ -92,7 +92,7 @@ flowchart LR
 3. `43 -> 44 -> 45 -> 46`
 4. `47 -> 48 -> 49 -> 50 -> 51`
 5. `52 -> 53 -> 54 -> 55`
-6. `56 -> 57 -> 58 -> 59 -> 60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66`
+6. `60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86`
 7. `100 -> 101 -> 102 -> 103 -> 104 -> 105`
 
 其中：
@@ -103,9 +103,10 @@ flowchart LR
 4. `46` 是进入 `position` 前的最终 acceptance gate
 5. `47 -> 51` 是 `position` A 级硬化卡组
 6. `52 -> 55` 是 `portfolio_plan` A 级硬化与 pre-trade gate
-7. `56 -> 66` 是 official middle-ledger 落地与 cutover gate 卡组
-8. `100 -> 105` 是 `trade/system` 恢复卡组
-9. `105` 明确固定为最后一张后置卡
+7. `60 -> 66` 是 `59` 后的主线整改与恢复闸门卡组
+8. `80 -> 86` 是整改后的 official middle-ledger 恢复与 cutover gate 卡组
+9. `100 -> 105` 是 `trade/system` 恢复卡组
+10. `105` 明确固定为最后一张后置卡
 
 ```mermaid
 flowchart LR
@@ -124,8 +125,9 @@ flowchart LR
     G52 --> G53["53 portfolio_plan decision/capacity hardening"]
     G53 --> G54["54 portfolio_plan data-grade runner"]
     G54 --> G55["55 pre-trade upstream baseline gate"]
-    G55 --> G5666["56-66 official middle-ledger landing"]
-    G5666 --> G100105["100-105 trade/system 恢复卡组"]
+    G55 --> G6066["60-66 mainline rectification"]
+    G6066 --> G8086["80-86 official middle-ledger resume"]
+    G8086 --> G100105["100-105 trade/system 恢复卡组"]
     G100105 --> C100["100 signal anchor freeze"]
     C100 --> C101["101 T+1 open 参考价修正"]
     C101 --> C102["102 trade exit PnL ledger"]
@@ -138,11 +140,11 @@ flowchart LR
 
 1. `29-32` 不是“历史已完成就可忽略”的旧卡组，而是后半部一切恢复卡的前置逻辑顺序。
 2. `43-45` 任何一张未通过前，都不允许进入 `46`。
-3. `55` 接受后并不直接恢复 `100`；若真实正式库尚未完成 canonical middle-ledger 落地，必须先完成 `56-66`。
-4. `100-105` 当前必须在 `66` 接受后按自然数顺排推进，不允许跳过 `100/101` 直接做 `105`。
+3. `55` 接受后并不直接恢复 `100`；若真实正式库主线仍有整改缺口，必须先完成 `60-66`，再恢复 `80-86`。
+4. `100-105` 当前必须在 `86` 接受后按自然数顺排推进，不允许跳过 `100/101` 直接做 `105`。
 5. `47-51` 属于 `position` 追平 `data -> malf` 事实标准的正式卡组，不允许把 `position` 继续当成 bounded skeleton 直接越过。
 6. `52-54` 属于 `portfolio_plan` 追平 `data -> malf` 事实标准的正式卡组，不允许继续把组合层当成最小桥接层直接越过。
-7. 若 `56-66` 暴露真实正式库 canonical mainline 仍有缺口，应先补新卡，再继续推进 `100-105`。
+7. `59` 暴露出的主线整改缺口已登记为 `60-66`；在 `60-66` 收口前，不允许直接续推 `80-86` 或 `100-105`。
 
 ## 增量更新 / 断点续跑 / 审计依赖图
 

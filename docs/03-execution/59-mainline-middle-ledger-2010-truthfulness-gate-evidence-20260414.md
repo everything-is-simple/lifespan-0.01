@@ -5,7 +5,7 @@
 ## 实现与验证命令
 1. `python scripts/system/check_doc_first_gating_governance.py`
    - 结果：通过
-   - 说明：当前待施工卡已前移为 `60-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`，gating 输出确认其 requirement / design / spec / task breakdown 与历史账本约束齐备，说明 `59` 收口后索引状态一致。
+   - 说明：当前待施工卡已前移为 `60-mainline-rectification-batch-registration-and-scope-freeze-card-20260415.md`，gating 输出确认其 requirement / design / spec / task breakdown 与历史账本约束齐备，说明 `59` 收口后索引状态一致。
 2. 单进程 DuckDB truthfulness gate 导出脚本
    - 结果：通过
    - 导出物：`H:\Lifespan-report\system\card59\mainline-middle-ledger-2010-truthfulness-gate-report-20260414.json`
