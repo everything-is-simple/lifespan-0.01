@@ -17,13 +17,15 @@ Get-Content src/mlq/data/tdxquant.py
 Get-Content H:\。reference\tushare\tushare-5000积分-官方-兜底号.md
 Web: https://tushare.pro/document/2?doc_id=25
 Web: https://tushare.pro/document/2?doc_id=214
-Web: https://tushare.pro/document/2?doc_id=423
+Web: https://tushare.pro/document/2?doc_id=397
+Web: https://tushare.pro/document/2?doc_id=100
 Web: https://pypi.org/project/baostock/
 Wheel: baostock-0.9.1-py3-none-any.whl
 python <- bounded probe for baostock baseline
 python <- bounded probe for baostock ETF/BJ/ST detail
 python <- bounded probe for tushare stock_basic/suspend_d/st
 python <- bounded probe for tushare delisted/BSE detail
+python <- bounded probe for tushare stock_st/namechange coverage floor
 ```
 
 ## 关键结果
@@ -33,21 +35,23 @@ python <- bounded probe for tushare delisted/BSE detail
 - 本地 `H:\。reference\tushare\tushare-5000积分-官方-兜底号` 证明存在 Tushare 接入条件，但该备忘本身不等于历史真值能力。
 - `tushare` 初始未安装，已在当前 Python 环境补装 `tushare==1.4.29`。
 - `Tushare` 实测结果：
-  - `stock_basic` 可用，返回 `list_status / list_date / delist_date / market / exchange`，并能取到 `list_status='D'` 的退市样本。
-  - `stock_basic(exchange='BSE', list_status='L')` 可返回北交所样本。
-  - `suspend_d(trade_date='20200312')` 可返回按交易日的停复牌记录。
-  - `st(ts_code='300125.SZ')` 当前账号无接口权限，报“没有接口访问权限”。
+  - `stock_basic` 可用，返回 `list_status / list_date / delist_date / market / exchange`，并能取到 `list_status='D'` 的退市样本和 `exchange='BSE'` 的北交所样本。
+  - `suspend_d(trade_date='20200312')` 可返回按交易日的停复牌记录；`suspend_d(trade_date='20100104')` 也有样本，说明早于 `2010` 的主线窗口至少能覆盖停牌事件。
+  - 付费接口 `st` 当前账号无权限。
+  - 替代接口 `stock_st` 当前账号可用；官方文档明确该接口“数据从 `20160101` 开始，太早历史无法补齐”。
+  - `namechange` 当前账号可用，能返回带 `start_date / end_date / change_reason` 的历史名称变更记录，样本中可见 `ST`、`撤销ST`、`*ST` 等历史区间，且可追溯到 `2001` 年。
 - `Baostock` 实测结果：
   - `login()` 成功。
   - `query_stock_basic(code='sh.600000')` 返回普通股票样本，`type='1'`。
   - `query_stock_basic(code='sh.510300')` 返回 ETF 样本，`type='5'`。
   - `query_history_k_data_plus(..., 'date,code,tradestatus,isST')` 可返回日级 `tradestatus / isST`。
-  - `query_all_stock(day='2024-11-18')` 本次样本仅见 `sh/sz`，未见 `bj`，也未包含测试 ETF `sh.510300`。
-  - `query_stock_basic(code='bj.920021')` 本次样本返回空集，北交所覆盖仍需进一步核实。
+  - `query_all_stock(day=...)` 在 `2021-11-16`、`2023-11-20`、`2024-04-30`、`2024-11-18` 四个样本日都仅见 `sh/sz`，`bj=0`，也未包含测试 ETF `sh.510300`。
+  - `query_stock_basic(code='bj.430047'/'bj.830799'/'bj.920021'/'bj.920964')` 全部返回空集。
+  - `query_history_k_data_plus('bj.*', ...)` 直接报错，仅接受 `sh/sz`。
 - 当前 `TdxQuant get_stock_info(code)` 接口签名不带历史日期参数，因此尚不能证明其能承担历史时点真值回补。
-- 当前阶段性判断已经出现分层：
-  - `Tushare` 更接近“历史事件 + universe/list_status”来源。
-  - `Baostock` 更接近“日级状态快照 / 交叉验证”来源。
+- 当前阶段性判断已经出现明确分层：
+  - `Tushare` 更接近“历史事件 + universe/list_status”主源。
+  - `Baostock` 更接近“日级状态快照 / 交叉验证”侧源。
 
 ## 产物
 
@@ -60,7 +64,10 @@ python <- bounded probe for tushare delisted/BSE detail
 - `H:\Lifespan-report\data\objective-source-probe-20260415.json`
 - `H:\Lifespan-report\data\objective-source-probe-20260415-tushare.json`
 - `H:\Lifespan-report\data\objective-source-probe-20260415-tushare-detail.json`
+- `H:\Lifespan-report\data\objective-source-probe-20260415-tushare-st-alternatives.json`
+- `H:\Lifespan-report\data\objective-source-probe-20260415-tushare-coverage-floor.json`
 - `H:\Lifespan-report\data\objective-source-probe-20260415-baostock-detail.json`
+- `H:\Lifespan-report\data\objective-source-probe-20260415-baostock-bj.json`
 - `H:\Lifespan-report\data\objective-source-probe-20260415-summary.json`
 - `H:\Lifespan-report\data\objective-source-probe-20260415.md`
 
@@ -68,7 +75,7 @@ python <- bounded probe for tushare delisted/BSE detail
 
 ```mermaid
 flowchart LR
-    CMD["开卡 + 双源 probe 命令"] --> OUT["Tushare/Baostock 实测结果"]
+    CMD["双源 probe + 官方文档核对"] --> OUT["Tushare/Baostock 能力边界"]
     OUT --> ART["report JSON/Markdown + 70 evidence"]
-    ART --> REF["后续 source-selection 结论引用"]
+    ART --> REF["source-selection 初步裁决"]
 ```
