@@ -51,6 +51,7 @@ from mlq.alpha.runner import (
     DEFAULT_ALPHA_FORMAL_SIGNAL_FILTER_TABLE,
     DEFAULT_ALPHA_FORMAL_SIGNAL_STRUCTURE_TABLE,
     DEFAULT_ALPHA_FORMAL_SIGNAL_TRIGGER_TABLE,
+    DEFAULT_ALPHA_FORMAL_SIGNAL_WAVE_LIFE_TABLE,
     AlphaFormalSignalBuildSummary,
     run_alpha_formal_signal_build,
 )
@@ -102,6 +103,7 @@ __all__ = [
     "DEFAULT_ALPHA_FORMAL_SIGNAL_FILTER_TABLE",
     "DEFAULT_ALPHA_FORMAL_SIGNAL_STRUCTURE_TABLE",
     "DEFAULT_ALPHA_FORMAL_SIGNAL_TRIGGER_TABLE",
+    "DEFAULT_ALPHA_FORMAL_SIGNAL_WAVE_LIFE_TABLE",
     "AlphaFamilyBuildSummary",
     "AlphaPasTriggerBuildSummary",
     "AlphaTriggerBuildSummary",

@@ -41,6 +41,14 @@ class PositionFormalSignalInput:
     malf_alignment: str | None = None
     malf_phase_bucket: str | None = None
     family_source_context_fingerprint: str | None = None
+    wave_life_percentile: float | None = None
+    remaining_life_bars_p50: float | None = None
+    remaining_life_bars_p75: float | None = None
+    termination_risk_bucket: str | None = None
+    stage_percentile_decision_code: str | None = None
+    stage_percentile_action_owner: str | None = None
+    stage_percentile_note: str | None = None
+    stage_percentile_contract_version: str | None = None
     structure_regime_code: str | None = None
     structure_position_slot: str | None = None
     structure_distance_to_pivot_pct: float | None = None

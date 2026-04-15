@@ -35,6 +35,8 @@ cache_dir = "H:/Lifespan-temp/pytest-cache"
 # `scripts/malf/run_malf_wave_life_build.py` 的外部正式入口保持不变；实现可拆分为
 # `wave_life_runner.py` 与同目录 helper 模块；正式 CLI 必须显式二选一：
 # bounded bootstrap 或 `--use-checkpoint-queue`。
+# `scripts/alpha/run_alpha_formal_signal_build.py` 现可只读接入 `malf_wave_life_snapshot`；
+# `stage_percentile_*` 仅代表解释性 sidecar，不在 `64` 内直接改写 admission authority。
 # `scripts/system/run_system_mainline_readout_build.py` 的外部正式入口保持不变；实现可拆分为
 # `runner.py` 与同目录 readout helper 模块。
 # 当前 malf 口径：`pivot-confirmed break` 与 `same-timeframe stats sidecar` 只属于只读机制层 sidecar，
@@ -51,8 +53,8 @@ system_tracker_files = [
     "docs/02-spec/Ω-system-delivery-roadmap-20260409.md",
 ]
 # 当前最新生效结论已推进到
-# `63-wave-life-official-ledger-truthfulness-and-bootstrap-conclusion-20260415.md`；
-# 当前待施工卡已切到 `64-alpha-stage-percentile-decision-matrix-integration-card-20260415.md`。
+# `64-alpha-stage-percentile-decision-matrix-integration-conclusion-20260415.md`；
+# 当前待施工卡已切到 `65-formal-signal-admission-boundary-reallocation-card-20260415.md`。
 # 系统路线图现以 `28` 为统一 data-grade 基线，先完成 `60 -> 66` 主线整改卡组，
 # 再恢复 `80 -> 86` official middle-ledger 卡组，最后在 `86` 接受后恢复
 # `100 -> 105` trade/system 卡组；其中 `position / trade` 的正式执行口径继续固定为

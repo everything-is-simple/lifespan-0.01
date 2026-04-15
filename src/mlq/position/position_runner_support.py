@@ -100,6 +100,14 @@ def load_alpha_formal_signal_rows(
                 "malf_alignment": row[20],
                 "malf_phase_bucket": row[21],
                 "family_source_context_fingerprint": row[22],
+                "wave_life_percentile": row[23],
+                "remaining_life_bars_p50": row[24],
+                "remaining_life_bars_p75": row[25],
+                "termination_risk_bucket": row[26],
+                "stage_percentile_decision_code": row[27],
+                "stage_percentile_action_owner": row[28],
+                "stage_percentile_note": row[29],
+                "stage_percentile_contract_version": row[30],
             }
             for row in rows
         ]
@@ -179,6 +187,14 @@ def build_alpha_select_sql(*, table_name: str, available_columns: set[str]) -> s
         "malf_alignment": ("malf_alignment",),
         "malf_phase_bucket": ("malf_phase_bucket",),
         "family_source_context_fingerprint": ("family_source_context_fingerprint",),
+        "wave_life_percentile": ("wave_life_percentile",),
+        "remaining_life_bars_p50": ("remaining_life_bars_p50",),
+        "remaining_life_bars_p75": ("remaining_life_bars_p75",),
+        "termination_risk_bucket": ("termination_risk_bucket",),
+        "stage_percentile_decision_code": ("stage_percentile_decision_code",),
+        "stage_percentile_action_owner": ("stage_percentile_action_owner",),
+        "stage_percentile_note": ("stage_percentile_note",),
+        "stage_percentile_contract_version": ("stage_percentile_contract_version",),
     }
     for alias, candidates in optional_family_columns.items():
         column_name = next((candidate for candidate in candidates if candidate in available_columns), None)
@@ -266,6 +282,30 @@ def enrich_reference_prices(
                     family_source_context_fingerprint=None
                     if row["family_source_context_fingerprint"] is None
                     else str(row["family_source_context_fingerprint"]),
+                    wave_life_percentile=None
+                    if row["wave_life_percentile"] is None
+                    else float(row["wave_life_percentile"]),
+                    remaining_life_bars_p50=None
+                    if row["remaining_life_bars_p50"] is None
+                    else float(row["remaining_life_bars_p50"]),
+                    remaining_life_bars_p75=None
+                    if row["remaining_life_bars_p75"] is None
+                    else float(row["remaining_life_bars_p75"]),
+                    termination_risk_bucket=None
+                    if row["termination_risk_bucket"] is None
+                    else str(row["termination_risk_bucket"]),
+                    stage_percentile_decision_code=None
+                    if row["stage_percentile_decision_code"] is None
+                    else str(row["stage_percentile_decision_code"]),
+                    stage_percentile_action_owner=None
+                    if row["stage_percentile_action_owner"] is None
+                    else str(row["stage_percentile_action_owner"]),
+                    stage_percentile_note=None
+                    if row["stage_percentile_note"] is None
+                    else str(row["stage_percentile_note"]),
+                    stage_percentile_contract_version=None
+                    if row["stage_percentile_contract_version"] is None
+                    else str(row["stage_percentile_contract_version"]),
                 )
             )
         return enriched_signals, missing_reference_price_count

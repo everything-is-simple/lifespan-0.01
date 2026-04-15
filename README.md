@@ -110,8 +110,11 @@ flowchart LR
 - `scripts/alpha/run_alpha_trigger_ledger_build.py`
 - `scripts/alpha/run_alpha_family_build.py`
 - `scripts/alpha/run_alpha_formal_signal_build.py`
+  - 只允许从官方 `alpha trigger / alpha family / filter / structure` 与只读 `malf_wave_life_snapshot` sidecar 冻结 `alpha_formal_signal_run / event / run_event`
+  - `stage_percentile_*` 当前只作为解释性 sidecar 落表，不在 `64` 内直接改写 `formal_signal_status`
 - `scripts/position/run_position_formal_signal_materialization.py`
   - 默认 `adjust_method='none'`
+  - `stage_percentile_*` 若存在，只允许作为 `position` 自身后续 sizing/trim 的只读输入
   - 默认无窗口调用走 `work_queue / checkpoint` 续跑；显式窗口保留 bounded replay/rematerialize
 - `scripts/portfolio_plan/run_portfolio_plan_build.py`
 - `scripts/trade/run_trade_runtime_build.py`
@@ -131,7 +134,7 @@ flowchart LR
   - `malf -> structure -> filter -> alpha` 默认消费 `adjust_method='backward'`
   - `position -> trade` 默认消费 `adjust_method='none'`
   - `forward` 当前只作研究与展示保留
-- 当前最新生效结论锚点已推进到 `63-wave-life-official-ledger-truthfulness-and-bootstrap-conclusion-20260415.md`；当前待施工卡改为 `64-alpha-stage-percentile-decision-matrix-integration-card-20260415.md`。
+- 当前最新生效结论锚点已推进到 `64-alpha-stage-percentile-decision-matrix-integration-conclusion-20260415.md`；当前待施工卡改为 `65-formal-signal-admission-boundary-reallocation-card-20260415.md`。
 - `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 现已把 `60 -> 66` 注册为 `59` 之后的主线整改卡组，并把原 middle-ledger 分段建库卡组后移为 `80 -> 86`。
 - `100 -> 105` 仍然保留为 `trade/system` 恢复卡组，但只有 `86-pre-trade-middle-ledger-official-cutover-gate-card-20260414.md` 接受后才允许恢复。
 - `txt -> raw_market -> market_base` 继续保留为正式 fallback
@@ -174,6 +177,7 @@ flowchart LR
 - `alpha`
   - `alpha trigger` 继续只读官方 `filter_snapshot + structure_snapshot`
   - `alpha formal signal` 默认关闭 `pas_context_snapshot` fallback，只有显式指定时才启用兼容路径
+  - `alpha formal signal` 现正式只读接入 `malf_wave_life_snapshot`，并把 `stage_percentile_*` 记为 explanatory sidecar；正式 admission authority 仍留待 `65`
 
 ## 文档治理
 

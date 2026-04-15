@@ -12,6 +12,7 @@ from mlq.alpha import (
     DEFAULT_ALPHA_FORMAL_SIGNAL_FILTER_TABLE,
     DEFAULT_ALPHA_FORMAL_SIGNAL_STRUCTURE_TABLE,
     DEFAULT_ALPHA_FORMAL_SIGNAL_TRIGGER_TABLE,
+    DEFAULT_ALPHA_FORMAL_SIGNAL_WAVE_LIFE_TABLE,
     run_alpha_formal_signal_build,
 )
 
@@ -45,6 +46,10 @@ def build_argument_parser() -> argparse.ArgumentParser:
         default=DEFAULT_ALPHA_FORMAL_SIGNAL_STRUCTURE_TABLE,
     )
     parser.add_argument(
+        "--source-wave-life-table",
+        default=DEFAULT_ALPHA_FORMAL_SIGNAL_WAVE_LIFE_TABLE,
+    )
+    parser.add_argument(
         "--signal-contract-version",
         default=DEFAULT_ALPHA_FORMAL_SIGNAL_CONTRACT_VERSION,
     )
@@ -68,6 +73,7 @@ def main() -> None:
         source_family_table=args.source_family_table,
         source_filter_table=args.source_filter_table,
         source_structure_table=args.source_structure_table,
+        source_wave_life_table=args.source_wave_life_table,
         signal_contract_version=args.signal_contract_version,
         summary_path=args.summary_path,
     )

@@ -19,6 +19,7 @@ from mlq.alpha.formal_signal_shared import (
     _ContextRow,
     _FamilyRow,
     _TriggerRow,
+    _WaveLifeRow,
     _build_alpha_formal_signal_run_id,
     _build_queue_nk,
     _build_scope_nk,
@@ -26,6 +27,7 @@ from mlq.alpha.formal_signal_shared import (
     _map_major_state_to_context_code,
     _normalize_date_value,
     _normalize_formal_signal_status,
+    _normalize_optional_float,
     _normalize_optional_int,
     _normalize_optional_nullable_str,
     _normalize_optional_str,
@@ -233,6 +235,57 @@ def _derive_alpha_formal_signal_dirty_reason(
     if tail_confirm_until_dt is None or (replay_confirm_until_dt is not None and replay_confirm_until_dt > tail_confirm_until_dt):
         return "tail_confirm_advanced"
     return None
+
+
+def _load_wave_life_rows(
+    *,
+    malf_path: Path,
+    table_name: str,
+    source_context_nks: tuple[str, ...],
+) -> dict[str, _WaveLifeRow]:
+    if not source_context_nks:
+        return {}
+    connection = duckdb.connect(str(malf_path), read_only=True)
+    try:
+        if not _table_exists(connection, table_name):
+            return {}
+        available_columns = _load_table_columns(connection, table_name)
+        source_state_snapshot_column = _resolve_existing_column(
+            available_columns,
+            ("source_state_snapshot_nk",),
+            field_name="source_state_snapshot_nk",
+            table_name=table_name,
+        )
+        percentile_column = _resolve_optional_column(available_columns, ("wave_life_percentile",))
+        remaining_p50_column = _resolve_optional_column(available_columns, ("remaining_life_bars_p50",))
+        remaining_p75_column = _resolve_optional_column(available_columns, ("remaining_life_bars_p75",))
+        termination_bucket_column = _resolve_optional_column(available_columns, ("termination_risk_bucket",))
+        placeholders = ", ".join("?" for _ in source_context_nks)
+        rows = connection.execute(
+            f"""
+            SELECT
+                {source_state_snapshot_column},
+                {percentile_column or 'NULL'},
+                {remaining_p50_column or 'NULL'},
+                {remaining_p75_column or 'NULL'},
+                {termination_bucket_column or 'NULL'}
+            FROM {table_name}
+            WHERE {source_state_snapshot_column} IN ({placeholders})
+            """,
+            list(source_context_nks),
+        ).fetchall()
+        return {
+            str(row[0]): _WaveLifeRow(
+                source_state_snapshot_nk=str(row[0]),
+                wave_life_percentile=_normalize_optional_float(row[1]),
+                remaining_life_bars_p50=_normalize_optional_float(row[2]),
+                remaining_life_bars_p75=_normalize_optional_float(row[3]),
+                termination_risk_bucket=_normalize_optional_nullable_str(row[4]),
+            )
+            for row in rows
+        }
+    finally:
+        connection.close()
 
 
 def _claim_alpha_formal_signal_scopes(
@@ -535,8 +588,10 @@ def _load_official_context_rows(
     *,
     filter_path: Path,
     structure_path: Path,
+    malf_path: Path,
     filter_table_name: str,
     structure_table_name: str,
+    wave_life_table_name: str,
     signal_start_date: date | None,
     signal_end_date: date | None,
     instruments: tuple[str, ...],
@@ -609,31 +664,53 @@ def _load_official_context_rows(
             """,
             parameters,
         ).fetchall()
-        return [
-            _build_context_row(
-                instrument=str(row[0]),
-                signal_date=_normalize_date_value(row[1], field_name="signal_date"),
-                asof_date=_normalize_date_value(row[2], field_name="asof_date"),
-                formal_signal_status=_normalize_formal_signal_status(row[3]),
-                trigger_admissible=bool(row[4]),
-                major_state=_normalize_optional_str(row[5], default="牛逆"),
-                trend_direction=_normalize_optional_str(row[6], default="down").lower(),
-                reversal_stage=_normalize_optional_str(row[7], default="none").lower(),
-                wave_id=_normalize_optional_int(row[8]),
-                current_hh_count=_normalize_optional_int(row[9]),
-                current_ll_count=_normalize_optional_int(row[10]),
-                daily_source_context_nk=_normalize_optional_nullable_str(row[11]),
-                weekly_major_state=_normalize_optional_nullable_str(row[12]),
-                weekly_trend_direction=_normalize_optional_nullable_str(row[13]),
-                weekly_reversal_stage=_normalize_optional_nullable_str(row[14]),
-                weekly_source_context_nk=_normalize_optional_nullable_str(row[15]),
-                monthly_major_state=_normalize_optional_nullable_str(row[16]),
-                monthly_trend_direction=_normalize_optional_nullable_str(row[17]),
-                monthly_reversal_stage=_normalize_optional_nullable_str(row[18]),
-                monthly_source_context_nk=_normalize_optional_nullable_str(row[19]),
+        wave_life_map = _load_wave_life_rows(
+            malf_path=malf_path,
+            table_name=wave_life_table_name,
+            source_context_nks=tuple(
+                sorted(
+                    {
+                        context_nk
+                        for row in rows
+                        for context_nk in (_normalize_optional_nullable_str(row[11]),)
+                        if context_nk is not None
+                    }
+                )
+            ),
+        )
+        context_rows: list[_ContextRow] = []
+        for row in rows:
+            daily_source_context_nk = _normalize_optional_nullable_str(row[11])
+            wave_life_row = None if daily_source_context_nk is None else wave_life_map.get(daily_source_context_nk)
+            context_rows.append(
+                _build_context_row(
+                    instrument=str(row[0]),
+                    signal_date=_normalize_date_value(row[1], field_name="signal_date"),
+                    asof_date=_normalize_date_value(row[2], field_name="asof_date"),
+                    formal_signal_status=_normalize_formal_signal_status(row[3]),
+                    trigger_admissible=bool(row[4]),
+                    major_state=_normalize_optional_str(row[5], default="牛逆"),
+                    trend_direction=_normalize_optional_str(row[6], default="down").lower(),
+                    reversal_stage=_normalize_optional_str(row[7], default="none").lower(),
+                    wave_id=_normalize_optional_int(row[8]),
+                    current_hh_count=_normalize_optional_int(row[9]),
+                    current_ll_count=_normalize_optional_int(row[10]),
+                    daily_source_context_nk=daily_source_context_nk,
+                    weekly_major_state=_normalize_optional_nullable_str(row[12]),
+                    weekly_trend_direction=_normalize_optional_nullable_str(row[13]),
+                    weekly_reversal_stage=_normalize_optional_nullable_str(row[14]),
+                    weekly_source_context_nk=_normalize_optional_nullable_str(row[15]),
+                    monthly_major_state=_normalize_optional_nullable_str(row[16]),
+                    monthly_trend_direction=_normalize_optional_nullable_str(row[17]),
+                    monthly_reversal_stage=_normalize_optional_nullable_str(row[18]),
+                    monthly_source_context_nk=_normalize_optional_nullable_str(row[19]),
+                    wave_life_percentile=None if wave_life_row is None else wave_life_row.wave_life_percentile,
+                    remaining_life_bars_p50=None if wave_life_row is None else wave_life_row.remaining_life_bars_p50,
+                    remaining_life_bars_p75=None if wave_life_row is None else wave_life_row.remaining_life_bars_p75,
+                    termination_risk_bucket=None if wave_life_row is None else wave_life_row.termination_risk_bucket,
+                )
             )
-            for row in rows
-        ]
+        return context_rows
     finally:
         connection.close()
 
@@ -660,6 +737,10 @@ def _build_context_row(
     monthly_trend_direction: str | None,
     monthly_reversal_stage: str | None,
     monthly_source_context_nk: str | None,
+    wave_life_percentile: float | None,
+    remaining_life_bars_p50: float | None,
+    remaining_life_bars_p75: float | None,
+    termination_risk_bucket: str | None,
 ) -> _ContextRow:
     malf_context_4 = _map_major_state_to_context_code(major_state)
     lifecycle_rank_high = _derive_lifecycle_rank_high(
@@ -691,6 +772,10 @@ def _build_context_row(
         monthly_trend_direction=monthly_trend_direction,
         monthly_reversal_stage=monthly_reversal_stage,
         monthly_source_context_nk=monthly_source_context_nk,
+        wave_life_percentile=wave_life_percentile,
+        remaining_life_bars_p50=remaining_life_bars_p50,
+        remaining_life_bars_p75=remaining_life_bars_p75,
+        termination_risk_bucket=termination_risk_bucket,
     )
 
 

@@ -234,7 +234,7 @@ def test_run_position_formal_signal_materialization_accepts_family_aware_alpha_c
                 1,
                 4,
                 "evt-111",
-                "alpha-formal-signal-v3",
+                "alpha-formal-signal-v4",
             )
         ],
     )

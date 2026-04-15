@@ -1,6 +1,7 @@
 """覆盖 `alpha formal signal` 官方 producer 的正式落表行为。"""
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import duckdb
@@ -16,6 +17,7 @@ from tests.unit.alpha.test_runner import (
     _replace_structure_source,
     _seed_malf_sources,
     _seed_trigger_source,
+    _seed_wave_life_snapshot,
 )
 
 
@@ -48,9 +50,81 @@ def test_run_alpha_formal_signal_build_materializes_run_event_and_run_bridge(
             ("state-m-101", "000001.SZ", "M", "2026-03-31", "牛逆", "down", "trigger", 1, 0, 1),
         ],
     )
+    _seed_wave_life_snapshot(
+        settings.databases.malf,
+        [
+            (
+                "wl-000001-2026-04-08",
+                "stock",
+                "000001.SZ",
+                "D",
+                "2026-04-08",
+                0,
+                "wave-000001",
+                "state-000001.SZ-2026-04-08",
+                "牛顺",
+                "none",
+                3,
+                0.95,
+                1.0,
+                2.0,
+                "high",
+                32,
+                "wave-life-v1",
+                "profile-000001",
+                "completed_wave_sample",
+                "wave-life-seed-001",
+                "wave-life-seed-001",
+            ),
+            (
+                "wl-000002-2026-04-08",
+                "stock",
+                "000002.SZ",
+                "D",
+                "2026-04-08",
+                0,
+                "wave-000002",
+                "state-000002.SZ-2026-04-08",
+                "熊顺",
+                "none",
+                1,
+                0.40,
+                4.0,
+                6.0,
+                "normal",
+                18,
+                "wave-life-v1",
+                "profile-000002",
+                "completed_wave_sample",
+                "wave-life-seed-002",
+                "wave-life-seed-002",
+            ),
+        ],
+    )
     _materialize_official_upstream(settings, suffix="001")
     _materialize_official_trigger(settings, suffix="001")
     _materialize_official_family(settings, suffix="001")
+    conn = duckdb.connect(str(alpha_ledger_path(settings)))
+    try:
+        family_event_nk, payload_json = conn.execute(
+            """
+            SELECT family_event_nk, payload_json
+            FROM alpha_family_event
+            WHERE instrument = '000001.SZ'
+            """
+        ).fetchone()
+        payload = json.loads(payload_json)
+        payload["malf_phase_bucket"] = "middle"
+        conn.execute(
+            """
+            UPDATE alpha_family_event
+            SET payload_json = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE family_event_nk = ?
+            """,
+            [json.dumps(payload, ensure_ascii=False, sort_keys=True), family_event_nk],
+        )
+    finally:
+        conn.close()
     summary = run_alpha_formal_signal_build(
         settings=settings,
         signal_start_date="2026-04-08",
@@ -87,14 +161,18 @@ def test_run_alpha_formal_signal_build_materializes_run_event_and_run_bridge(
                 monthly_major_state,
                 family_code,
                 family_role,
-                source_family_event_nk
+                source_family_event_nk,
+                wave_life_percentile,
+                termination_risk_bucket,
+                stage_percentile_decision_code,
+                stage_percentile_action_owner
             FROM alpha_formal_signal_event
             ORDER BY instrument
             """
         ).fetchall()
         run_event_rows = conn.execute(
             """
-            SELECT signal_nk, source_family_event_nk, family_role
+            SELECT signal_nk, source_family_event_nk, family_role, stage_percentile_decision_code, stage_percentile_action_owner
             FROM alpha_formal_signal_run_event
             WHERE run_id = 'alpha-formal-signal-test-001'
             ORDER BY signal_nk
@@ -117,6 +195,10 @@ def test_run_alpha_formal_signal_build_materializes_run_event_and_run_bridge(
             "bof_core",
             "mainline",
             "000001.SZ|2026-04-08|2026-04-08|PAS|bof|BOF|alpha-trigger-v2|alpha-family-v2",
+            0.95,
+            "high",
+            "alpha_caution_note",
+            "alpha_note",
         ),
         (
             "000002.SZ",
@@ -131,18 +213,26 @@ def test_run_alpha_formal_signal_build_materializes_run_event_and_run_bridge(
             "pb_core",
             "supporting",
             "000002.SZ|2026-04-08|2026-04-08|PAS|pb|PB|alpha-trigger-v2|alpha-family-v2",
+            0.40,
+            "normal",
+            "observe_only",
+            "none",
         ),
     ]
     assert run_event_rows == [
         (
-            "000001.SZ|2026-04-08|2026-04-08|PAS|bof|BOF|000001.SZ|2026-04-08|2026-04-08|PAS|bof|BOF|alpha-trigger-v2|alpha-formal-signal-v3",
+            "000001.SZ|2026-04-08|2026-04-08|PAS|bof|BOF|000001.SZ|2026-04-08|2026-04-08|PAS|bof|BOF|alpha-trigger-v2|alpha-formal-signal-v4",
             "000001.SZ|2026-04-08|2026-04-08|PAS|bof|BOF|alpha-trigger-v2|alpha-family-v2",
             "mainline",
+            "alpha_caution_note",
+            "alpha_note",
         ),
         (
-            "000002.SZ|2026-04-08|2026-04-08|PAS|pb|PB|000002.SZ|2026-04-08|2026-04-08|PAS|pb|PB|alpha-trigger-v2|alpha-formal-signal-v3",
+            "000002.SZ|2026-04-08|2026-04-08|PAS|pb|PB|000002.SZ|2026-04-08|2026-04-08|PAS|pb|PB|alpha-trigger-v2|alpha-formal-signal-v4",
             "000002.SZ|2026-04-08|2026-04-08|PAS|pb|PB|alpha-trigger-v2|alpha-family-v2",
             "supporting",
+            "observe_only",
+            "none",
         ),
     ]
 

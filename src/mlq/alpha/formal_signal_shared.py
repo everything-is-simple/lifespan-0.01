@@ -13,7 +13,9 @@ DEFAULT_ALPHA_FORMAL_SIGNAL_TRIGGER_TABLE: Final[str] = "alpha_trigger_event"
 DEFAULT_ALPHA_FORMAL_SIGNAL_FAMILY_TABLE: Final[str] = "alpha_family_event"
 DEFAULT_ALPHA_FORMAL_SIGNAL_FILTER_TABLE: Final[str] = "filter_snapshot"
 DEFAULT_ALPHA_FORMAL_SIGNAL_STRUCTURE_TABLE: Final[str] = "structure_snapshot"
-DEFAULT_ALPHA_FORMAL_SIGNAL_CONTRACT_VERSION: Final[str] = "alpha-formal-signal-v3"
+DEFAULT_ALPHA_FORMAL_SIGNAL_WAVE_LIFE_TABLE: Final[str] = "malf_wave_life_snapshot"
+DEFAULT_ALPHA_FORMAL_SIGNAL_CONTRACT_VERSION: Final[str] = "alpha-formal-signal-v4"
+DEFAULT_ALPHA_STAGE_PERCENTILE_CONTRACT_VERSION: Final[str] = "alpha-stage-percentile-v1"
 
 
 @dataclass(frozen=True)
@@ -44,10 +46,12 @@ class AlphaFormalSignalBuildSummary:
     alpha_ledger_path: str
     filter_ledger_path: str
     structure_ledger_path: str
+    malf_ledger_path: str
     source_trigger_table: str
     source_family_table: str
     source_filter_table: str
     source_structure_table: str
+    source_wave_life_table: str
 
     def as_dict(self) -> dict[str, object]:
         """返回适合写入 summary JSON 的稳定字典。"""
@@ -91,6 +95,10 @@ class _ContextRow:
     monthly_trend_direction: str | None
     monthly_reversal_stage: str | None
     monthly_source_context_nk: str | None
+    wave_life_percentile: float | None
+    remaining_life_bars_p50: float | None
+    remaining_life_bars_p75: float | None
+    termination_risk_bucket: str | None
 
 
 @dataclass(frozen=True)
@@ -104,6 +112,15 @@ class _FamilyRow:
     malf_alignment: str | None
     malf_phase_bucket: str | None
     family_source_context_fingerprint: str | None
+
+
+@dataclass(frozen=True)
+class _WaveLifeRow:
+    source_state_snapshot_nk: str
+    wave_life_percentile: float | None
+    remaining_life_bars_p50: float | None
+    remaining_life_bars_p75: float | None
+    termination_risk_bucket: str | None
 
 
 @dataclass(frozen=True)
@@ -143,6 +160,14 @@ class _FormalSignalEventRow:
     malf_alignment: str | None
     malf_phase_bucket: str | None
     family_source_context_fingerprint: str | None
+    wave_life_percentile: float | None
+    remaining_life_bars_p50: float | None
+    remaining_life_bars_p75: float | None
+    termination_risk_bucket: str | None
+    stage_percentile_decision_code: str
+    stage_percentile_action_owner: str
+    stage_percentile_note: str
+    stage_percentile_contract_version: str
     source_trigger_event_nk: str
     signal_contract_version: str
     first_seen_run_id: str
@@ -225,6 +250,47 @@ def _derive_lifecycle_rank_high(
 ) -> int:
     raw_rank = current_hh_count if malf_context_4.startswith("BULL_") else current_ll_count
     return max(0, min(raw_rank, 4))
+
+
+def _normalize_optional_float(value: object) -> float | None:
+    if value is None or value == "":
+        return None
+    return float(value)
+
+
+def _derive_stage_percentile_decision(
+    *,
+    malf_phase_bucket: str | None,
+    termination_risk_bucket: str | None,
+) -> tuple[str, str, str]:
+    normalized_phase = _normalize_optional_nullable_str(malf_phase_bucket)
+    normalized_risk = _normalize_optional_nullable_str(termination_risk_bucket)
+    phase = "unknown" if normalized_phase is None else normalized_phase.strip().lower()
+    risk = "unknown" if normalized_risk is None else normalized_risk.strip().lower()
+
+    if phase == "late" and risk in {"elevated", "high"}:
+        return (
+            "position_trim_bias",
+            "position",
+            "late phase with elevated termination risk is reserved for position sizing or trim.",
+        )
+    if phase == "middle" and risk == "high":
+        return (
+            "alpha_caution_note",
+            "alpha_note",
+            "middle phase with high termination risk stays note-only until admission authority is reallocated.",
+        )
+    if phase == "unknown" or risk == "unknown":
+        return (
+            "observe_only",
+            "none",
+            "stage or percentile sample is missing, so the matrix remains observational only.",
+        )
+    return (
+        "observe_only",
+        "none",
+        "current stage and percentile do not escalate beyond observational sidecar.",
+    )
 
 
 def _normalize_formal_signal_status(value: object) -> str:

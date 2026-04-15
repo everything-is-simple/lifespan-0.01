@@ -124,9 +124,9 @@ flowchart LR
   - 当前 `alpha` 的正式 bounded trigger ledger 入口为 `scripts/alpha/run_alpha_trigger_ledger_build.py`，只允许从 bounded detector 输入与官方 `filter / structure snapshot` 上游物化 `alpha_trigger_run / event / run_event`，不允许夹带 `position / trade / system` 逻辑。
   - 当前 `alpha` 的正式 bounded family ledger 入口为 `scripts/alpha/run_alpha_family_build.py`，只允许从官方 `alpha_trigger_event` 与 bounded family candidate 输入物化 `alpha_family_run / event / run_event`，不允许绕过共享 trigger 事实层，也不允许夹带 `position / trade / system` 逻辑。
   - `alpha family` 的实现允许拆分为 `src/mlq/alpha/family_runner.py` 与同目录 helper 模块 `family_shared.py / family_source.py / family_materialization.py`；拆分只服务治理文件长度与职责收敛，外部正式脚本入口、表族契约与 bounded family ledger 语义不得变化。
-   - 当前 `alpha` 的正式 bounded producer 入口为 `scripts/alpha/run_alpha_formal_signal_build.py`，只允许从官方触发事实与官方 `filter / structure snapshot` 上游物化 `alpha_formal_signal_run / event / run_event`，默认关闭 `pas_context_snapshot` fallback，不允许夹带 `position` sizing 或 `trade / system` 逻辑。
+   - 当前 `alpha` 的正式 bounded producer 入口为 `scripts/alpha/run_alpha_formal_signal_build.py`，只允许从官方触发事实、官方 `filter / structure snapshot` 与只读 `malf_wave_life_snapshot` sidecar 上游物化 `alpha_formal_signal_run / event / run_event`；`wave_life` 相关字段当前只允许以 `stage_percentile_*` 解释性 sidecar 落表，不允许在 `64` 内直接改写 `formal_signal_status`，也不允许夹带 `position` sizing 或 `trade / system` 逻辑。
 7. `position` 负责单标的仓位计划与资金管理。
-  - 当前 `position` 的正式 data-grade runner 入口为 `scripts/position/run_position_formal_signal_materialization.py`，只允许消费官方 `alpha formal signal` 与 `market_base.stock_daily_adjusted(adjust_method='none')` 参考价，正式物化 `position_run / position_work_queue / position_checkpoint / position_run_snapshot` 与既有 candidate/risk/capacity/sizing/entry/exit 表族；脚本默认 `adjust_method` 也必须保持为 `none`，且默认无窗口调用走 queue/checkpoint 续跑，不允许回读 `alpha` 内部临时过程。
+  - 当前 `position` 的正式 data-grade runner 入口为 `scripts/position/run_position_formal_signal_materialization.py`，只允许消费官方 `alpha formal signal` 与 `market_base.stock_daily_adjusted(adjust_method='none')` 参考价，正式物化 `position_run / position_work_queue / position_checkpoint / position_run_snapshot` 与既有 candidate/risk/capacity/sizing/entry/exit 表族；`stage_percentile_*` 若存在也只允许作为 position 自身后续 sizing/trim 的只读输入，不允许把动作权回推给 `alpha`；脚本默认 `adjust_method` 也必须保持为 `none`，且默认无窗口调用走 queue/checkpoint 续跑，不允许回读 `alpha` 内部临时过程。
    - `position bootstrap` 的实现允许拆分为 `src/mlq/position/bootstrap.py` 与同目录 helper 模块 `position_shared.py / position_bootstrap_schema.py / position_materialization.py`；拆分只服务治理文件长度与职责收敛，对外导出的表名常量、输入/输出数据结构、bootstrap/连接/path 入口与 position materialization 语义不得变化。
 8. `portfolio_plan` 负责组合层计划、组合回测、容量协调。
    - 当前 `portfolio_plan` 的正式 bounded runner 入口为 `scripts/portfolio_plan/run_portfolio_plan_build.py`，只允许消费官方 `position_candidate_audit / position_capacity_snapshot / position_sizing_snapshot`，物化 `portfolio_plan_run / snapshot / run_snapshot`，不允许回读 `alpha` 内部过程，也不允许顺手夹带 `trade / system` 逻辑。
@@ -143,7 +143,7 @@ flowchart LR
 1. `malf -> structure -> filter -> alpha` 默认使用 `adjust_method = backward`
 2. `position -> trade` 默认使用 `adjust_method = none`
 3. `adjust_method = forward` 当前只作为研究与展示保留，不作为正式执行口径
-4. 当前最新生效结论锚点已推进到 `63-wave-life-official-ledger-truthfulness-and-bootstrap-conclusion-20260415.md`；`63` 接受后，当前待施工卡已改为 `64-alpha-stage-percentile-decision-matrix-integration-card-20260415.md`，只有 `66` 收口后才允许恢复 `80`，并继续要求 `86` 通过后才恢复 `100`。
+4. 当前最新生效结论锚点已推进到 `64-alpha-stage-percentile-decision-matrix-integration-conclusion-20260415.md`；`64` 接受后，当前待施工卡已改为 `65-formal-signal-admission-boundary-reallocation-card-20260415.md`，只有 `66` 收口后才允许恢复 `80`，并继续要求 `86` 通过后才恢复 `100`。
 5. 当前主线系统级路线图必须以 `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 为准；该文档现在把 `60 -> 66` 固定为 `80-86` 前的主线整改卡组，把 `80 -> 86` 固定为整改后的真实正式库 middle-ledger 恢复卡组，不允许再把“代码已切 canonical”误当成“正式库已切 canonical”，也不允许在 `66` 前直接续推 `80-86`。
 
 ## 5. 历史账本原则
@@ -203,7 +203,7 @@ flowchart LR
 只要治理规则、环境脚手架、路径契约、测试入口、执行入口发生变化，就必须同步刷新这三个入口文件。
 其中 `docs/01-design/`、`docs/02-spec/` 与 `src/mlq/core/paths.py` 的正式口径变化，也视为入口变化。
 全仓 `python scripts/system/check_development_governance.py` 盘点允许通过 `scripts/system/development_governance_legacy_backlog.py` 显式登记历史债务；但按改动路径触发的严格治理检查，不得豁免新增违规。
-当前 `61` 已接受，历史硬超长 backlog 与目标超长 backlog 均已清零；当前正式施工位已前移到 `62`，并顺排进入 `63 -> 64 -> 65 -> 66`，只有 `66` 接受后才恢复 `80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86`，再由 `86` 接受后恢复 `100-105`。每解决一项都必须同步回填 card / evidence / record / conclusion，并从 backlog 台账移除。
+当前 `64` 已接受，历史硬超长 backlog 与目标超长 backlog 均已清零；当前正式施工位已前移到 `65`，并顺排进入 `66`，只有 `66` 接受后才恢复 `80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86`，再由 `86` 接受后恢复 `100-105`。每解决一项都必须同步回填 card / evidence / record / conclusion，并从 backlog 台账移除。
 当前已完成的清债包括 `src/mlq/system/runner.py`、`src/mlq/trade/runner.py`、`src/mlq/alpha/trigger_runner.py`、`src/mlq/filter/runner.py`、`src/mlq/malf/mechanism_runner.py`、`src/mlq/malf/canonical_runner.py`、`src/mlq/structure/runner.py`、`src/mlq/alpha/runner.py`、`src/mlq/data/runner.py`、`tests/unit/data/test_data_runner.py`、`src/mlq/data/bootstrap.py`、`src/mlq/malf/runner.py`、`src/mlq/malf/bootstrap.py`、`src/mlq/alpha/family_runner.py`、`src/mlq/position/bootstrap.py` 与 `docs/03-execution/37-system-governance-historical-debt-backlog-burndown-card-20260412.md`；本卡后续 `pytest` 证据统一按串行口径执行，避免多个进程争用 `H:\Lifespan-temp\pytest-tmp`。
 
 ## 8. 文档规则

@@ -24,6 +24,7 @@ from mlq.alpha.formal_signal_shared import (
     DEFAULT_ALPHA_FORMAL_SIGNAL_FILTER_TABLE,
     DEFAULT_ALPHA_FORMAL_SIGNAL_STRUCTURE_TABLE,
     DEFAULT_ALPHA_FORMAL_SIGNAL_TRIGGER_TABLE,
+    DEFAULT_ALPHA_FORMAL_SIGNAL_WAVE_LIFE_TABLE,
     AlphaFormalSignalBuildSummary,
     _build_alpha_formal_signal_run_id,
     _coerce_date,
@@ -63,6 +64,7 @@ def run_alpha_formal_signal_build(
     source_family_table: str = DEFAULT_ALPHA_FORMAL_SIGNAL_FAMILY_TABLE,
     source_filter_table: str = DEFAULT_ALPHA_FORMAL_SIGNAL_FILTER_TABLE,
     source_structure_table: str = DEFAULT_ALPHA_FORMAL_SIGNAL_STRUCTURE_TABLE,
+    source_wave_life_table: str = DEFAULT_ALPHA_FORMAL_SIGNAL_WAVE_LIFE_TABLE,
     signal_contract_version: str = DEFAULT_ALPHA_FORMAL_SIGNAL_CONTRACT_VERSION,
     producer_name: str = "alpha_formal_signal_producer",
     producer_version: str = "v1",
@@ -85,6 +87,7 @@ def run_alpha_formal_signal_build(
             alpha_path=alpha_path,
             filter_path=filter_path,
             structure_path=structure_path,
+            malf_path=malf_path,
             limit=limit,
             batch_size=batch_size,
             run_id=run_id,
@@ -92,6 +95,7 @@ def run_alpha_formal_signal_build(
             source_family_table=source_family_table,
             source_filter_table=source_filter_table,
             source_structure_table=source_structure_table,
+            source_wave_life_table=source_wave_life_table,
             signal_contract_version=signal_contract_version,
             producer_name=producer_name,
             producer_version=producer_version,
@@ -113,6 +117,7 @@ def run_alpha_formal_signal_build(
         source_family_table=source_family_table,
         source_filter_table=source_filter_table,
         source_structure_table=source_structure_table,
+        source_wave_life_table=source_wave_life_table,
         signal_contract_version=signal_contract_version,
         producer_name=producer_name,
         producer_version=producer_version,
@@ -137,6 +142,7 @@ def _run_alpha_formal_signal_bounded_build(
     source_family_table: str,
     source_filter_table: str,
     source_structure_table: str,
+    source_wave_life_table: str,
     signal_contract_version: str,
     producer_name: str,
     producer_version: str,
@@ -150,12 +156,14 @@ def _run_alpha_formal_signal_bounded_build(
     resolved_alpha_path = Path(alpha_path or alpha_ledger_path(workspace))
     resolved_filter_path = Path(filter_path or workspace.databases.filter)
     resolved_structure_path = Path(structure_path or workspace.databases.structure)
+    resolved_malf_path = Path(malf_path or workspace.databases.malf)
     normalized_limit = max(int(limit), 1)
     normalized_batch_size = max(int(batch_size), 1)
     materialization_run_id = run_id or _build_alpha_formal_signal_run_id()
 
     _ensure_database_exists(resolved_filter_path, label="filter")
     _ensure_database_exists(resolved_structure_path, label="structure")
+    _ensure_database_exists(resolved_malf_path, label="malf")
     alpha_connection = duckdb.connect(str(resolved_alpha_path))
     try:
         bootstrap_alpha_formal_signal_ledger(workspace, connection=alpha_connection)
@@ -175,8 +183,10 @@ def _run_alpha_formal_signal_bounded_build(
         context_rows = _load_official_context_rows(
             filter_path=resolved_filter_path,
             structure_path=resolved_structure_path,
+            malf_path=resolved_malf_path,
             filter_table_name=source_filter_table,
             structure_table_name=source_structure_table,
+            wave_life_table_name=source_wave_life_table,
             signal_start_date=signal_start_date,
             signal_end_date=signal_end_date,
             instruments=tuple(sorted({row.instrument for row in trigger_rows})),
@@ -214,10 +224,12 @@ def _run_alpha_formal_signal_bounded_build(
             alpha_path=resolved_alpha_path,
             filter_path=resolved_filter_path,
             structure_path=resolved_structure_path,
+            malf_path=resolved_malf_path,
             source_trigger_table=source_trigger_table,
             source_family_table=source_family_table,
             source_filter_table=source_filter_table,
             source_structure_table=source_structure_table,
+            source_wave_life_table=source_wave_life_table,
             batch_size=normalized_batch_size,
         )
         _mark_run_completed(alpha_connection, run_id=materialization_run_id, summary=summary)
@@ -241,6 +253,7 @@ def _run_alpha_formal_signal_queue_build(
     alpha_path: Path | None,
     filter_path: Path | None,
     structure_path: Path | None,
+    malf_path: Path | None,
     limit: int,
     batch_size: int,
     run_id: str | None,
@@ -248,6 +261,7 @@ def _run_alpha_formal_signal_queue_build(
     source_family_table: str,
     source_filter_table: str,
     source_structure_table: str,
+    source_wave_life_table: str,
     signal_contract_version: str,
     producer_name: str,
     producer_version: str,
@@ -261,12 +275,14 @@ def _run_alpha_formal_signal_queue_build(
     resolved_alpha_path = Path(alpha_path or alpha_ledger_path(workspace))
     resolved_filter_path = Path(filter_path or workspace.databases.filter)
     resolved_structure_path = Path(structure_path or workspace.databases.structure)
+    resolved_malf_path = Path(malf_path or workspace.databases.malf)
     normalized_limit = max(int(limit), 1)
     normalized_batch_size = max(int(batch_size), 1)
     materialization_run_id = run_id or _build_alpha_formal_signal_run_id()
 
     _ensure_database_exists(resolved_filter_path, label="filter")
     _ensure_database_exists(resolved_structure_path, label="structure")
+    _ensure_database_exists(resolved_malf_path, label="malf")
     alpha_connection = duckdb.connect(str(resolved_alpha_path))
     try:
         bootstrap_alpha_formal_signal_ledger(workspace, connection=alpha_connection)
@@ -317,6 +333,7 @@ def _run_alpha_formal_signal_queue_build(
                     alpha_path=resolved_alpha_path,
                     filter_path=resolved_filter_path,
                     structure_path=resolved_structure_path,
+                    malf_path=resolved_malf_path,
                     instrument=str(scope_row["code"]),
                     signal_start_date=_to_python_date(scope_row["replay_start_bar_dt"]),
                     signal_end_date=_to_python_date(scope_row["replay_confirm_until_dt"]),
@@ -326,6 +343,7 @@ def _run_alpha_formal_signal_queue_build(
                     source_family_table=source_family_table,
                     source_filter_table=source_filter_table,
                     source_structure_table=source_structure_table,
+                    source_wave_life_table=source_wave_life_table,
                     signal_contract_version=signal_contract_version,
                     producer_name=producer_name,
                     producer_version=producer_version,
@@ -382,10 +400,12 @@ def _run_alpha_formal_signal_queue_build(
             alpha_ledger_path=str(resolved_alpha_path),
             filter_ledger_path=str(resolved_filter_path),
             structure_ledger_path=str(resolved_structure_path),
+            malf_ledger_path=str(resolved_malf_path),
             source_trigger_table=source_trigger_table,
             source_family_table=source_family_table,
             source_filter_table=source_filter_table,
             source_structure_table=source_structure_table,
+            source_wave_life_table=source_wave_life_table,
         )
         _mark_run_completed(alpha_connection, run_id=materialization_run_id, summary=summary)
         _write_summary(summary, summary_path)

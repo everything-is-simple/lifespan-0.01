@@ -110,6 +110,50 @@ def _seed_malf_sources(
             )
     finally:
         conn.close()
+
+
+def _seed_wave_life_snapshot(
+    malf_path: Path,
+    rows: list[tuple[object, ...]],
+) -> None:
+    conn = duckdb.connect(str(malf_path))
+    try:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS malf_wave_life_snapshot (
+                snapshot_nk TEXT NOT NULL,
+                asset_type TEXT NOT NULL,
+                code TEXT NOT NULL,
+                timeframe TEXT NOT NULL,
+                asof_bar_dt DATE NOT NULL,
+                wave_id BIGINT NOT NULL,
+                source_wave_nk TEXT NOT NULL,
+                source_state_snapshot_nk TEXT NOT NULL,
+                major_state TEXT NOT NULL,
+                reversal_stage TEXT NOT NULL,
+                active_wave_bar_age BIGINT NOT NULL,
+                wave_life_percentile DOUBLE,
+                remaining_life_bars_p50 DOUBLE,
+                remaining_life_bars_p75 DOUBLE,
+                termination_risk_bucket TEXT,
+                sample_size BIGINT NOT NULL,
+                sample_version TEXT NOT NULL,
+                source_profile_nk TEXT,
+                profile_origin TEXT,
+                first_seen_run_id TEXT NOT NULL,
+                last_materialized_run_id TEXT NOT NULL
+            )
+            """
+        )
+        for row in rows:
+            conn.execute(
+                """
+                INSERT INTO malf_wave_life_snapshot VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                row,
+            )
+    finally:
+        conn.close()
 def _replace_structure_source(malf_path: Path, rows: list[tuple[object, ...]]) -> None:
     conn = duckdb.connect(str(malf_path))
     try:

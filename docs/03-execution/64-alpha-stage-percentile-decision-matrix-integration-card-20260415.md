@@ -2,7 +2,7 @@
 
 `卡号：64`
 `日期：2026-04-15`
-`状态：待施工`
+`状态：已完成`
 
 ## 需求
 
@@ -12,6 +12,8 @@
 
 ## 设计输入
 
+- `docs/01-design/modules/alpha/07-alpha-stage-percentile-decision-matrix-charter-20260415.md`
+- `docs/02-spec/modules/alpha/07-alpha-stage-percentile-decision-matrix-spec-20260415.md`
 - `docs/01-design/modules/malf/13-malf-wave-life-probability-sidecar-charter-20260411.md`
 - `docs/02-spec/modules/malf/13-malf-wave-life-probability-sidecar-spec-20260411.md`
 - `.windsurfrules`
