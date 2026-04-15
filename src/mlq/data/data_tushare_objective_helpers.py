@@ -865,16 +865,13 @@ def _upsert_profile_row(
     *,
     payload: dict[str, object],
     existing_first_seen_run_id: str | None,
+    profile_exists: bool,
 ) -> None:
-    source_detail_json = json.dumps(payload["source_detail"], ensure_ascii=False, sort_keys=True)
-    existing = connection.execute(
-        f"""
-        SELECT profile_nk
-        FROM {RAW_TDXQUANT_INSTRUMENT_PROFILE_TABLE}
-        WHERE profile_nk = ?
-        """,
-        [payload["profile_nk"]],
-    ).fetchone()
+    source_detail_json = _normalize_nullable_str(payload.get("raw_payload_json")) or json.dumps(
+        payload["source_detail"],
+        ensure_ascii=False,
+        sort_keys=True,
+    )
     first_seen_run_id = existing_first_seen_run_id or str(payload["first_seen_run_id"])
     parameters = [
         payload["profile_nk"],
@@ -902,7 +899,7 @@ def _upsert_profile_row(
         payload["source_request_nk"],
         payload["raw_payload_json"],
     ]
-    if existing is None:
+    if not profile_exists:
         connection.execute(
             f"""
             INSERT INTO {RAW_TDXQUANT_INSTRUMENT_PROFILE_TABLE} (

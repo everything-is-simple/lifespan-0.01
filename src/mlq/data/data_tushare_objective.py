@@ -41,6 +41,8 @@ from mlq.data.data_tushare_objective_support import (
 )
 from mlq.data.tushare import TushareClient, open_tushare_client
 
+_OBJECTIVE_PROFILE_MATERIALIZATION_BATCH_SIZE = 1000
+
 @dataclass(frozen=True)
 class _TushareRequestPlan:
     source_api: str
@@ -129,6 +131,50 @@ def _normalize_nullable_str(value: object) -> str | None:
         return None
     normalized = str(value).strip()
     return normalized or None
+
+def _load_existing_materialization_state(
+    connection: duckdb.DuckDBPyConnection,
+    *,
+    candidate_profiles: tuple[tuple[str, str, date], ...],
+) -> tuple[dict[str, str], dict[str, str | None]]:
+    if not candidate_profiles:
+        return {}, {}
+    codes = tuple(sorted({code for _, code, _ in candidate_profiles}))
+    observed_dates = tuple(observed_trade_date for _, _, observed_trade_date in candidate_profiles)
+    min_observed_trade_date = min(observed_dates)
+    max_observed_trade_date = max(observed_dates)
+    code_predicate = ", ".join("?" for _ in codes)
+    parameters = [*codes, min_observed_trade_date, max_observed_trade_date]
+    checkpoint_rows = connection.execute(
+        f"""
+        SELECT checkpoint_nk, source_digest
+        FROM {OBJECTIVE_PROFILE_MATERIALIZATION_CHECKPOINT_TABLE}
+        WHERE code IN ({code_predicate})
+          AND observed_trade_date >= ?
+          AND observed_trade_date <= ?
+        """,
+        parameters,
+    ).fetchall()
+    profile_rows = connection.execute(
+        f"""
+        SELECT profile_nk, first_seen_run_id
+        FROM {RAW_TDXQUANT_INSTRUMENT_PROFILE_TABLE}
+        WHERE code IN ({code_predicate})
+          AND observed_trade_date >= ?
+          AND observed_trade_date <= ?
+        """,
+        parameters,
+    ).fetchall()
+    return (
+        {
+            str(checkpoint_nk): _normalize_nullable_str(source_digest) or ""
+            for checkpoint_nk, source_digest in checkpoint_rows
+        },
+        {
+            str(profile_nk): _normalize_nullable_str(first_seen_run_id)
+            for profile_nk, first_seen_run_id in profile_rows
+        },
+    )
 
 
 
@@ -445,6 +491,10 @@ def run_tushare_objective_profile_materialization(
             signal_end_date=normalized_end_date,
             candidate_profile_count=len(candidate_profiles),
         )
+        checkpoint_digest_by_nk, profile_first_seen_run_id_by_nk = _load_existing_materialization_state(
+            connection,
+            candidate_profiles=candidate_profiles,
+        )
         events_by_code = _load_objective_events(
             connection,
             codes=tuple(sorted({code for _, code, _ in candidate_profiles})),
@@ -454,8 +504,16 @@ def run_tushare_objective_profile_materialization(
         inserted_profile_count = 0
         reused_profile_count = 0
         rematerialized_profile_count = 0
+        batch_processed_profile_count = 0
+        batch_inserted_profile_count = 0
+        batch_reused_profile_count = 0
+        batch_rematerialized_profile_count = 0
+        transaction_open = False
         for asset_type, code, observed_trade_date in candidate_profiles:
             try:
+                if not transaction_open:
+                    connection.execute("BEGIN TRANSACTION")
+                    transaction_open = True
                 derived_payload = _derive_profile_payload(
                     events_by_code=events_by_code,
                     asset_type=asset_type,
@@ -468,36 +526,24 @@ def run_tushare_objective_profile_materialization(
                     code=code,
                     observed_trade_date=observed_trade_date,
                 )
-                checkpoint_row = connection.execute(
-                    f"""
-                    SELECT source_digest
-                    FROM {OBJECTIVE_PROFILE_MATERIALIZATION_CHECKPOINT_TABLE}
-                    WHERE checkpoint_nk = ?
-                    """,
-                    [checkpoint_nk],
-                ).fetchone()
-                existing_profile_row = connection.execute(
-                    f"""
-                    SELECT profile_nk, first_seen_run_id
-                    FROM {RAW_TDXQUANT_INSTRUMENT_PROFILE_TABLE}
-                    WHERE profile_nk = ?
-                    """,
-                    [derived_payload["profile_nk"]],
-                ).fetchone()
+                profile_nk = str(derived_payload["profile_nk"])
+                existing_first_seen_run_id = profile_first_seen_run_id_by_nk.get(profile_nk)
+                checkpoint_digest = checkpoint_digest_by_nk.get(checkpoint_nk)
                 source_digest = _build_records_digest(payload=[derived_payload["source_detail"]])
                 action = "inserted"
-                if existing_profile_row is not None:
-                    if checkpoint_row is not None and str(checkpoint_row[0]) == source_digest:
+                if existing_first_seen_run_id is not None:
+                    if checkpoint_digest == source_digest:
                         action = "reused"
                     else:
                         action = "rematerialized"
-                connection.execute("BEGIN TRANSACTION")
+                resolved_first_seen_run_id = existing_first_seen_run_id or _normalize_nullable_str(
+                    derived_payload["first_seen_run_id"]
+                )
                 _upsert_profile_row(
                     connection,
                     payload=derived_payload,
-                    existing_first_seen_run_id=(
-                        None if existing_profile_row is None else _normalize_nullable_str(existing_profile_row[1])
-                    ),
+                    existing_first_seen_run_id=resolved_first_seen_run_id,
+                    profile_exists=existing_first_seen_run_id is not None,
                 )
                 _upsert_objective_profile_checkpoint(
                     connection,
@@ -506,6 +552,7 @@ def run_tushare_objective_profile_materialization(
                     observed_trade_date=observed_trade_date,
                     source_digest=source_digest,
                     last_materialized_run_id=materialization_run_id,
+                    checkpoint_exists=checkpoint_digest is not None,
                 )
                 _record_objective_profile_run_profile(
                     connection,
@@ -516,19 +563,33 @@ def run_tushare_objective_profile_materialization(
                     materialization_action=action,
                     source_digest=source_digest,
                 )
-                connection.execute("COMMIT")
-                processed_profile_count += 1
+                profile_first_seen_run_id_by_nk[profile_nk] = resolved_first_seen_run_id or materialization_run_id
+                checkpoint_digest_by_nk[checkpoint_nk] = source_digest
+                batch_processed_profile_count += 1
                 if action == "inserted":
-                    inserted_profile_count += 1
+                    batch_inserted_profile_count += 1
                 elif action == "reused":
-                    reused_profile_count += 1
+                    batch_reused_profile_count += 1
                 else:
-                    rematerialized_profile_count += 1
+                    batch_rematerialized_profile_count += 1
+                if batch_processed_profile_count >= _OBJECTIVE_PROFILE_MATERIALIZATION_BATCH_SIZE:
+                    connection.execute("COMMIT")
+                    transaction_open = False
+                    processed_profile_count += batch_processed_profile_count
+                    inserted_profile_count += batch_inserted_profile_count
+                    reused_profile_count += batch_reused_profile_count
+                    rematerialized_profile_count += batch_rematerialized_profile_count
+                    batch_processed_profile_count = 0
+                    batch_inserted_profile_count = 0
+                    batch_reused_profile_count = 0
+                    batch_rematerialized_profile_count = 0
             except Exception as exc:
                 try:
-                    connection.execute("ROLLBACK")
+                    if transaction_open:
+                        connection.execute("ROLLBACK")
                 except Exception:
                     pass
+                transaction_open = False
                 _update_objective_profile_materialization_run_failure(
                     connection,
                     run_id=materialization_run_id,
@@ -543,6 +604,12 @@ def run_tushare_objective_profile_materialization(
                 )
                 run_terminal_recorded = True
                 raise
+        if transaction_open:
+            connection.execute("COMMIT")
+            processed_profile_count += batch_processed_profile_count
+            inserted_profile_count += batch_inserted_profile_count
+            reused_profile_count += batch_reused_profile_count
+            rematerialized_profile_count += batch_rematerialized_profile_count
         summary = ObjectiveProfileMaterializationSummary(
             run_id=materialization_run_id,
             signal_start_date=None if normalized_start_date is None else normalized_start_date.isoformat(),

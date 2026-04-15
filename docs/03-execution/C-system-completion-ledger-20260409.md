@@ -2,9 +2,9 @@
 `日期：2026-04-09`
 `状态：持续更新`
 
-1. 当前下一锤：`72-historical-objective-profile-backfill-execution-card-20260415.md`
-2. 当前待施工卡：`72-historical-objective-profile-backfill-execution-card-20260415.md`
-3. 正式主线剩余卡：`14`
+1. 当前下一锤：`80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`
+2. 当前待施工卡：`80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`
+3. 正式主线剩余卡：`13`
 4. 可选 Sidecar 剩余卡：`0`
 5. 历史治理 backlog：`0`
 
@@ -50,13 +50,16 @@
 38. `historical file-length debt burndown` 卡 `67`
 39. `execution doc layout governance restoration` 卡 `68`
 40. `filter objective tradability and universe gate freeze` 卡 `69`
+41. `historical objective profile backfill source selection and governance` 卡 `70`
+42. `Tushare objective source ledger and profile materialization` 卡 `71`
+43. `historical objective profile backfill execution` 卡 `72`
 
 ## 当前阶段
 
-1. 最新生效结论锚点已推进到 `69-filter-objective-tradability-and-universe-gate-freeze-conclusion-20260415.md`。
-2. `60`、`61`、`62`、`63`、`64`、`65`、`66` 与 `69` 已完成并接受。
-3. 当前正式主线待施工卡已切到 `70`。
-4. `67` 已完成历史 file-length 债务治理，`68` 已完成文档目录治理回迁与固化，`69` 已完成 objective gate 冻结；当前先执行 `70` 做历史 objective profile 回补源选型与治理，再恢复 `80 -> 86` official middle-ledger resume 卡组，`100` 仍只有在 `86` 接受后才允许恢复。
+1. 最新生效结论锚点已推进到 `72-historical-objective-profile-backfill-execution-conclusion-20260415.md`。
+2. `60`、`61`、`62`、`63`、`64`、`65`、`66`、`69`、`70`、`71`、`72` 已完成并接受。
+3. 当前正式主线待施工卡已切到 `80`。
+4. `72` 已把当前 `2010-01-04 -> 2026-04-08` 的 objective coverage 缺口收口到 `0 missing`；当前恢复 `80 -> 86` official middle-ledger resume 卡组，`100` 仍只有在 `86` 接受后才允许恢复。
 
 ## 体系图
 
@@ -92,7 +95,9 @@ flowchart LR
     G67 --> G68["68 execution doc layout governance accepted"]
     G68 --> G69["69 filter objective gate freeze"]
     G69 --> G70["70 historical objective source selection"]
-    G70 --> G80["80-86 official middle-ledger resume"]
+    G70 --> G71["71 tushare objective implementation"]
+    G71 --> G72["72 historical objective backfill execution"]
+    G72 --> G80["80-86 official middle-ledger resume"]
     G80 --> NEXT["100 anchor freeze"]
     NEXT --> POST["101-105 trade/system 收口"]
 ```

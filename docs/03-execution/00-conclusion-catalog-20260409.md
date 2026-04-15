@@ -3,7 +3,7 @@
 `日期：2026-04-09`
 `状态：生效`
 
-当前最新生效结论锚点：`69-filter-objective-tradability-and-universe-gate-freeze-conclusion-20260415.md`
+当前最新生效结论锚点：`72-historical-objective-profile-backfill-execution-conclusion-20260415.md`
 
 ## 正式结论目录
 
@@ -86,10 +86,10 @@
 105. `105-system-runtime-orchestration-bootstrap-conclusion-20260411.md`
 106. `72-historical-objective-profile-backfill-execution-conclusion-20260415.md`
 ## 主线状态
-1. `69` 已成为当前最新生效结论锚点。
+1. `72` 已成为当前最新生效结论锚点。
 2. `60` 已完成整改批次登记与施工顺序冻结，`61` 已收紧 `truthfulness ≠ completeness` 的执行口径，`62` 已把 `filter` 重置回 pre-trigger 边界，`63` 已把 `wave_life` 官方空表与 bootstrap/replay 边界正式裁清，`64` 已把 `stage × percentile` 的正式接入层冻结在 `alpha formal signal`，`65` 已把 final admission authority 从 `filter` 正式收回到 `alpha formal signal`，`66` 已正式把这些整改结论统一收口为 resume gate。
 3. `29-66` 已完成 canonical malf downstream、mainline ledger standardization、alpha detector、alpha family、quality gate、official replay hardening、alpha producer hardening、pre-position acceptance、position contract freeze、risk/capacity ledger hardening、batched leg contract、position data-grade runner、pre-portfolio-plan position acceptance gate、portfolio_plan ledger family freeze、capacity/decision hardening、data-grade runner、official middle-ledger pilot freeze、official canonical malf bootstrap、official downstream canonical smoke、`2010` truthfulness gate、整改批次登记、tail coverage rectification、filter authority reset、wave-life truthfulness、stage-percentile decision matrix、formal signal admission authority 与 resume gate 收口。
-4. `67`、`68`、`69` 已完成并接受；`70` 已完成历史 objective profile 回补源选型与账本化设计冻结，当前执行顺序调整为 `71 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 100 -> 105`。
+4. `67`、`68`、`69`、`70`、`71`、`72` 已完成并接受；`72` 已把 `2010-01-04 -> 2026-04-08` 的当前 objective coverage 缺口收口到 `0 missing`，当前执行顺序恢复为 `80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 100 -> 105`。
 
 ## 图示
 ```mermaid

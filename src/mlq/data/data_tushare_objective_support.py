@@ -476,21 +476,14 @@ def upsert_objective_profile_checkpoint(
     observed_trade_date: date,
     source_digest: str,
     last_materialized_run_id: str,
+    checkpoint_exists: bool,
 ) -> None:
     checkpoint_nk = build_objective_profile_checkpoint_nk(
         asset_type=asset_type,
         code=code,
         observed_trade_date=observed_trade_date,
     )
-    existing = connection.execute(
-        f"""
-        SELECT checkpoint_nk
-        FROM {OBJECTIVE_PROFILE_MATERIALIZATION_CHECKPOINT_TABLE}
-        WHERE checkpoint_nk = ?
-        """,
-        [checkpoint_nk],
-    ).fetchone()
-    if existing is None:
+    if not checkpoint_exists:
         connection.execute(
             f"""
             INSERT INTO {OBJECTIVE_PROFILE_MATERIALIZATION_CHECKPOINT_TABLE} (
