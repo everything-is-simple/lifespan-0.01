@@ -40,3 +40,9 @@ flowchart LR
     SIG --> GATE["46 acceptance gate"]
     GATE --> C100["100 signal anchor freeze"]
 ```
+
+## 2026-04-15 补充：producer hardening 的最新口径
+
+1. `45` 所说的 producer 稳定性，在 `65` 后必须包含 admission authority 的正式收口，而不只是 family-aware 上下文字段落表。
+2. `alpha formal signal` 现在必须能把 `filter pre-trigger`、`family role/alignment` 与 `stage_percentile` sidecar 统一折叠成可审计的 final verdict。
+3. 进入 `position` 的 producer 合同，默认以 `alpha-formal-signal-v5` 为当前正式口径。

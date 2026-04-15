@@ -173,10 +173,12 @@ class PositionExitPlanBundle:
 
 
 def resolve_candidate_status(signal: PositionFormalSignalInput) -> str:
-    if signal.trigger_admissible and signal.formal_signal_status == "admitted":
+    if signal.formal_signal_status == "admitted":
         return "admitted"
     if signal.formal_signal_status in {"blocked", "deferred"}:
         return signal.formal_signal_status
+    if not signal.trigger_admissible:
+        return "blocked"
     return "blocked"
 
 
@@ -185,10 +187,10 @@ def resolve_blocked_reason_code(signal: PositionFormalSignalInput, candidate_sta
         return None
     if signal.blocked_reason_code:
         return signal.blocked_reason_code
+    if not signal.trigger_admissible:
+        return signal.filter_reject_reason_code or "filter_pre_trigger_blocked"
     if signal.filter_reject_reason_code:
         return signal.filter_reject_reason_code
-    if not signal.trigger_admissible:
-        return "alpha_not_admitted"
     return f"alpha_status_{candidate_status}"
 
 

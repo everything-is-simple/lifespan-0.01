@@ -122,3 +122,10 @@ flowchart LR
     RUNNER --> MAT[position materialization]
     MAT --> SUM[PositionFormalSignalRunnerSummary]
 ```
+
+## 2026-04-15 补充规则
+
+1. 若上游表存在 `admission_verdict_code / admission_reason_code / admission_audit_note / filter_gate_code / filter_reject_reason_code`，runner 必须只读透传并用于 candidate 审计。
+2. `position` runner 计算 `candidate_status` 时，优先使用 `formal_signal_status`。
+3. `trigger_admissible` 不再与 `formal_signal_status` 并列作为同等级 admission authority。
+4. `blocked_reason_code` 默认优先取 `alpha formal signal.admission_reason_code`。

@@ -1,7 +1,7 @@
 # 系统级总路线图
 
 日期：`2026-04-09`
-最近刷新：`2026-04-14`
+最近刷新：`2026-04-15`
 状态：`生效中`
 
 ## 文档角色
@@ -15,8 +15,8 @@
 
 1. 历史账本硬约束来自 `docs/01-design/03-historical-ledger-shared-contract-charter-20260409.md`
 2. 全系统统一治理基线来自 `28-system-wide-checkpoint-and-dirty-queue-alignment-conclusion-20260411.md`
-3. 当前最新生效结论锚点为 `63-wave-life-official-ledger-truthfulness-and-bootstrap-conclusion-20260415.md`
-4. 当前待施工卡为 `64-alpha-stage-percentile-decision-matrix-integration-card-20260415.md`
+3. 当前最新生效结论锚点为 `65-formal-signal-admission-boundary-reallocation-conclusion-20260415.md`
+4. 当前待施工卡为 `66-mainline-rectification-resume-gate-card-20260415.md`
 5. 当前连续前置卡组为 `60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86`
 
 ## 当前正式判断
@@ -41,7 +41,7 @@
 
 ### 当前阶段
 
-1. 当前 active 卡：`60`
+1. 当前 active 卡：`66`
 2. 当前 active 卡组：`60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`
 3. 当前系统级目标：先完成主线整改范围、覆盖真值、职责边界与寿命决策面裁决，再恢复 `80-86` 的真实正式库 middle-ledger 推进，并在 `86` 后决定是否恢复 `trade -> system`
 

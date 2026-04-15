@@ -136,8 +136,9 @@ def test_run_alpha_formal_signal_build_materializes_run_event_and_run_bridge(
     assert summary.candidate_trigger_count == 2
     assert summary.materialized_signal_count == 2
     assert summary.inserted_count == 2
-    assert summary.admitted_count == 2
+    assert summary.admitted_count == 0
     assert summary.blocked_count == 0
+    assert summary.deferred_count == 2
     conn = duckdb.connect(str(alpha_ledger_path(settings)), read_only=True)
     try:
         run_row = conn.execute(
@@ -164,15 +165,28 @@ def test_run_alpha_formal_signal_build_materializes_run_event_and_run_bridge(
                 source_family_event_nk,
                 wave_life_percentile,
                 termination_risk_bucket,
+                admission_verdict_code,
+                admission_verdict_owner,
+                admission_reason_code,
                 stage_percentile_decision_code,
-                stage_percentile_action_owner
+                stage_percentile_action_owner,
+                signal_contract_version
             FROM alpha_formal_signal_event
             ORDER BY instrument
             """
         ).fetchall()
         run_event_rows = conn.execute(
             """
-            SELECT signal_nk, source_family_event_nk, family_role, stage_percentile_decision_code, stage_percentile_action_owner
+            SELECT
+                signal_nk,
+                source_family_event_nk,
+                family_role,
+                formal_signal_status,
+                admission_verdict_code,
+                admission_verdict_owner,
+                admission_reason_code,
+                stage_percentile_decision_code,
+                stage_percentile_action_owner
             FROM alpha_formal_signal_run_event
             WHERE run_id = 'alpha-formal-signal-test-001'
             ORDER BY signal_nk
@@ -185,7 +199,7 @@ def test_run_alpha_formal_signal_build_materializes_run_event_and_run_bridge(
         (
             "000001.SZ",
             "BOF",
-            "admitted",
+            "deferred",
             True,
             "牛顺",
             "none",
@@ -197,13 +211,17 @@ def test_run_alpha_formal_signal_build_materializes_run_event_and_run_bridge(
             "000001.SZ|2026-04-08|2026-04-08|PAS|bof|BOF|alpha-trigger-v2|alpha-family-v2",
             0.95,
             "high",
+            "note_only",
+            "alpha_formal_signal",
+            "stage_percentile_alpha_caution_note",
             "alpha_caution_note",
             "alpha_note",
+            "alpha-formal-signal-v5",
         ),
         (
             "000002.SZ",
             "PB",
-            "admitted",
+            "deferred",
             True,
             "熊顺",
             "none",
@@ -215,22 +233,34 @@ def test_run_alpha_formal_signal_build_materializes_run_event_and_run_bridge(
             "000002.SZ|2026-04-08|2026-04-08|PAS|pb|PB|alpha-trigger-v2|alpha-family-v2",
             0.40,
             "normal",
+            "downgraded",
+            "alpha_formal_signal",
+            "family_alignment_conflicted",
             "observe_only",
             "none",
+            "alpha-formal-signal-v5",
         ),
     ]
     assert run_event_rows == [
         (
-            "000001.SZ|2026-04-08|2026-04-08|PAS|bof|BOF|000001.SZ|2026-04-08|2026-04-08|PAS|bof|BOF|alpha-trigger-v2|alpha-formal-signal-v4",
+            "000001.SZ|2026-04-08|2026-04-08|PAS|bof|BOF|000001.SZ|2026-04-08|2026-04-08|PAS|bof|BOF|alpha-trigger-v2|alpha-formal-signal-v5",
             "000001.SZ|2026-04-08|2026-04-08|PAS|bof|BOF|alpha-trigger-v2|alpha-family-v2",
             "mainline",
+            "deferred",
+            "note_only",
+            "alpha_formal_signal",
+            "stage_percentile_alpha_caution_note",
             "alpha_caution_note",
             "alpha_note",
         ),
         (
-            "000002.SZ|2026-04-08|2026-04-08|PAS|pb|PB|000002.SZ|2026-04-08|2026-04-08|PAS|pb|PB|alpha-trigger-v2|alpha-formal-signal-v4",
+            "000002.SZ|2026-04-08|2026-04-08|PAS|pb|PB|000002.SZ|2026-04-08|2026-04-08|PAS|pb|PB|alpha-trigger-v2|alpha-formal-signal-v5",
             "000002.SZ|2026-04-08|2026-04-08|PAS|pb|PB|alpha-trigger-v2|alpha-family-v2",
             "supporting",
+            "deferred",
+            "downgraded",
+            "alpha_formal_signal",
+            "family_alignment_conflicted",
             "observe_only",
             "none",
         ),
@@ -283,17 +313,37 @@ def test_run_alpha_formal_signal_build_marks_rematerialized_when_official_upstre
         run_id="alpha-formal-signal-test-002b",
     )
     assert second_summary.rematerialized_count == 1
-    assert second_summary.admitted_count == 1
+    assert second_summary.admitted_count == 0
     assert second_summary.blocked_count == 0
+    assert second_summary.deferred_count == 1
     conn = duckdb.connect(str(alpha_ledger_path(settings)), read_only=True)
     try:
         event_row = conn.execute(
             """
-            SELECT formal_signal_status, trigger_admissible, family_role, malf_alignment, last_materialized_run_id
+            SELECT
+                formal_signal_status,
+                trigger_admissible,
+                admission_verdict_code,
+                admission_verdict_owner,
+                admission_reason_code,
+                family_role,
+                malf_alignment,
+                signal_contract_version,
+                last_materialized_run_id
             FROM alpha_formal_signal_event
             WHERE instrument = '000001.SZ'
             """
         ).fetchone()
     finally:
         conn.close()
-    assert event_row == ("admitted", True, "supporting", "conflicted", "alpha-formal-signal-test-002b")
+    assert event_row == (
+        "deferred",
+        True,
+        "downgraded",
+        "alpha_formal_signal",
+        "family_alignment_conflicted",
+        "supporting",
+        "conflicted",
+        "alpha-formal-signal-v5",
+        "alpha-formal-signal-test-002b",
+    )

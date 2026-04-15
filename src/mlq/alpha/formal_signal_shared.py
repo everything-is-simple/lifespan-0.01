@@ -14,7 +14,7 @@ DEFAULT_ALPHA_FORMAL_SIGNAL_FAMILY_TABLE: Final[str] = "alpha_family_event"
 DEFAULT_ALPHA_FORMAL_SIGNAL_FILTER_TABLE: Final[str] = "filter_snapshot"
 DEFAULT_ALPHA_FORMAL_SIGNAL_STRUCTURE_TABLE: Final[str] = "structure_snapshot"
 DEFAULT_ALPHA_FORMAL_SIGNAL_WAVE_LIFE_TABLE: Final[str] = "malf_wave_life_snapshot"
-DEFAULT_ALPHA_FORMAL_SIGNAL_CONTRACT_VERSION: Final[str] = "alpha-formal-signal-v4"
+DEFAULT_ALPHA_FORMAL_SIGNAL_CONTRACT_VERSION: Final[str] = "alpha-formal-signal-v5"
 DEFAULT_ALPHA_STAGE_PERCENTILE_CONTRACT_VERSION: Final[str] = "alpha-stage-percentile-v1"
 
 
@@ -75,8 +75,10 @@ class _ContextRow:
     instrument: str
     signal_date: date
     asof_date: date
-    formal_signal_status: str
     trigger_admissible: bool
+    filter_gate_code: str
+    filter_reject_reason_code: str | None
+    filter_admission_notes: str | None
     major_state: str
     trend_direction: str
     reversal_stage: str
@@ -134,6 +136,12 @@ class _FormalSignalEventRow:
     pattern_code: str
     formal_signal_status: str
     trigger_admissible: bool
+    admission_verdict_code: str
+    admission_verdict_owner: str
+    admission_reason_code: str | None
+    admission_audit_note: str | None
+    filter_gate_code: str
+    filter_reject_reason_code: str | None
     major_state: str
     trend_direction: str
     reversal_stage: str
@@ -258,6 +266,20 @@ def _normalize_optional_float(value: object) -> float | None:
     return float(value)
 
 
+def _merge_audit_notes(*notes: str | None) -> str | None:
+    parts: list[str] = []
+    seen: set[str] = set()
+    for note in notes:
+        normalized = _normalize_optional_nullable_str(note)
+        if normalized is None or normalized in seen:
+            continue
+        seen.add(normalized)
+        parts.append(normalized)
+    if not parts:
+        return None
+    return "; ".join(parts)
+
+
 def _derive_stage_percentile_decision(
     *,
     malf_phase_bucket: str | None,
@@ -293,6 +315,92 @@ def _derive_stage_percentile_decision(
     )
 
 
+def _derive_formal_signal_admission(
+    *,
+    trigger_admissible: bool,
+    family_role: str | None,
+    malf_alignment: str | None,
+    stage_percentile_decision_code: str,
+    stage_percentile_action_owner: str,
+    stage_percentile_note: str | None,
+    filter_reject_reason_code: str | None,
+    filter_admission_notes: str | None,
+) -> tuple[str, str, str, str | None, str | None, str, str | None]:
+    filter_gate_code = "pre_trigger_passed" if trigger_admissible else "pre_trigger_blocked"
+    normalized_role = _normalize_optional_nullable_str(family_role)
+    normalized_alignment = _normalize_optional_nullable_str(malf_alignment)
+    if not trigger_admissible:
+        reject_reason = filter_reject_reason_code or "filter_pre_trigger_blocked"
+        return (
+            "blocked",
+            "blocked",
+            "filter_pre_trigger",
+            reject_reason,
+            _merge_audit_notes("blocked by filter pre-trigger gate.", filter_admission_notes),
+            filter_gate_code,
+            reject_reason,
+        )
+    if normalized_role is None:
+        return (
+            "deferred",
+            "note_only",
+            "alpha_formal_signal",
+            "missing_family_event",
+            _merge_audit_notes("missing family interpretation keeps the signal note-only.", filter_admission_notes),
+            filter_gate_code,
+            None,
+        )
+    if normalized_role in {"warning", "scout"}:
+        return (
+            "deferred",
+            "note_only",
+            "alpha_formal_signal",
+            f"family_role_{normalized_role}",
+            _merge_audit_notes(
+                f"family role `{normalized_role}` remains audit-only at alpha admission layer.",
+                stage_percentile_note if stage_percentile_action_owner == "alpha_note" else None,
+                filter_admission_notes,
+            ),
+            filter_gate_code,
+            None,
+        )
+    if stage_percentile_action_owner == "alpha_note":
+        return (
+            "deferred",
+            "note_only",
+            "alpha_formal_signal",
+            f"stage_percentile_{stage_percentile_decision_code}",
+            _merge_audit_notes(stage_percentile_note, filter_admission_notes),
+            filter_gate_code,
+            None,
+        )
+    if normalized_alignment == "conflicted":
+        return (
+            "deferred",
+            "downgraded",
+            "alpha_formal_signal",
+            "family_alignment_conflicted",
+            _merge_audit_notes(
+                "conflicted family alignment downgrades the signal until stronger alpha evidence arrives.",
+                filter_admission_notes,
+            ),
+            filter_gate_code,
+            None,
+        )
+    return (
+        "admitted",
+        "admitted",
+        "alpha_formal_signal",
+        None,
+        _merge_audit_notes(
+            stage_percentile_note if stage_percentile_decision_code != "observe_only" else None,
+            filter_admission_notes,
+        ),
+        filter_gate_code,
+        None,
+    )
+
+
 def _normalize_formal_signal_status(value: object) -> str:
     normalized = str(value or "").strip().lower()
     if normalized in {"admitted", "blocked", "deferred"}:
@@ -302,6 +410,20 @@ def _normalize_formal_signal_status(value: object) -> str:
     if normalized in {"reject", "rejected"}:
         return "blocked"
     return "blocked"
+
+
+def _normalize_admission_verdict_code(value: object) -> str:
+    normalized = str(value or "").strip().lower()
+    if normalized in {"admitted", "blocked", "downgraded", "note_only"}:
+        return normalized
+    return "blocked"
+
+
+def _normalize_admission_verdict_owner(value: object) -> str:
+    normalized = str(value or "").strip().lower()
+    if normalized in {"filter_pre_trigger", "alpha_formal_signal"}:
+        return normalized
+    return "alpha_formal_signal"
 
 
 def _normalize_date_value(value: object, *, field_name: str) -> date:

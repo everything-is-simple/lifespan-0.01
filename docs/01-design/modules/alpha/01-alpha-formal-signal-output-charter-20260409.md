@@ -160,3 +160,10 @@ flowchart LR
     PROD --> RUN[alpha_formal_signal_run]
     EVT --> POS[position]
 ```
+
+## 2026-04-15 补充：admission authority 回收至 `alpha formal signal`
+
+1. 自 `65` 起，`formal_signal_status` 不再允许直接镜像 `filter.trigger_admissible`。
+2. `filter` 只保留 pre-trigger gate 语义；`alpha formal signal` 负责冻结最终 `admitted / blocked / downgraded / note_only` verdict。
+3. `alpha_formal_signal_event` 必须正式携带 `admission_verdict_code / admission_verdict_owner / admission_reason_code / admission_audit_note`，并把 `filter_gate_code / filter_reject_reason_code` 作为上游审计事实保留。
+4. `position` 读取的是 alpha-owned admission 结论，而不是把 `filter` gate 当作正式 blocked/admitted 主权来源。

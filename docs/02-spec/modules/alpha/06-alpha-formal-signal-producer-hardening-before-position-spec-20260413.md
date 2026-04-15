@@ -40,3 +40,10 @@ flowchart TD
     P --> R["rematerialize 审计"]
     R --> G["45 结论"]
 ```
+
+## 2026-04-15 admission authority 补充验收
+
+1. `formal_signal_status` 不得继续直接取自 `filter.trigger_admissible`
+2. `alpha formal signal` 必须正式冻结 `admission_verdict_code / owner / reason`
+3. `run_event` 必须能审计 admission verdict 的 inserted / reused / rematerialized 变化
+4. `position` 消费侧必须以 alpha-owned verdict 为准，`trigger_admissible` 只允许保留 filter blocked 兜底语义

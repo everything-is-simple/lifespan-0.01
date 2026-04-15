@@ -124,7 +124,7 @@ flowchart LR
   - 当前 `alpha` 的正式 bounded trigger ledger 入口为 `scripts/alpha/run_alpha_trigger_ledger_build.py`，只允许从 bounded detector 输入与官方 `filter / structure snapshot` 上游物化 `alpha_trigger_run / event / run_event`，不允许夹带 `position / trade / system` 逻辑。
   - 当前 `alpha` 的正式 bounded family ledger 入口为 `scripts/alpha/run_alpha_family_build.py`，只允许从官方 `alpha_trigger_event` 与 bounded family candidate 输入物化 `alpha_family_run / event / run_event`，不允许绕过共享 trigger 事实层，也不允许夹带 `position / trade / system` 逻辑。
   - `alpha family` 的实现允许拆分为 `src/mlq/alpha/family_runner.py` 与同目录 helper 模块 `family_shared.py / family_source.py / family_materialization.py`；拆分只服务治理文件长度与职责收敛，外部正式脚本入口、表族契约与 bounded family ledger 语义不得变化。
-   - 当前 `alpha` 的正式 bounded producer 入口为 `scripts/alpha/run_alpha_formal_signal_build.py`，只允许从官方触发事实、官方 `filter / structure snapshot` 与只读 `malf_wave_life_snapshot` sidecar 上游物化 `alpha_formal_signal_run / event / run_event`；`wave_life` 相关字段当前只允许以 `stage_percentile_*` 解释性 sidecar 落表，不允许在 `64` 内直接改写 `formal_signal_status`，也不允许夹带 `position` sizing 或 `trade / system` 逻辑。
+   - 当前 `alpha` 的正式 bounded producer 入口为 `scripts/alpha/run_alpha_formal_signal_build.py`，只允许从官方触发事实、官方 `filter / structure snapshot` 与只读 `malf_wave_life_snapshot` sidecar 上游物化 `alpha_formal_signal_run / event / run_event`；自 `65` 起，`wave_life` 相关字段允许在 `alpha formal signal` 层通过 `admission_verdict_code / owner / reason / audit_note` 冻结 `blocked / admitted / downgraded / note_only` 裁决，但仍不得夹带 `position` sizing 或 `trade / system` 逻辑。
 7. `position` 负责单标的仓位计划与资金管理。
   - 当前 `position` 的正式 data-grade runner 入口为 `scripts/position/run_position_formal_signal_materialization.py`，只允许消费官方 `alpha formal signal` 与 `market_base.stock_daily_adjusted(adjust_method='none')` 参考价，正式物化 `position_run / position_work_queue / position_checkpoint / position_run_snapshot` 与既有 candidate/risk/capacity/sizing/entry/exit 表族；`stage_percentile_*` 若存在也只允许作为 position 自身后续 sizing/trim 的只读输入，不允许把动作权回推给 `alpha`；脚本默认 `adjust_method` 也必须保持为 `none`，且默认无窗口调用走 queue/checkpoint 续跑，不允许回读 `alpha` 内部临时过程。
    - `position bootstrap` 的实现允许拆分为 `src/mlq/position/bootstrap.py` 与同目录 helper 模块 `position_shared.py / position_bootstrap_schema.py / position_materialization.py`；拆分只服务治理文件长度与职责收敛，对外导出的表名常量、输入/输出数据结构、bootstrap/连接/path 入口与 position materialization 语义不得变化。
@@ -143,7 +143,7 @@ flowchart LR
 1. `malf -> structure -> filter -> alpha` 默认使用 `adjust_method = backward`
 2. `position -> trade` 默认使用 `adjust_method = none`
 3. `adjust_method = forward` 当前只作为研究与展示保留，不作为正式执行口径
-4. 当前最新生效结论锚点已推进到 `64-alpha-stage-percentile-decision-matrix-integration-conclusion-20260415.md`；`64` 接受后，当前待施工卡已改为 `65-formal-signal-admission-boundary-reallocation-card-20260415.md`，只有 `66` 收口后才允许恢复 `80`，并继续要求 `86` 通过后才恢复 `100`。
+4. 当前最新生效结论锚点已推进到 `65-formal-signal-admission-boundary-reallocation-conclusion-20260415.md`；`65` 接受后，当前待施工卡已改为 `66-mainline-rectification-resume-gate-card-20260415.md`，只有 `66` 收口后才允许恢复 `80`，并继续要求 `86` 通过后才恢复 `100`。
 5. 当前主线系统级路线图必须以 `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 为准；该文档现在把 `60 -> 66` 固定为 `80-86` 前的主线整改卡组，把 `80 -> 86` 固定为整改后的真实正式库 middle-ledger 恢复卡组，不允许再把“代码已切 canonical”误当成“正式库已切 canonical”，也不允许在 `66` 前直接续推 `80-86`。
 
 ## 5. 历史账本原则

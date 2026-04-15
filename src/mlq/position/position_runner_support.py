@@ -92,22 +92,27 @@ def load_alpha_formal_signal_rows(
                 "source_trigger_event_nk": row[12],
                 "signal_contract_version": row[13],
                 "source_signal_run_id": row[14],
-                "source_family_event_nk": row[15],
-                "source_family_contract_version": row[16],
-                "family_code": row[17],
-                "family_role": row[18],
-                "family_bias": row[19],
-                "malf_alignment": row[20],
-                "malf_phase_bucket": row[21],
-                "family_source_context_fingerprint": row[22],
-                "wave_life_percentile": row[23],
-                "remaining_life_bars_p50": row[24],
-                "remaining_life_bars_p75": row[25],
-                "termination_risk_bucket": row[26],
-                "stage_percentile_decision_code": row[27],
-                "stage_percentile_action_owner": row[28],
-                "stage_percentile_note": row[29],
-                "stage_percentile_contract_version": row[30],
+                "admission_verdict_code": row[15],
+                "admission_reason_code": row[16],
+                "admission_audit_note": row[17],
+                "filter_gate_code": row[18],
+                "filter_reject_reason_code": row[19],
+                "source_family_event_nk": row[20],
+                "source_family_contract_version": row[21],
+                "family_code": row[22],
+                "family_role": row[23],
+                "family_bias": row[24],
+                "malf_alignment": row[25],
+                "malf_phase_bucket": row[26],
+                "family_source_context_fingerprint": row[27],
+                "wave_life_percentile": row[28],
+                "remaining_life_bars_p50": row[29],
+                "remaining_life_bars_p75": row[30],
+                "termination_risk_bucket": row[31],
+                "stage_percentile_decision_code": row[32],
+                "stage_percentile_action_owner": row[33],
+                "stage_percentile_note": row[34],
+                "stage_percentile_contract_version": row[35],
             }
             for row in rows
         ]
@@ -179,6 +184,11 @@ def build_alpha_select_sql(*, table_name: str, available_columns: set[str]) -> s
     else:
         select_fields.append("NULL AS source_signal_run_id")
     optional_family_columns = {
+        "admission_verdict_code": ("admission_verdict_code",),
+        "admission_reason_code": ("admission_reason_code",),
+        "admission_audit_note": ("admission_audit_note", "audit_note"),
+        "filter_gate_code": ("filter_gate_code",),
+        "filter_reject_reason_code": ("filter_reject_reason_code",),
         "source_family_event_nk": ("source_family_event_nk",),
         "source_family_contract_version": ("source_family_contract_version",),
         "family_code": ("family_code",),
@@ -263,6 +273,10 @@ def enrich_reference_prices(
                     reference_trade_date=reference_trade_date.isoformat(),
                     reference_price=reference_price,
                     capital_base_value=capital_base_value,
+                    blocked_reason_code=None
+                    if row["admission_reason_code"] is None
+                    else str(row["admission_reason_code"]),
+                    audit_note=None if row["admission_audit_note"] is None else str(row["admission_audit_note"]),
                     source_signal_run_id=None
                     if row["source_signal_run_id"] is None
                     else str(row["source_signal_run_id"]),
@@ -306,6 +320,10 @@ def enrich_reference_prices(
                     stage_percentile_contract_version=None
                     if row["stage_percentile_contract_version"] is None
                     else str(row["stage_percentile_contract_version"]),
+                    filter_gate_code=None if row["filter_gate_code"] is None else str(row["filter_gate_code"]),
+                    filter_reject_reason_code=None
+                    if row["filter_reject_reason_code"] is None
+                    else str(row["filter_reject_reason_code"]),
                 )
             )
         return enriched_signals, missing_reference_price_count

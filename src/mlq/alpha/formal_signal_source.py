@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import hashlib
-import json
 from datetime import date
 from pathlib import Path
 
@@ -26,12 +25,18 @@ from mlq.alpha.formal_signal_shared import (
     _derive_lifecycle_rank_high,
     _map_major_state_to_context_code,
     _normalize_date_value,
-    _normalize_formal_signal_status,
     _normalize_optional_float,
     _normalize_optional_int,
     _normalize_optional_nullable_str,
     _normalize_optional_str,
     _to_python_date,
+)
+from mlq.alpha.formal_signal_source_helpers import (
+    _load_table_columns,
+    _parse_payload_json,
+    _resolve_existing_column,
+    _resolve_optional_column,
+    _table_exists,
 )
 
 
@@ -620,6 +625,8 @@ def _load_official_context_rows(
                     asof_date,
                     structure_snapshot_nk,
                     trigger_admissible,
+                    primary_blocking_condition,
+                    admission_notes,
                     daily_source_context_nk,
                     weekly_major_state,
                     weekly_trend_direction,
@@ -640,8 +647,8 @@ def _load_official_context_rows(
                 rf.instrument,
                 rf.signal_date,
                 rf.asof_date,
-                CASE WHEN rf.trigger_admissible THEN 'admitted' ELSE 'blocked' END AS formal_signal_status,
                 rf.trigger_admissible,
+                rf.primary_blocking_condition,
                 s.major_state,
                 s.trend_direction,
                 s.reversal_stage,
@@ -656,7 +663,8 @@ def _load_official_context_rows(
                 rf.monthly_major_state,
                 rf.monthly_trend_direction,
                 rf.monthly_reversal_stage,
-                rf.monthly_source_context_nk
+                rf.monthly_source_context_nk,
+                rf.admission_notes
             FROM ranked_filter AS rf
             INNER JOIN structure_db.main.{structure_table_name} AS s
                 ON s.structure_snapshot_nk = rf.structure_snapshot_nk
@@ -687,8 +695,10 @@ def _load_official_context_rows(
                     instrument=str(row[0]),
                     signal_date=_normalize_date_value(row[1], field_name="signal_date"),
                     asof_date=_normalize_date_value(row[2], field_name="asof_date"),
-                    formal_signal_status=_normalize_formal_signal_status(row[3]),
-                    trigger_admissible=bool(row[4]),
+                    trigger_admissible=bool(row[3]),
+                    filter_gate_code="pre_trigger_passed" if bool(row[3]) else "pre_trigger_blocked",
+                    filter_reject_reason_code=_normalize_optional_nullable_str(row[4]),
+                    filter_admission_notes=_normalize_optional_nullable_str(row[20]),
                     major_state=_normalize_optional_str(row[5], default="牛逆"),
                     trend_direction=_normalize_optional_str(row[6], default="down").lower(),
                     reversal_stage=_normalize_optional_str(row[7], default="none").lower(),
@@ -720,8 +730,10 @@ def _build_context_row(
     instrument: str,
     signal_date: date,
     asof_date: date,
-    formal_signal_status: str,
     trigger_admissible: bool,
+    filter_gate_code: str,
+    filter_reject_reason_code: str | None,
+    filter_admission_notes: str | None,
     major_state: str,
     trend_direction: str,
     reversal_stage: str,
@@ -752,8 +764,10 @@ def _build_context_row(
         instrument=instrument,
         signal_date=signal_date,
         asof_date=asof_date,
-        formal_signal_status=formal_signal_status,
         trigger_admissible=trigger_admissible,
+        filter_gate_code=filter_gate_code,
+        filter_reject_reason_code=filter_reject_reason_code,
+        filter_admission_notes=filter_admission_notes,
         major_state=major_state,
         trend_direction=trend_direction,
         reversal_stage=reversal_stage,
@@ -778,61 +792,3 @@ def _build_context_row(
         termination_risk_bucket=termination_risk_bucket,
     )
 
-
-def _load_table_columns(connection: duckdb.DuckDBPyConnection, table_name: str) -> set[str]:
-    rows = connection.execute(
-        """
-        SELECT column_name
-        FROM information_schema.columns
-        WHERE table_schema = 'main'
-          AND table_name = ?
-        """,
-        [table_name],
-    ).fetchall()
-    if not rows:
-        raise ValueError(f"Missing table: {table_name}")
-    return {str(row[0]) for row in rows}
-
-
-def _resolve_existing_column(
-    available_columns: set[str],
-    candidates: tuple[str, ...],
-    *,
-    field_name: str,
-    table_name: str,
-) -> str:
-    for candidate in candidates:
-        if candidate in available_columns:
-            return candidate
-    raise ValueError(f"Missing required column `{field_name}` in table `{table_name}`.")
-
-
-def _resolve_optional_column(available_columns: set[str], candidates: tuple[str, ...]) -> str | None:
-    for candidate in candidates:
-        if candidate in available_columns:
-            return candidate
-    return None
-
-
-def _table_exists(connection: duckdb.DuckDBPyConnection, table_name: str) -> bool:
-    row = connection.execute(
-        """
-        SELECT 1
-        FROM information_schema.tables
-        WHERE table_schema = 'main'
-          AND table_name = ?
-        LIMIT 1
-        """,
-        [table_name],
-    ).fetchone()
-    return row is not None
-
-
-def _parse_payload_json(payload_json: object) -> dict[str, object]:
-    if payload_json is None:
-        return {}
-    try:
-        parsed = json.loads(str(payload_json))
-    except json.JSONDecodeError:
-        return {}
-    return parsed if isinstance(parsed, dict) else {}

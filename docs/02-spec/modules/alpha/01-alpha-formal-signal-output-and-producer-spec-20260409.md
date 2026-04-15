@@ -260,3 +260,34 @@ flowchart LR
     PROD --> REV[alpha_formal_signal_run_event]
     EV --> POS[position runner 直接读取]
 ```
+
+## 2026-04-15 admission verdict 补充规格
+
+### `alpha_formal_signal_event`
+
+自 `65` 起，正式合同追加下列字段：
+
+1. `admission_verdict_code`
+   - 当前冻结枚举：`admitted / blocked / downgraded / note_only`
+2. `admission_verdict_owner`
+   - 当前冻结枚举：`alpha_formal_signal / filter_pre_trigger`
+3. `admission_reason_code`
+4. `admission_audit_note`
+5. `filter_gate_code`
+   - 当前冻结枚举：`pre_trigger_passed / pre_trigger_blocked`
+6. `filter_reject_reason_code`
+
+补充规则：
+
+1. `formal_signal_status` 继续只暴露 `admitted / blocked / deferred`
+2. `formal_signal_status` 不再允许直接等于 `trigger_admissible`
+3. `trigger_admissible=false` 时，`admission_verdict_owner` 必须为 `filter_pre_trigger`
+4. `trigger_admissible=true` 时，最终是否 `admitted / downgraded / note_only` 必须由 `alpha formal signal` 自身裁决
+
+### `alpha_formal_signal_run_event`
+
+自 `65` 起，`run_event` 至少还必须记录：
+
+1. `admission_verdict_code`
+2. `admission_verdict_owner`
+3. `admission_reason_code`

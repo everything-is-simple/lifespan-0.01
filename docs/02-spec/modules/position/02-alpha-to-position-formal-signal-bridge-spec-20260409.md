@@ -129,3 +129,20 @@ flowchart LR
     POS --> ALLOW[allowed position]
     POS -. 不回读 .-> ALPHA
 ```
+
+## 2026-04-15 admission verdict 补充桥接
+
+自 `65` 起，`position` 对 `alpha formal signal` 的正式读取还应兼容：
+
+1. `admission_verdict_code`
+2. `admission_reason_code`
+3. `admission_audit_note`
+4. `filter_gate_code`
+5. `filter_reject_reason_code`
+
+补充规则：
+
+1. `candidate_status` 默认优先取 `formal_signal_status`
+2. `blocked_reason_code` 默认优先取 `admission_reason_code`
+3. 只有 `filter_gate_code='pre_trigger_blocked'` 时，`filter_reject_reason_code` 才能作为正式阻断原因兜底
+4. `position` 不得绕过 `alpha` 自行把 `family_alignment` 或 `stage_percentile` 重新解释成 admission authority
