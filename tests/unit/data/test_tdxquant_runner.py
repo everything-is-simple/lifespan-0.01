@@ -15,6 +15,7 @@ from mlq.data import (
     bootstrap_raw_market_ledger,
     market_base_ledger_path,
     mark_base_instrument_dirty,
+    RAW_TDXQUANT_INSTRUMENT_PROFILE_TABLE,
     raw_market_ledger_path,
     run_asset_market_base_build,
     run_market_base_build,
@@ -171,8 +172,22 @@ def test_run_tdxquant_daily_raw_sync_bridges_none_bars_and_checkpoint(tmp_path: 
         ),
     }
     infos = {
-        code: TdxQuantInstrumentInfo(code=code, name=rows[0].name, asset_type="stock")
-        for code, rows in bars_by_code.items()
+        "600000.SH": TdxQuantInstrumentInfo(
+            code="600000.SH",
+            name="浦发银行",
+            asset_type="stock",
+            market_type="sh",
+            security_type="stock",
+            suspension_status="trading",
+        ),
+        "510300.SH": TdxQuantInstrumentInfo(
+            code="510300.SH",
+            name="沪深300ETF",
+            asset_type="stock",
+            market_type="sh",
+            security_type="etf",
+            suspension_status="trading",
+        ),
     }
 
     first_client = FakeTdxQuantClient(infos=infos, bars_by_code=bars_by_code)
@@ -228,6 +243,13 @@ def test_run_tdxquant_daily_raw_sync_bridges_none_bars_and_checkpoint(tmp_path: 
             ORDER BY code
             """
         ).fetchall()
+        profile_rows = raw_conn.execute(
+            f"""
+            SELECT code, observed_trade_date, market_type, security_type, is_suspended_or_unresumed
+            FROM {RAW_TDXQUANT_INSTRUMENT_PROFILE_TABLE}
+            ORDER BY code, observed_trade_date
+            """
+        ).fetchall()
         raw_rows = raw_conn.execute(
             """
             SELECT code, trade_date, adjust_method, close, source_file_nk
@@ -265,6 +287,10 @@ def test_run_tdxquant_daily_raw_sync_bridges_none_bars_and_checkpoint(tmp_path: 
     assert checkpoint_rows == [
         ("510300.SH", date(2026, 4, 10), "tq-test-001b"),
         ("600000.SH", date(2026, 4, 10), "tq-test-001b"),
+    ]
+    assert profile_rows == [
+        ("510300.SH", date(2026, 4, 10), "sh", "etf", False),
+        ("600000.SH", date(2026, 4, 10), "sh", "stock", False),
     ]
     assert raw_rows == [
         ("510300.SH", date(2026, 4, 9), "none", 4.05, "tq-test-001a|510300.SH|none|5|20260410150000"),

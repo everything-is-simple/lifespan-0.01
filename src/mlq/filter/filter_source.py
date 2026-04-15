@@ -8,6 +8,7 @@ from pathlib import Path
 import duckdb
 
 from mlq.filter.filter_shared import (
+    _ObjectiveStatusInputRow,
     _StructureSnapshotInputRow,
     _normalize_date_value,
     _normalize_optional_int,
@@ -251,3 +252,96 @@ def _load_context_presence(
         return set()
     finally:
         connection.close()
+
+
+def _load_objective_status_rows(
+    *,
+    raw_market_path: Path,
+    table_name: str,
+    signal_end_date: date | None,
+    instruments: tuple[str, ...],
+) -> dict[str, list[_ObjectiveStatusInputRow]]:
+    if not raw_market_path.exists() or not instruments:
+        return {}
+    connection = duckdb.connect(str(raw_market_path), read_only=True)
+    try:
+        available_columns = _load_table_columns(connection, table_name)
+        instrument_column = _resolve_existing_column(
+            available_columns,
+            ("code", "instrument"),
+            field_name="code/instrument",
+            table_name=table_name,
+        )
+        observed_trade_date_column = _resolve_existing_column(
+            available_columns,
+            ("observed_trade_date", "signal_date", "trade_date"),
+            field_name="observed_trade_date",
+            table_name=table_name,
+        )
+        placeholders = ", ".join("?" for _ in instruments)
+        parameters: list[object] = [*instruments]
+        where_clauses = [f"{instrument_column} IN ({placeholders})"]
+        if signal_end_date is not None:
+            where_clauses.append(f"{observed_trade_date_column} <= ?")
+            parameters.append(signal_end_date)
+        rows = connection.execute(
+            f"""
+            SELECT
+                {instrument_column} AS instrument,
+                {observed_trade_date_column} AS observed_trade_date,
+                {_resolve_optional_column(available_columns, ("market_type",)) or "NULL"} AS market_type,
+                {_resolve_optional_column(available_columns, ("security_type",)) or "NULL"} AS security_type,
+                {_resolve_optional_column(available_columns, ("suspension_status",)) or "NULL"} AS suspension_status,
+                {_resolve_optional_column(available_columns, ("risk_warning_status",)) or "NULL"} AS risk_warning_status,
+                {_resolve_optional_column(available_columns, ("delisting_status",)) or "NULL"} AS delisting_status,
+                COALESCE({_resolve_optional_column(available_columns, ("is_suspended_or_unresumed",)) or "FALSE"}, FALSE) AS is_suspended_or_unresumed,
+                COALESCE({_resolve_optional_column(available_columns, ("is_risk_warning_excluded",)) or "FALSE"}, FALSE) AS is_risk_warning_excluded,
+                COALESCE({_resolve_optional_column(available_columns, ("is_delisting_arrangement",)) or "FALSE"}, FALSE) AS is_delisting_arrangement,
+                {_resolve_optional_column(available_columns, ("source_request_nk",)) or "NULL"} AS source_request_nk
+            FROM {table_name}
+            WHERE {' AND '.join(where_clauses)}
+            ORDER BY instrument, observed_trade_date
+            """,
+            parameters,
+        ).fetchall()
+    except ValueError:
+        return {}
+    finally:
+        connection.close()
+
+    objective_rows: dict[str, list[_ObjectiveStatusInputRow]] = {}
+    for row in rows:
+        objective_rows.setdefault(str(row[0]), []).append(
+            _ObjectiveStatusInputRow(
+                instrument=str(row[0]),
+                observed_trade_date=_normalize_date_value(row[1], field_name="observed_trade_date"),
+                market_type=_normalize_optional_nullable_str(row[2]),
+                security_type=_normalize_optional_nullable_str(row[3]),
+                suspension_status=_normalize_optional_nullable_str(row[4]),
+                risk_warning_status=_normalize_optional_nullable_str(row[5]),
+                delisting_status=_normalize_optional_nullable_str(row[6]),
+                is_suspended_or_unresumed=bool(row[7]),
+                is_risk_warning_excluded=bool(row[8]),
+                is_delisting_arrangement=bool(row[9]),
+                source_request_nk=_normalize_optional_nullable_str(row[10]),
+            )
+        )
+    return objective_rows
+
+
+def _resolve_objective_status_for_signal(
+    objective_rows_by_instrument: dict[str, list[_ObjectiveStatusInputRow]],
+    *,
+    instrument: str,
+    signal_date: date,
+) -> _ObjectiveStatusInputRow | None:
+    rows = objective_rows_by_instrument.get(instrument)
+    if not rows:
+        return None
+    selected_row: _ObjectiveStatusInputRow | None = None
+    for row in rows:
+        if row.observed_trade_date <= signal_date:
+            selected_row = row
+        else:
+            break
+    return selected_row

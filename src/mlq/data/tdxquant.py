@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -15,6 +16,15 @@ class TdxQuantInstrumentInfo:
     code: str
     name: str
     asset_type: str = "stock"
+    market_type: str | None = None
+    security_type: str | None = None
+    suspension_status: str | None = None
+    risk_warning_status: str | None = None
+    delisting_status: str | None = None
+    is_suspended_or_unresumed: bool = False
+    is_risk_warning_excluded: bool = False
+    is_delisting_arrangement: bool = False
+    raw_payload_json: str | None = None
 
 
 @dataclass(frozen=True)
@@ -83,10 +93,95 @@ class RuntimeTdxQuantClient:
             "stock_name",
             "证券名称",
         )
+        market_type = _normalize_market_type(
+            _pick_first_non_empty(
+                raw_info,
+                "MarketType",
+                "market_type",
+                "Market",
+                "market",
+                "Exchange",
+                "exchange",
+                "市场类型",
+            ),
+            code=code,
+        )
+        security_type = _normalize_security_type(
+            _pick_first_non_empty(
+                raw_info,
+                "SecurityType",
+                "security_type",
+                "Type",
+                "type",
+                "SecuType",
+                "secu_type",
+                "证券类型",
+                "证券类别",
+            ),
+            name=name or code,
+        )
+        suspension_status = _normalize_status_label(
+            _pick_first_non_empty(
+                raw_info,
+                "SuspendStatus",
+                "suspend_status",
+                "TradingStatus",
+                "trading_status",
+                "TradeStatus",
+                "trade_status",
+                "Status",
+                "status",
+                "停复牌情况",
+                "停牌状态",
+            )
+        )
+        risk_warning_status = _normalize_status_label(
+            _pick_first_non_empty(
+                raw_info,
+                "RiskWarningStatus",
+                "risk_warning_status",
+                "RiskWarning",
+                "risk_warning",
+                "SpecialTreatment",
+                "special_treatment",
+                "ST",
+                "st",
+                "风险警示",
+            )
+        )
+        delisting_status = _normalize_status_label(
+            _pick_first_non_empty(
+                raw_info,
+                "DelistingStatus",
+                "delisting_status",
+                "Delist",
+                "delist",
+                "ListingStatus",
+                "listing_status",
+                "退市整理",
+            )
+        )
         return TdxQuantInstrumentInfo(
             code=code,
             name=name or code,
             asset_type="stock",
+            market_type=market_type,
+            security_type=security_type,
+            suspension_status=suspension_status,
+            risk_warning_status=risk_warning_status,
+            delisting_status=delisting_status,
+            is_suspended_or_unresumed=_is_suspended_or_unresumed(raw_info, suspension_status=suspension_status),
+            is_risk_warning_excluded=_is_risk_warning_excluded(
+                raw_info,
+                risk_warning_status=risk_warning_status,
+                name=name or code,
+            ),
+            is_delisting_arrangement=_is_delisting_arrangement(
+                raw_info,
+                delisting_status=delisting_status,
+                name=name or code,
+            ),
+            raw_payload_json=json.dumps(raw_info, ensure_ascii=False, sort_keys=True),
         )
 
     def get_daily_bars(
@@ -185,3 +280,130 @@ def _normalize_optional_float(value: object | None) -> float | None:
     if value is None or value == "":
         return None
     return float(value)
+
+
+def _normalize_status_label(value: str | None) -> str | None:
+    if value is None:
+        return None
+    candidate = str(value).strip()
+    return candidate or None
+
+
+def _normalize_market_type(value: str | None, *, code: str) -> str | None:
+    if value is not None and str(value).strip():
+        return _normalize_token(str(value))
+    if "." in code:
+        return _normalize_token(code.rsplit(".", 1)[1])
+    return None
+
+
+def _normalize_security_type(value: str | None, *, name: str) -> str | None:
+    if value is not None and str(value).strip():
+        return _normalize_token(str(value))
+    normalized_name = str(name).strip().upper()
+    if "ETF" in normalized_name:
+        return "etf"
+    return None
+
+
+def _normalize_token(value: str) -> str:
+    return (
+        str(value)
+        .strip()
+        .lower()
+        .replace(" ", "_")
+        .replace("-", "_")
+        .replace("/", "_")
+    )
+
+
+def _is_suspended_or_unresumed(
+    payload: dict[str, object],
+    *,
+    suspension_status: str | None,
+) -> bool:
+    if _pick_truthy_value(
+        payload,
+        "IsSuspended",
+        "is_suspended",
+        "Suspended",
+        "suspended",
+        "IsHalted",
+        "is_halted",
+    ):
+        return True
+    return _contains_any(
+        suspension_status,
+        ("suspend", "suspended", "halt", "halted", "停牌", "未复牌"),
+    )
+
+
+def _is_risk_warning_excluded(
+    payload: dict[str, object],
+    *,
+    risk_warning_status: str | None,
+    name: str,
+) -> bool:
+    if _pick_truthy_value(
+        payload,
+        "IsRiskWarning",
+        "is_risk_warning",
+        "RiskWarningFlag",
+        "risk_warning_flag",
+        "IsST",
+        "is_st",
+    ):
+        return True
+    if _contains_any(
+        risk_warning_status,
+        ("st", "*st", "risk_warning", "special_treatment", "风险警示"),
+    ):
+        return True
+    normalized_name = str(name).strip().upper()
+    return normalized_name.startswith("ST") or normalized_name.startswith("*ST")
+
+
+def _is_delisting_arrangement(
+    payload: dict[str, object],
+    *,
+    delisting_status: str | None,
+    name: str,
+) -> bool:
+    if _pick_truthy_value(
+        payload,
+        "IsDelisting",
+        "is_delisting",
+        "IsDelistingArrangement",
+        "is_delisting_arrangement",
+    ):
+        return True
+    if _contains_any(
+        delisting_status,
+        ("delist", "delisting", "退市"),
+    ):
+        return True
+    return "退市" in str(name)
+
+
+def _pick_truthy_value(payload: dict[str, object], *keys: str) -> bool:
+    for key in keys:
+        value = payload.get(key)
+        if value is None:
+            continue
+        if isinstance(value, bool):
+            return value
+        normalized = str(value).strip().lower()
+        if normalized in {"1", "true", "yes", "y"}:
+            return True
+        if normalized in {"0", "false", "no", "n"}:
+            return False
+    return False
+
+
+def _contains_any(value: str | None, candidates: tuple[str, ...]) -> bool:
+    if value is None:
+        return False
+    normalized = str(value).strip().lower()
+    if not normalized:
+        return False
+    return any(candidate.lower() in normalized for candidate in candidates)

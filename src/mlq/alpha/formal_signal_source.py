@@ -607,6 +607,17 @@ def _load_official_context_rows(
     try:
         structure_path_sql = str(structure_path).replace("\\", "/").replace("'", "''")
         connection.execute(f"ATTACH '{structure_path_sql}' AS structure_db")
+        filter_columns = _load_table_columns(connection, filter_table_name)
+        filter_gate_code_expr = (
+            "filter_gate_code"
+            if "filter_gate_code" in filter_columns
+            else "CASE WHEN trigger_admissible THEN 'pre_trigger_passed' ELSE 'pre_trigger_blocked' END"
+        )
+        filter_reject_reason_expr = (
+            "filter_reject_reason_code"
+            if "filter_reject_reason_code" in filter_columns
+            else "primary_blocking_condition"
+        )
         placeholders = ", ".join("?" for _ in instruments)
         parameters: list[object] = [*instruments]
         where_clauses = [f"instrument IN ({placeholders})"]
@@ -625,7 +636,8 @@ def _load_official_context_rows(
                     asof_date,
                     structure_snapshot_nk,
                     trigger_admissible,
-                    primary_blocking_condition,
+                    {filter_gate_code_expr} AS filter_gate_code,
+                    {filter_reject_reason_expr} AS filter_reject_reason_code,
                     admission_notes,
                     daily_source_context_nk,
                     weekly_major_state,
@@ -648,7 +660,7 @@ def _load_official_context_rows(
                 rf.signal_date,
                 rf.asof_date,
                 rf.trigger_admissible,
-                rf.primary_blocking_condition,
+                rf.filter_gate_code,
                 s.major_state,
                 s.trend_direction,
                 s.reversal_stage,
@@ -664,7 +676,8 @@ def _load_official_context_rows(
                 rf.monthly_trend_direction,
                 rf.monthly_reversal_stage,
                 rf.monthly_source_context_nk,
-                rf.admission_notes
+                rf.admission_notes,
+                rf.filter_reject_reason_code
             FROM ranked_filter AS rf
             INNER JOIN structure_db.main.{structure_table_name} AS s
                 ON s.structure_snapshot_nk = rf.structure_snapshot_nk
@@ -696,8 +709,11 @@ def _load_official_context_rows(
                     signal_date=_normalize_date_value(row[1], field_name="signal_date"),
                     asof_date=_normalize_date_value(row[2], field_name="asof_date"),
                     trigger_admissible=bool(row[3]),
-                    filter_gate_code="pre_trigger_passed" if bool(row[3]) else "pre_trigger_blocked",
-                    filter_reject_reason_code=_normalize_optional_nullable_str(row[4]),
+                    filter_gate_code=_normalize_optional_str(
+                        row[4],
+                        default="pre_trigger_passed" if bool(row[3]) else "pre_trigger_blocked",
+                    ),
+                    filter_reject_reason_code=_normalize_optional_nullable_str(row[21]),
                     filter_admission_notes=_normalize_optional_nullable_str(row[20]),
                     major_state=_normalize_optional_str(row[5], default="牛逆"),
                     trend_direction=_normalize_optional_str(row[6], default="down").lower(),
@@ -791,4 +807,3 @@ def _build_context_row(
         remaining_life_bars_p75=remaining_life_bars_p75,
         termination_risk_bucket=termination_risk_bucket,
     )
-

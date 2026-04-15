@@ -21,6 +21,7 @@ RAW_INGEST_FILE_TABLE: Final[str] = "raw_ingest_file"
 RAW_TDXQUANT_RUN_TABLE: Final[str] = "raw_tdxquant_run"
 RAW_TDXQUANT_REQUEST_TABLE: Final[str] = "raw_tdxquant_request"
 RAW_TDXQUANT_INSTRUMENT_CHECKPOINT_TABLE: Final[str] = "raw_tdxquant_instrument_checkpoint"
+RAW_TDXQUANT_INSTRUMENT_PROFILE_TABLE: Final[str] = "raw_tdxquant_instrument_profile"
 MARKET_BASE_STOCK_DAILY_TABLE: Final[str] = "stock_daily_adjusted"
 MARKET_BASE_INDEX_DAILY_TABLE: Final[str] = "index_daily_adjusted"
 MARKET_BASE_BLOCK_DAILY_TABLE: Final[str] = "block_daily_adjusted"
@@ -98,6 +99,26 @@ _MARKET_BASE_DAILY_REQUIRED_COLUMNS: Final[dict[str, str]] = {
     "first_seen_run_id": "TEXT",
     "last_materialized_run_id": "TEXT",
     "created_at": "TIMESTAMP",
+    "updated_at": "TIMESTAMP",
+}
+_RAW_TDXQUANT_INSTRUMENT_PROFILE_REQUIRED_COLUMNS: Final[dict[str, str]] = {
+    "profile_nk": "TEXT",
+    "code": "TEXT",
+    "asset_type": "TEXT",
+    "observed_trade_date": "DATE",
+    "name": "TEXT",
+    "market_type": "TEXT",
+    "security_type": "TEXT",
+    "suspension_status": "TEXT",
+    "risk_warning_status": "TEXT",
+    "delisting_status": "TEXT",
+    "is_suspended_or_unresumed": "BOOLEAN",
+    "is_risk_warning_excluded": "BOOLEAN",
+    "is_delisting_arrangement": "BOOLEAN",
+    "source_run_id": "TEXT",
+    "source_request_nk": "TEXT",
+    "raw_payload_json": "TEXT",
+    "recorded_at": "TIMESTAMP",
     "updated_at": "TIMESTAMP",
 }
 
@@ -274,6 +295,28 @@ RAW_MARKET_LEDGER_TABLES: Final[dict[str, str]] = {
             updated_at_utc TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
     """,
+    RAW_TDXQUANT_INSTRUMENT_PROFILE_TABLE: """
+        CREATE TABLE IF NOT EXISTS raw_tdxquant_instrument_profile (
+            profile_nk TEXT,
+            code TEXT NOT NULL,
+            asset_type TEXT NOT NULL,
+            observed_trade_date DATE NOT NULL,
+            name TEXT,
+            market_type TEXT,
+            security_type TEXT,
+            suspension_status TEXT,
+            risk_warning_status TEXT,
+            delisting_status TEXT,
+            is_suspended_or_unresumed BOOLEAN NOT NULL DEFAULT FALSE,
+            is_risk_warning_excluded BOOLEAN NOT NULL DEFAULT FALSE,
+            is_delisting_arrangement BOOLEAN NOT NULL DEFAULT FALSE,
+            source_run_id TEXT NOT NULL,
+            source_request_nk TEXT NOT NULL,
+            raw_payload_json TEXT,
+            recorded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """,
 }
 
 
@@ -433,6 +476,7 @@ RAW_MARKET_REQUIRED_COLUMNS: Final[dict[str, dict[str, str]]] = {
         "last_response_digest": "TEXT",
         "updated_at_utc": "TIMESTAMP",
     },
+    RAW_TDXQUANT_INSTRUMENT_PROFILE_TABLE: dict(_RAW_TDXQUANT_INSTRUMENT_PROFILE_REQUIRED_COLUMNS),
 }
 
 
@@ -565,6 +609,19 @@ RAW_MARKET_NOT_NULL_COLUMNS: Final[dict[str, tuple[str, ...]]] = {
         "asset_type",
         "updated_at_utc",
     ),
+    RAW_TDXQUANT_INSTRUMENT_PROFILE_TABLE: (
+        "profile_nk",
+        "code",
+        "asset_type",
+        "observed_trade_date",
+        "is_suspended_or_unresumed",
+        "is_risk_warning_excluded",
+        "is_delisting_arrangement",
+        "source_run_id",
+        "source_request_nk",
+        "recorded_at",
+        "updated_at",
+    ),
 }
 
 
@@ -603,6 +660,9 @@ RAW_MARKET_UNIQUE_INDEXES: Final[dict[str, tuple[tuple[str, tuple[str, ...]], ..
     RAW_TDXQUANT_REQUEST_TABLE: (("ux_raw_tdxquant_request_request_nk", ("request_nk",)),),
     RAW_TDXQUANT_INSTRUMENT_CHECKPOINT_TABLE: (
         ("ux_raw_tdxquant_instrument_checkpoint_checkpoint_nk", ("checkpoint_nk",)),
+    ),
+    RAW_TDXQUANT_INSTRUMENT_PROFILE_TABLE: (
+        ("ux_raw_tdxquant_instrument_profile_profile_nk", ("profile_nk",)),
     ),
 }
 

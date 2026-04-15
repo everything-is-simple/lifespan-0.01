@@ -15,6 +15,7 @@ from mlq.data.data_tdxquant_support import (
     update_raw_tdxquant_run_failure as _update_raw_tdxquant_run_failure,
     update_raw_tdxquant_run_success as _update_raw_tdxquant_run_success,
     upsert_tdxquant_checkpoint as _upsert_tdxquant_checkpoint,
+    upsert_tdxquant_instrument_profile as _upsert_tdxquant_instrument_profile,
 )
 
 
@@ -121,6 +122,13 @@ def run_tdxquant_daily_raw_sync(
                     response_trade_date_max=response_trade_date_max,
                     response_digest=response_digest,
                 ):
+                    _upsert_tdxquant_instrument_profile(
+                        connection,
+                        instrument_info=instrument_info,
+                        observed_trade_date=response_trade_date_max,
+                        source_run_id=materialization_run_id,
+                        source_request_nk=request_nk,
+                    )
                     _record_raw_tdxquant_request(
                         connection,
                         request_nk=request_nk,
@@ -165,6 +173,13 @@ def run_tdxquant_daily_raw_sync(
                     response_bars=response_bars,
                     request_observed_at=request_observed_at,
                     run_id=materialization_run_id,
+                )
+                _upsert_tdxquant_instrument_profile(
+                    connection,
+                    instrument_info=instrument_info,
+                    observed_trade_date=response_trade_date_max,
+                    source_run_id=materialization_run_id,
+                    source_request_nk=request_nk,
                 )
                 _record_raw_tdxquant_request(
                     connection,

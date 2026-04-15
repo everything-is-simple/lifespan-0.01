@@ -6,6 +6,40 @@ import json
 from dataclasses import asdict, dataclass
 from datetime import date, datetime, timezone
 from pathlib import Path
+from typing import Final
+
+
+FILTER_GATE_CODE_PRE_TRIGGER_PASSED: Final[str] = "pre_trigger_passed"
+FILTER_GATE_CODE_PRE_TRIGGER_BLOCKED: Final[str] = "pre_trigger_blocked"
+FILTER_GATE_CODES: Final[tuple[str, str]] = (
+    FILTER_GATE_CODE_PRE_TRIGGER_PASSED,
+    FILTER_GATE_CODE_PRE_TRIGGER_BLOCKED,
+)
+
+FILTER_REJECT_REASON_SECURITY_SUSPENDED: Final[str] = "security_suspended_or_unresumed"
+FILTER_REJECT_REASON_SECURITY_RISK_WARNING: Final[str] = "security_risk_warning_excluded"
+FILTER_REJECT_REASON_SECURITY_DELISTING: Final[str] = "security_delisting_arrangement"
+FILTER_REJECT_REASON_SECURITY_TYPE_OUT_OF_UNIVERSE: Final[str] = "security_type_out_of_universe"
+FILTER_REJECT_REASON_MARKET_TYPE_OUT_OF_UNIVERSE: Final[str] = "market_type_out_of_universe"
+FILTER_REJECT_REASON_CODES: Final[tuple[str, ...]] = (
+    FILTER_REJECT_REASON_SECURITY_SUSPENDED,
+    FILTER_REJECT_REASON_SECURITY_RISK_WARNING,
+    FILTER_REJECT_REASON_SECURITY_DELISTING,
+    FILTER_REJECT_REASON_SECURITY_TYPE_OUT_OF_UNIVERSE,
+    FILTER_REJECT_REASON_MARKET_TYPE_OUT_OF_UNIVERSE,
+)
+FILTER_ALLOWED_MARKET_TYPES: Final[tuple[str, ...]] = ("sh", "sz")
+FILTER_ALLOWED_SECURITY_TYPES: Final[tuple[str, ...]] = ("stock", "equity", "a_share", "ashare")
+
+
+@dataclass(frozen=True)
+class FilterGateDecision:
+    """冻结 `69` 后 filter 客观 gate 的正式裁决结果。"""
+
+    trigger_admissible: bool
+    filter_gate_code: str
+    filter_reject_reason_code: str | None
+    blocking_conditions: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -88,6 +122,21 @@ class _StructureSnapshotInputRow:
 
 
 @dataclass(frozen=True)
+class _ObjectiveStatusInputRow:
+    instrument: str
+    observed_trade_date: date
+    market_type: str | None
+    security_type: str | None
+    suspension_status: str | None
+    risk_warning_status: str | None
+    delisting_status: str | None
+    is_suspended_or_unresumed: bool
+    is_risk_warning_excluded: bool
+    is_delisting_arrangement: bool
+    source_request_nk: str | None
+
+
+@dataclass(frozen=True)
 class _FilterSnapshotRow:
     filter_snapshot_nk: str
     structure_snapshot_nk: str
@@ -122,6 +171,8 @@ class _FilterSnapshotRow:
     monthly_current_ll_count: int | None
     monthly_source_context_nk: str | None
     trigger_admissible: bool
+    filter_gate_code: str
+    filter_reject_reason_code: str | None
     primary_blocking_condition: str | None
     blocking_conditions_json: str
     admission_notes: str | None
@@ -134,6 +185,40 @@ class _FilterSnapshotRow:
     filter_contract_version: str
     first_seen_run_id: str
     last_materialized_run_id: str
+
+
+def derive_filter_gate_decision(
+    *,
+    is_suspended_or_unresumed: bool = False,
+    is_risk_warning_excluded: bool = False,
+    is_delisting_arrangement: bool = False,
+    is_security_type_out_of_universe: bool = False,
+    is_market_type_out_of_universe: bool = False,
+) -> FilterGateDecision:
+    """`filter` 只允许拦客观可交易性与正式宇宙排除状态。"""
+
+    blocking_conditions: list[str] = []
+    if is_suspended_or_unresumed:
+        blocking_conditions.append(FILTER_REJECT_REASON_SECURITY_SUSPENDED)
+    if is_risk_warning_excluded:
+        blocking_conditions.append(FILTER_REJECT_REASON_SECURITY_RISK_WARNING)
+    if is_delisting_arrangement:
+        blocking_conditions.append(FILTER_REJECT_REASON_SECURITY_DELISTING)
+    if is_security_type_out_of_universe:
+        blocking_conditions.append(FILTER_REJECT_REASON_SECURITY_TYPE_OUT_OF_UNIVERSE)
+    if is_market_type_out_of_universe:
+        blocking_conditions.append(FILTER_REJECT_REASON_MARKET_TYPE_OUT_OF_UNIVERSE)
+    primary_reason = blocking_conditions[0] if blocking_conditions else None
+    return FilterGateDecision(
+        trigger_admissible=primary_reason is None,
+        filter_gate_code=(
+            FILTER_GATE_CODE_PRE_TRIGGER_PASSED
+            if primary_reason is None
+            else FILTER_GATE_CODE_PRE_TRIGGER_BLOCKED
+        ),
+        filter_reject_reason_code=primary_reason,
+        blocking_conditions=tuple(blocking_conditions),
+    )
 
 
 def _coerce_date(value: str | date | None) -> date | None:

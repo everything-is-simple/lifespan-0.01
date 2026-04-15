@@ -86,6 +86,7 @@ flowchart LR
 - `scripts/data/run_tdxquant_daily_raw_sync.py`
   - 把 `TdxQuant(dividend_type='none')` 作为股票日更原始事实桥接进 `raw_market.stock_daily_bar(adjust_method='none')`
   - 只标记 `base_dirty_instrument(adjust_method='none')`
+  - 同步把 `get_stock_info` 的官方客观状态沉淀进 `raw_market.raw_tdxquant_instrument_profile`，供 `filter` 只读消费 objective gate
 - `scripts/data/run_market_base_build.py`
   - 从官方 `raw_market` 物化 `market_base.{stock,index,block}_daily_adjusted`
   - 支持 `--asset-type {stock,index,block}`
@@ -106,6 +107,10 @@ flowchart LR
 - `scripts/filter/run_filter_snapshot_build.py`
   - 正式 CLI 必须显式选择执行模式：传入 `signal_start_date / signal_end_date` 走 bounded full-window，或显式传入 `--use-checkpoint-queue` 走 checkpoint queue；无参调用不再静默进入 queue。
   - 自 `62` 起，`structure_progress_failed / reversal_stage_pending` 只保留为 `admission_notes` 或既有 risk sidecar，不再在 `filter` 层形成 hard block。
+  - 自 `69` 起，runner 还会只读消费 `raw_market.raw_tdxquant_instrument_profile`，把停牌/ST/退市整理/证券类型与市场类型宇宙排除映射成正式 `filter_gate_code / filter_reject_reason_code`
+- `scripts/filter/run_filter_objective_coverage_audit.py`
+  - 只读审计官方 `filter_snapshot` 对 `raw_market.raw_tdxquant_instrument_profile` 的历史覆盖率。
+  - 输出按日期、标的、市场类型分组的 missing 摘要，以及建议的最小 backfill 窗口。
 - `scripts/alpha/run_alpha_pas_five_trigger_build.py`
 - `scripts/alpha/run_alpha_trigger_ledger_build.py`
 - `scripts/alpha/run_alpha_family_build.py`

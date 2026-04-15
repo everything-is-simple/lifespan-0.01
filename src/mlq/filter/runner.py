@@ -10,6 +10,7 @@ from typing import Final
 import duckdb
 
 from mlq.core.paths import WorkspaceRoots, default_settings
+from mlq.data.bootstrap import RAW_TDXQUANT_INSTRUMENT_PROFILE_TABLE
 from mlq.filter.bootstrap import (
     FILTER_CHECKPOINT_TABLE,
     FILTER_WORK_QUEUE_TABLE,
@@ -34,6 +35,7 @@ from mlq.filter.filter_shared import (
 from mlq.filter.filter_source import (
     _ensure_database_exists,
     _load_context_presence,
+    _load_objective_status_rows,
     _load_structure_snapshot_rows,
 )
 from mlq.malf.bootstrap import MALF_STATE_SNAPSHOT_TABLE
@@ -42,6 +44,7 @@ from mlq.structure.bootstrap import STRUCTURE_CHECKPOINT_TABLE
 
 DEFAULT_FILTER_STRUCTURE_TABLE: Final[str] = "structure_snapshot"
 DEFAULT_FILTER_CONTEXT_TABLE: Final[str] = MALF_STATE_SNAPSHOT_TABLE
+DEFAULT_FILTER_OBJECTIVE_TABLE: Final[str] = RAW_TDXQUANT_INSTRUMENT_PROFILE_TABLE
 DEFAULT_FILTER_SOURCE_TIMEFRAME: Final[str] = "D"
 DEFAULT_FILTER_CONTRACT_VERSION: Final[str] = "filter-snapshot-v2"
 
@@ -60,6 +63,7 @@ def run_filter_snapshot_build(
     run_id: str | None = None,
     source_structure_table: str = DEFAULT_FILTER_STRUCTURE_TABLE,
     source_context_table: str = DEFAULT_FILTER_CONTEXT_TABLE,
+    source_objective_table: str = DEFAULT_FILTER_OBJECTIVE_TABLE,
     source_timeframe: str = DEFAULT_FILTER_SOURCE_TIMEFRAME,
     filter_contract_version: str = DEFAULT_FILTER_CONTRACT_VERSION,
     runner_name: str = "filter_snapshot_builder",
@@ -77,6 +81,7 @@ def run_filter_snapshot_build(
     _validate_filter_mainline_contract(
         source_structure_table=source_structure_table,
         source_context_table=source_context_table,
+        source_objective_table=source_objective_table,
         source_timeframe=normalized_timeframe,
     )
     queue_execution = _should_use_queue_execution(
@@ -109,6 +114,7 @@ def run_filter_snapshot_build(
             run_id=run_id,
             source_structure_table=source_structure_table,
             source_context_table=source_context_table,
+            source_objective_table=source_objective_table,
             source_timeframe=normalized_timeframe,
             filter_contract_version=filter_contract_version,
             runner_name=runner_name,
@@ -128,6 +134,7 @@ def run_filter_snapshot_build(
         run_id=run_id,
         source_structure_table=source_structure_table,
         source_context_table=source_context_table,
+        source_objective_table=source_objective_table,
         source_timeframe=normalized_timeframe,
         filter_contract_version=filter_contract_version,
         runner_name=runner_name,
@@ -140,6 +147,7 @@ def _validate_filter_mainline_contract(
     *,
     source_structure_table: str,
     source_context_table: str,
+    source_objective_table: str,
     source_timeframe: str,
 ) -> None:
     if source_structure_table != DEFAULT_FILTER_STRUCTURE_TABLE:
@@ -149,6 +157,10 @@ def _validate_filter_mainline_contract(
     if source_context_table != DEFAULT_FILTER_CONTEXT_TABLE:
         raise ValueError(
             "filter mainline only accepts canonical `malf_state_snapshot` as source_context_table."
+        )
+    if source_objective_table != DEFAULT_FILTER_OBJECTIVE_TABLE:
+        raise ValueError(
+            "filter mainline only accepts official `raw_tdxquant_instrument_profile` as source_objective_table."
         )
     if source_timeframe != DEFAULT_FILTER_SOURCE_TIMEFRAME:
         raise ValueError("filter mainline only accepts canonical timeframe `D`.")
@@ -168,6 +180,7 @@ def _run_filter_bounded_build(
     run_id: str | None,
     source_structure_table: str,
     source_context_table: str,
+    source_objective_table: str,
     source_timeframe: str,
     filter_contract_version: str,
     runner_name: str,
@@ -182,6 +195,7 @@ def _run_filter_bounded_build(
     resolved_filter_path = Path(filter_path or filter_ledger_path(workspace))
     resolved_structure_path = Path(structure_path or workspace.databases.structure)
     resolved_malf_path = Path(malf_path or workspace.databases.malf)
+    resolved_raw_market_path = Path(workspace.databases.raw_market)
     normalized_limit = max(int(limit), 1)
     normalized_batch_size = max(int(batch_size), 1)
     normalized_timeframe = _normalize_timeframe(source_timeframe)
@@ -204,6 +218,12 @@ def _run_filter_bounded_build(
         instruments=tuple(sorted({row.instrument for row in structure_rows})),
         timeframe=normalized_timeframe,
     )
+    objective_status_rows = _load_objective_status_rows(
+        raw_market_path=resolved_raw_market_path,
+        table_name=source_objective_table,
+        signal_end_date=signal_end_date,
+        instruments=tuple(sorted({row.instrument for row in structure_rows})),
+    )
 
     filter_connection = duckdb.connect(str(resolved_filter_path))
     try:
@@ -225,6 +245,7 @@ def _run_filter_bounded_build(
             run_id=materialization_run_id,
             structure_rows=structure_rows,
             context_presence=context_presence,
+            objective_status_rows=objective_status_rows,
             filter_contract_version=filter_contract_version,
             runner_name=runner_name,
             runner_version=runner_version,
@@ -281,6 +302,7 @@ def _run_filter_queue_build(
     run_id: str | None,
     source_structure_table: str,
     source_context_table: str,
+    source_objective_table: str,
     source_timeframe: str,
     filter_contract_version: str,
     runner_name: str,
@@ -295,6 +317,7 @@ def _run_filter_queue_build(
     resolved_filter_path = Path(filter_path or filter_ledger_path(workspace))
     resolved_structure_path = Path(structure_path or workspace.databases.structure)
     resolved_malf_path = Path(malf_path or workspace.databases.malf)
+    resolved_raw_market_path = Path(workspace.databases.raw_market)
     normalized_limit = max(int(limit), 1)
     normalized_batch_size = max(int(batch_size), 1)
     normalized_timeframe = _normalize_timeframe(source_timeframe)
@@ -350,6 +373,7 @@ def _run_filter_queue_build(
                     run_id=materialization_run_id,
                     structure_path=resolved_structure_path,
                     malf_path=resolved_malf_path,
+                    raw_market_path=resolved_raw_market_path,
                     instrument=str(scope_row["code"]),
                     signal_start_date=_to_python_date(scope_row["replay_start_bar_dt"]),
                     signal_end_date=_to_python_date(scope_row["replay_confirm_until_dt"]),
@@ -357,6 +381,7 @@ def _run_filter_queue_build(
                     batch_size=normalized_batch_size,
                     source_structure_table=source_structure_table,
                     source_context_table=source_context_table,
+                    source_objective_table=source_objective_table,
                     source_timeframe=normalized_timeframe,
                     filter_contract_version=filter_contract_version,
                     runner_name=runner_name,
@@ -739,6 +764,7 @@ def _materialize_filter_scope(
     run_id: str,
     structure_path: Path,
     malf_path: Path,
+    raw_market_path: Path,
     instrument: str,
     signal_start_date: date | None,
     signal_end_date: date | None,
@@ -746,6 +772,7 @@ def _materialize_filter_scope(
     batch_size: int,
     source_structure_table: str,
     source_context_table: str,
+    source_objective_table: str,
     source_timeframe: str,
     filter_contract_version: str,
     runner_name: str,
@@ -768,11 +795,18 @@ def _materialize_filter_scope(
         instruments=tuple(sorted({row.instrument for row in structure_rows})),
         timeframe=source_timeframe,
     )
+    objective_status_rows = _load_objective_status_rows(
+        raw_market_path=raw_market_path,
+        table_name=source_objective_table,
+        signal_end_date=signal_end_date,
+        instruments=tuple(sorted({row.instrument for row in structure_rows})),
+    )
     return _materialize_filter_rows(
         connection=connection,
         run_id=run_id,
         structure_rows=structure_rows,
         context_presence=context_presence,
+        objective_status_rows=objective_status_rows,
         filter_contract_version=filter_contract_version,
         runner_name=runner_name,
         runner_version=runner_version,

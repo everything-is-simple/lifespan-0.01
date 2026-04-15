@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "lifespan-0.01"
 version = "0.1.0"
-description = "Local-first historical ledger system with data-grade upstream ledgers, MALF-driven position planning, and official execution readout audit ledgers."
+description = "Local-first historical ledger system with data-grade upstream ledgers, official filter objective-gate inputs, MALF-driven position planning, and execution readout audit ledgers."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -84,6 +84,9 @@ formal_runner_scripts = [
     "scripts/portfolio_plan/run_portfolio_plan_build.py",
     "scripts/trade/run_trade_runtime_build.py",
     "scripts/system/run_system_mainline_readout_build.py",
+]
+formal_readonly_audit_scripts = [
+    "scripts/filter/run_filter_objective_coverage_audit.py",
 ]
 document_diagram_required = true
 diagram_preferred_doc_types = ["design", "spec", "execution-card", "conclusion"]

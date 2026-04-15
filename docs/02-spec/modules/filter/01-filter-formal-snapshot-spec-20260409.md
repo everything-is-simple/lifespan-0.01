@@ -4,7 +4,7 @@
 状态：`生效中`
 
 > 角色声明：本文是 `filter` 当前最小正式准入合同，不改写 `malf core` 的纯语义边界。
-> 当前 runner 默认读取 `structure_snapshot + canonical malf_state_snapshot(timeframe='D')`；bridge v1 兼容上下文只允许在 canonical 表缺失时作为过渡输入解释。
+> 当前 runner 默认读取 `structure_snapshot + canonical malf_state_snapshot(timeframe='D') + raw_tdxquant_instrument_profile`；其中 `raw_tdxquant_instrument_profile` 只承担客观可交易性与标的宇宙 gate，不参与结构解释。bridge v1 兼容上下文只允许在 canonical 表缺失时作为过渡输入解释。
 > 若 `filter` 需要读取 `same_timeframe_stats_snapshot`，必须按 `docs/02-spec/modules/malf/04-malf-mechanism-layer-break-confirmation-and-same-timeframe-stats-sidecar-spec-20260411.md` 作为只读 sidecar 解释，不得反向把它写成 `malf core`。
 
 ## 适用范围
@@ -25,6 +25,7 @@
 
 1. 官方 `structure_snapshot`
 2. canonical `malf_state_snapshot(timeframe='D')`
+3. 官方 `raw_market.raw_tdxquant_instrument_profile`
    - 当前只用于上下文存在性审计与只读提示，不参与 `malf core` 回写
    - bridge v1 `pas_context_snapshot` 只允许在 canonical 表缺失时兼容回退
 
@@ -97,13 +98,15 @@
 4. `signal_date`
 5. `asof_date`
 6. `trigger_admissible`
-7. `primary_blocking_condition`
-8. `blocking_conditions_json`
-9. `admission_notes`
-10. `source_context_nk`
-11. `filter_contract_version`
-12. `first_seen_run_id`
-13. `last_materialized_run_id`
+7. `filter_gate_code`
+8. `filter_reject_reason_code`
+9. `primary_blocking_condition`
+10. `blocking_conditions_json`
+11. `admission_notes`
+12. `source_context_nk`
+13. `filter_contract_version`
+14. `first_seen_run_id`
+15. `last_materialized_run_id`
 
 补充说明：
 
@@ -136,8 +139,10 @@
 2. `filter_snapshot_nk`
 3. `materialization_action`
 4. `trigger_admissible`
-5. `primary_blocking_condition`
-6. `recorded_at`
+5. `filter_gate_code`
+6. `filter_reject_reason_code`
+7. `primary_blocking_condition`
+8. `recorded_at`
 
 `materialization_action` 枚举：
 
@@ -150,8 +155,10 @@
 `alpha` 后续正式消费必须优先读取：
 
 1. `filter_snapshot.trigger_admissible`
-2. `filter_snapshot.primary_blocking_condition`
-3. `filter_snapshot.blocking_conditions_json`
+2. `filter_snapshot.filter_gate_code`
+3. `filter_snapshot.filter_reject_reason_code`
+4. `filter_snapshot.primary_blocking_condition`
+5. `filter_snapshot.blocking_conditions_json`
 
 不再默认回读旧 `scene / phenomenon / pas_context` 兼容准入字段作为长期官方输入，也不允许把 bridge v1 兼容上下文重新宣称为 `malf core`。
 
@@ -180,7 +187,14 @@
 补充说明：
 
 1. `source_context_table` 当前默认指向 canonical `malf_state_snapshot`，`source_timeframe` 默认固定为 `D`。
+2. `source_objective_table` 当前默认指向 `raw_tdxquant_instrument_profile`，只允许承载停牌/ST/退市整理/证券类型与市场类型等 objective gate 输入。
 2. bridge v1 兼容上下文表只允许在 canonical 表缺失时作为兼容回退，不再是长期默认正式输入。
+
+`scripts/filter/run_filter_objective_coverage_audit.py`
+
+1. 只读消费官方 `filter_snapshot` 与 `raw_market.raw_tdxquant_instrument_profile`。
+2. 输出 `objective_status=missing` 的覆盖统计、按 `signal_date / instrument / market_type` 分组摘要，以及建议的最小 backfill 窗口。
+3. 该脚本只服务 `69` 之后的历史覆盖治理，不得反写 `filter_run / filter_snapshot / filter_run_snapshot` 或任何 `raw_market` 正式账本。
 
 ## Bounded Evidence 要求
 
@@ -190,6 +204,7 @@
 2. bounded smoke
 3. `filter_run / filter_snapshot / filter_run_snapshot` readout
 4. `alpha` 可消费的字段对接证据
+5. objective profile coverage audit readout
 
 ## 当前明确不做
 
@@ -213,6 +228,7 @@
 flowchart LR
     MALF[malf_state_snapshot canonical D] --> FLT_RUN[filter_runner]
     STR[structure_snapshot] --> FLT_RUN
+    OBJ[raw_tdxquant_instrument_profile] --> FLT_RUN
     FLT_RUN --> FS[filter_snapshot]
     FLT_RUN --> FR[filter_run]
     FS --> ALPHA[alpha pre-trigger 准入]

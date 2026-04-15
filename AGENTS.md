@@ -93,7 +93,8 @@ flowchart LR
 2. `data` 负责把本地离线市场数据沉淀为官方 `raw_market / market_base` 历史账本。
    - 当前 `data` 的正式 bounded runner 入口为 `scripts/data/run_tdx_stock_raw_ingest.py`，只允许从本地官方离线目录把股票日线增量写入 `raw_market.stock_file_registry / stock_daily_bar`，不允许绕过历史账本直接给下游喂临时 DataFrame。
    - 当前 `data` 的正式 bounded runner 入口为 `scripts/data/run_tdx_asset_raw_ingest.py`，只允许从本地官方离线目录把 `index / block / stock` 日线增量写入各自的 `raw_market.{asset}_file_registry / {asset}_daily_bar`，并为对应 `market_base` 脏标的挂账，不允许把指数、板块临时 DataFrame 直接喂给下游。
-   - 当前 `data` 的正式 bounded runner 入口为 `scripts/data/run_tdxquant_daily_raw_sync.py`，只允许把 `TdxQuant(dividend_type='none')` 代表的官方日更原始事实按 `run / request / instrument checkpoint` 账本语义桥接进 `raw_market.stock_daily_bar(adjust_method='none')`，并只标记 `base_dirty_instrument(adjust_method='none')`，不允许把 `front/back` 直接写成正式复权真值。
+  - 当前 `data` 的正式 bounded runner 入口为 `scripts/data/run_tdxquant_daily_raw_sync.py`，只允许把 `TdxQuant(dividend_type='none')` 代表的官方日更原始事实按 `run / request / instrument checkpoint` 账本语义桥接进 `raw_market.stock_daily_bar(adjust_method='none')`，并只标记 `base_dirty_instrument(adjust_method='none')`，不允许把 `front/back` 直接写成正式复权真值。
+  - 自 `69` 起，`scripts/data/run_tdxquant_daily_raw_sync.py` 还必须把 `get_stock_info` 返回的官方客观状态按 `code + asset_type + observed_trade_date` 正式沉淀到 `raw_market.raw_tdxquant_instrument_profile`，用于 `filter` 只读消费停牌/ST/退市整理/证券类型/市场类型等 objective gate，不允许只在运行时内存里临时透传。
    - 当前 `data` 的正式 bounded runner 入口为 `scripts/data/run_market_base_build.py`，只允许从官方 `raw_market` 物化 `market_base.{stock,index,block}_daily_adjusted`，并正式沉淀 `adjust_method in {none, backward, forward}` 三套价格，不允许把执行口径和信号口径混写成一套。
    - 当前 `data` 的正式 bounded runner 入口为 `scripts/data/run_mainline_local_ledger_standardization_bootstrap.py`，只允许按 `39` 已冻结的官方 ledger 清单完成一次性批量标准化建仓，不允许继续把 shadow DB 当正式主线库。
    - 当前 `data` 的正式 bounded runner 入口为 `scripts/data/run_mainline_local_ledger_incremental_sync.py`，只允许围绕 `39` 已冻结的官方 ledger 清单维护每日增量同步、checkpoint / dirty queue / replay 与 freshness audit，不允许把 run / checkpoint 反写成业务真值。
@@ -115,7 +116,9 @@ flowchart LR
    - 自 `61` 起，`scripts/structure/run_structure_snapshot_build.py` 的正式 CLI 调用必须显式二选一：要么提供 `signal_start_date / signal_end_date` 执行 bounded full-window，要么显式传入 `--use-checkpoint-queue` 执行 checkpoint queue；无参调用不再允许静默进入 queue。
    - bridge v1 `structure_candidate_snapshot / pas_context_snapshot` 只允许作为 canonical 表缺失时的兼容回退，不再承担默认正式上游职责。
 5. `filter` 负责 pre-trigger 准入。
-   - 当前 `filter` 的正式 bounded runner 入口为 `scripts/filter/run_filter_snapshot_build.py`，只允许消费官方 `structure snapshot` 与 canonical `malf_state_snapshot(timeframe='D')` 最小执行上下文物化 `filter_run / snapshot / run_snapshot`；如携带 `break / stats` sidecar 字段，也只允许只读透传和提示，不允许硬拦截研究观察或夹带 `alpha detector / position / trade` 逻辑。
+  - 当前 `filter` 的正式 bounded runner 入口为 `scripts/filter/run_filter_snapshot_build.py`，只允许消费官方 `structure snapshot` 与 canonical `malf_state_snapshot(timeframe='D')` 最小执行上下文物化 `filter_run / snapshot / run_snapshot`；如携带 `break / stats` sidecar 字段，也只允许只读透传和提示，不允许硬拦截研究观察或夹带 `alpha detector / position / trade` 逻辑。
+  - 自 `69` 起，`scripts/filter/run_filter_snapshot_build.py` 允许只读消费官方 `raw_market.raw_tdxquant_instrument_profile` 作为客观可交易性与标的宇宙 gate 来源；该来源只允许映射停牌/未复牌、风险警示排除、退市整理、证券类型/市场类型不在正式宇宙这几类 reject reason，不允许把主观解释性判断回灌到 `filter`。
+  - 自 `69` 起，`scripts/filter/run_filter_objective_coverage_audit.py` 作为只读治理脚本，允许审计官方 `filter_snapshot` 对 `raw_market.raw_tdxquant_instrument_profile` 的历史覆盖率，并输出按日期/标的/市场类型分组的 missing 摘要与最小补采窗口建议；该脚本不得反写任何正式业务账本。
    - 自 `61` 起，`scripts/filter/run_filter_snapshot_build.py` 的正式 CLI 调用必须显式二选一：要么提供 `signal_start_date / signal_end_date` 执行 bounded full-window，要么显式传入 `--use-checkpoint-queue` 执行 checkpoint queue；无参调用不再允许静默进入 queue。
    - 自 `62` 起，`structure_progress_failed / reversal_stage_pending` 只允许以下游 `note / risk flag` 方式留在 `filter_snapshot`，不得再作为 `filter` 层的结构性 hard block；`trigger_admissible` 只代表 pre-trigger 放行事实，不再提前替 `alpha formal signal` 做结构裁决。
    - bridge v1 `pas_context_snapshot` 只允许作为 canonical 表缺失时的兼容回退，不再承担默认正式上游职责。

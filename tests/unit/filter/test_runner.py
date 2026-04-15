@@ -9,8 +9,17 @@ import duckdb
 import pytest
 
 from mlq.core.paths import default_settings
+from mlq.data import (
+    bootstrap_raw_market_ledger,
+    RAW_TDXQUANT_INSTRUMENT_PROFILE_TABLE,
+)
 from mlq.filter import (
+    FILTER_GATE_CODE_PRE_TRIGGER_BLOCKED,
+    FILTER_GATE_CODE_PRE_TRIGGER_PASSED,
+    FILTER_REJECT_REASON_MARKET_TYPE_OUT_OF_UNIVERSE,
+    FILTER_REJECT_REASON_SECURITY_RISK_WARNING,
     bootstrap_filter_snapshot_ledger,
+    derive_filter_gate_decision,
     filter_ledger_path,
     run_filter_snapshot_build,
 )
@@ -138,6 +147,73 @@ def _seed_context_rows(malf_path: Path) -> None:
         conn.close()
 
 
+def _seed_objective_profiles(settings) -> None:
+    bootstrap_raw_market_ledger(settings)
+    conn = duckdb.connect(str(settings.databases.raw_market))
+    try:
+        conn.execute(
+            f"""
+            INSERT INTO {RAW_TDXQUANT_INSTRUMENT_PROFILE_TABLE} (
+                profile_nk,
+                code,
+                asset_type,
+                observed_trade_date,
+                name,
+                market_type,
+                security_type,
+                suspension_status,
+                risk_warning_status,
+                delisting_status,
+                is_suspended_or_unresumed,
+                is_risk_warning_excluded,
+                is_delisting_arrangement,
+                source_run_id,
+                source_request_nk,
+                raw_payload_json
+            )
+            VALUES
+                (
+                    '000001.SZ|stock|2026-04-08',
+                    '000001.SZ',
+                    'stock',
+                    '2026-04-08',
+                    '平安银行',
+                    'sz',
+                    'stock',
+                    'trading',
+                    NULL,
+                    NULL,
+                    FALSE,
+                    FALSE,
+                    FALSE,
+                    'tq-run-001',
+                    'req-001',
+                    '{{}}'
+                ),
+                (
+                    '000002.SZ|stock|2026-04-07',
+                    '000002.SZ',
+                    'stock',
+                    '2026-04-07',
+                    '万科A',
+                    'sz',
+                    'stock',
+                    'trading',
+                    'st',
+                    NULL,
+                    FALSE,
+                    TRUE,
+                    FALSE,
+                    'tq-run-001',
+                    'req-002',
+                    '{{}}'
+                )
+            """
+        )
+    finally:
+        conn.close()
+
+
 def _seed_structure_checkpoints(structure_path: Path, rows: list[tuple[object, ...]]) -> None:
     conn = duckdb.connect(str(structure_path))
     try:
@@ -214,7 +290,14 @@ def test_run_filter_snapshot_build_materializes_minimal_admission_layer(
         ).fetchone()
         snapshot_rows = conn.execute(
             """
-            SELECT instrument, trigger_admissible, primary_blocking_condition, break_confirmation_status, exhaustion_risk_bucket
+            SELECT
+                instrument,
+                trigger_admissible,
+                filter_gate_code,
+                filter_reject_reason_code,
+                primary_blocking_condition,
+                break_confirmation_status,
+                exhaustion_risk_bucket
             FROM filter_snapshot
             ORDER BY instrument
             """
@@ -224,8 +307,60 @@ def test_run_filter_snapshot_build_materializes_minimal_admission_layer(
 
     assert run_row == ("completed", 2)
     assert snapshot_rows == [
-        ("000001.SZ", True, None, "confirmed", "high"),
-        ("000002.SZ", True, None, None, None),
+        ("000001.SZ", True, FILTER_GATE_CODE_PRE_TRIGGER_PASSED, None, None, "confirmed", "high"),
+        ("000002.SZ", True, FILTER_GATE_CODE_PRE_TRIGGER_PASSED, None, None, None, None),
+    ]
+
+
+def test_run_filter_snapshot_build_blocks_objective_risk_warning_from_raw_market_profile(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+    _seed_structure_snapshots(settings)
+    _seed_context_rows(settings.databases.malf)
+    _seed_objective_profiles(settings)
+
+    summary = run_filter_snapshot_build(
+        settings=settings,
+        signal_start_date="2026-04-08",
+        signal_end_date="2026-04-08",
+        limit=10,
+        batch_size=1,
+        run_id="filter-snapshot-test-001b",
+    )
+
+    assert summary.admissible_count == 1
+    assert summary.blocked_count == 1
+
+    conn = duckdb.connect(str(filter_ledger_path(settings)), read_only=True)
+    try:
+        snapshot_rows = conn.execute(
+            """
+            SELECT
+                instrument,
+                trigger_admissible,
+                filter_gate_code,
+                filter_reject_reason_code,
+                primary_blocking_condition
+            FROM filter_snapshot
+            ORDER BY instrument
+            """
+        ).fetchall()
+    finally:
+        conn.close()
+
+    assert snapshot_rows == [
+        ("000001.SZ", True, FILTER_GATE_CODE_PRE_TRIGGER_PASSED, None, None),
+        (
+            "000002.SZ",
+            False,
+            FILTER_GATE_CODE_PRE_TRIGGER_BLOCKED,
+            FILTER_REJECT_REASON_SECURITY_RISK_WARNING,
+            FILTER_REJECT_REASON_SECURITY_RISK_WARNING,
+        ),
     ]
 
 
@@ -276,7 +411,12 @@ def test_run_filter_snapshot_build_marks_rematerialized_when_structure_turns_fai
     try:
         snapshot_row = conn.execute(
             """
-            SELECT trigger_admissible, primary_blocking_condition, last_materialized_run_id
+            SELECT
+                trigger_admissible,
+                filter_gate_code,
+                filter_reject_reason_code,
+                primary_blocking_condition,
+                last_materialized_run_id
             FROM filter_snapshot
             WHERE filter_snapshot_nk LIKE 'ss-001|%'
             """
@@ -284,7 +424,13 @@ def test_run_filter_snapshot_build_marks_rematerialized_when_structure_turns_fai
     finally:
         conn.close()
 
-    assert snapshot_row == (True, None, "filter-snapshot-test-002b")
+    assert snapshot_row == (
+        True,
+        FILTER_GATE_CODE_PRE_TRIGGER_PASSED,
+        None,
+        None,
+        "filter-snapshot-test-002b",
+    )
 
 
 def test_run_filter_snapshot_build_demotes_reversal_stage_pending_to_admission_note(
@@ -326,7 +472,12 @@ def test_run_filter_snapshot_build_demotes_reversal_stage_pending_to_admission_n
     try:
         snapshot_row = conn.execute(
             """
-            SELECT trigger_admissible, primary_blocking_condition, admission_notes
+            SELECT
+                trigger_admissible,
+                filter_gate_code,
+                filter_reject_reason_code,
+                primary_blocking_condition,
+                admission_notes
             FROM filter_snapshot
             WHERE instrument = '000001.SZ'
             """
@@ -336,8 +487,10 @@ def test_run_filter_snapshot_build_demotes_reversal_stage_pending_to_admission_n
 
     assert snapshot_row == (
         True,
+        FILTER_GATE_CODE_PRE_TRIGGER_PASSED,
         None,
-        "reversal_stage_pending=trigger; canonical_context=牛顺/down/trigger; read_only_context=W:牛顺/none;M:牛逆/trigger; break_confirmation=confirmed 仅 sidecar 提示; exhaustion_risk=high",
+        None,
+        "reversal_stage_pending=trigger; canonical_context=牛顺/down/trigger; read_only_context=W:牛顺/none;M:牛逆/trigger; break_confirmation=confirmed 仅 sidecar 提示; exhaustion_risk=high; objective_status=missing",
     )
 
 
@@ -381,7 +534,7 @@ def test_run_filter_snapshot_build_copies_read_only_multi_timeframe_context_with
         "ctx-d-001",
         "\u725b\u987a",
         "\u725b\u9006",
-        "canonical_context=\u725b\u987a/up/expand; read_only_context=W:\u725b\u987a/none;M:\u725b\u9006/trigger; break_confirmation=confirmed \u4ec5 sidecar \u63d0\u793a; exhaustion_risk=high",
+        "canonical_context=\u725b\u987a/up/expand; read_only_context=W:\u725b\u987a/none;M:\u725b\u9006/trigger; break_confirmation=confirmed \u4ec5 sidecar \u63d0\u793a; exhaustion_risk=high; objective_status=missing",
     )
 
     conn = connect_structure_ledger(settings)
@@ -417,6 +570,8 @@ def test_run_filter_snapshot_build_copies_read_only_multi_timeframe_context_with
             """
             SELECT
                 trigger_admissible,
+                filter_gate_code,
+                filter_reject_reason_code,
                 primary_blocking_condition,
                 monthly_major_state,
                 monthly_source_context_nk,
@@ -428,7 +583,30 @@ def test_run_filter_snapshot_build_copies_read_only_multi_timeframe_context_with
     finally:
         conn.close()
 
-    assert second_row == (True, None, "\u718a\u9006", "ctx-m-002", "filter-snapshot-test-003b")
+    assert second_row == (
+        True,
+        FILTER_GATE_CODE_PRE_TRIGGER_PASSED,
+        None,
+        None,
+        "\u718a\u9006",
+        "ctx-m-002",
+        "filter-snapshot-test-003b",
+    )
+
+
+def test_derive_filter_gate_decision_freezes_objective_reject_reason_priority() -> None:
+    decision = derive_filter_gate_decision(
+        is_risk_warning_excluded=True,
+        is_market_type_out_of_universe=True,
+    )
+
+    assert decision.trigger_admissible is False
+    assert decision.filter_gate_code == FILTER_GATE_CODE_PRE_TRIGGER_BLOCKED
+    assert decision.filter_reject_reason_code == FILTER_REJECT_REASON_SECURITY_RISK_WARNING
+    assert decision.blocking_conditions == (
+        FILTER_REJECT_REASON_SECURITY_RISK_WARNING,
+        FILTER_REJECT_REASON_MARKET_TYPE_OUT_OF_UNIVERSE,
+    )
 
 
 def test_run_filter_snapshot_build_uses_checkpoint_queue_by_default(
@@ -621,12 +799,34 @@ def test_run_filter_snapshot_build_bootstraps_queue_tables_on_legacy_official_db
             WHERE timeframe = 'D'
             """
         ).fetchone()
+        snapshot_columns = conn.execute(
+            """
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'main'
+              AND table_name = 'filter_snapshot'
+              AND column_name IN ('filter_gate_code', 'filter_reject_reason_code')
+            ORDER BY column_name
+            """
+        ).fetchall()
+        run_snapshot_columns = conn.execute(
+            """
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'main'
+              AND table_name = 'filter_run_snapshot'
+              AND column_name IN ('filter_gate_code', 'filter_reject_reason_code')
+            ORDER BY column_name
+            """
+        ).fetchall()
     finally:
         conn.close()
 
     assert queue_table == (1,)
     assert checkpoint_table == (1,)
     assert checkpoint_count == (2,)
+    assert snapshot_columns == [("filter_gate_code",), ("filter_reject_reason_code",)]
+    assert run_snapshot_columns == [("filter_gate_code",), ("filter_reject_reason_code",)]
 
 
 def test_run_filter_snapshot_build_rejects_legacy_bridge_source_tables(

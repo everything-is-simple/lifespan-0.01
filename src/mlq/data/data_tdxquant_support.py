@@ -25,6 +25,12 @@ def build_tdxquant_checkpoint_nk(*, code: str, asset_type: str) -> str:
     return "|".join([code, asset_type])
 
 
+def build_tdxquant_profile_nk(*, code: str, asset_type: str, observed_trade_date: date) -> str:
+    """构建 instrument objective status 快照自然键。"""
+
+    return "|".join([code, asset_type, observed_trade_date.isoformat()])
+
+
 def fetch_tdxquant_checkpoint(
     connection: duckdb.DuckDBPyConnection,
     *,
@@ -74,6 +80,14 @@ def build_tdxquant_response_digest(
         "code": instrument_info.code,
         "name": instrument_info.name,
         "asset_type": instrument_info.asset_type,
+        "market_type": instrument_info.market_type,
+        "security_type": instrument_info.security_type,
+        "suspension_status": instrument_info.suspension_status,
+        "risk_warning_status": instrument_info.risk_warning_status,
+        "delisting_status": instrument_info.delisting_status,
+        "is_suspended_or_unresumed": instrument_info.is_suspended_or_unresumed,
+        "is_risk_warning_excluded": instrument_info.is_risk_warning_excluded,
+        "is_delisting_arrangement": instrument_info.is_delisting_arrangement,
         "bars": [
             {
                 "trade_date": row.trade_date.isoformat(),
@@ -88,6 +102,111 @@ def build_tdxquant_response_digest(
         ],
     }
     return hashlib.sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
+
+
+def upsert_tdxquant_instrument_profile(
+    connection: duckdb.DuckDBPyConnection,
+    *,
+    instrument_info: TdxQuantInstrumentInfo,
+    observed_trade_date: date,
+    source_run_id: str,
+    source_request_nk: str,
+) -> str:
+    """落表 TdxQuant instrument objective status 快照。"""
+
+    profile_nk = build_tdxquant_profile_nk(
+        code=instrument_info.code,
+        asset_type=instrument_info.asset_type,
+        observed_trade_date=observed_trade_date,
+    )
+    existing = connection.execute(
+        f"""
+        SELECT profile_nk
+        FROM {RAW_TDXQUANT_INSTRUMENT_PROFILE_TABLE}
+        WHERE profile_nk = ?
+        """,
+        [profile_nk],
+    ).fetchone()
+    parameters = [
+        profile_nk,
+        instrument_info.code,
+        instrument_info.asset_type,
+        observed_trade_date,
+        instrument_info.name,
+        instrument_info.market_type,
+        instrument_info.security_type,
+        instrument_info.suspension_status,
+        instrument_info.risk_warning_status,
+        instrument_info.delisting_status,
+        instrument_info.is_suspended_or_unresumed,
+        instrument_info.is_risk_warning_excluded,
+        instrument_info.is_delisting_arrangement,
+        source_run_id,
+        source_request_nk,
+        instrument_info.raw_payload_json,
+    ]
+    if existing is None:
+        connection.execute(
+            f"""
+            INSERT INTO {RAW_TDXQUANT_INSTRUMENT_PROFILE_TABLE} (
+                profile_nk,
+                code,
+                asset_type,
+                observed_trade_date,
+                name,
+                market_type,
+                security_type,
+                suspension_status,
+                risk_warning_status,
+                delisting_status,
+                is_suspended_or_unresumed,
+                is_risk_warning_excluded,
+                is_delisting_arrangement,
+                source_run_id,
+                source_request_nk,
+                raw_payload_json
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            parameters,
+        )
+        return profile_nk
+    connection.execute(
+        f"""
+        UPDATE {RAW_TDXQUANT_INSTRUMENT_PROFILE_TABLE}
+        SET
+            name = ?,
+            market_type = ?,
+            security_type = ?,
+            suspension_status = ?,
+            risk_warning_status = ?,
+            delisting_status = ?,
+            is_suspended_or_unresumed = ?,
+            is_risk_warning_excluded = ?,
+            is_delisting_arrangement = ?,
+            source_run_id = ?,
+            source_request_nk = ?,
+            raw_payload_json = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE profile_nk = ?
+        """,
+        [
+            instrument_info.name,
+            instrument_info.market_type,
+            instrument_info.security_type,
+            instrument_info.suspension_status,
+            instrument_info.risk_warning_status,
+            instrument_info.delisting_status,
+            instrument_info.is_suspended_or_unresumed,
+            instrument_info.is_risk_warning_excluded,
+            instrument_info.is_delisting_arrangement,
+            source_run_id,
+            source_request_nk,
+            instrument_info.raw_payload_json,
+            profile_nk,
+        ],
+    )
+    return profile_nk
 
 
 def record_raw_tdxquant_request(

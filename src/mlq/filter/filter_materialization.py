@@ -15,9 +15,14 @@ from mlq.filter.bootstrap import (
 )
 from mlq.filter.filter_shared import (
     FilterSnapshotBuildSummary,
+    FILTER_ALLOWED_MARKET_TYPES,
+    FILTER_ALLOWED_SECURITY_TYPES,
     _FilterSnapshotRow,
+    _ObjectiveStatusInputRow,
     _StructureSnapshotInputRow,
+    derive_filter_gate_decision,
 )
+from mlq.filter.filter_source import _resolve_objective_status_for_signal
 
 
 def _materialize_filter_rows(
@@ -26,6 +31,7 @@ def _materialize_filter_rows(
     run_id: str,
     structure_rows: list[_StructureSnapshotInputRow],
     context_presence: set[tuple[str, date]],
+    objective_status_rows: dict[str, list[_ObjectiveStatusInputRow]],
     filter_contract_version: str,
     runner_name: str,
     runner_version: str,
@@ -55,6 +61,11 @@ def _materialize_filter_rows(
                 run_id=run_id,
                 structure_row=structure_row,
                 has_context=has_context,
+                objective_status_row=_resolve_objective_status_for_signal(
+                    objective_status_rows,
+                    instrument=structure_row.instrument,
+                    signal_date=structure_row.signal_date,
+                ),
                 filter_contract_version=filter_contract_version,
             )
             materialization_action = _upsert_filter_snapshot(connection, filter_row=filter_row)
@@ -65,15 +76,19 @@ def _materialize_filter_rows(
                     filter_snapshot_nk,
                     materialization_action,
                     trigger_admissible,
+                    filter_gate_code,
+                    filter_reject_reason_code,
                     primary_blocking_condition
                 )
-                VALUES (?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
                 [
                     run_id,
                     filter_row.filter_snapshot_nk,
                     materialization_action,
                     filter_row.trigger_admissible,
+                    filter_row.filter_gate_code,
+                    filter_row.filter_reject_reason_code,
                     filter_row.primary_blocking_condition,
                 ],
             )
@@ -195,15 +210,36 @@ def _build_filter_snapshot_row(
     run_id: str,
     structure_row: _StructureSnapshotInputRow,
     has_context: bool,
+    objective_status_row: _ObjectiveStatusInputRow | None,
     filter_contract_version: str,
 ) -> _FilterSnapshotRow:
-    blocking_conditions: list[str] = []
+    gate_decision = derive_filter_gate_decision(
+        is_suspended_or_unresumed=(
+            False if objective_status_row is None else objective_status_row.is_suspended_or_unresumed
+        ),
+        is_risk_warning_excluded=(
+            False if objective_status_row is None else objective_status_row.is_risk_warning_excluded
+        ),
+        is_delisting_arrangement=(
+            False if objective_status_row is None else objective_status_row.is_delisting_arrangement
+        ),
+        is_security_type_out_of_universe=(
+            objective_status_row is not None
+            and objective_status_row.security_type is not None
+            and objective_status_row.security_type not in FILTER_ALLOWED_SECURITY_TYPES
+        ),
+        is_market_type_out_of_universe=(
+            objective_status_row is not None
+            and objective_status_row.market_type is not None
+            and objective_status_row.market_type not in FILTER_ALLOWED_MARKET_TYPES
+        ),
+    )
     admission_notes: list[str] = []
     if structure_row.structure_progress_state == "failed":
         admission_notes.append("structure_progress=failed 仅保留结构观察，不在 filter 层硬拦截")
     elif structure_row.reversal_stage in {"trigger", "hold"} and structure_row.trend_direction == "down":
         admission_notes.append(f"reversal_stage_pending={structure_row.reversal_stage}")
-    if structure_row.structure_progress_state in {"stalled", "unknown"} and not blocking_conditions:
+    if structure_row.structure_progress_state in {"stalled", "unknown"} and gate_decision.trigger_admissible:
         admission_notes.append(f"structure_progress={structure_row.structure_progress_state}")
     admission_notes.append(
         f"canonical_context={structure_row.major_state}/{structure_row.trend_direction}/{structure_row.reversal_stage}"
@@ -220,9 +256,31 @@ def _build_filter_snapshot_row(
         admission_notes.append("break_confirmation=confirmed 仅 sidecar 提示")
     if structure_row.exhaustion_risk_bucket in {"elevated", "high"}:
         admission_notes.append(f"exhaustion_risk={structure_row.exhaustion_risk_bucket}")
+    if objective_status_row is None:
+        admission_notes.append("objective_status=missing")
+    else:
+        objective_parts = []
+        if objective_status_row.market_type is not None:
+            objective_parts.append(f"market_type={objective_status_row.market_type}")
+        if objective_status_row.security_type is not None:
+            objective_parts.append(f"security_type={objective_status_row.security_type}")
+        if objective_status_row.suspension_status is not None:
+            objective_parts.append(f"suspension_status={objective_status_row.suspension_status}")
+        if objective_status_row.risk_warning_status is not None:
+            objective_parts.append(f"risk_warning_status={objective_status_row.risk_warning_status}")
+        if objective_status_row.delisting_status is not None:
+            objective_parts.append(f"delisting_status={objective_status_row.delisting_status}")
+        if objective_status_row.source_request_nk is not None:
+            objective_parts.append(f"objective_source_request={objective_status_row.source_request_nk}")
+        if objective_parts:
+            admission_notes.append("objective_status=" + ",".join(objective_parts))
 
-    primary_blocking_condition = blocking_conditions[0] if blocking_conditions else None
-    blocking_conditions_json = json.dumps(blocking_conditions, ensure_ascii=False, sort_keys=True)
+    primary_blocking_condition = gate_decision.filter_reject_reason_code
+    blocking_conditions_json = json.dumps(
+        list(gate_decision.blocking_conditions),
+        ensure_ascii=False,
+        sort_keys=True,
+    )
     filter_snapshot_nk = _build_filter_snapshot_nk(
         structure_snapshot_nk=structure_row.structure_snapshot_nk,
         source_context_nk=structure_row.source_context_nk,
@@ -261,7 +319,9 @@ def _build_filter_snapshot_row(
         monthly_current_hh_count=structure_row.monthly_current_hh_count,
         monthly_current_ll_count=structure_row.monthly_current_ll_count,
         monthly_source_context_nk=structure_row.monthly_source_context_nk,
-        trigger_admissible=not blocking_conditions,
+        trigger_admissible=gate_decision.trigger_admissible,
+        filter_gate_code=gate_decision.filter_gate_code,
+        filter_reject_reason_code=gate_decision.filter_reject_reason_code,
         primary_blocking_condition=primary_blocking_condition,
         blocking_conditions_json=blocking_conditions_json,
         admission_notes="; ".join(admission_notes) if admission_notes else None,
@@ -298,7 +358,7 @@ def _upsert_filter_snapshot(
             daily_major_state, daily_trend_direction, daily_reversal_stage, daily_wave_id, daily_current_hh_count, daily_current_ll_count, daily_source_context_nk,
             weekly_major_state, weekly_trend_direction, weekly_reversal_stage, weekly_wave_id, weekly_current_hh_count, weekly_current_ll_count, weekly_source_context_nk,
             monthly_major_state, monthly_trend_direction, monthly_reversal_stage, monthly_wave_id, monthly_current_hh_count, monthly_current_ll_count, monthly_source_context_nk,
-            trigger_admissible, primary_blocking_condition, blocking_conditions_json, admission_notes,
+            trigger_admissible, filter_gate_code, filter_reject_reason_code, primary_blocking_condition, blocking_conditions_json, admission_notes,
             break_confirmation_status, break_confirmation_ref, stats_snapshot_nk, exhaustion_risk_bucket, reversal_probability_bucket,
             first_seen_run_id
         FROM {FILTER_SNAPSHOT_TABLE}
@@ -335,6 +395,8 @@ def _upsert_filter_snapshot(
         filter_row.monthly_current_ll_count,
         filter_row.monthly_source_context_nk,
         filter_row.trigger_admissible,
+        filter_row.filter_gate_code,
+        filter_row.filter_reject_reason_code,
         filter_row.primary_blocking_condition,
         filter_row.blocking_conditions_json,
         filter_row.admission_notes,
@@ -378,6 +440,8 @@ def _upsert_filter_snapshot(
         filter_row.monthly_current_ll_count,
         filter_row.monthly_source_context_nk,
         filter_row.trigger_admissible,
+        filter_row.filter_gate_code,
+        filter_row.filter_reject_reason_code,
         filter_row.primary_blocking_condition,
         filter_row.blocking_conditions_json,
         filter_row.admission_notes,
@@ -401,7 +465,7 @@ def _upsert_filter_snapshot(
                 daily_major_state, daily_trend_direction, daily_reversal_stage, daily_wave_id, daily_current_hh_count, daily_current_ll_count, daily_source_context_nk,
                 weekly_major_state, weekly_trend_direction, weekly_reversal_stage, weekly_wave_id, weekly_current_hh_count, weekly_current_ll_count, weekly_source_context_nk,
                 monthly_major_state, monthly_trend_direction, monthly_reversal_stage, monthly_wave_id, monthly_current_hh_count, monthly_current_ll_count, monthly_source_context_nk,
-                trigger_admissible, primary_blocking_condition, blocking_conditions_json, admission_notes,
+                trigger_admissible, filter_gate_code, filter_reject_reason_code, primary_blocking_condition, blocking_conditions_json, admission_notes,
                 break_confirmation_status, break_confirmation_ref, stats_snapshot_nk, exhaustion_risk_bucket, reversal_probability_bucket,
                 source_context_nk, filter_contract_version, first_seen_run_id, last_materialized_run_id
             )
@@ -420,7 +484,7 @@ def _upsert_filter_snapshot(
             daily_major_state = ?, daily_trend_direction = ?, daily_reversal_stage = ?, daily_wave_id = ?, daily_current_hh_count = ?, daily_current_ll_count = ?, daily_source_context_nk = ?,
             weekly_major_state = ?, weekly_trend_direction = ?, weekly_reversal_stage = ?, weekly_wave_id = ?, weekly_current_hh_count = ?, weekly_current_ll_count = ?, weekly_source_context_nk = ?,
             monthly_major_state = ?, monthly_trend_direction = ?, monthly_reversal_stage = ?, monthly_wave_id = ?, monthly_current_hh_count = ?, monthly_current_ll_count = ?, monthly_source_context_nk = ?,
-            trigger_admissible = ?, primary_blocking_condition = ?, blocking_conditions_json = ?, admission_notes = ?,
+            trigger_admissible = ?, filter_gate_code = ?, filter_reject_reason_code = ?, primary_blocking_condition = ?, blocking_conditions_json = ?, admission_notes = ?,
             break_confirmation_status = ?, break_confirmation_ref = ?, stats_snapshot_nk = ?, exhaustion_risk_bucket = ?, reversal_probability_bucket = ?,
             first_seen_run_id = ?, last_materialized_run_id = ?, updated_at = CURRENT_TIMESTAMP
         WHERE filter_snapshot_nk = ?
