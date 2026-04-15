@@ -2,8 +2,8 @@
 `日期：2026-04-09`
 `状态：持续更新`
 
-1. 当前下一锤：`69-filter-objective-tradability-and-universe-gate-freeze-card-20260415.md`
-2. 当前待施工卡：`69-filter-objective-tradability-and-universe-gate-freeze-card-20260415.md`
+1. 当前下一锤：`70-historical-objective-profile-backfill-source-selection-and-governance-card-20260415.md`
+2. 当前待施工卡：`70-historical-objective-profile-backfill-source-selection-and-governance-card-20260415.md`
 3. 正式主线剩余卡：`14`
 4. 可选 Sidecar 剩余卡：`0`
 5. 历史治理 backlog：`0`
@@ -49,13 +49,14 @@
 37. `mainline rectification resume gate` 卡 `66`
 38. `historical file-length debt burndown` 卡 `67`
 39. `execution doc layout governance restoration` 卡 `68`
+40. `filter objective tradability and universe gate freeze` 卡 `69`
 
 ## 当前阶段
 
-1. 最新生效结论锚点已推进到 `68-execution-doc-layout-governance-restoration-conclusion-20260415.md`。
-2. `60`、`61`、`62`、`63`、`64`、`65` 与 `66` 已完成并接受。
-3. 当前正式主线待施工卡已切到 `69`。
-4. `67` 已完成历史 file-length 债务治理，`68` 已完成文档目录治理回迁与固化；当前先执行 `69` 冻结 filter 的客观可交易性与标的宇宙 gate，再恢复 `80 -> 86` official middle-ledger resume 卡组，`100` 仍只有在 `86` 接受后才允许恢复。
+1. 最新生效结论锚点已推进到 `69-filter-objective-tradability-and-universe-gate-freeze-conclusion-20260415.md`。
+2. `60`、`61`、`62`、`63`、`64`、`65`、`66` 与 `69` 已完成并接受。
+3. 当前正式主线待施工卡已切到 `70`。
+4. `67` 已完成历史 file-length 债务治理，`68` 已完成文档目录治理回迁与固化，`69` 已完成 objective gate 冻结；当前先执行 `70` 做历史 objective profile 回补源选型与治理，再恢复 `80 -> 86` official middle-ledger resume 卡组，`100` 仍只有在 `86` 接受后才允许恢复。
 
 ## 体系图
 
@@ -90,7 +91,8 @@ flowchart LR
     G60 --> G67["67 file-length debt cleanup accepted"]
     G67 --> G68["68 execution doc layout governance accepted"]
     G68 --> G69["69 filter objective gate freeze"]
-    G69 --> G80["80-86 official middle-ledger resume"]
+    G69 --> G70["70 historical objective source selection"]
+    G70 --> G80["80-86 official middle-ledger resume"]
     G80 --> NEXT["100 anchor freeze"]
     NEXT --> POST["101-105 trade/system 收口"]
 ```

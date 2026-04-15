@@ -1,8 +1,8 @@
 ﻿# 执行卡目录 `日期：2026-04-09`
 `状态：持续更新`
 
-1. 当前下一锚：`69-filter-objective-tradability-and-universe-gate-freeze-card-20260415.md`
-2. 当前待施工卡：`69-filter-objective-tradability-and-universe-gate-freeze-card-20260415.md`
+1. 当前下一锚：`70-historical-objective-profile-backfill-source-selection-and-governance-card-20260415.md`
+2. 当前待施工卡：`70-historical-objective-profile-backfill-source-selection-and-governance-card-20260415.md`
 3. 正式主线剩余卡：`14`
 4. 可选 Sidecar 剩余卡：`0`
 5. 历史治理 backlog：`0`
@@ -78,6 +78,7 @@
 67. `67-historical-file-length-debt-burndown-card-20260415.md`
 68. `68-execution-doc-layout-governance-restoration-card-20260415.md`
 69. `69-filter-objective-tradability-and-universe-gate-freeze-card-20260415.md`
+70. `70-historical-objective-profile-backfill-source-selection-and-governance-card-20260415.md`
 80. `80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`
 81. `81-mainline-middle-ledger-2014-2016-bootstrap-card-20260414.md`
 82. `82-mainline-middle-ledger-2017-2019-bootstrap-card-20260414.md`
@@ -94,10 +95,10 @@
 
 ## 当前说明
 
-1. 最新生效结论锚点已推进到 `68-execution-doc-layout-governance-restoration-conclusion-20260415.md`。
+1. 最新生效结论锚点已推进到 `69-filter-objective-tradability-and-universe-gate-freeze-conclusion-20260415.md`。
 2. `60-mainline-rectification-batch-registration-and-scope-freeze-card-20260415.md`、`61-structure-filter-tail-coverage-truthfulness-rectification-card-20260415.md`、`62-filter-pre-trigger-boundary-and-authority-reset-card-20260415.md`、`63-wave-life-official-ledger-truthfulness-and-bootstrap-card-20260415.md`、`64-alpha-stage-percentile-decision-matrix-integration-card-20260415.md`、`65-formal-signal-admission-boundary-reallocation-card-20260415.md` 与 `66-mainline-rectification-resume-gate-card-20260415.md` 已完成并接受。
-3. `67` 已完成历史 file-length 债务治理并接受；`68` 已完成执行文档目录治理回迁与固化并接受；当前正式主线待施工卡切到 `69`，用于冻结 `filter` 的客观可交易性与标的宇宙 gate。
-4. 当前卡组顺序保持为 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55 -> 56 -> 57 -> 58 -> 59 -> 60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 68 -> 69 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。
+3. `67` 已完成历史 file-length 债务治理并接受；`68` 已完成执行文档目录治理回迁与固化并接受；`69` 已完成 filter 客观可交易性与标的宇宙 gate 冻结并接受；当前正式主线待施工卡切到 `70`，用于历史 objective profile 回补源选型与治理。
+4. 当前卡组顺序保持为 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55 -> 56 -> 57 -> 58 -> 59 -> 60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 68 -> 69 -> 70 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。
 
 ## 卡组路线图
 ```mermaid
@@ -131,7 +132,8 @@ flowchart LR
     G60 --> G67["67 file-length debt cleanup accepted"]
     G67 --> G68["68 execution doc layout governance accepted"]
     G68 --> G69["69 filter objective gate freeze"]
-    G69 --> G80["80-86 official middle-ledger resume"]
+    G69 --> G70["70 historical objective source selection"]
+    G70 --> G80["80-86 official middle-ledger resume"]
     G80 --> POST["100-105 trade/system 收口"]
 ```
 
