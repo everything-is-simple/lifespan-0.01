@@ -69,6 +69,7 @@ def run_malf_wave_life_build(
     runner_version: str = "v1",
     summary_path: Path | None = None,
     use_checkpoint_queue: bool | None = None,
+    require_explicit_queue_mode: bool = False,
 ) -> MalfWaveLifeBuildSummary:
     """物化 canonical `malf` 的 wave life probability sidecar。"""
 
@@ -76,12 +77,21 @@ def run_malf_wave_life_build(
     normalized_end_date = _coerce_date(signal_end_date)
     normalized_instruments = tuple(sorted(_normalize_instruments(instruments)))
     normalized_timeframes = _normalize_timeframes(timeframes)
-    if _should_use_queue_execution(
+    queue_execution = _should_use_queue_execution(
         use_checkpoint_queue=use_checkpoint_queue,
         signal_start_date=normalized_start_date,
         signal_end_date=normalized_end_date,
         instruments=normalized_instruments,
-    ):
+    )
+    _validate_wave_life_execution_mode(
+        use_checkpoint_queue=use_checkpoint_queue,
+        signal_start_date=normalized_start_date,
+        signal_end_date=normalized_end_date,
+        instruments=normalized_instruments,
+        queue_execution=queue_execution,
+        require_explicit_queue_mode=require_explicit_queue_mode,
+    )
+    if queue_execution:
         return _run_queue_build(
             settings=settings,
             malf_path=malf_path,
@@ -117,6 +127,25 @@ def run_malf_wave_life_build(
         runner_version=runner_version,
         summary_path=summary_path,
     )
+
+
+def _validate_wave_life_execution_mode(
+    *,
+    use_checkpoint_queue: bool | None,
+    signal_start_date: date | None,
+    signal_end_date: date | None,
+    instruments: tuple[str, ...],
+    queue_execution: bool,
+    require_explicit_queue_mode: bool,
+) -> None:
+    if not require_explicit_queue_mode or not queue_execution or use_checkpoint_queue is not None:
+        return
+    if signal_start_date is None and signal_end_date is None and not instruments:
+        raise ValueError(
+            "malf wave life official script requires an explicit bounded window for initial bootstrap; "
+            "pass `signal_start_date/signal_end_date` for bounded materialization or "
+            "set `use_checkpoint_queue=True` for incremental checkpoint queue execution."
+        )
 
 
 def _run_bounded_build(

@@ -131,7 +131,7 @@ flowchart LR
   - `malf -> structure -> filter -> alpha` 默认消费 `adjust_method='backward'`
   - `position -> trade` 默认消费 `adjust_method='none'`
   - `forward` 当前只作研究与展示保留
-- 当前最新生效结论锚点已推进到 `62-filter-pre-trigger-boundary-and-authority-reset-conclusion-20260415.md`；当前待施工卡改为 `63-wave-life-official-ledger-truthfulness-and-bootstrap-card-20260415.md`。
+- 当前最新生效结论锚点已推进到 `63-wave-life-official-ledger-truthfulness-and-bootstrap-conclusion-20260415.md`；当前待施工卡改为 `64-alpha-stage-percentile-decision-matrix-integration-card-20260415.md`。
 - `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 现已把 `60 -> 66` 注册为 `59` 之后的主线整改卡组，并把原 middle-ledger 分段建库卡组后移为 `80 -> 86`。
 - `100 -> 105` 仍然保留为 `trade/system` 恢复卡组，但只有 `86-pre-trade-middle-ledger-official-cutover-gate-card-20260414.md` 接受后才允许恢复。
 - `txt -> raw_market -> market_base` 继续保留为正式 fallback
@@ -158,7 +158,7 @@ flowchart LR
 - 当前 `scripts/malf/run_malf_wave_life_build.py` 正式负责 canonical 波段寿命概率 sidecar：
   - 只读消费 `malf_wave_ledger / malf_state_snapshot / malf_same_level_stats`
   - 物化 `malf_wave_life_run / malf_wave_life_work_queue / malf_wave_life_checkpoint / malf_wave_life_snapshot / malf_wave_life_profile`
-  - 默认无窗口调用走 canonical checkpoint 驱动的 queue/replay；显式窗口参数仍保留 bounded 补跑
+  - 正式 CLI 必须显式二选一：要么提供 `signal_start_date / signal_end_date` 做 bounded bootstrap，要么显式传入 `--use-checkpoint-queue` 做增量续跑；无参调用不再允许静默进入 queue
   - `wave life` 代码实现允许拆分为 runner + helper 模块，但脚本入口、表族命名与只读 sidecar 边界保持不变
 
 ## 当前 canonical downstream 默认绑定

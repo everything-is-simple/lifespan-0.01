@@ -40,3 +40,4 @@ flowchart TD
 1. 寿命快照与寿命 profile 可以 batch + increment + resume 正式运行。
 2. 单元测试或可复现命令证明活跃 wave 与已完成 wave 分别建模。
 3. `conclusion` 明确其是 sidecar，不是 `malf core`。
+4. 正式脚本调用必须显式二选一：要么提供 `signal_start_date / signal_end_date` 做 bounded bootstrap，要么显式传入 `--use-checkpoint-queue` 做增量续跑；无参调用不得静默进入 queue。

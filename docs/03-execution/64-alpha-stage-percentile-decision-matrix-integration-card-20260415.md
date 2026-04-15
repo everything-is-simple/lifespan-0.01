@@ -6,12 +6,14 @@
 
 ## 需求
 
-- `.windsurfrules` 已明确 `stage × percentile -> action` 是 `alpha` 层的重要未来输入，但当前 PAS detector/family/formal signal 均未正式消费该矩阵。
-- 现阶段 `alpha` 仍主要依赖价格形态与结构腿数粗桶，而不是基于 `wave_life` 百分位做正式裁决。
-- 需要裁决寿命分位数应接入 `detector / family / formal_signal / position` 的哪一层，以及 action 是触发、降级、阻断还是缩仓。
+- 问题：`.windsurfrules` 已明确 `stage × percentile -> action` 是 `alpha` 层的重要未来输入，但当前 PAS detector / family / formal signal 均未正式消费该矩阵。
+- 目标结果：裁决寿命分位数应接入 `detector / family / formal_signal / position` 的哪一层，以及 action 是触发、降级、阻断还是缩仓。
+- 为什么现在做：`63` 已把 `wave_life` 官方真值与 bootstrap/replay 边界裁清；如果 `64` 不先冻结 percentile decision matrix，后续 `65` 的 admission authority 重分配仍会缺少明确的 stage 归属。
 
 ## 设计输入
 
+- `docs/01-design/modules/malf/13-malf-wave-life-probability-sidecar-charter-20260411.md`
+- `docs/02-spec/modules/malf/13-malf-wave-life-probability-sidecar-spec-20260411.md`
 - `.windsurfrules`
 - `docs/03-execution/36-malf-wave-life-probability-sidecar-bootstrap-conclusion-20260412.md`
 - `docs/03-execution/42-alpha-family-role-and-malf-alignment-conclusion-20260413.md`

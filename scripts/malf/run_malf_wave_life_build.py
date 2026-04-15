@@ -15,6 +15,11 @@ def build_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument("--signal-end-date", dest="signal_end_date")
     parser.add_argument("--instrument", dest="instruments", action="append", default=[])
     parser.add_argument("--timeframe", dest="timeframes", action="append", default=[])
+    parser.add_argument(
+        "--use-checkpoint-queue",
+        action="store_true",
+        help="Explicitly opt into incremental checkpoint queue mode when no bounded window is provided.",
+    )
     parser.add_argument("--limit", type=int, default=100)
     parser.add_argument("--sample-version", default="wave-life-v1")
     parser.add_argument("--run-id")
@@ -25,6 +30,10 @@ def build_argument_parser() -> argparse.ArgumentParser:
 def main() -> None:
     parser = build_argument_parser()
     args = parser.parse_args()
+    if args.use_checkpoint_queue and (
+        args.signal_start_date is not None or args.signal_end_date is not None or args.instruments
+    ):
+        parser.error("`--use-checkpoint-queue` cannot be combined with bounded window selectors.")
     summary = run_malf_wave_life_build(
         signal_start_date=args.signal_start_date,
         signal_end_date=args.signal_end_date,
@@ -34,6 +43,8 @@ def main() -> None:
         sample_version=args.sample_version,
         run_id=args.run_id,
         summary_path=args.summary_path,
+        use_checkpoint_queue=True if args.use_checkpoint_queue else None,
+        require_explicit_queue_mode=True,
     )
     print(json.dumps(summary.as_dict(), ensure_ascii=False, indent=2))
 

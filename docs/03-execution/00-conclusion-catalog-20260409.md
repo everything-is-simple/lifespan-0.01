@@ -3,7 +3,7 @@
 `日期：2026-04-09`
 `状态：生效`
 
-当前最新生效结论锚点：`62-filter-pre-trigger-boundary-and-authority-reset-conclusion-20260415.md`
+当前最新生效结论锚点：`63-wave-life-official-ledger-truthfulness-and-bootstrap-conclusion-20260415.md`
 
 ## 正式结论目录
 
@@ -69,6 +69,7 @@
 60. `60-mainline-rectification-batch-registration-and-scope-freeze-conclusion-20260415.md`
 61. `61-structure-filter-tail-coverage-truthfulness-rectification-conclusion-20260415.md`
 62. `62-filter-pre-trigger-boundary-and-authority-reset-conclusion-20260415.md`
+63. `63-wave-life-official-ledger-truthfulness-and-bootstrap-conclusion-20260415.md`
 100. `100-trade-signal-anchor-contract-freeze-conclusion-20260411.md`
 101. `101-position-entry-t-plus-1-open-reference-price-correction-conclusion-20260411.md`
 102. `102-trade-exit-pnl-ledger-bootstrap-conclusion-20260411.md`
@@ -77,10 +78,10 @@
 105. `105-system-runtime-orchestration-bootstrap-conclusion-20260411.md`
 
 ## 主线状态
-1. `62` 已成为当前最新生效结论锚点。
-2. `60` 已完成整改批次登记与施工顺序冻结，`61` 已收紧 `truthfulness ≠ completeness` 的执行口径，`62` 已把 `filter` 重置回 pre-trigger 边界，当前待施工卡推进到 `63`。
+1. `63` 已成为当前最新生效结论锚点。
+2. `60` 已完成整改批次登记与施工顺序冻结，`61` 已收紧 `truthfulness ≠ completeness` 的执行口径，`62` 已把 `filter` 重置回 pre-trigger 边界，`63` 已把 `wave_life` 官方空表与 bootstrap/replay 边界正式裁清，当前待施工卡推进到 `64`。
 3. `29-62` 已完成 canonical malf downstream、mainline ledger standardization、alpha detector、alpha family、quality gate、official replay hardening、alpha producer hardening、pre-position acceptance、position contract freeze、risk/capacity ledger hardening、batched leg contract、position data-grade runner、pre-portfolio-plan position acceptance gate、portfolio_plan ledger family freeze、capacity/decision hardening、data-grade runner、official middle-ledger pilot freeze、official canonical malf bootstrap、official downstream canonical smoke、`2010` truthfulness gate、tail coverage rectification 与 filter authority reset 收口。
-4. 当前执行顺序保持为 `63 -> 64 -> 65 -> 66 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 100 -> 105`；只有 `66` 接受后才允许恢复 `80-86`，只有 `86` 接受后才允许恢复 `100 -> 105` 的 trade/system 卡组。
+4. 当前执行顺序保持为 `64 -> 65 -> 66 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 100 -> 105`；只有 `66` 接受后才允许恢复 `80-86`，只有 `86` 接受后才允许恢复 `100 -> 105` 的 trade/system 卡组。
 
 ## 图示
 ```mermaid

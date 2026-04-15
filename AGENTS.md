@@ -107,7 +107,8 @@ flowchart LR
   - `malf snapshot` 的实现允许拆分为 `src/mlq/malf/runner.py` 与同目录 helper 模块 `snapshot_shared.py / snapshot_source.py / snapshot_materialization.py`；拆分只服务治理文件长度与职责收敛，外部正式脚本入口、bridge v1 表族契约与兼容输出语义不得变化。
   - `malf bootstrap` 的实现允许拆分为 `src/mlq/malf/bootstrap.py` 与同目录 helper 模块 `bootstrap_tables.py / bootstrap_columns.py`；拆分只服务 DDL/补列映射的职责收敛与治理文件长度控制，对外导出的表名常量、bootstrap/连接/path 入口与表族语义不得变化。
    - 当前 `malf` 的正式 bounded runner 入口为 `scripts/malf/run_malf_mechanism_build.py`，只允许消费官方 bridge v1 `pas_context_snapshot / structure_candidate_snapshot`，物化 `malf_mechanism_run / malf_mechanism_checkpoint / pivot_confirmed_break_ledger / same_timeframe_stats_profile / same_timeframe_stats_snapshot`，并按 `instrument + timeframe` checkpoint 续跑，不允许反写 `malf core`。
-  - 当前 `malf` 的正式 bounded runner 入口为 `scripts/malf/run_malf_wave_life_build.py`，只允许只读消费 canonical `malf_wave_ledger / malf_state_snapshot / malf_same_level_stats`，物化 `malf_wave_life_run / malf_wave_life_work_queue / malf_wave_life_checkpoint / malf_wave_life_snapshot / malf_wave_life_profile`；已完成 wave 样本与活跃 wave 快照必须分开建模，默认无窗口调用走 canonical checkpoint 驱动的 queue/replay，不允许把寿命概率反写回 `malf core`。
+  - 当前 `malf` 的正式 bounded runner 入口为 `scripts/malf/run_malf_wave_life_build.py`，只允许只读消费 canonical `malf_wave_ledger / malf_state_snapshot / malf_same_level_stats`，物化 `malf_wave_life_run / malf_wave_life_work_queue / malf_wave_life_checkpoint / malf_wave_life_snapshot / malf_wave_life_profile`；已完成 wave 样本与活跃 wave 快照必须分开建模，不允许把寿命概率反写回 `malf core`。
+  - 自 `63` 起，`scripts/malf/run_malf_wave_life_build.py` 的正式 CLI 调用必须显式二选一：要么提供 `signal_start_date / signal_end_date` 执行 bounded bootstrap，要么显式传入 `--use-checkpoint-queue` 执行 checkpoint queue；无参调用不再允许静默进入 queue。
   - `wave life` 的实现允许拆分为 `src/mlq/malf/wave_life_runner.py` 与同目录 helper 模块 `wave_life_shared.py / wave_life_source.py / wave_life_materialization.py`；拆分只服务治理文件长度与职责收敛，外部正式脚本入口、表族契约与只读 sidecar 边界不得变化。
 4. `structure` 负责把 `malf` 结构语义沉淀为官方结构事实层。
    - 当前 `structure` 的正式 bounded runner 入口为 `scripts/structure/run_structure_snapshot_build.py`，默认只允许从官方 canonical `malf_state_snapshot(timeframe='D')` 物化 `structure_run / snapshot / run_snapshot`；如消费 `pivot_confirmed_break_ledger / same_timeframe_stats_snapshot`，也只允许按只读 sidecar 附加，不允许夹带 `filter / alpha / position` 判定逻辑。
@@ -142,7 +143,7 @@ flowchart LR
 1. `malf -> structure -> filter -> alpha` 默认使用 `adjust_method = backward`
 2. `position -> trade` 默认使用 `adjust_method = none`
 3. `adjust_method = forward` 当前只作为研究与展示保留，不作为正式执行口径
-4. 当前最新生效结论锚点已推进到 `62-filter-pre-trigger-boundary-and-authority-reset-conclusion-20260415.md`；`62` 接受后，当前待施工卡已改为 `63-wave-life-official-ledger-truthfulness-and-bootstrap-card-20260415.md`，只有 `66` 收口后才允许恢复 `80`，并继续要求 `86` 通过后才恢复 `100`。
+4. 当前最新生效结论锚点已推进到 `63-wave-life-official-ledger-truthfulness-and-bootstrap-conclusion-20260415.md`；`63` 接受后，当前待施工卡已改为 `64-alpha-stage-percentile-decision-matrix-integration-card-20260415.md`，只有 `66` 收口后才允许恢复 `80`，并继续要求 `86` 通过后才恢复 `100`。
 5. 当前主线系统级路线图必须以 `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 为准；该文档现在把 `60 -> 66` 固定为 `80-86` 前的主线整改卡组，把 `80 -> 86` 固定为整改后的真实正式库 middle-ledger 恢复卡组，不允许再把“代码已切 canonical”误当成“正式库已切 canonical”，也不允许在 `66` 前直接续推 `80-86`。
 
 ## 5. 历史账本原则

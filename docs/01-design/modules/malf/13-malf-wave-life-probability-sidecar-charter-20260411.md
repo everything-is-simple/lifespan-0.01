@@ -35,3 +35,4 @@ flowchart LR
 1. `wave life probability` 只允许作为 canonical `malf` 的只读 sidecar。
 2. 活跃 wave 与已完成 wave 必须分开建模。
 3. 输出至少覆盖寿命分位、剩余寿命估计与终止风险分桶。
+4. 正式官方首跑必须显式提供 bounded window 做 bootstrap；`checkpoint queue` 只保留给显式声明的增量续跑，不允许脚本无参静默进入 queue。
