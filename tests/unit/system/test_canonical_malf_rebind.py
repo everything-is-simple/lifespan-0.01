@@ -181,9 +181,9 @@ def test_canonical_malf_defaults_drive_structure_filter_and_alpha(tmp_path: Path
     ]
     assert filter_rows == [
         ("000001.SZ", True, None),
-        ("000002.SZ", False, "structure_progress_failed"),
+        ("000002.SZ", True, None),
     ]
     assert signal_rows == [
         ("000001.SZ", "admitted", True, "牛顺", "expand"),
-        ("000002.SZ", "blocked", False, "熊顺", "expand"),
+        ("000002.SZ", "admitted", True, "熊顺", "expand"),
     ]

@@ -84,6 +84,12 @@
 
 ## 流程图
 
+## `62` 补充口径
+
+1. `trigger_admissible` 的正式含义收窄为 pre-trigger gate 是否放行，不再承载结构性 hard verdict。
+2. `structure_progress_failed / reversal_stage_pending` 当前只允许沉淀为 `admission_notes` 或既有 risk sidecar，不得再写成 `primary_blocking_condition`。
+3. `filter` 只负责 gate + note/risk；`alpha formal signal` 的最终 blocked/admitted authority 不在本设计文档内前置给 `filter`。
+
 ```mermaid
 flowchart LR
     MALF[malf_state_snapshot canonical] --> FLT[filter_snapshot]

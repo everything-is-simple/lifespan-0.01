@@ -203,6 +203,12 @@
 
 ## 流程图
 
+## `62` 补充规格
+
+1. `filter_snapshot.trigger_admissible` 只表达 pre-trigger gate 是否放行。
+2. `structure_progress_failed / reversal_stage_pending` 当前必须降级为 `admission_notes` 或既有 risk sidecar，不得再在 `filter` 层形成结构性 hard block。
+3. 下游 `alpha` 当前继续读取 `trigger_admissible / primary_blocking_condition / blocking_conditions_json / admission_notes`，但这不代表 `filter` 已取得最终 formal signal authority。
+
 ```mermaid
 flowchart LR
     MALF[malf_state_snapshot canonical D] --> FLT_RUN[filter_runner]

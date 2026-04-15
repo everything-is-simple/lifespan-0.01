@@ -116,6 +116,7 @@ flowchart LR
 5. `filter` 负责 pre-trigger 准入。
    - 当前 `filter` 的正式 bounded runner 入口为 `scripts/filter/run_filter_snapshot_build.py`，只允许消费官方 `structure snapshot` 与 canonical `malf_state_snapshot(timeframe='D')` 最小执行上下文物化 `filter_run / snapshot / run_snapshot`；如携带 `break / stats` sidecar 字段，也只允许只读透传和提示，不允许硬拦截研究观察或夹带 `alpha detector / position / trade` 逻辑。
    - 自 `61` 起，`scripts/filter/run_filter_snapshot_build.py` 的正式 CLI 调用必须显式二选一：要么提供 `signal_start_date / signal_end_date` 执行 bounded full-window，要么显式传入 `--use-checkpoint-queue` 执行 checkpoint queue；无参调用不再允许静默进入 queue。
+   - 自 `62` 起，`structure_progress_failed / reversal_stage_pending` 只允许以下游 `note / risk flag` 方式留在 `filter_snapshot`，不得再作为 `filter` 层的结构性 hard block；`trigger_admissible` 只代表 pre-trigger 放行事实，不再提前替 `alpha formal signal` 做结构裁决。
    - bridge v1 `pas_context_snapshot` 只允许作为 canonical 表缺失时的兼容回退，不再承担默认正式上游职责。
 6. `alpha` 负责对下游冻结正式 `formal signal` 事实。
   - 当前 `alpha` 的正式 bounded PAS detector 入口为 `scripts/alpha/run_alpha_pas_five_trigger_build.py`，只允许消费官方 `filter / structure snapshot` 与 `market_base.stock_daily_adjusted(adjust_method='backward')`，物化 `alpha_pas_trigger_run / alpha_pas_trigger_work_queue / alpha_pas_trigger_checkpoint / alpha_trigger_candidate / alpha_pas_trigger_run_candidate`，不允许回读 bridge-era `pas_context_snapshot / structure_candidate_snapshot`，也不允许夹带 `position / trade / system` 逻辑。
@@ -141,7 +142,7 @@ flowchart LR
 1. `malf -> structure -> filter -> alpha` 默认使用 `adjust_method = backward`
 2. `position -> trade` 默认使用 `adjust_method = none`
 3. `adjust_method = forward` 当前只作为研究与展示保留，不作为正式执行口径
-4. 当前最新生效结论锚点已推进到 `61-structure-filter-tail-coverage-truthfulness-rectification-conclusion-20260415.md`；`60/61` 接受后，当前待施工卡已改为 `62-filter-pre-trigger-boundary-and-authority-reset-card-20260415.md`，只有 `66` 收口后才允许恢复 `80`，并继续要求 `86` 通过后才恢复 `100`。
+4. 当前最新生效结论锚点已推进到 `62-filter-pre-trigger-boundary-and-authority-reset-conclusion-20260415.md`；`62` 接受后，当前待施工卡已改为 `63-wave-life-official-ledger-truthfulness-and-bootstrap-card-20260415.md`，只有 `66` 收口后才允许恢复 `80`，并继续要求 `86` 通过后才恢复 `100`。
 5. 当前主线系统级路线图必须以 `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 为准；该文档现在把 `60 -> 66` 固定为 `80-86` 前的主线整改卡组，把 `80 -> 86` 固定为整改后的真实正式库 middle-ledger 恢复卡组，不允许再把“代码已切 canonical”误当成“正式库已切 canonical”，也不允许在 `66` 前直接续推 `80-86`。
 
 ## 5. 历史账本原则

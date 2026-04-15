@@ -2,7 +2,7 @@
 
 `卡号：62`
 `日期：2026-04-15`
-`状态：待施工`
+`状态：已完成`
 
 ## 需求
 - 问题：当前 `filter` 的正式硬拦截包含 `structure_progress_failed` 与 `reversal_stage_pending`，带有结构裁决色彩；这使 `filter` 越过 pre-trigger admission 边界，提前替 `alpha` 给出结构性 hard verdict。

@@ -198,12 +198,11 @@ def _build_filter_snapshot_row(
     filter_contract_version: str,
 ) -> _FilterSnapshotRow:
     blocking_conditions: list[str] = []
-    if structure_row.structure_progress_state == "failed":
-        blocking_conditions.append("structure_progress_failed")
-    elif structure_row.reversal_stage in {"trigger", "hold"} and structure_row.trend_direction == "down":
-        blocking_conditions.append("reversal_stage_pending")
-
     admission_notes: list[str] = []
+    if structure_row.structure_progress_state == "failed":
+        admission_notes.append("structure_progress=failed 仅保留结构观察，不在 filter 层硬拦截")
+    elif structure_row.reversal_stage in {"trigger", "hold"} and structure_row.trend_direction == "down":
+        admission_notes.append(f"reversal_stage_pending={structure_row.reversal_stage}")
     if structure_row.structure_progress_state in {"stalled", "unknown"} and not blocking_conditions:
         admission_notes.append(f"structure_progress={structure_row.structure_progress_state}")
     admission_notes.append(

@@ -50,8 +50,8 @@ system_tracker_files = [
     "docs/02-spec/Ω-system-delivery-roadmap-20260409.md",
 ]
 # 当前最新生效结论已推进到
-# `61-structure-filter-tail-coverage-truthfulness-rectification-conclusion-20260415.md`；
-# 当前待施工卡已切到 `62-filter-pre-trigger-boundary-and-authority-reset-card-20260415.md`。
+# `62-filter-pre-trigger-boundary-and-authority-reset-conclusion-20260415.md`；
+# 当前待施工卡已切到 `63-wave-life-official-ledger-truthfulness-and-bootstrap-card-20260415.md`。
 # 系统路线图现以 `28` 为统一 data-grade 基线，先完成 `60 -> 66` 主线整改卡组，
 # 再恢复 `80 -> 86` official middle-ledger 卡组，最后在 `86` 接受后恢复
 # `100 -> 105` trade/system 卡组；其中 `position / trade` 的正式执行口径继续固定为

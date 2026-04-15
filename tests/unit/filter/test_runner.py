@@ -199,8 +199,8 @@ def test_run_filter_snapshot_build_materializes_minimal_admission_layer(
     assert summary.candidate_structure_count == 2
     assert summary.materialized_snapshot_count == 2
     assert summary.inserted_count == 2
-    assert summary.admissible_count == 1
-    assert summary.blocked_count == 1
+    assert summary.admissible_count == 2
+    assert summary.blocked_count == 0
     assert summary.missing_context_count == 1
 
     conn = duckdb.connect(str(filter_ledger_path(settings)), read_only=True)
@@ -225,7 +225,7 @@ def test_run_filter_snapshot_build_materializes_minimal_admission_layer(
     assert run_row == ("completed", 2)
     assert snapshot_rows == [
         ("000001.SZ", True, None, "confirmed", "high"),
-        ("000002.SZ", False, "structure_progress_failed", None, None),
+        ("000002.SZ", True, None, None, None),
     ]
 
 
@@ -284,7 +284,61 @@ def test_run_filter_snapshot_build_marks_rematerialized_when_structure_turns_fai
     finally:
         conn.close()
 
-    assert snapshot_row == (False, "structure_progress_failed", "filter-snapshot-test-002b")
+    assert snapshot_row == (True, None, "filter-snapshot-test-002b")
+
+
+def test_run_filter_snapshot_build_demotes_reversal_stage_pending_to_admission_note(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+    _seed_structure_snapshots(settings)
+    _seed_context_rows(settings.databases.malf)
+
+    conn = connect_structure_ledger(settings)
+    try:
+        conn.execute(
+            """
+            UPDATE structure_snapshot
+            SET
+                trend_direction = 'down',
+                reversal_stage = 'trigger',
+                last_materialized_run_id = 'run-reversal-note'
+            WHERE structure_snapshot_nk = 'ss-001'
+            """
+        )
+    finally:
+        conn.close()
+
+    summary = run_filter_snapshot_build(
+        settings=settings,
+        signal_start_date="2026-04-08",
+        signal_end_date="2026-04-08",
+        run_id="filter-snapshot-test-002c",
+    )
+
+    assert summary.admissible_count == 2
+    assert summary.blocked_count == 0
+
+    conn = duckdb.connect(str(filter_ledger_path(settings)), read_only=True)
+    try:
+        snapshot_row = conn.execute(
+            """
+            SELECT trigger_admissible, primary_blocking_condition, admission_notes
+            FROM filter_snapshot
+            WHERE instrument = '000001.SZ'
+            """
+        ).fetchone()
+    finally:
+        conn.close()
+
+    assert snapshot_row == (
+        True,
+        None,
+        "reversal_stage_pending=trigger; canonical_context=牛顺/down/trigger; read_only_context=W:牛顺/none;M:牛逆/trigger; break_confirmation=confirmed 仅 sidecar 提示; exhaustion_risk=high",
+    )
 
 
 def test_run_filter_snapshot_build_copies_read_only_multi_timeframe_context_without_blocking(
@@ -355,7 +409,7 @@ def test_run_filter_snapshot_build_copies_read_only_multi_timeframe_context_with
     )
 
     assert second_summary.rematerialized_count == 1
-    assert second_summary.admissible_count == 1
+    assert second_summary.admissible_count == 2
 
     conn = duckdb.connect(str(filter_ledger_path(settings)), read_only=True)
     try:

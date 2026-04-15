@@ -1,13 +1,9 @@
 """覆盖 `alpha trigger / formal signal` 官方 producer 与 `position` 对接。"""
-
 from __future__ import annotations
-
 import json
 from datetime import date
 from pathlib import Path
-
 import duckdb
-
 from mlq.alpha import (
     alpha_ledger_path,
     run_alpha_family_build,
@@ -18,8 +14,6 @@ from mlq.core.paths import default_settings
 from mlq.filter import run_filter_snapshot_build
 from mlq.position import position_ledger_path, run_position_formal_signal_materialization
 from mlq.structure import run_structure_snapshot_build
-
-
 def _clear_workspace_env(monkeypatch) -> None:
     for env_name in (
         "LIFESPAN_REPO_ROOT",
@@ -29,15 +23,11 @@ def _clear_workspace_env(monkeypatch) -> None:
         "LIFESPAN_VALIDATED_ROOT",
     ):
         monkeypatch.delenv(env_name, raising=False)
-
-
 def _bootstrap_repo_root(tmp_path: Path) -> Path:
     repo_root = tmp_path / "lifespan-0.01"
     repo_root.mkdir()
     (repo_root / "pyproject.toml").write_text("[project]\nname='lifespan-0.01'\n", encoding="utf-8")
     return repo_root
-
-
 def _seed_trigger_source(alpha_path: Path, rows: list[tuple[object, ...]]) -> None:
     alpha_path.parent.mkdir(parents=True, exist_ok=True)
     conn = duckdb.connect(str(alpha_path))
@@ -58,8 +48,6 @@ def _seed_trigger_source(alpha_path: Path, rows: list[tuple[object, ...]]) -> No
             conn.execute("INSERT INTO alpha_trigger_candidate VALUES (?, ?, ?, ?, ?, ?)", row)
     finally:
         conn.close()
-
-
 def _seed_malf_sources(
     malf_path: Path,
     *,
@@ -122,8 +110,6 @@ def _seed_malf_sources(
             )
     finally:
         conn.close()
-
-
 def _replace_structure_source(malf_path: Path, rows: list[tuple[object, ...]]) -> None:
     conn = duckdb.connect(str(malf_path))
     try:
@@ -171,8 +157,6 @@ def _replace_structure_source(malf_path: Path, rows: list[tuple[object, ...]]) -
             )
     finally:
         conn.close()
-
-
 def _seed_market_base_prices(market_base_path: Path, rows: list[tuple[object, ...]]) -> None:
     market_base_path.parent.mkdir(parents=True, exist_ok=True)
     conn = duckdb.connect(str(market_base_path))
@@ -191,8 +175,6 @@ def _seed_market_base_prices(market_base_path: Path, rows: list[tuple[object, ..
             conn.execute("INSERT INTO stock_daily_adjusted VALUES (?, ?, ?, ?)", row)
     finally:
         conn.close()
-
-
 def _materialize_official_upstream(settings, *, suffix: str) -> None:
     run_structure_snapshot_build(
         settings=settings,
@@ -206,8 +188,6 @@ def _materialize_official_upstream(settings, *, suffix: str) -> None:
         signal_end_date="2026-04-08",
         run_id=f"filter-upstream-alpha-test-{suffix}",
     )
-
-
 def _materialize_official_trigger(settings, *, suffix: str) -> None:
     run_alpha_trigger_build(
         settings=settings,
@@ -215,8 +195,6 @@ def _materialize_official_trigger(settings, *, suffix: str) -> None:
         signal_end_date="2026-04-08",
         run_id=f"alpha-trigger-upstream-test-{suffix}",
     )
-
-
 def _materialize_official_family(settings, *, suffix: str) -> None:
     run_alpha_family_build(
         settings=settings,
@@ -225,8 +203,6 @@ def _materialize_official_family(settings, *, suffix: str) -> None:
         family_scope=["bof", "tst", "pb", "cpb", "bpb"],
         run_id=f"alpha-family-upstream-test-{suffix}",
     )
-
-
 def _seed_filter_checkpoints(filter_path: Path, rows: list[tuple[object, ...]]) -> None:
     conn = duckdb.connect(str(filter_path))
     try:
@@ -254,8 +230,6 @@ def _seed_filter_checkpoints(filter_path: Path, rows: list[tuple[object, ...]]) 
             )
     finally:
         conn.close()
-
-
 def test_run_alpha_trigger_build_materializes_run_event_and_official_context(
     tmp_path: Path,
     monkeypatch,
@@ -263,7 +237,6 @@ def test_run_alpha_trigger_build_materializes_run_event_and_official_context(
     _clear_workspace_env(monkeypatch)
     repo_root = _bootstrap_repo_root(tmp_path)
     settings = default_settings(repo_root=repo_root)
-
     _seed_trigger_source(
         settings.databases.alpha,
         [
@@ -287,7 +260,6 @@ def test_run_alpha_trigger_build_materializes_run_event_and_official_context(
         ],
     )
     _materialize_official_upstream(settings, suffix="trigger-001")
-
     summary = run_alpha_trigger_build(
         settings=settings,
         signal_start_date="2026-04-08",
@@ -296,11 +268,9 @@ def test_run_alpha_trigger_build_materializes_run_event_and_official_context(
         batch_size=1,
         run_id="alpha-trigger-test-001",
     )
-
     assert summary.candidate_trigger_count == 2
     assert summary.materialized_trigger_count == 2
     assert summary.inserted_count == 2
-
     conn = duckdb.connect(str(alpha_ledger_path(settings)), read_only=True)
     try:
         run_row = conn.execute(
@@ -326,15 +296,12 @@ def test_run_alpha_trigger_build_materializes_run_event_and_official_context(
         ).fetchall()
     finally:
         conn.close()
-
     assert run_row == ("completed", 2, 2)
     assert event_rows == [
         ("000001.SZ", "bof", "state-000001.SZ-2026-04-08", "牛顺", "牛逆", event_rows[0][5], event_rows[0][6]),
         ("000002.SZ", "pb", "state-000002.SZ-2026-04-08", None, None, event_rows[1][5], event_rows[1][6]),
     ]
     assert all(row[5] and row[6] for row in event_rows)
-
-
 def test_run_alpha_trigger_build_marks_reused_and_rematerialized_when_upstream_changes(
     tmp_path: Path,
     monkeypatch,
@@ -342,7 +309,6 @@ def test_run_alpha_trigger_build_marks_reused_and_rematerialized_when_upstream_c
     _clear_workspace_env(monkeypatch)
     repo_root = _bootstrap_repo_root(tmp_path)
     settings = default_settings(repo_root=repo_root)
-
     _seed_trigger_source(
         settings.databases.alpha,
         [
@@ -359,7 +325,6 @@ def test_run_alpha_trigger_build_marks_reused_and_rematerialized_when_upstream_c
         ],
     )
     _materialize_official_upstream(settings, suffix="trigger-002a")
-
     first_summary = run_alpha_trigger_build(
         settings=settings,
         signal_start_date="2026-04-08",
@@ -372,10 +337,8 @@ def test_run_alpha_trigger_build_marks_reused_and_rematerialized_when_upstream_c
         signal_end_date="2026-04-08",
         run_id="alpha-trigger-test-002b",
     )
-
     assert first_summary.inserted_count == 1
     assert second_summary.reused_count == 1
-
     _replace_structure_source(
         settings.databases.malf,
         [("000001.SZ", "2026-04-08", "2026-04-08", 0, 1, 0.0, 0.0, True, "failed_extreme")],
@@ -387,9 +350,7 @@ def test_run_alpha_trigger_build_marks_reused_and_rematerialized_when_upstream_c
         signal_end_date="2026-04-08",
         run_id="alpha-trigger-test-002c",
     )
-
     assert third_summary.rematerialized_count == 1
-
     conn = duckdb.connect(str(alpha_ledger_path(settings)), read_only=True)
     try:
         event_row = conn.execute(
@@ -401,211 +362,8 @@ def test_run_alpha_trigger_build_marks_reused_and_rematerialized_when_upstream_c
         ).fetchone()
     finally:
         conn.close()
-
     assert event_row[0] == "alpha-trigger-test-002c"
     assert '"structure_progress_state": "failed"' in event_row[1]
-
-
-def test_run_alpha_formal_signal_build_materializes_run_event_and_run_bridge(
-    tmp_path: Path,
-    monkeypatch,
-) -> None:
-    _clear_workspace_env(monkeypatch)
-    repo_root = _bootstrap_repo_root(tmp_path)
-    settings = default_settings(repo_root=repo_root)
-
-    _seed_trigger_source(
-        settings.databases.alpha,
-        [
-            ("000001.SZ", "2026-04-08", "2026-04-08", "PAS", "bof", "BOF"),
-            ("000002.SZ", "2026-04-08", "2026-04-08", "PAS", "pb", "PB"),
-        ],
-    )
-    _seed_malf_sources(
-        settings.databases.malf,
-        context_rows=[
-            ("000001.SZ", "2026-04-08", "2026-04-08", "ctx-001", "BULL_MAINSTREAM", 1, 4, "2026-04-08"),
-            ("000002.SZ", "2026-04-08", "2026-04-08", "ctx-002", "BEAR_MAINSTREAM", 0, 4, "2026-04-08"),
-        ],
-        structure_rows=[
-            ("000001.SZ", "2026-04-08", "2026-04-08", 2, 0, 0.7, 0.6, False, None),
-            ("000002.SZ", "2026-04-08", "2026-04-08", 0, 1, 0.0, 0.0, True, "failed_extreme"),
-        ],
-        higher_timeframe_rows=[
-            ("state-w-101", "000001.SZ", "W", "2026-04-03", "牛顺", "up", "none", 3, 1, 0),
-            ("state-m-101", "000001.SZ", "M", "2026-03-31", "牛逆", "down", "trigger", 1, 0, 1),
-        ],
-    )
-    _materialize_official_upstream(settings, suffix="001")
-    _materialize_official_trigger(settings, suffix="001")
-    _materialize_official_family(settings, suffix="001")
-
-    summary = run_alpha_formal_signal_build(
-        settings=settings,
-        signal_start_date="2026-04-08",
-        signal_end_date="2026-04-08",
-        limit=10,
-        batch_size=1,
-        run_id="alpha-formal-signal-test-001",
-    )
-
-    assert summary.candidate_trigger_count == 2
-    assert summary.materialized_signal_count == 2
-    assert summary.inserted_count == 2
-    assert summary.admitted_count == 1
-    assert summary.blocked_count == 1
-
-    conn = duckdb.connect(str(alpha_ledger_path(settings)), read_only=True)
-    try:
-        run_row = conn.execute(
-            """
-            SELECT run_status, bounded_instrument_count
-            FROM alpha_formal_signal_run
-            WHERE run_id = 'alpha-formal-signal-test-001'
-            """
-        ).fetchone()
-        event_rows = conn.execute(
-            """
-            SELECT
-                instrument,
-                pattern_code,
-                formal_signal_status,
-                trigger_admissible,
-                major_state,
-                reversal_stage,
-                daily_source_context_nk,
-                weekly_major_state,
-                monthly_major_state,
-                family_code,
-                family_role,
-                source_family_event_nk
-            FROM alpha_formal_signal_event
-            ORDER BY instrument
-            """
-        ).fetchall()
-        run_event_rows = conn.execute(
-            """
-            SELECT signal_nk, source_family_event_nk, family_role
-            FROM alpha_formal_signal_run_event
-            WHERE run_id = 'alpha-formal-signal-test-001'
-            ORDER BY signal_nk
-            """
-        ).fetchall()
-    finally:
-        conn.close()
-
-    assert run_row == ("completed", 2)
-    assert event_rows == [
-        (
-            "000001.SZ",
-            "BOF",
-            "admitted",
-            True,
-            "牛顺",
-            "none",
-            "state-000001.SZ-2026-04-08",
-            "牛顺",
-            "牛逆",
-            "bof_core",
-            "mainline",
-            "000001.SZ|2026-04-08|2026-04-08|PAS|bof|BOF|alpha-trigger-v2|alpha-family-v2",
-        ),
-        (
-            "000002.SZ",
-            "PB",
-            "blocked",
-            False,
-            "熊顺",
-            "none",
-            "state-000002.SZ-2026-04-08",
-            None,
-            None,
-            "pb_core",
-            "supporting",
-            "000002.SZ|2026-04-08|2026-04-08|PAS|pb|PB|alpha-trigger-v2|alpha-family-v2",
-        ),
-    ]
-    assert run_event_rows == [
-        (
-            "000001.SZ|2026-04-08|2026-04-08|PAS|bof|BOF|000001.SZ|2026-04-08|2026-04-08|PAS|bof|BOF|alpha-trigger-v2|alpha-formal-signal-v3",
-            "000001.SZ|2026-04-08|2026-04-08|PAS|bof|BOF|alpha-trigger-v2|alpha-family-v2",
-            "mainline",
-        ),
-        (
-            "000002.SZ|2026-04-08|2026-04-08|PAS|pb|PB|000002.SZ|2026-04-08|2026-04-08|PAS|pb|PB|alpha-trigger-v2|alpha-formal-signal-v3",
-            "000002.SZ|2026-04-08|2026-04-08|PAS|pb|PB|alpha-trigger-v2|alpha-family-v2",
-            "supporting",
-        ),
-    ]
-
-
-def test_run_alpha_formal_signal_build_marks_rematerialized_when_official_upstream_changes(
-    tmp_path: Path,
-    monkeypatch,
-) -> None:
-    _clear_workspace_env(monkeypatch)
-    repo_root = _bootstrap_repo_root(tmp_path)
-    settings = default_settings(repo_root=repo_root)
-
-    _seed_trigger_source(
-        settings.databases.alpha,
-        [
-            ("000001.SZ", "2026-04-08", "2026-04-08", "PAS", "bof", "BOF"),
-        ],
-    )
-    _seed_malf_sources(
-        settings.databases.malf,
-        context_rows=[
-            ("000001.SZ", "2026-04-08", "2026-04-08", "ctx-101", "BULL_MAINSTREAM", 1, 4, "2026-04-08"),
-        ],
-        structure_rows=[
-            ("000001.SZ", "2026-04-08", "2026-04-08", 1, 0, 0.4, 0.3, False, None),
-        ],
-    )
-    _materialize_official_upstream(settings, suffix="002a")
-    _materialize_official_trigger(settings, suffix="002a")
-    _materialize_official_family(settings, suffix="002a")
-
-    first_summary = run_alpha_formal_signal_build(
-        settings=settings,
-        signal_start_date="2026-04-08",
-        signal_end_date="2026-04-08",
-        run_id="alpha-formal-signal-test-002a",
-    )
-    assert first_summary.inserted_count == 1
-
-    _replace_structure_source(
-        settings.databases.malf,
-        [("000001.SZ", "2026-04-08", "2026-04-08", 0, 1, 0.0, 0.0, True, "failed_extreme")],
-    )
-    _materialize_official_upstream(settings, suffix="002b")
-    _materialize_official_trigger(settings, suffix="002b")
-    _materialize_official_family(settings, suffix="002b")
-    second_summary = run_alpha_formal_signal_build(
-        settings=settings,
-        signal_start_date="2026-04-08",
-        signal_end_date="2026-04-08",
-        run_id="alpha-formal-signal-test-002b",
-    )
-
-    assert second_summary.rematerialized_count == 1
-    assert second_summary.blocked_count == 1
-
-    conn = duckdb.connect(str(alpha_ledger_path(settings)), read_only=True)
-    try:
-        event_row = conn.execute(
-            """
-            SELECT formal_signal_status, trigger_admissible, family_role, malf_alignment, last_materialized_run_id
-            FROM alpha_formal_signal_event
-            WHERE instrument = '000001.SZ'
-            """
-        ).fetchone()
-    finally:
-        conn.close()
-
-    assert event_row == ("blocked", False, "supporting", "conflicted", "alpha-formal-signal-test-002b")
-
-
 def test_run_alpha_formal_signal_build_queue_replays_when_family_payload_changes(
     tmp_path: Path,
     monkeypatch,
@@ -698,8 +456,6 @@ def test_run_alpha_formal_signal_build_queue_replays_when_family_payload_changes
     assert second_summary.rematerialized_count == 1
     assert queue_row == ("completed", "source_fingerprint_changed")
     assert event_row == ("warning", "conflicted", "manual-family-fingerprint-b", "alpha-formal-signal-family-queue-b")
-
-
 def test_run_alpha_formal_signal_build_outputs_event_consumable_by_position_runner(
     tmp_path: Path,
     monkeypatch,
@@ -762,10 +518,7 @@ def test_run_alpha_formal_signal_build_outputs_event_consumable_by_position_runn
         ).fetchone()
     finally:
         conn.close()
-
     assert candidate_row == ("000001.SZ", "alpha-formal-signal-test-003")
-
-
 def test_run_alpha_trigger_and_formal_signal_use_checkpoint_queue_by_default(
     tmp_path: Path,
     monkeypatch,

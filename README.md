@@ -105,6 +105,7 @@ flowchart LR
   - 正式 CLI 必须显式选择执行模式：传入 `signal_start_date / signal_end_date` 走 bounded full-window，或显式传入 `--use-checkpoint-queue` 走 checkpoint queue；无参调用不再静默进入 queue。
 - `scripts/filter/run_filter_snapshot_build.py`
   - 正式 CLI 必须显式选择执行模式：传入 `signal_start_date / signal_end_date` 走 bounded full-window，或显式传入 `--use-checkpoint-queue` 走 checkpoint queue；无参调用不再静默进入 queue。
+  - 自 `62` 起，`structure_progress_failed / reversal_stage_pending` 只保留为 `admission_notes` 或既有 risk sidecar，不再在 `filter` 层形成 hard block。
 - `scripts/alpha/run_alpha_pas_five_trigger_build.py`
 - `scripts/alpha/run_alpha_trigger_ledger_build.py`
 - `scripts/alpha/run_alpha_family_build.py`
@@ -130,7 +131,7 @@ flowchart LR
   - `malf -> structure -> filter -> alpha` 默认消费 `adjust_method='backward'`
   - `position -> trade` 默认消费 `adjust_method='none'`
   - `forward` 当前只作研究与展示保留
-- 当前最新生效结论锚点已推进到 `61-structure-filter-tail-coverage-truthfulness-rectification-conclusion-20260415.md`；当前待施工卡改为 `62-filter-pre-trigger-boundary-and-authority-reset-card-20260415.md`。
+- 当前最新生效结论锚点已推进到 `62-filter-pre-trigger-boundary-and-authority-reset-conclusion-20260415.md`；当前待施工卡改为 `63-wave-life-official-ledger-truthfulness-and-bootstrap-card-20260415.md`。
 - `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 现已把 `60 -> 66` 注册为 `59` 之后的主线整改卡组，并把原 middle-ledger 分段建库卡组后移为 `80 -> 86`。
 - `100 -> 105` 仍然保留为 `trade/system` 恢复卡组，但只有 `86-pre-trade-middle-ledger-official-cutover-gate-card-20260414.md` 接受后才允许恢复。
 - `txt -> raw_market -> market_base` 继续保留为正式 fallback

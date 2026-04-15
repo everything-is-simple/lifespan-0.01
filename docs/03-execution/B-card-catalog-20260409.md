@@ -1,9 +1,9 @@
 ﻿# 执行卡目录 `日期：2026-04-09`
 `状态：持续更新`
 
-1. 当前下一锚：`62-filter-pre-trigger-boundary-and-authority-reset-card-20260415.md`
-2. 当前待施工卡：`62-filter-pre-trigger-boundary-and-authority-reset-card-20260415.md`
-3. 正式主线剩余卡：`18`
+1. 当前下一锚：`63-wave-life-official-ledger-truthfulness-and-bootstrap-card-20260415.md`
+2. 当前待施工卡：`63-wave-life-official-ledger-truthfulness-and-bootstrap-card-20260415.md`
+3. 正式主线剩余卡：`17`
 4. 可选 Sidecar 剩余卡：`0`
 5. 历史治理 backlog：`0`
 
@@ -91,9 +91,9 @@
 
 ## 当前说明
 
-1. 最新生效结论锚点已推进到 `61-structure-filter-tail-coverage-truthfulness-rectification-conclusion-20260415.md`。
-2. `60-mainline-rectification-batch-registration-and-scope-freeze-card-20260415.md` 与 `61-structure-filter-tail-coverage-truthfulness-rectification-card-20260415.md` 已完成并接受。
-3. 当前正式主线待施工卡已切到 `62`，`60 -> 66` 作为 `59` 之后、`80 -> 86` 之前的主线整改卡组位于 `100` 之前。
+1. 最新生效结论锚点已推进到 `62-filter-pre-trigger-boundary-and-authority-reset-conclusion-20260415.md`。
+2. `60-mainline-rectification-batch-registration-and-scope-freeze-card-20260415.md`、`61-structure-filter-tail-coverage-truthfulness-rectification-card-20260415.md` 与 `62-filter-pre-trigger-boundary-and-authority-reset-card-20260415.md` 已完成并接受。
+3. 当前正式主线待施工卡已切到 `63`，`60 -> 66` 作为 `59` 之后、`80 -> 86` 之前的主线整改卡组位于 `100` 之前。
 4. 当前卡组顺序调整为 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55 -> 56 -> 57 -> 58 -> 59 -> 60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。
 
 ## 卡组路线图
