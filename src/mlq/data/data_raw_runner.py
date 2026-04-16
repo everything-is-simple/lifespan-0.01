@@ -443,6 +443,74 @@ def run_tdx_stock_raw_ingest(
     )
 
 
+def resolve_tdx_asset_pending_registry_scope(
+    *,
+    asset_type: str,
+    timeframe: str = "day",
+    settings: WorkspaceRoots | None = None,
+    source_root: Path | str | None = None,
+    adjust_method: str = "backward",
+    instruments: list[str] | tuple[str, ...] | None = None,
+) -> dict[str, object]:
+    """按官方 raw registry 解析当前 source folder 仍待补写的标的范围。"""
+
+    normalized_asset_type = _normalize_asset_type(asset_type)
+    normalized_timeframe = _normalize_timeframe(timeframe)
+    workspace = settings or default_settings()
+    workspace.ensure_directories()
+    bootstrap_raw_market_ledger(workspace)
+    resolved_source_root = Path(source_root or DEFAULT_TDX_SOURCE_ROOT)
+    folder_path, source_timeframe = _resolve_tdx_source_folder(
+        resolved_source_root,
+        asset_type=normalized_asset_type,
+        timeframe=normalized_timeframe,
+        adjust_method=adjust_method,
+    )
+    normalized_instruments = _normalize_instruments(instruments)
+    matching_files = [
+        path
+        for path in sorted(folder_path.glob("*.txt"))
+        if _match_instrument_filter(path, normalized_instruments)
+    ]
+    candidate_instruments = tuple(dict.fromkeys(_resolve_code_from_filename(path) for path in matching_files))
+    candidate_instrument_set = set(candidate_instruments)
+    raw_registry_table = RAW_FILE_REGISTRY_TABLE_BY_ASSET_TYPE[normalized_asset_type]
+    connection = duckdb.connect(str(raw_market_ledger_path(workspace)), read_only=True)
+    try:
+        existing_instrument_set = {
+            str(row[0])
+            for row in connection.execute(
+                f"""
+                SELECT DISTINCT code
+                FROM {raw_registry_table}
+                WHERE COALESCE(timeframe, 'day') = ?
+                  AND adjust_method = ?
+                """,
+                [normalized_timeframe, adjust_method],
+            ).fetchall()
+            if str(row[0]) in candidate_instrument_set
+        }
+    finally:
+        connection.close()
+    existing_instruments = tuple(code for code in candidate_instruments if code in existing_instrument_set)
+    pending_instruments = tuple(code for code in candidate_instruments if code not in existing_instrument_set)
+    return {
+        "asset_type": normalized_asset_type,
+        "timeframe": normalized_timeframe,
+        "adjust_method": adjust_method,
+        "source_root": str(resolved_source_root),
+        "source_folder": str(folder_path),
+        "source_timeframe": source_timeframe,
+        "raw_market_path": str(raw_market_ledger_path(workspace)),
+        "candidate_instrument_count": len(candidate_instruments),
+        "existing_instrument_count": len(existing_instruments),
+        "pending_instrument_count": len(pending_instruments),
+        "candidate_instruments": candidate_instruments,
+        "existing_instruments": existing_instruments,
+        "pending_instruments": pending_instruments,
+    }
+
+
 def run_tdx_asset_raw_ingest_batched(
     *,
     asset_type: str,

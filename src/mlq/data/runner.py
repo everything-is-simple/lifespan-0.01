@@ -19,6 +19,7 @@ from mlq.data.data_mainline_standardization import (
     run_mainline_local_ledger_standardization_bootstrap,
 )
 from mlq.data.data_raw_runner import (
+    resolve_tdx_asset_pending_registry_scope,
     run_tdx_asset_raw_ingest_batched,
     run_tdx_asset_raw_ingest,
     run_tdx_stock_raw_ingest,
@@ -49,6 +50,7 @@ __all__ = [
     "connect_mainline_local_ledger_sync_control",
     "mainline_local_ledger_sync_control_path",
     "mark_base_instrument_dirty",
+    "resolve_tdx_asset_pending_registry_scope",
     "run_mainline_local_ledger_incremental_sync",
     "run_mainline_local_ledger_standardization_bootstrap",
     "run_asset_market_base_build",

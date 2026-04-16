@@ -16,6 +16,7 @@ from mlq.data import (
     market_base_ledger_path,
     mark_base_instrument_dirty,
     raw_market_ledger_path,
+    resolve_tdx_asset_pending_registry_scope,
     run_asset_market_base_build,
     run_market_base_build,
     run_tdx_asset_raw_ingest,
@@ -418,6 +419,60 @@ def test_run_tdx_stock_raw_ingest_force_hash_and_continue_from_last_run(tmp_path
         ("600000.SH", 10.8, "raw-test-001f"),
         ("600001.SH", 9.5, "raw-test-001h"),
     ]
+
+
+def test_resolve_tdx_asset_pending_registry_scope_returns_only_missing_codes(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+    source_root = tmp_path / "tdx"
+
+    for code, exchange, name in (
+        ("600000", "SH", "浦发银行"),
+        ("600001", "SH", "平安银行"),
+        ("000001", "SZ", "平安银行A"),
+    ):
+        _write_tdx_asset_file(
+            source_root,
+            asset_type="stock-day",
+            folder_name="Backward-Adjusted",
+            code=code,
+            exchange=exchange,
+            name=name,
+            rows=[("2026/04/09", 10.0, 10.5, 9.9, 10.4, 1000, 10400)],
+        )
+
+    run_tdx_asset_raw_ingest(
+        settings=settings,
+        asset_type="stock",
+        timeframe="week",
+        source_root=source_root,
+        adjust_method="backward",
+        run_mode="full",
+        instruments=("600000.SH",),
+        run_id="raw-stock-week-pending-scope-001",
+        limit=0,
+    )
+
+    scope = resolve_tdx_asset_pending_registry_scope(
+        settings=settings,
+        asset_type="stock",
+        timeframe="week",
+        source_root=source_root,
+        adjust_method="backward",
+    )
+
+    assert scope["asset_type"] == "stock"
+    assert scope["timeframe"] == "week"
+    assert scope["source_timeframe"] == "day"
+    assert scope["candidate_instrument_count"] == 3
+    assert scope["existing_instrument_count"] == 1
+    assert scope["pending_instrument_count"] == 2
+    assert scope["existing_instruments"] == ("600000.SH",)
+    assert scope["pending_instruments"] == ("600001.SH", "000001.SZ")
 
 
 
