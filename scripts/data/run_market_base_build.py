@@ -6,7 +6,7 @@ import argparse
 import json
 from pathlib import Path
 
-from mlq.data import run_asset_market_base_build
+from mlq.data import run_asset_market_base_build, run_asset_market_base_build_batched
 
 
 def build_argument_parser() -> argparse.ArgumentParser:
@@ -17,6 +17,12 @@ def build_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument("--start-date")
     parser.add_argument("--end-date")
     parser.add_argument("--limit", type=int, default=1000)
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=0,
+        help="Split full bootstrap into instrument batches. 0 disables batching.",
+    )
     parser.add_argument("--build-mode", choices=("full", "incremental"), default="full")
     parser.add_argument(
         "--consume-dirty-only",
@@ -46,20 +52,34 @@ def build_argument_parser() -> argparse.ArgumentParser:
 def main() -> None:
     parser = build_argument_parser()
     args = parser.parse_args()
-    summary = run_asset_market_base_build(
-        asset_type=args.asset_type,
-        adjust_method=args.adjust_method,
-        instruments=args.instruments,
-        start_date=args.start_date,
-        end_date=args.end_date,
-        limit=args.limit,
-        build_mode=args.build_mode,
-        consume_dirty_only=args.consume_dirty_only,
-        mark_clean_on_success=args.mark_clean_on_success,
-        run_id=args.run_id,
-        summary_path=args.summary_path,
-    )
-    print(json.dumps(summary.as_dict(), ensure_ascii=False, indent=2))
+    if args.batch_size > 0:
+        summary_payload = run_asset_market_base_build_batched(
+            asset_type=args.asset_type,
+            adjust_method=args.adjust_method,
+            instruments=args.instruments,
+            start_date=args.start_date,
+            end_date=args.end_date,
+            batch_size=args.batch_size,
+            build_mode=args.build_mode,
+            run_id=args.run_id,
+            summary_path=args.summary_path,
+        )
+    else:
+        summary = run_asset_market_base_build(
+            asset_type=args.asset_type,
+            adjust_method=args.adjust_method,
+            instruments=args.instruments,
+            start_date=args.start_date,
+            end_date=args.end_date,
+            limit=args.limit,
+            build_mode=args.build_mode,
+            consume_dirty_only=args.consume_dirty_only,
+            mark_clean_on_success=args.mark_clean_on_success,
+            run_id=args.run_id,
+            summary_path=args.summary_path,
+        )
+        summary_payload = summary.as_dict()
+    print(json.dumps(summary_payload, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

@@ -53,13 +53,15 @@
 41. `historical objective profile backfill source selection and governance` 卡 `70`
 42. `Tushare objective source ledger and profile materialization` 卡 `71`
 43. `historical objective profile backfill execution` 卡 `72`
+44. `market_base backward full-history repair` 卡 `73`
+45. `raw/base batched bootstrap governance` 卡 `74`
 
 ## 当前阶段
 
-1. 最新生效结论锚点已推进到 `72-historical-objective-profile-backfill-execution-conclusion-20260415.md`。
-2. `60`、`61`、`62`、`63`、`64`、`65`、`66`、`69`、`70`、`71`、`72` 已完成并接受。
-3. 当前正式主线待施工卡已切到 `80`。
-4. `72` 已把当前 `2010-01-04 -> 2026-04-08` 的 objective coverage 缺口收口到 `0 missing`；当前恢复 `80 -> 86` official middle-ledger resume 卡组，`100` 仍只有在 `86` 接受后才允许恢复。
+1. 最新生效结论锚点已推进到 `74-market-base-batched-bootstrap-governance-conclusion-20260416.md`。
+2. `60`、`61`、`62`、`63`、`64`、`65`、`66`、`69`、`70`、`71`、`72`、`73`、`74` 已完成并接受。
+3. 当前正式主线待施工卡已切回 `80`。
+4. `72` 已把当前 `2010-01-04 -> 2026-04-08` 的 objective coverage 缺口收口到 `0 missing`；`73` 已把 `market_base.stock_daily_adjusted(backward)` 补齐到 `1990-12-19 -> 2026-04-10` 全历史，并确认 `stock / index / block` backward raw/base 覆盖 `0 missing`；`74` 已把后续 raw/base 建仓升级为分批执行；当前恢复 `80 -> 86` official middle-ledger resume 卡组，`100` 仍只有在 `86` 接受后才允许恢复。
 
 ## 体系图
 
@@ -97,7 +99,9 @@ flowchart LR
     G69 --> G70["70 historical objective source selection"]
     G70 --> G71["71 tushare objective implementation"]
     G71 --> G72["72 historical objective backfill execution"]
-    G72 --> G80["80-86 official middle-ledger resume"]
+    G72 --> G73["73 market_base backward full-history repair"]
+    G73 --> G74["74 raw/base batched bootstrap"]
+    G74 --> G80["80-86 official middle-ledger resume"]
     G80 --> NEXT["100 anchor freeze"]
     NEXT --> POST["101-105 trade/system 收口"]
 ```

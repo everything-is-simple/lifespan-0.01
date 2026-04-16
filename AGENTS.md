@@ -36,7 +36,7 @@
 补充理解：
 
 - `α / β / Ω` 三份路线图文档不只负责阶段进度，也负责说明各模块主要继承自哪些老仓来源、当前继承方式与置信度是什么。
-- 当前 `Ω` 文档还承担后半部施工指挥蓝图职责：它以 `28` 的 `checkpoint + dirty/work queue + replay/resume` 为统一基线，先做 `43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55` 的 pre-trade upstream 前置卡组，再完成 `56 -> 57 -> 58 -> 59` 的 `2010` pilot truthfulness gate，随后插入 `60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66` 主线整改卡组，并在恢复 `80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86` 前依次插入并完成 `67` 历史 file-length 治理债务卡、`68` 执行文档目录治理卡，当前再插入 `69` 冻结 `filter` 的客观可交易性与标的宇宙 gate，最后才进入 `100 -> 105`。
+- 当前 `Ω` 文档还承担后半部施工指挥蓝图职责：它以 `28` 的 `checkpoint + dirty/work queue + replay/resume` 为统一基线，先做 `43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55` 的 pre-trade upstream 前置卡组，再完成 `56 -> 57 -> 58 -> 59` 的 `2010` pilot truthfulness gate，随后插入 `60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66` 主线整改卡组，并在恢复 `80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86` 前依次插入并完成 `67` 历史 file-length 治理债务卡、`68` 执行文档目录治理卡、`69` filter 客观 gate、`70 -> 72` objective 历史回补卡组、`73` market_base backward 全历史修缮卡与 `74` market_base 分批建仓治理卡，最后才进入 `100 -> 105`。
 
 ## 3. 五根目录纪律
 
@@ -93,11 +93,15 @@ flowchart LR
 2. `data` 负责把本地离线市场数据沉淀为官方 `raw_market / market_base` 历史账本。
    - 当前 `data` 的正式 bounded runner 入口为 `scripts/data/run_tdx_stock_raw_ingest.py`，只允许从本地官方离线目录把股票日线增量写入 `raw_market.stock_file_registry / stock_daily_bar`，不允许绕过历史账本直接给下游喂临时 DataFrame。
    - 当前 `data` 的正式 bounded runner 入口为 `scripts/data/run_tdx_asset_raw_ingest.py`，只允许从本地官方离线目录把 `index / block / stock` 日线增量写入各自的 `raw_market.{asset}_file_registry / {asset}_daily_bar`，并为对应 `market_base` 脏标的挂账，不允许把指数、板块临时 DataFrame 直接喂给下游。
+  - 自 `73` 起，`TDX -> raw_market` 离线源目录同时兼容 `{asset_type}/Backward-Adjusted` 与当前本地 `{asset_type}-day/Backward-Adjusted` 布局；兼容目录只改变文件发现，不改变 `raw_market` 的业务自然键。
+  - 自 `74` 起，`TDX -> raw_market` 正式批量建仓优先使用 `--batch-size N --run-mode full`，按标的/文件批次串行生成 child raw ingest run。
   - 当前 `data` 的正式 bounded runner 入口为 `scripts/data/run_tdxquant_daily_raw_sync.py`，只允许把 `TdxQuant(dividend_type='none')` 代表的官方日更原始事实按 `run / request / instrument checkpoint` 账本语义桥接进 `raw_market.stock_daily_bar(adjust_method='none')`，并只标记 `base_dirty_instrument(adjust_method='none')`，不允许把 `front/back` 直接写成正式复权真值。
   - 自 `69` 起，`scripts/data/run_tdxquant_daily_raw_sync.py` 还必须把 `get_stock_info` 返回的官方客观状态按 `code + asset_type + observed_trade_date` 正式沉淀到 `raw_market.raw_tdxquant_instrument_profile`，用于 `filter` 只读消费停牌/ST/退市整理/证券类型/市场类型等 objective gate，不允许只在运行时内存里临时透传。
   - 自 `71` 起，`scripts/data/run_tushare_objective_source_sync.py` 作为正式 bounded runner，允许把 `Tushare stock_basic / suspend_d / stock_st / namechange` 的历史 objective 事实按 `run / request / checkpoint / event` 账本语义正式沉淀进 `raw_market.tushare_objective_{run,request,checkpoint,event}`；该脚本必须显式二选一：要么提供 `signal_start_date / signal_end_date` 执行 bounded window，要么显式传入 `--use-checkpoint-queue` 执行 checkpoint queue，无参调用不再允许静默进入 queue。
   - 自 `71` 起，`scripts/data/run_tushare_objective_profile_materialization.py` 作为正式 bounded runner，允许只读消费 `raw_market.tushare_objective_event` 并把 `asset_type + code + observed_trade_date` 粒度的 profile 正式物化进 `raw_market.raw_tdxquant_instrument_profile`，同时维护 `objective_profile_materialization_{run,checkpoint,run_profile}`；该脚本必须显式二选一：要么提供 `signal_start_date / signal_end_date` 执行 bounded window，要么显式传入 `--use-checkpoint-queue` 执行 checkpoint queue，无参调用不再允许静默进入 queue。
   - 当前 `data` 的正式 bounded runner 入口为 `scripts/data/run_market_base_build.py`，只允许从官方 `raw_market` 物化 `market_base.{stock,index,block}_daily_adjusted`，并正式沉淀 `adjust_method in {none, backward, forward}` 三套价格，不允许把执行口径和信号口径混写成一套。
+  - 自 `73` 起，`market_base` 的真正全历史 full 重物化必须使用无日期窗、无标的窗、`--limit 0` 的调用；带日期窗、标的窗或默认 row limit 的 `full` 只允许 upsert 本次 staging，不再拥有删除同一 `adjust_method` 范围外历史行的权限。
+  - 自 `74` 起，`market_base` 正式批量建仓优先使用 `--batch-size N --build-mode full --limit 0`，按标的批次串行生成 child base build run；instrument/date scoped full 只允许删除当前作用域内缺失行。
    - 当前 `data` 的正式 bounded runner 入口为 `scripts/data/run_mainline_local_ledger_standardization_bootstrap.py`，只允许按 `39` 已冻结的官方 ledger 清单完成一次性批量标准化建仓，不允许继续把 shadow DB 当正式主线库。
    - 当前 `data` 的正式 bounded runner 入口为 `scripts/data/run_mainline_local_ledger_incremental_sync.py`，只允许围绕 `39` 已冻结的官方 ledger 清单维护每日增量同步、checkpoint / dirty queue / replay 与 freshness audit，不允许把 run / checkpoint 反写成业务真值。
 3. `malf` 负责把官方 `market_base` 价格事实沉淀为按时间级别独立运行的走势语义账本层。
@@ -148,8 +152,8 @@ flowchart LR
 1. `malf -> structure -> filter -> alpha` 默认使用 `adjust_method = backward`
 2. `position -> trade` 默认使用 `adjust_method = none`
 3. `adjust_method = forward` 当前只作为研究与展示保留，不作为正式执行口径
-4. 当前最新生效结论锚点已推进到 `68-execution-doc-layout-governance-restoration-conclusion-20260415.md`；`66` 已正式把 `60-65` 的整改结论统一收口为 resume gate，`67` 已完成历史 file-length 治理收口，`68` 已完成执行文档目录治理收口，当前待施工卡已切到 `69-filter-objective-tradability-and-universe-gate-freeze-card-20260415.md`，继续要求 `86` 通过后才恢复 `100`。
-5. 当前主线系统级路线图必须以 `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 为准；该文档现在把 `60 -> 66` 固定为 `80-86` 前的主线整改卡组，把 `67` 固定为已完成的历史 file-length 治理卡，把 `68` 固定为已完成的执行文档目录治理卡，把 `69` 固定为 `80-86` 前新增的 filter 客观 gate 冻结卡，把 `80 -> 86` 固定为治理收口后的真实正式库 middle-ledger 恢复卡组，不允许再把“代码已切 canonical”误当成“正式库已切 canonical”，也不允许绕过 `69 -> 80-86` 直接续推 `100-105`。
+4. 当前最新生效结论锚点已推进到 `74-market-base-batched-bootstrap-governance-conclusion-20260416.md`；`72` 已完成 objective profile 历史覆盖收口，`73` 已完成 `market_base.stock_daily_adjusted(backward)` 全历史补齐，`74` 已完成 `raw/base` 分批建仓治理，当前待施工卡已切回 `80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`，继续要求 `86` 通过后才恢复 `100`。
+5. 当前主线系统级路线图必须以 `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 为准；该文档现在把 `60 -> 66` 固定为 `80-86` 前的主线整改卡组，把 `67`、`68`、`69`、`70`、`71`、`72`、`73`、`74` 固定为已完成的治理与 data 修缮前置卡，把 `80 -> 86` 固定为治理收口后的真实正式库 middle-ledger 恢复卡组，不允许再把“代码已切 canonical”误当成“正式库已切 canonical”，也不允许绕过 `80-86` 直接续推 `100-105`。
 
 ## 5. 历史账本原则
 
@@ -208,7 +212,7 @@ flowchart LR
 只要治理规则、环境脚手架、路径契约、测试入口、执行入口发生变化，就必须同步刷新这三个入口文件。
 其中 `docs/01-design/`、`docs/02-spec/` 与 `src/mlq/core/paths.py` 的正式口径变化，也视为入口变化。
 全仓 `python scripts/system/check_development_governance.py` 盘点允许通过 `scripts/system/development_governance_legacy_backlog.py` 显式登记历史债务；但按改动路径触发的严格治理检查，不得豁免新增违规。
-当前 `66`、`67` 与 `68` 均已接受；历史 file-length backlog 已清零，执行文档目录治理也已恢复。当前正式施工位已切到 `69`，用于落实 `filter` 的客观可交易性与标的宇宙 gate；只有 `69` 收口后才恢复 `80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86`，再由 `86` 接受后恢复 `100-105`。`67` 已完成的清债包括 `src/mlq/data/data_mainline_incremental_sync.py`、`src/mlq/portfolio_plan/runner.py`、`src/mlq/data/data_market_base_materialization.py`、`src/mlq/data/data_tdxquant.py` 与 `tests/unit/data/test_market_base_runner.py`；`68` 已把 `docs/03-execution/` 目录纪律重新冻结为 `root/card-conclusion-index-template-README + evidence/ + records/`。本仓 `pytest` 证据仍统一按串行口径执行，避免多个进程争用 `H:\Lifespan-temp\pytest-tmp`。
+当前 `66`、`67`、`68`、`69`、`70`、`71`、`72`、`73` 与 `74` 均已接受；历史 file-length backlog 已清零，执行文档目录治理也已恢复，objective profile、market_base backward 全历史覆盖与 raw/base 分批建仓治理均已收口。当前正式施工位已切回 `80`；只有 `86` 收口后才恢复 `100-105`。`67` 已完成的清债包括 `src/mlq/data/data_mainline_incremental_sync.py`、`src/mlq/portfolio_plan/runner.py`、`src/mlq/data/data_market_base_materialization.py`、`src/mlq/data/data_tdxquant.py` 与 `tests/unit/data/test_market_base_runner.py`；`68` 已把 `docs/03-execution/` 目录纪律重新冻结为 `root/card-conclusion-index-template-README + evidence/ + records/`。本仓 `pytest` 证据仍统一按串行口径执行，避免多个进程争用 `H:\Lifespan-temp\pytest-tmp`。
 
 ## 8. 文档规则
 

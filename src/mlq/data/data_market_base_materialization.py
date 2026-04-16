@@ -334,6 +334,9 @@ def _materialize_market_base_stage(
     adjust_method: str,
     run_id: str,
     full_scope: bool,
+    instruments: tuple[str, ...],
+    start_date: date | None,
+    end_date: date | None,
 ) -> None:
     connection.execute(
         f"""
@@ -425,19 +428,13 @@ def _materialize_market_base_stage(
         """
     )
     if full_scope:
-        connection.execute(
-            f"""
-            DELETE FROM {MARKET_BASE_STOCK_DAILY_TABLE} AS target
-            WHERE target.adjust_method = ?
-              AND NOT EXISTS (
-                  SELECT 1
-                  FROM {MARKET_BASE_FINAL_STAGE_TABLE} AS source
-                  WHERE source.code = target.code
-                    AND source.trade_date = target.trade_date
-                    AND source.adjust_method = target.adjust_method
-              )
-            """,
-            [adjust_method],
+        _delete_missing_market_base_rows_in_scope(
+            connection,
+            market_table=MARKET_BASE_STOCK_DAILY_TABLE,
+            adjust_method=adjust_method,
+            instruments=instruments,
+            start_date=start_date,
+            end_date=end_date,
         )
 
 
@@ -448,6 +445,9 @@ def _materialize_market_base_stage_by_asset(
     adjust_method: str,
     run_id: str,
     full_scope: bool,
+    instruments: tuple[str, ...],
+    start_date: date | None,
+    end_date: date | None,
 ) -> None:
     if market_table == MARKET_BASE_STOCK_DAILY_TABLE:
         _materialize_market_base_stage(
@@ -455,6 +455,9 @@ def _materialize_market_base_stage_by_asset(
             adjust_method=adjust_method,
             run_id=run_id,
             full_scope=full_scope,
+            instruments=instruments,
+            start_date=start_date,
+            end_date=end_date,
         )
         return
     connection.execute(
@@ -547,20 +550,50 @@ def _materialize_market_base_stage_by_asset(
         """
     )
     if full_scope:
-        connection.execute(
-            f"""
-            DELETE FROM {market_table} AS target
-            WHERE target.adjust_method = ?
-              AND NOT EXISTS (
-                  SELECT 1
-                  FROM {MARKET_BASE_FINAL_STAGE_TABLE} AS source
-                  WHERE source.code = target.code
-                    AND source.trade_date = target.trade_date
-                    AND source.adjust_method = target.adjust_method
-              )
-            """,
-            [adjust_method],
+        _delete_missing_market_base_rows_in_scope(
+            connection,
+            market_table=market_table,
+            adjust_method=adjust_method,
+            instruments=instruments,
+            start_date=start_date,
+            end_date=end_date,
         )
+
+def _delete_missing_market_base_rows_in_scope(
+    connection: duckdb.DuckDBPyConnection,
+    *,
+    market_table: str,
+    adjust_method: str,
+    instruments: tuple[str, ...],
+    start_date: date | None,
+    end_date: date | None,
+) -> None:
+    parameters: list[object] = [adjust_method]
+    where_clauses = ["target.adjust_method = ?"]
+    if instruments:
+        placeholders = ", ".join("?" for _ in instruments)
+        where_clauses.append(f"target.code IN ({placeholders})")
+        parameters.extend(instruments)
+    if start_date is not None:
+        where_clauses.append("target.trade_date >= ?")
+        parameters.append(start_date)
+    if end_date is not None:
+        where_clauses.append("target.trade_date <= ?")
+        parameters.append(end_date)
+    connection.execute(
+        f"""
+        DELETE FROM {market_table} AS target
+        WHERE {' AND '.join(where_clauses)}
+          AND NOT EXISTS (
+              SELECT 1
+              FROM {MARKET_BASE_FINAL_STAGE_TABLE} AS source
+              WHERE source.code = target.code
+                AND source.trade_date = target.trade_date
+                AND source.adjust_method = target.adjust_method
+          )
+        """,
+        parameters,
+    )
 
 def _build_market_base_reused_condition(*, stage_alias: str, existing_alias: str) -> str:
     comparisons = [

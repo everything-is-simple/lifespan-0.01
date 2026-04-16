@@ -6,6 +6,23 @@ from mlq.data.data_common import *
 from mlq.data.data_raw_support import *
 from mlq.data.data_shared import *
 
+
+def _resolve_tdx_daily_folder(source_root: Path, *, asset_type: str, adjust_method: str) -> Path:
+    """兼容当前离线源的 `{asset_type}-day` 目录与早期 `{asset_type}` 目录。"""
+
+    folder_name = resolve_adjust_method_folder(adjust_method)
+    candidates = (
+        source_root / asset_type / folder_name,
+        source_root / f"{asset_type}-day" / folder_name,
+    )
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    raise FileNotFoundError(
+        "Missing TDX source directory, tried: " + ", ".join(str(candidate) for candidate in candidates)
+    )
+
+
 def run_tdx_stock_raw_ingest(
     *,
     settings: WorkspaceRoots | None = None,
@@ -26,9 +43,11 @@ def run_tdx_stock_raw_ingest(
     bootstrap_raw_market_ledger(workspace)
     bootstrap_market_base_ledger(workspace)
     resolved_source_root = Path(source_root or DEFAULT_TDX_SOURCE_ROOT)
-    folder_path = resolved_source_root / DEFAULT_ASSET_TYPE / resolve_adjust_method_folder(adjust_method)
-    if not folder_path.exists():
-        raise FileNotFoundError(f"Missing TDX source directory: {folder_path}")
+    folder_path = _resolve_tdx_daily_folder(
+        resolved_source_root,
+        asset_type=DEFAULT_ASSET_TYPE,
+        adjust_method=adjust_method,
+    )
 
     normalized_instruments = _normalize_instruments(instruments)
     normalized_limit = _normalize_limit(limit)
@@ -265,6 +284,84 @@ def run_tdx_stock_raw_ingest(
         connection.close()
 
 
+def run_tdx_asset_raw_ingest_batched(
+    *,
+    asset_type: str,
+    settings: WorkspaceRoots | None = None,
+    source_root: Path | str | None = None,
+    adjust_method: str = "backward",
+    run_mode: str = "full",
+    batch_size: int = 100,
+    force_hash: bool = False,
+    instruments: list[str] | tuple[str, ...] | None = None,
+    run_id: str | None = None,
+    summary_path: Path | None = None,
+) -> dict[str, object]:
+    """按标的批次执行 TDX raw ingest，避免把全量文件作为单个 run 推进。"""
+
+    normalized_asset_type = _normalize_asset_type(asset_type)
+    normalized_batch_size = int(batch_size)
+    if normalized_batch_size <= 0:
+        raise ValueError("batch_size must be greater than 0")
+    workspace = settings or default_settings()
+    workspace.ensure_directories()
+    bootstrap_raw_market_ledger(workspace)
+    bootstrap_market_base_ledger(workspace)
+    resolved_source_root = Path(source_root or DEFAULT_TDX_SOURCE_ROOT)
+    folder_path = _resolve_tdx_daily_folder(
+        resolved_source_root,
+        asset_type=normalized_asset_type,
+        adjust_method=adjust_method,
+    )
+    normalized_instruments = _normalize_instruments(instruments)
+    matching_files = [
+        path
+        for path in sorted(folder_path.glob("*.txt"))
+        if _match_instrument_filter(path, normalized_instruments)
+    ]
+    candidate_codes = tuple(_resolve_code_from_filename(path) for path in matching_files)
+    parent_run_id = run_id or _build_run_id(prefix=f"raw-{normalized_asset_type}-ingest-batch")
+    child_summaries: list[dict[str, object]] = []
+    for batch_number, offset in enumerate(range(0, len(candidate_codes), normalized_batch_size), start=1):
+        batch_codes = candidate_codes[offset : offset + normalized_batch_size]
+        child_summary = run_tdx_asset_raw_ingest(
+            asset_type=normalized_asset_type,
+            settings=workspace,
+            source_root=resolved_source_root,
+            adjust_method=adjust_method,
+            run_mode=run_mode,
+            force_hash=force_hash,
+            instruments=batch_codes,
+            limit=0,
+            run_id=f"{parent_run_id}-b{batch_number:04d}",
+        )
+        child_summaries.append(child_summary.as_dict())
+
+    summary: dict[str, object] = {
+        "run_id": parent_run_id,
+        "asset_type": normalized_asset_type,
+        "adjust_method": adjust_method,
+        "run_mode": run_mode,
+        "batch_size": normalized_batch_size,
+        "batch_count": len(child_summaries),
+        "candidate_file_count": len(candidate_codes),
+        "processed_file_count": sum(int(item["processed_file_count"]) for item in child_summaries),
+        "ingested_file_count": sum(int(item["ingested_file_count"]) for item in child_summaries),
+        "skipped_unchanged_file_count": sum(
+            int(item["skipped_unchanged_file_count"]) for item in child_summaries
+        ),
+        "failed_file_count": sum(int(item["failed_file_count"]) for item in child_summaries),
+        "bar_inserted_count": sum(int(item["bar_inserted_count"]) for item in child_summaries),
+        "bar_reused_count": sum(int(item["bar_reused_count"]) for item in child_summaries),
+        "bar_rematerialized_count": sum(int(item["bar_rematerialized_count"]) for item in child_summaries),
+        "child_runs": child_summaries,
+        "raw_market_path": str(raw_market_ledger_path(workspace)),
+        "source_root": str(resolved_source_root),
+    }
+    _write_summary(summary, summary_path)
+    return summary
+
+
 def run_tdx_asset_raw_ingest(
     *,
     asset_type: str,
@@ -301,9 +398,11 @@ def run_tdx_asset_raw_ingest(
     bootstrap_raw_market_ledger(workspace)
     bootstrap_market_base_ledger(workspace)
     resolved_source_root = Path(source_root or DEFAULT_TDX_SOURCE_ROOT)
-    folder_path = resolved_source_root / normalized_asset_type / resolve_adjust_method_folder(adjust_method)
-    if not folder_path.exists():
-        raise FileNotFoundError(f"Missing TDX source directory: {folder_path}")
+    folder_path = _resolve_tdx_daily_folder(
+        resolved_source_root,
+        asset_type=normalized_asset_type,
+        adjust_method=adjust_method,
+    )
 
     raw_registry_table = RAW_FILE_REGISTRY_TABLE_BY_ASSET_TYPE[normalized_asset_type]
     raw_bar_table = RAW_DAILY_BAR_TABLE_BY_ASSET_TYPE[normalized_asset_type]

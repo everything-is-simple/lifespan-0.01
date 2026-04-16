@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from mlq.data.data_market_base_runner import (
     run_asset_market_base_build,
+    run_asset_market_base_build_batched,
     run_market_base_build,
 )
 from mlq.data.data_mainline_incremental_sync import (
@@ -18,6 +19,7 @@ from mlq.data.data_mainline_standardization import (
     run_mainline_local_ledger_standardization_bootstrap,
 )
 from mlq.data.data_raw_runner import (
+    run_tdx_asset_raw_ingest_batched,
     run_tdx_asset_raw_ingest,
     run_tdx_stock_raw_ingest,
 )
@@ -50,8 +52,10 @@ __all__ = [
     "run_mainline_local_ledger_incremental_sync",
     "run_mainline_local_ledger_standardization_bootstrap",
     "run_asset_market_base_build",
+    "run_asset_market_base_build_batched",
     "run_market_base_build",
     "run_tdx_asset_raw_ingest",
+    "run_tdx_asset_raw_ingest_batched",
     "run_tdx_stock_raw_ingest",
     "run_tdxquant_daily_raw_sync",
     "run_tushare_objective_profile_materialization",

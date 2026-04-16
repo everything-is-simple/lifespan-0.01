@@ -6,7 +6,7 @@ import argparse
 import json
 from pathlib import Path
 
-from mlq.data import run_tdx_asset_raw_ingest
+from mlq.data import run_tdx_asset_raw_ingest, run_tdx_asset_raw_ingest_batched
 
 
 def build_argument_parser() -> argparse.ArgumentParser:
@@ -19,6 +19,12 @@ def build_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument("--continue-from-last-run", action="store_true")
     parser.add_argument("--instrument", dest="instruments", action="append", default=[])
     parser.add_argument("--limit", type=int, default=100)
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=0,
+        help="Split raw ingest into instrument/file batches. 0 disables batching.",
+    )
     parser.add_argument("--run-id")
     parser.add_argument("--summary-path", type=Path)
     return parser
@@ -27,19 +33,35 @@ def build_argument_parser() -> argparse.ArgumentParser:
 def main() -> None:
     parser = build_argument_parser()
     args = parser.parse_args()
-    summary = run_tdx_asset_raw_ingest(
-        asset_type=args.asset_type,
-        source_root=args.source_root,
-        adjust_method=args.adjust_method,
-        run_mode=args.run_mode,
-        force_hash=args.force_hash,
-        continue_from_last_run=args.continue_from_last_run,
-        instruments=args.instruments,
-        limit=args.limit,
-        run_id=args.run_id,
-        summary_path=args.summary_path,
-    )
-    print(json.dumps(summary.as_dict(), ensure_ascii=False, indent=2))
+    if args.batch_size > 0:
+        if args.continue_from_last_run:
+            raise ValueError("--continue-from-last-run is only supported in non-batched raw ingest mode.")
+        summary_payload = run_tdx_asset_raw_ingest_batched(
+            asset_type=args.asset_type,
+            source_root=args.source_root,
+            adjust_method=args.adjust_method,
+            run_mode=args.run_mode,
+            force_hash=args.force_hash,
+            instruments=args.instruments,
+            batch_size=args.batch_size,
+            run_id=args.run_id,
+            summary_path=args.summary_path,
+        )
+    else:
+        summary = run_tdx_asset_raw_ingest(
+            asset_type=args.asset_type,
+            source_root=args.source_root,
+            adjust_method=args.adjust_method,
+            run_mode=args.run_mode,
+            force_hash=args.force_hash,
+            continue_from_last_run=args.continue_from_last_run,
+            instruments=args.instruments,
+            limit=args.limit,
+            run_id=args.run_id,
+            summary_path=args.summary_path,
+        )
+        summary_payload = summary.as_dict()
+    print(json.dumps(summary_payload, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

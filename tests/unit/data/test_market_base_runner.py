@@ -89,6 +89,127 @@ def test_run_market_base_build_materializes_multiple_adjust_methods(tmp_path: Pa
     ]
 
 
+def test_run_market_base_build_bounded_full_does_not_delete_outside_scope(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+    source_root = tmp_path / "tdx"
+
+    _write_tdx_stock_file(
+        source_root,
+        folder_name="Backward-Adjusted",
+        code="600000",
+        exchange="SH",
+        name="浦发银行",
+        rows=[
+            ("2026/04/08", 10.0, 10.5, 9.9, 10.4, 1000, 10400),
+            ("2026/04/09", 10.4, 10.8, 10.2, 10.7, 1200, 12840),
+        ],
+    )
+    _write_tdx_stock_file(
+        source_root,
+        folder_name="Backward-Adjusted",
+        code="600001",
+        exchange="SH",
+        name="平安银行",
+        rows=[
+            ("2026/04/08", 9.0, 9.3, 8.9, 9.2, 900, 8280),
+            ("2026/04/09", 9.2, 9.6, 9.1, 9.5, 1000, 9500),
+        ],
+    )
+
+    run_tdx_stock_raw_ingest(
+        settings=settings,
+        source_root=source_root,
+        adjust_method="backward",
+        run_id="raw-test-002d",
+    )
+    run_market_base_build(
+        settings=settings,
+        adjust_method="backward",
+        build_mode="full",
+        limit=0,
+        run_id="base-test-002d",
+    )
+    summary = run_market_base_build(
+        settings=settings,
+        adjust_method="backward",
+        build_mode="full",
+        start_date="2026-04-09",
+        end_date="2026-04-09",
+        run_id="base-test-002e",
+    )
+
+    assert summary.source_scope_kind == "date_range"
+    assert summary.source_row_count == 2
+
+    conn = duckdb.connect(str(market_base_ledger_path(settings)), read_only=True)
+    try:
+        rows = conn.execute(
+            """
+            SELECT code, trade_date, close
+            FROM stock_daily_adjusted
+            WHERE adjust_method = 'backward'
+            ORDER BY code, trade_date
+            """
+        ).fetchall()
+    finally:
+        conn.close()
+
+    assert rows == [
+        ("600000.SH", date(2026, 4, 8), 10.4),
+        ("600000.SH", date(2026, 4, 9), 10.7),
+        ("600001.SH", date(2026, 4, 8), 9.2),
+        ("600001.SH", date(2026, 4, 9), 9.5),
+    ]
+
+
+def test_run_tdx_stock_raw_ingest_supports_day_source_layout(tmp_path: Path, monkeypatch) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+    source_root = tmp_path / "tdx"
+
+    _write_tdx_asset_file(
+        source_root,
+        asset_type="stock-day",
+        folder_name="Backward-Adjusted",
+        code="600000",
+        exchange="SH",
+        name="浦发银行",
+        rows=[("2026/04/09", 10.4, 10.8, 10.2, 10.7, 1200, 12840)],
+    )
+
+    summary = run_tdx_stock_raw_ingest(
+        settings=settings,
+        source_root=source_root,
+        adjust_method="backward",
+        run_id="raw-test-002f",
+    )
+
+    assert summary.candidate_file_count == 1
+    assert summary.bar_inserted_count == 1
+
+    conn = duckdb.connect(str(raw_market_ledger_path(settings)), read_only=True)
+    try:
+        rows = conn.execute(
+            """
+            SELECT code, trade_date, close, source_path
+            FROM stock_daily_bar
+            ORDER BY code, trade_date
+            """
+        ).fetchall()
+    finally:
+        conn.close()
+
+    assert len(rows) == 1
+    assert rows[0][:3] == ("600000.SH", date(2026, 4, 9), 10.7)
+    assert "stock-day" in rows[0][3]
+
+
 def test_run_market_base_build_incremental_consumes_dirty_queue(tmp_path: Path, monkeypatch) -> None:
     _clear_workspace_env(monkeypatch)
     repo_root = _bootstrap_repo_root(tmp_path)

@@ -15,9 +15,9 @@
 
 1. 历史账本硬约束来自 `docs/01-design/03-historical-ledger-shared-contract-charter-20260409.md`
 2. 全系统统一治理基线来自 `28-system-wide-checkpoint-and-dirty-queue-alignment-conclusion-20260411.md`
-3. 当前最新生效结论锚点为 `68-execution-doc-layout-governance-restoration-conclusion-20260415.md`
-4. 当前待施工卡为 `69-filter-objective-tradability-and-universe-gate-freeze-card-20260415.md`
-5. 当前连续前置卡组为 `69 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86`
+3. 当前最新生效结论锚点为 `74-market-base-batched-bootstrap-governance-conclusion-20260416.md`
+4. 当前待施工卡为 `80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`
+5. 当前连续前置卡组为 `80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86`
 
 ## 当前正式判断
 
@@ -41,8 +41,8 @@
 
 ### 当前阶段
 
-1. 当前 active 卡：`69`
-2. 当前 active 卡组：`69 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`
+1. 当前 active 卡：`80`
+2. 当前 active 卡组：`80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`
 3. 当前系统级目标：恢复 `2011-2026 YTD` official middle-ledger 分窗建库与 cutover gate，并在 `86` 后决定是否恢复 `trade -> system`
 
 ## 系统当前剖面图
@@ -54,7 +54,7 @@ flowchart LR
     C28["28 统一基线\ncheckpoint + dirty/work queue + replay/resume"] --> DATA
 
     subgraph ALIGNED["已对齐区域"]
-        DATA["data\nCanonical data-grade\n39/40 已冻结官方 ledger + 增量续跑"]
+        DATA["data\nCanonical data-grade\n39/40 已冻结官方 ledger + 增量续跑\n73/74 已补齐 backward 全历史并支持 raw/base 分批建仓"]
         MALF["malf\nCanonical data-grade\n29/30/36/63 已形成 core + sidecar + official bootstrap truth"]
         STR["structure\nOfficial ledger hardening accepted\n31/35/38/44/61 已完成 canonical rebind + replay smoke + CLI guardrail"]
         FLT["filter\nOfficial ledger hardening accepted\n31/35/38/44/61/62 已完成 canonical rebind + boundary reset"]
@@ -91,8 +91,11 @@ flowchart LR
 7. `67`
 8. `68`
 9. `69`
-10. `80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86`
-11. `100 -> 101 -> 102 -> 103 -> 104 -> 105`
+10. `70 -> 71 -> 72`
+11. `73`
+12. `74`
+13. `80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86`
+14. `100 -> 101 -> 102 -> 103 -> 104 -> 105`
 
 其中：
 
@@ -106,9 +109,12 @@ flowchart LR
 8. `67` 是已完成的历史 file-length 治理债务重登记与清理卡
 9. `68` 是已完成的执行文档目录治理恢复与固化卡
 10. `69` 是冻结 `filter` 客观可交易性与标的宇宙 gate 的新增治理卡
-11. `80 -> 86` 是治理收口后的 official middle-ledger 恢复与 cutover gate 卡组
-12. `100 -> 105` 是 `trade/system` 恢复卡组
-13. `105` 明确固定为最后一张后置卡
+11. `70 -> 72` 是 objective 历史源选择、实现与回补执行卡组
+12. `73` 是 `market_base(backward)` 全历史修缮卡
+13. `74` 是 `raw/base` 分批建仓治理与 runner 修缮卡
+14. `80 -> 86` 是治理与 data 修缮收口后的 official middle-ledger 恢复与 cutover gate 卡组
+15. `100 -> 105` 是 `trade/system` 恢复卡组
+16. `105` 明确固定为最后一张后置卡
 
 ```mermaid
 flowchart LR
@@ -130,7 +136,11 @@ flowchart LR
     G55 --> G6066["60-66 mainline rectification"]
     G6066 --> G67["67 file-length debt cleanup accepted"]
     G67 --> G68["68 execution doc layout governance accepted"]
-    G68 --> G8086["80-86 official middle-ledger resume"]
+    G68 --> G69["69 filter objective gate accepted"]
+    G69 --> G7072["70-72 objective historical backfill accepted"]
+    G7072 --> G73["73 market_base backward full-history repair accepted"]
+    G73 --> G74["74 raw/base batched bootstrap accepted"]
+    G74 --> G8086["80-86 official middle-ledger resume"]
     G8086 --> G100105["100-105 trade/system 恢复卡组"]
     G100105 --> C100["100 signal anchor freeze"]
     C100 --> C101["101 T+1 open 参考价修正"]
@@ -144,11 +154,11 @@ flowchart LR
 
 1. `29-32` 不是“历史已完成就可忽略”的旧卡组，而是后半部一切恢复卡的前置逻辑顺序。
 2. `43-45` 任何一张未通过前，都不允许进入 `46`。
-3. `55` 接受后并不直接恢复 `100`；真实正式库主线已先经过 `60-68` 整改与治理收口，当前再插入 `69` 冻结 filter 客观 gate，随后恢复路径才是 `80-86`。
+3. `55` 接受后并不直接恢复 `100`；真实正式库主线已先经过 `60-74` 整改、治理、objective 回补、`market_base(backward)` 全历史修缮与 raw/base 分批建仓治理，随后恢复路径才是 `80-86`。
 4. `100-105` 当前必须在 `86` 接受后按自然数顺排推进，不允许跳过 `100/101` 直接做 `105`。
 5. `47-51` 属于 `position` 追平 `data -> malf` 事实标准的正式卡组，不允许把 `position` 继续当成 bounded skeleton 直接越过。
 6. `52-54` 属于 `portfolio_plan` 追平 `data -> malf` 事实标准的正式卡组，不允许继续把组合层当成最小桥接层直接越过。
-7. `66` 已正式判断无需继续追加整改前置卡；`67` 已完成 file-length 治理收口，`68` 已完成执行文档目录治理收口；当前必须先完成 `69`，不得再以口头状态把 filter 的实际 gate 语义悬空后直接推进 `80-86`。
+7. `66` 已正式判断无需继续追加整改前置卡；`67 -> 74` 已完成 file-length、执行文档目录、filter objective gate、objective 历史回补、`market_base(backward)` 全历史修缮与 raw/base 分批建仓治理，当前恢复 `80-86`。
 
 ## 增量更新 / 断点续跑 / 审计依赖图
 
@@ -184,7 +194,7 @@ flowchart TD
 - 审计账本：
   `run / checkpoint / dirty_queue / freshness_readout`
 - 当前结论：
-  `17 -> 22 -> 39 -> 40` 已把 `data` 建成全系统 data-grade 基线定义者
+  `17 -> 22 -> 39 -> 40 -> 73 -> 74` 已把 `data` 建成全系统 data-grade 基线定义者，并补齐 `market_base(backward)` 全历史覆盖与 raw/base 分批建仓能力
 - 后续动作：
   维持官方 ledger inventory 稳定，不在执行侧恢复阶段回退到 shadow DB
 
@@ -370,7 +380,7 @@ flowchart TD
 
 影响：
 
-1. `67` 已把历史 file-length backlog 清零，`68` 已把执行文档目录治理恢复到正式布局，治理阻塞已解除
+1. `67` 已把历史 file-length backlog 清零，`68` 已把执行文档目录治理恢复到正式布局，`69 -> 72` 已完成 objective gate 与历史 profile 覆盖，`73` 已把 `market_base(backward)` 补齐到全历史，`74` 已把后续 raw/base 建仓升级为分批执行，前置治理与 data 覆盖阻塞已解除
 2. 当前主线阻塞重新回到 `80-86` 本身的 official middle-ledger 建库与 cutover
 
 ### 阻塞 2：`100-105` 仍需等待 `86` 放行
@@ -431,7 +441,7 @@ flowchart TD
 - 当前状态：
   `已完成`
 - 下一步依赖：
-`68` 已收口；当前先执行 `69` filter objective gate freeze，之后再进入 `80-86` official middle-ledger resume
+`74` 已收口；当前进入 `80-86` official middle-ledger resume
 
 ### `M3 alpha 解释层收口`
 
@@ -449,7 +459,7 @@ flowchart TD
 - 当前状态：
   `未完成`
 - 下一步依赖：
-  `68 -> 69 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 100 -> 104`
+  `80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 100 -> 104`
 
 ### `M5 system orchestration 收口`
 
@@ -458,7 +468,7 @@ flowchart TD
 - 当前状态：
   `未完成`
 - 下一步依赖：
-  `68 -> 69 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 104 -> 105`
+  `80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 104 -> 105`
 
 ## 系统审计依赖图
 

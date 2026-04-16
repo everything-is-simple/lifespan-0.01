@@ -83,6 +83,8 @@ flowchart LR
 - `scripts/data/run_tdx_asset_raw_ingest.py`
   - 从本地官方离线目录把 `stock / index / block` txt 日线增量写入各自 `raw_market.{asset}_file_registry / {asset}_daily_bar`
   - 支持一次性建仓、每日断点续传、文件级 `skipped_unchanged`
+  - 自 `73` 起同时兼容 `{asset_type}/Backward-Adjusted` 与 `{asset_type}-day/Backward-Adjusted` 两种本地离线源布局
+  - 自 `74` 起支持 `--batch-size N`，按标的/文件批次串行生成 child raw ingest run
 - `scripts/data/run_tdxquant_daily_raw_sync.py`
   - 把 `TdxQuant(dividend_type='none')` 作为股票日更原始事实桥接进 `raw_market.stock_daily_bar(adjust_method='none')`
   - 只标记 `base_dirty_instrument(adjust_method='none')`
@@ -96,6 +98,8 @@ flowchart LR
 - `scripts/data/run_market_base_build.py`
   - 从官方 `raw_market` 物化 `market_base.{stock,index,block}_daily_adjusted`
   - 支持 `--asset-type {stock,index,block}`
+  - 自 `73` 起，只有无日期窗、无标的窗且 `--limit 0` 的真正全历史 `full` 才允许删除缺失行；局部 `full` 只做 upsert，避免误删同一 `adjust_method` 的范围外历史
+  - 自 `74` 起，正式批量建仓优先使用 `--batch-size N --build-mode full --limit 0`，按标的批次串行生成 child run，避免一次 staging 全资产全历史 rows
 - `scripts/data/run_mainline_local_ledger_standardization_bootstrap.py`
   - 冻结主线 `10` 个官方 ledger 的标准路径与一次性批量标准化建仓入口
 - `scripts/data/run_mainline_local_ledger_incremental_sync.py`
@@ -145,8 +149,9 @@ flowchart LR
   - `malf -> structure -> filter -> alpha` 默认消费 `adjust_method='backward'`
   - `position -> trade` 默认消费 `adjust_method='none'`
   - `forward` 当前只作研究与展示保留
-- 当前最新生效结论锚点已推进到 `68-execution-doc-layout-governance-restoration-conclusion-20260415.md`；当前待施工卡已切到 `69-filter-objective-tradability-and-universe-gate-freeze-card-20260415.md`。
-- `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 现已把 `60 -> 66` 视为已完成整改卡组，并在恢复 `80 -> 86` 之前依次插入并完成 `67` 历史 file-length 治理债务卡、`68` 执行文档目录治理卡，当前再插入 `69` 冻结 `filter` 的客观可交易性与标的宇宙 gate。
+- 当前最新生效结论锚点已推进到 `74-market-base-batched-bootstrap-governance-conclusion-20260416.md`；当前待施工卡已切回 `80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`。
+- `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 现已把 `60 -> 66` 视为已完成整改卡组，并在恢复 `80 -> 86` 之前依次插入并完成 `67` 历史 file-length 治理债务卡、`68` 执行文档目录治理卡、`69` filter 客观 gate、`70 -> 72` objective 历史回补卡组、`73` market_base backward 全历史修缮卡与 `74` raw/base 分批建仓治理卡。
+- `73` 已确认 `stock / index / block` 的 `market_base(backward)` 与 `raw_market(backward)` 覆盖对齐，`stock_daily_adjusted(backward)` 当前覆盖 `1990-12-19 -> 2026-04-10`。
 - `100 -> 105` 仍然保留为 `trade/system` 恢复卡组，但只有 `86-pre-trade-middle-ledger-official-cutover-gate-card-20260414.md` 接受后才允许恢复。
 - `txt -> raw_market -> market_base` 继续保留为正式 fallback
 

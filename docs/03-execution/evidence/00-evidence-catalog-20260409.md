@@ -83,6 +83,8 @@
 104. `104-mainline-real-data-smoke-regression-evidence-20260411.md`
 105. `105-system-runtime-orchestration-bootstrap-evidence-20260411.md`
 106. `72-historical-objective-profile-backfill-execution-evidence-20260415.md`
+107. `73-market-base-backward-full-history-backfill-evidence-20260416.md`
+108. `74-market-base-batched-bootstrap-governance-evidence-20260416.md`
 
 ## 证据闭环图
 
