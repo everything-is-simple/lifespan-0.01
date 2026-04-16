@@ -15,6 +15,7 @@ def _normalize_raw_run_mode(run_mode: str) -> str:
 def _resolve_raw_candidate_files(
     connection: duckdb.DuckDBPyConnection,
     *,
+    timeframe: str,
     adjust_method: str,
     source_root: Path,
     candidate_files: list[Path],
@@ -22,17 +23,19 @@ def _resolve_raw_candidate_files(
 ) -> list[Path]:
     if not continue_from_last_run:
         return candidate_files
+    normalized_timeframe = _normalize_timeframe(timeframe)
     last_failed_run = connection.execute(
         f"""
         SELECT run_id
         FROM {RAW_INGEST_RUN_TABLE}
-        WHERE adjust_method = ?
+        WHERE COALESCE(timeframe, 'day') = ?
+          AND adjust_method = ?
           AND source_root = ?
           AND run_status = 'failed'
         ORDER BY started_at DESC NULLS LAST, run_id DESC
         LIMIT 1
         """,
-        [adjust_method, str(source_root)],
+        [normalized_timeframe, adjust_method, str(source_root)],
     ).fetchone()
     if last_failed_run is None:
         return candidate_files
@@ -43,9 +46,10 @@ def _resolve_raw_candidate_files(
             SELECT source_path
             FROM {RAW_INGEST_FILE_TABLE}
             WHERE run_id = ?
+              AND COALESCE(timeframe, 'day') = ?
               AND action <> 'failed'
             """,
-            [str(last_failed_run[0])],
+            [str(last_failed_run[0]), normalized_timeframe],
         ).fetchall()
     }
     if not completed_source_paths:
@@ -57,6 +61,7 @@ def _resolve_raw_candidate_files_by_asset(
     connection: duckdb.DuckDBPyConnection,
     *,
     asset_type: str,
+    timeframe: str,
     adjust_method: str,
     source_root: Path,
     candidate_files: list[Path],
@@ -66,6 +71,7 @@ def _resolve_raw_candidate_files_by_asset(
     if normalized_asset_type == DEFAULT_ASSET_TYPE:
         return _resolve_raw_candidate_files(
             connection,
+            timeframe=timeframe,
             adjust_method=adjust_method,
             source_root=source_root,
             candidate_files=candidate_files,
@@ -73,18 +79,20 @@ def _resolve_raw_candidate_files_by_asset(
         )
     if not continue_from_last_run:
         return candidate_files
+    normalized_timeframe = _normalize_timeframe(timeframe)
     last_failed_run = connection.execute(
         f"""
         SELECT run_id
         FROM {RAW_INGEST_RUN_TABLE}
         WHERE COALESCE(asset_type, ?) = ?
+          AND COALESCE(timeframe, 'day') = ?
           AND adjust_method = ?
           AND source_root = ?
           AND run_status = 'failed'
         ORDER BY started_at DESC NULLS LAST, run_id DESC
         LIMIT 1
         """,
-        [DEFAULT_ASSET_TYPE, normalized_asset_type, adjust_method, str(source_root)],
+        [DEFAULT_ASSET_TYPE, normalized_asset_type, normalized_timeframe, adjust_method, str(source_root)],
     ).fetchone()
     if last_failed_run is None:
         return candidate_files
@@ -96,9 +104,10 @@ def _resolve_raw_candidate_files_by_asset(
             FROM {RAW_INGEST_FILE_TABLE}
             WHERE run_id = ?
               AND COALESCE(asset_type, ?) = ?
+              AND COALESCE(timeframe, 'day') = ?
               AND action <> 'failed'
             """,
-            [str(last_failed_run[0]), DEFAULT_ASSET_TYPE, normalized_asset_type],
+            [str(last_failed_run[0]), DEFAULT_ASSET_TYPE, normalized_asset_type, normalized_timeframe],
         ).fetchall()
     }
     if not completed_source_paths:
@@ -144,6 +153,7 @@ def _insert_raw_ingest_run_start(
     connection: duckdb.DuckDBPyConnection,
     *,
     run_id: str,
+    timeframe: str,
     adjust_method: str,
     run_mode: str,
     source_root: Path,
@@ -154,6 +164,7 @@ def _insert_raw_ingest_run_start(
         INSERT INTO {RAW_INGEST_RUN_TABLE} (
             run_id,
             asset_type,
+            timeframe,
             runner_name,
             runner_version,
             adjust_method,
@@ -163,11 +174,12 @@ def _insert_raw_ingest_run_start(
             run_status,
             summary_json
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'running', NULL)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', NULL)
         """,
         [
             run_id,
             DEFAULT_ASSET_TYPE,
+            _normalize_timeframe(timeframe),
             RAW_INGEST_RUNNER_NAME,
             RAW_INGEST_RUNNER_VERSION,
             adjust_method,
@@ -183,6 +195,7 @@ def _insert_raw_ingest_run_start_by_asset(
     *,
     run_id: str,
     asset_type: str,
+    timeframe: str,
     adjust_method: str,
     run_mode: str,
     source_root: Path,
@@ -193,6 +206,7 @@ def _insert_raw_ingest_run_start_by_asset(
         _insert_raw_ingest_run_start(
             connection,
             run_id=run_id,
+            timeframe=timeframe,
             adjust_method=adjust_method,
             run_mode=run_mode,
             source_root=source_root,
@@ -204,6 +218,7 @@ def _insert_raw_ingest_run_start_by_asset(
         INSERT INTO {RAW_INGEST_RUN_TABLE} (
             run_id,
             asset_type,
+            timeframe,
             runner_name,
             runner_version,
             adjust_method,
@@ -213,11 +228,12 @@ def _insert_raw_ingest_run_start_by_asset(
             run_status,
             summary_json
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'running', NULL)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', NULL)
         """,
         [
             run_id,
             normalized_asset_type,
+            _normalize_timeframe(timeframe),
             RAW_INGEST_RUNNER_NAME_BY_ASSET_TYPE[normalized_asset_type],
             RAW_INGEST_RUNNER_VERSION,
             adjust_method,
@@ -232,6 +248,7 @@ def _record_raw_ingest_file(
     connection: duckdb.DuckDBPyConnection,
     *,
     run_id: str,
+    timeframe: str,
     file_nk: str,
     code: str,
     name: str,
@@ -247,6 +264,7 @@ def _record_raw_ingest_file(
         INSERT INTO {RAW_INGEST_FILE_TABLE} (
             run_id,
             asset_type,
+            timeframe,
             file_nk,
             code,
             name,
@@ -257,11 +275,12 @@ def _record_raw_ingest_file(
             row_count,
             error_message
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         [
             run_id,
             DEFAULT_ASSET_TYPE,
+            _normalize_timeframe(timeframe),
             file_nk,
             code,
             name,
@@ -280,6 +299,7 @@ def _record_raw_ingest_file_by_asset(
     *,
     run_id: str,
     asset_type: str,
+    timeframe: str,
     file_nk: str,
     code: str,
     name: str,
@@ -295,6 +315,7 @@ def _record_raw_ingest_file_by_asset(
         _record_raw_ingest_file(
             connection,
             run_id=run_id,
+            timeframe=timeframe,
             file_nk=file_nk,
             code=code,
             name=name,
@@ -311,6 +332,7 @@ def _record_raw_ingest_file_by_asset(
         INSERT INTO {RAW_INGEST_FILE_TABLE} (
             run_id,
             asset_type,
+            timeframe,
             file_nk,
             code,
             name,
@@ -321,11 +343,12 @@ def _record_raw_ingest_file_by_asset(
             row_count,
             error_message
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         [
             run_id,
             normalized_asset_type,
+            _normalize_timeframe(timeframe),
             file_nk,
             code,
             name,
@@ -389,6 +412,7 @@ def _update_raw_ingest_run_failure(
     connection: duckdb.DuckDBPyConnection,
     *,
     run_id: str,
+    timeframe: str,
     adjust_method: str,
     run_mode: str,
     source_root: Path,
@@ -406,6 +430,7 @@ def _update_raw_ingest_run_failure(
         UPDATE {RAW_INGEST_RUN_TABLE}
         SET
             asset_type = ?,
+            timeframe = ?,
             adjust_method = ?,
             run_mode = ?,
             source_root = ?,
@@ -422,6 +447,7 @@ def _update_raw_ingest_run_failure(
         """,
         [
             DEFAULT_ASSET_TYPE,
+            _normalize_timeframe(timeframe),
             adjust_method,
             run_mode,
             str(source_root),
@@ -449,6 +475,7 @@ def _update_raw_ingest_run_failure_by_asset(
     *,
     run_id: str,
     asset_type: str,
+    timeframe: str,
     adjust_method: str,
     run_mode: str,
     source_root: Path,
@@ -466,6 +493,7 @@ def _update_raw_ingest_run_failure_by_asset(
         _update_raw_ingest_run_failure(
             connection,
             run_id=run_id,
+            timeframe=timeframe,
             adjust_method=adjust_method,
             run_mode=run_mode,
             source_root=source_root,
@@ -484,6 +512,7 @@ def _update_raw_ingest_run_failure_by_asset(
         UPDATE {RAW_INGEST_RUN_TABLE}
         SET
             asset_type = ?,
+            timeframe = ?,
             adjust_method = ?,
             run_mode = ?,
             source_root = ?,
@@ -500,6 +529,7 @@ def _update_raw_ingest_run_failure_by_asset(
         """,
         [
             normalized_asset_type,
+            _normalize_timeframe(timeframe),
             adjust_method,
             run_mode,
             str(source_root),
@@ -512,6 +542,7 @@ def _update_raw_ingest_run_failure_by_asset(
             json.dumps(
                 {
                     "asset_type": normalized_asset_type,
+                    "timeframe": _normalize_timeframe(timeframe),
                     "error_message": error_message,
                     "failed_file_count": failed_file_count,
                 },

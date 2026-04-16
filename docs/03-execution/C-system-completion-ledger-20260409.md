@@ -2,8 +2,8 @@
 `日期：2026-04-09`
 `状态：持续更新`
 
-1. 当前下一锤：`80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`
-2. 当前待施工卡：`80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`
+1. 当前下一锤：`75-raw-base-weekly-monthly-timeframe-ledger-bootstrap-card-20260416.md`
+2. 当前待施工卡：`75-raw-base-weekly-monthly-timeframe-ledger-bootstrap-card-20260416.md`
 3. 正式主线剩余卡：`13`
 4. 可选 Sidecar 剩余卡：`0`
 5. 历史治理 backlog：`0`

@@ -6,9 +6,9 @@ import duckdb
 
 from mlq.data.bootstrap import (
     BASE_DIRTY_INSTRUMENT_TABLE,
-    MARKET_BASE_DAILY_TABLE_BY_ASSET_TYPE,
     MARKET_BASE_NOT_NULL_COLUMNS,
-    RAW_DAILY_BAR_TABLE_BY_ASSET_TYPE,
+    MARKET_BASE_TABLE_BY_ASSET_AND_TIMEFRAME,
+    RAW_BAR_TABLE_BY_ASSET_AND_TIMEFRAME,
     RAW_FILE_REGISTRY_TABLE_BY_ASSET_TYPE,
     RAW_MARKET_NOT_NULL_COLUMNS,
     RAW_TDXQUANT_INSTRUMENT_CHECKPOINT_TABLE,
@@ -36,6 +36,7 @@ def ensure_columns(
 def cleanup_raw_market_ledger(connection: duckdb.DuckDBPyConnection) -> None:
     """清理 raw_market 历史账本中的空键与重复记录。"""
 
+    _backfill_legacy_timeframe_columns(connection)
     for table_name in RAW_FILE_REGISTRY_TABLE_BY_ASSET_TYPE.values():
         delete_rows_with_nulls(
             connection,
@@ -48,18 +49,19 @@ def cleanup_raw_market_ledger(connection: duckdb.DuckDBPyConnection) -> None:
             key_columns=("file_nk",),
             order_columns=("last_ingested_at", "source_mtime_utc"),
         )
-    for table_name in RAW_DAILY_BAR_TABLE_BY_ASSET_TYPE.values():
-        delete_rows_with_nulls(
-            connection,
-            table_name=table_name,
-            required_columns=RAW_MARKET_NOT_NULL_COLUMNS[table_name],
-        )
-        deduplicate_table(
-            connection,
-            table_name=table_name,
-            key_columns=("bar_nk",),
-            order_columns=("updated_at", "created_at"),
-        )
+    for asset_tables in RAW_BAR_TABLE_BY_ASSET_AND_TIMEFRAME.values():
+        for table_name in asset_tables.values():
+            delete_rows_with_nulls(
+                connection,
+                table_name=table_name,
+                required_columns=RAW_MARKET_NOT_NULL_COLUMNS[table_name],
+            )
+            deduplicate_table(
+                connection,
+                table_name=table_name,
+                key_columns=("bar_nk",),
+                order_columns=("updated_at", "created_at"),
+            )
     delete_rows_with_nulls(
         connection,
         table_name=RAW_TDXQUANT_RUN_TABLE,
@@ -98,18 +100,20 @@ def cleanup_raw_market_ledger(connection: duckdb.DuckDBPyConnection) -> None:
 def cleanup_market_base_ledger(connection: duckdb.DuckDBPyConnection) -> None:
     """清理 market_base 历史账本中的空键与重复记录。"""
 
-    for table_name in MARKET_BASE_DAILY_TABLE_BY_ASSET_TYPE.values():
-        delete_rows_with_nulls(
-            connection,
-            table_name=table_name,
-            required_columns=MARKET_BASE_NOT_NULL_COLUMNS[table_name],
-        )
-        deduplicate_table(
-            connection,
-            table_name=table_name,
-            key_columns=("code", "trade_date", "adjust_method"),
-            order_columns=("updated_at", "created_at"),
-        )
+    _backfill_legacy_timeframe_columns(connection)
+    for asset_tables in MARKET_BASE_TABLE_BY_ASSET_AND_TIMEFRAME.values():
+        for table_name in asset_tables.values():
+            delete_rows_with_nulls(
+                connection,
+                table_name=table_name,
+                required_columns=MARKET_BASE_NOT_NULL_COLUMNS[table_name],
+            )
+            deduplicate_table(
+                connection,
+                table_name=table_name,
+                key_columns=("code", "trade_date", "adjust_method"),
+                order_columns=("updated_at", "created_at"),
+            )
     delete_rows_with_nulls(
         connection,
         table_name=BASE_DIRTY_INSTRUMENT_TABLE,
@@ -123,13 +127,50 @@ def cleanup_market_base_ledger(connection: duckdb.DuckDBPyConnection) -> None:
     )
 
 
+def _backfill_legacy_timeframe_columns(connection: duckdb.DuckDBPyConnection) -> None:
+    """把历史日线行的空 timeframe 回填成 `day`，并为周/月表补默认值。"""
+
+    candidate_tables = [
+        *RAW_FILE_REGISTRY_TABLE_BY_ASSET_TYPE.values(),
+        *[table_name for tables in RAW_BAR_TABLE_BY_ASSET_AND_TIMEFRAME.values() for table_name in tables.values()],
+        *[table_name for tables in MARKET_BASE_TABLE_BY_ASSET_AND_TIMEFRAME.values() for table_name in tables.values()],
+        BASE_DIRTY_INSTRUMENT_TABLE,
+        "raw_ingest_run",
+        "raw_ingest_file",
+        "base_build_run",
+        "base_build_scope",
+        "base_build_action",
+    ]
+    for table_name in candidate_tables:
+        try:
+            columns = {str(row[1]) for row in connection.execute(f"PRAGMA table_info('{table_name}')").fetchall()}
+        except duckdb.CatalogException:
+            continue
+        if "timeframe" not in columns:
+            continue
+        if table_name.endswith("_weekly_bar") or table_name.endswith("_weekly_adjusted"):
+            default_timeframe = "week"
+        elif table_name.endswith("_monthly_bar") or table_name.endswith("_monthly_adjusted"):
+            default_timeframe = "month"
+        else:
+            default_timeframe = "day"
+        connection.execute(
+            f"""
+            UPDATE {table_name}
+            SET timeframe = ?
+            WHERE timeframe IS NULL OR TRIM(CAST(timeframe AS VARCHAR)) = ''
+            """,
+            [default_timeframe],
+        )
+
+
 def delete_rows_with_nulls(
     connection: duckdb.DuckDBPyConnection,
     *,
     table_name: str,
     required_columns: tuple[str, ...],
 ) -> None:
-    """删除不满足 not-null 契约的历史脏行。"""
+    """删除不满足 not-null 合同的历史脏行。"""
 
     if not required_columns:
         return
@@ -188,7 +229,12 @@ def ensure_not_null_columns(
             continue
         if not nullable_by_column[column_name]:
             continue
-        connection.execute(f"ALTER TABLE {table_name} ALTER COLUMN {column_name} SET NOT NULL")
+        try:
+            connection.execute(f"ALTER TABLE {table_name} ALTER COLUMN {column_name} SET NOT NULL")
+        except duckdb.DependencyException:
+            # 存量官方库上的旧索引/依赖可能阻止 DuckDB 原地收紧列约束；
+            # 此时保留元数据为 nullable，但前面的 cleanup/backfill 已确保正式数据不再写入空值。
+            continue
 
 
 def ensure_unique_index(

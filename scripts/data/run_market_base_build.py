@@ -12,6 +12,7 @@ from mlq.data import run_asset_market_base_build, run_asset_market_base_build_ba
 def build_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Build market_base daily_adjusted from raw_market by asset type.")
     parser.add_argument("--asset-type", choices=("stock", "index", "block"), default="stock")
+    parser.add_argument("--timeframe", choices=("day", "week", "month"), default="day")
     parser.add_argument("--adjust-method", default="backward")
     parser.add_argument("--instrument", dest="instruments", action="append", default=[])
     parser.add_argument("--start-date")
@@ -55,6 +56,7 @@ def main() -> None:
     if args.batch_size > 0:
         summary_payload = run_asset_market_base_build_batched(
             asset_type=args.asset_type,
+            timeframe=args.timeframe,
             adjust_method=args.adjust_method,
             instruments=args.instruments,
             start_date=args.start_date,
@@ -67,6 +69,7 @@ def main() -> None:
     else:
         summary = run_asset_market_base_build(
             asset_type=args.asset_type,
+            timeframe=args.timeframe,
             adjust_method=args.adjust_method,
             instruments=args.instruments,
             start_date=args.start_date,

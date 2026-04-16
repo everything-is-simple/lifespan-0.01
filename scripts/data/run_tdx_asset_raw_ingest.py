@@ -12,6 +12,7 @@ from mlq.data import run_tdx_asset_raw_ingest, run_tdx_asset_raw_ingest_batched
 def build_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Ingest bounded TDX daily files into raw_market by asset type.")
     parser.add_argument("--asset-type", choices=("stock", "index", "block"), default="stock")
+    parser.add_argument("--timeframe", choices=("day", "week", "month"), default="day")
     parser.add_argument("--source-root", type=Path, default=Path("H:/tdx_offline_Data"))
     parser.add_argument("--adjust-method", default="backward")
     parser.add_argument("--run-mode", choices=("incremental", "full"), default="incremental")
@@ -38,6 +39,7 @@ def main() -> None:
             raise ValueError("--continue-from-last-run is only supported in non-batched raw ingest mode.")
         summary_payload = run_tdx_asset_raw_ingest_batched(
             asset_type=args.asset_type,
+            timeframe=args.timeframe,
             source_root=args.source_root,
             adjust_method=args.adjust_method,
             run_mode=args.run_mode,
@@ -50,6 +52,7 @@ def main() -> None:
     else:
         summary = run_tdx_asset_raw_ingest(
             asset_type=args.asset_type,
+            timeframe=args.timeframe,
             source_root=args.source_root,
             adjust_method=args.adjust_method,
             run_mode=args.run_mode,

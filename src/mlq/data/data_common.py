@@ -53,33 +53,47 @@ def _resolve_code_from_filename(path: Path) -> str:
 def _build_file_nk(
     *,
     asset_type: str,
+    timeframe: str,
     adjust_method: str,
     code: str,
     name: str,
     source_path: Path,
 ) -> str:
-    return "|".join([asset_type, adjust_method, code, name, str(source_path)])
+    normalized_timeframe = _normalize_timeframe(timeframe)
+    if normalized_timeframe == "day":
+        return "|".join([asset_type, adjust_method, code, name, str(source_path)])
+    return "|".join([asset_type, normalized_timeframe, adjust_method, code, name, str(source_path)])
 
 
-def _build_bar_nk(*, code: str, trade_date: date, adjust_method: str) -> str:
-    return "|".join([code, trade_date.isoformat(), adjust_method])
+def _build_bar_nk(*, code: str, trade_date: date, adjust_method: str, timeframe: str = "day") -> str:
+    normalized_timeframe = _normalize_timeframe(timeframe)
+    if normalized_timeframe == "day":
+        return "|".join([code, trade_date.isoformat(), adjust_method])
+    return "|".join([code, trade_date.isoformat(), adjust_method, normalized_timeframe])
 
 
-def _build_dirty_nk(*, code: str, adjust_method: str) -> str:
-    return "|".join([code, adjust_method])
+def _build_dirty_nk(*, code: str, adjust_method: str, timeframe: str = "day") -> str:
+    normalized_timeframe = _normalize_timeframe(timeframe)
+    if normalized_timeframe == "day":
+        return "|".join([code, adjust_method])
+    return "|".join([code, adjust_method, normalized_timeframe])
 
 
-def _build_dirty_nk_by_asset(*, asset_type: str, code: str, adjust_method: str) -> str:
+def _build_dirty_nk_by_asset(*, asset_type: str, code: str, adjust_method: str, timeframe: str = "day") -> str:
     normalized_asset_type = _normalize_asset_type(asset_type)
+    normalized_timeframe = _normalize_timeframe(timeframe)
     if normalized_asset_type == DEFAULT_ASSET_TYPE:
-        return _build_dirty_nk(code=code, adjust_method=adjust_method)
-    return "|".join([normalized_asset_type, code, adjust_method])
+        return _build_dirty_nk(code=code, adjust_method=adjust_method, timeframe=normalized_timeframe)
+    if normalized_timeframe == "day":
+        return "|".join([normalized_asset_type, code, adjust_method])
+    return "|".join([normalized_asset_type, code, adjust_method, normalized_timeframe])
 
 
 def _upsert_file_registry(
     connection: duckdb.DuckDBPyConnection,
     *,
     file_nk: str,
+    timeframe: str,
     adjust_method: str,
     parsed_name: str,
     parsed_code: str,
@@ -91,16 +105,18 @@ def _upsert_file_registry(
     source_content_hash: str | None,
     run_id: str,
 ) -> None:
+    normalized_timeframe = _normalize_timeframe(timeframe)
     existing = connection.execute(
         f"""
         SELECT file_nk
         FROM {RAW_STOCK_FILE_REGISTRY_TABLE}
         WHERE asset_type = ?
+          AND COALESCE(timeframe, 'day') = ?
           AND adjust_method = ?
           AND code = ?
           AND source_path = ?
         """,
-        [DEFAULT_ASSET_TYPE, adjust_method, parsed_code, str(source_path)],
+        [DEFAULT_ASSET_TYPE, normalized_timeframe, adjust_method, parsed_code, str(source_path)],
     ).fetchone()
     if existing is None:
         connection.execute(
@@ -108,6 +124,7 @@ def _upsert_file_registry(
             INSERT INTO {RAW_STOCK_FILE_REGISTRY_TABLE} (
                 file_nk,
                 asset_type,
+                timeframe,
                 adjust_method,
                 code,
                 name,
@@ -119,11 +136,12 @@ def _upsert_file_registry(
                 source_content_hash,
                 last_ingested_run_id
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 file_nk,
                 DEFAULT_ASSET_TYPE,
+                normalized_timeframe,
                 adjust_method,
                 parsed_code,
                 parsed_name,
@@ -143,6 +161,7 @@ def _upsert_file_registry(
         SET
             code = ?,
             file_nk = ?,
+            timeframe = ?,
             name = ?,
             source_path = ?,
             source_size_bytes = ?,
@@ -157,6 +176,7 @@ def _upsert_file_registry(
         [
             parsed_code,
             file_nk,
+            normalized_timeframe,
             parsed_name,
             str(source_path),
             source_size_bytes,
@@ -176,6 +196,7 @@ def _upsert_file_registry_by_asset(
     table_name: str,
     asset_type: str,
     file_nk: str,
+    timeframe: str,
     adjust_method: str,
     parsed_name: str,
     parsed_code: str,
@@ -188,10 +209,12 @@ def _upsert_file_registry_by_asset(
     run_id: str,
 ) -> None:
     normalized_asset_type = _normalize_asset_type(asset_type)
+    normalized_timeframe = _normalize_timeframe(timeframe)
     if normalized_asset_type == DEFAULT_ASSET_TYPE and table_name == RAW_STOCK_FILE_REGISTRY_TABLE:
         _upsert_file_registry(
             connection,
             file_nk=file_nk,
+            timeframe=normalized_timeframe,
             adjust_method=adjust_method,
             parsed_name=parsed_name,
             parsed_code=parsed_code,
@@ -208,11 +231,12 @@ def _upsert_file_registry_by_asset(
         f"""
         SELECT file_nk
         FROM {table_name}
-        WHERE adjust_method = ?
+        WHERE COALESCE(timeframe, 'day') = ?
+          AND adjust_method = ?
           AND code = ?
           AND source_path = ?
         """,
-        [adjust_method, parsed_code, str(source_path)],
+        [normalized_timeframe, adjust_method, parsed_code, str(source_path)],
     ).fetchone()
     if existing is None:
         connection.execute(
@@ -220,6 +244,7 @@ def _upsert_file_registry_by_asset(
             INSERT INTO {table_name} (
                 file_nk,
                 asset_type,
+                timeframe,
                 adjust_method,
                 code,
                 name,
@@ -231,11 +256,12 @@ def _upsert_file_registry_by_asset(
                 source_content_hash,
                 last_ingested_run_id
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 file_nk,
                 normalized_asset_type,
+                normalized_timeframe,
                 adjust_method,
                 parsed_code,
                 parsed_name,
@@ -256,6 +282,7 @@ def _upsert_file_registry_by_asset(
             asset_type = ?,
             code = ?,
             file_nk = ?,
+            timeframe = ?,
             name = ?,
             source_path = ?,
             source_size_bytes = ?,
@@ -271,6 +298,7 @@ def _upsert_file_registry_by_asset(
             normalized_asset_type,
             parsed_code,
             file_nk,
+            normalized_timeframe,
             parsed_name,
             str(source_path),
             source_size_bytes,
@@ -350,12 +378,14 @@ def _replace_raw_bars_for_file(
     connection: duckdb.DuckDBPyConnection,
     *,
     file_nk: str,
+    timeframe: str,
     adjust_method: str,
     parsed,
     source_path: Path,
     source_mtime_utc: datetime,
     run_id: str,
 ) -> tuple[int, int, int]:
+    normalized_timeframe = _normalize_timeframe(timeframe)
     existing_rows = connection.execute(
         f"""
         SELECT
@@ -382,7 +412,12 @@ def _replace_raw_bars_for_file(
     rematerialized_count = 0
     records: list[dict[str, object]] = []
     for row in parsed.rows:
-        bar_nk = _build_bar_nk(code=row.code, trade_date=row.trade_date, adjust_method=adjust_method)
+        bar_nk = _build_bar_nk(
+            code=row.code,
+            trade_date=row.trade_date,
+            adjust_method=adjust_method,
+            timeframe=normalized_timeframe,
+        )
         existing = existing_by_bar_nk.get(bar_nk)
         fingerprint = (
             row.name,
@@ -418,6 +453,7 @@ def _replace_raw_bars_for_file(
                 "bar_nk": bar_nk,
                 "source_file_nk": file_nk,
                 "asset_type": DEFAULT_ASSET_TYPE,
+                "timeframe": normalized_timeframe,
                 "code": row.code,
                 "name": row.name,
                 "trade_date": row.trade_date,
@@ -458,6 +494,7 @@ def _replace_raw_bars_for_file(
                     bar_nk,
                     source_file_nk,
                     asset_type,
+                    timeframe,
                     code,
                     name,
                     trade_date,
@@ -479,6 +516,7 @@ def _replace_raw_bars_for_file(
                     bar_nk,
                     source_file_nk,
                     asset_type,
+                    timeframe,
                     code,
                     name,
                     trade_date,
@@ -518,6 +556,7 @@ def _replace_raw_bars_for_file_by_asset(
     table_name: str,
     asset_type: str,
     file_nk: str,
+    timeframe: str,
     adjust_method: str,
     parsed,
     source_path: Path,
@@ -525,10 +564,12 @@ def _replace_raw_bars_for_file_by_asset(
     run_id: str,
 ) -> tuple[int, int, int]:
     normalized_asset_type = _normalize_asset_type(asset_type)
+    normalized_timeframe = _normalize_timeframe(timeframe)
     if normalized_asset_type == DEFAULT_ASSET_TYPE and table_name == RAW_STOCK_DAILY_BAR_TABLE:
         return _replace_raw_bars_for_file(
             connection,
             file_nk=file_nk,
+            timeframe=normalized_timeframe,
             adjust_method=adjust_method,
             parsed=parsed,
             source_path=source_path,
@@ -561,7 +602,12 @@ def _replace_raw_bars_for_file_by_asset(
     rematerialized_count = 0
     records: list[dict[str, object]] = []
     for row in parsed.rows:
-        bar_nk = _build_bar_nk(code=row.code, trade_date=row.trade_date, adjust_method=adjust_method)
+        bar_nk = _build_bar_nk(
+            code=row.code,
+            trade_date=row.trade_date,
+            adjust_method=adjust_method,
+            timeframe=normalized_timeframe,
+        )
         existing = existing_by_bar_nk.get(bar_nk)
         fingerprint = (
             row.name,
@@ -597,6 +643,7 @@ def _replace_raw_bars_for_file_by_asset(
                 "bar_nk": bar_nk,
                 "source_file_nk": file_nk,
                 "asset_type": normalized_asset_type,
+                "timeframe": normalized_timeframe,
                 "code": row.code,
                 "name": row.name,
                 "trade_date": row.trade_date,
@@ -637,6 +684,7 @@ def _replace_raw_bars_for_file_by_asset(
                     bar_nk,
                     source_file_nk,
                     asset_type,
+                    timeframe,
                     code,
                     name,
                     trade_date,
@@ -658,6 +706,7 @@ def _replace_raw_bars_for_file_by_asset(
                     bar_nk,
                     source_file_nk,
                     asset_type,
+                    timeframe,
                     code,
                     name,
                     trade_date,

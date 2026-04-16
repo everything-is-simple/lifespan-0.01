@@ -45,6 +45,7 @@ def _resolve_market_base_stage_limit(*, source_scope_kind: str, limit: int | Non
 def _resolve_base_build_scope_plan(
     connection: duckdb.DuckDBPyConnection,
     *,
+    timeframe: str,
     adjust_method: str,
     build_mode: str,
     consume_dirty_only: bool,
@@ -56,6 +57,7 @@ def _resolve_base_build_scope_plan(
     if build_mode == "incremental" and consume_dirty_only:
         dirty_entries = _fetch_pending_dirty_entries(
             connection,
+            timeframe=timeframe,
             adjust_method=adjust_method,
             instruments=instruments,
             limit=limit,
@@ -66,6 +68,7 @@ def _resolve_base_build_scope_plan(
                 json.dumps(
                     {
                         "dirty_nk": entry.dirty_nk,
+                        "timeframe": entry.timeframe,
                         "code": entry.code,
                         "dirty_reason": entry.dirty_reason,
                     },
@@ -123,6 +126,7 @@ def _resolve_base_build_scope_plan_by_asset(
     connection: duckdb.DuckDBPyConnection,
     *,
     asset_type: str,
+    timeframe: str,
     adjust_method: str,
     build_mode: str,
     consume_dirty_only: bool,
@@ -135,6 +139,7 @@ def _resolve_base_build_scope_plan_by_asset(
     if normalized_asset_type == DEFAULT_ASSET_TYPE:
         return _resolve_base_build_scope_plan(
             connection,
+            timeframe=timeframe,
             adjust_method=adjust_method,
             build_mode=build_mode,
             consume_dirty_only=consume_dirty_only,
@@ -147,6 +152,7 @@ def _resolve_base_build_scope_plan_by_asset(
         dirty_entries = _fetch_pending_dirty_entries_by_asset(
             connection,
             asset_type=normalized_asset_type,
+            timeframe=timeframe,
             adjust_method=adjust_method,
             instruments=instruments,
             limit=limit,
@@ -158,6 +164,7 @@ def _resolve_base_build_scope_plan_by_asset(
                     {
                         "dirty_nk": entry.dirty_nk,
                         "asset_type": entry.asset_type,
+                        "timeframe": entry.timeframe,
                         "code": entry.code,
                         "dirty_reason": entry.dirty_reason,
                     },
@@ -214,12 +221,13 @@ def _resolve_base_build_scope_plan_by_asset(
 def _fetch_pending_dirty_entries(
     connection: duckdb.DuckDBPyConnection,
     *,
+    timeframe: str,
     adjust_method: str,
     instruments: tuple[str, ...],
     limit: int | None,
 ) -> tuple[BaseDirtyInstrumentEntry, ...]:
-    parameters: list[object] = [adjust_method]
-    where_clauses = ["adjust_method = ?", "dirty_status = 'pending'"]
+    parameters: list[object] = [_normalize_timeframe(timeframe), adjust_method]
+    where_clauses = ["COALESCE(timeframe, 'day') = ?", "adjust_method = ?", "dirty_status = 'pending'"]
     if instruments:
         placeholders = ", ".join("?" for _ in instruments)
         where_clauses.append(f"code IN ({placeholders})")
@@ -242,6 +250,7 @@ def _fetch_pending_dirty_entries(
         BaseDirtyInstrumentEntry(
             dirty_nk=str(row[0]),
             asset_type=DEFAULT_ASSET_TYPE,
+            timeframe=_normalize_timeframe(timeframe),
             code=str(row[1]),
             adjust_method=str(row[2]),
             dirty_reason=str(row[3]),
@@ -256,6 +265,7 @@ def _fetch_pending_dirty_entries_by_asset(
     connection: duckdb.DuckDBPyConnection,
     *,
     asset_type: str,
+    timeframe: str,
     adjust_method: str,
     instruments: tuple[str, ...],
     limit: int | None,
@@ -264,12 +274,23 @@ def _fetch_pending_dirty_entries_by_asset(
     if normalized_asset_type == DEFAULT_ASSET_TYPE:
         return _fetch_pending_dirty_entries(
             connection,
+            timeframe=timeframe,
             adjust_method=adjust_method,
             instruments=instruments,
             limit=limit,
         )
-    parameters: list[object] = [DEFAULT_ASSET_TYPE, normalized_asset_type, adjust_method]
-    where_clauses = ["COALESCE(asset_type, ?) = ?", "adjust_method = ?", "dirty_status = 'pending'"]
+    parameters: list[object] = [
+        DEFAULT_ASSET_TYPE,
+        normalized_asset_type,
+        _normalize_timeframe(timeframe),
+        adjust_method,
+    ]
+    where_clauses = [
+        "COALESCE(asset_type, ?) = ?",
+        "COALESCE(timeframe, 'day') = ?",
+        "adjust_method = ?",
+        "dirty_status = 'pending'",
+    ]
     if instruments:
         placeholders = ", ".join("?" for _ in instruments)
         where_clauses.append(f"code IN ({placeholders})")
@@ -280,7 +301,7 @@ def _fetch_pending_dirty_entries_by_asset(
         parameters.append(limit)
     rows = connection.execute(
         f"""
-        SELECT dirty_nk, asset_type, code, adjust_method, dirty_reason, source_run_id, source_file_nk
+        SELECT dirty_nk, asset_type, COALESCE(timeframe, 'day') AS timeframe, code, adjust_method, dirty_reason, source_run_id, source_file_nk
         FROM {BASE_DIRTY_INSTRUMENT_TABLE}
         WHERE {' AND '.join(where_clauses)}
         ORDER BY last_marked_at ASC, first_marked_at ASC, code ASC
@@ -292,11 +313,12 @@ def _fetch_pending_dirty_entries_by_asset(
         BaseDirtyInstrumentEntry(
             dirty_nk=str(row[0]),
             asset_type=DEFAULT_ASSET_TYPE if row[1] is None else str(row[1]),
-            code=str(row[2]),
-            adjust_method=str(row[3]),
-            dirty_reason=str(row[4]),
-            source_run_id=None if row[5] is None else str(row[5]),
-            source_file_nk=None if row[6] is None else str(row[6]),
+            timeframe=_normalize_timeframe(row[2]),
+            code=str(row[3]),
+            adjust_method=str(row[4]),
+            dirty_reason=str(row[5]),
+            source_run_id=None if row[6] is None else str(row[6]),
+            source_file_nk=None if row[7] is None else str(row[7]),
         )
         for row in rows
     )
@@ -306,6 +328,7 @@ def _record_base_build_scopes(
     connection: duckdb.DuckDBPyConnection,
     *,
     run_id: str,
+    timeframe: str,
     scope_records: tuple[tuple[str, str], ...],
 ) -> None:
     if not scope_records:
@@ -314,6 +337,7 @@ def _record_base_build_scopes(
         [
             {
                 "run_id": run_id,
+                "timeframe": _normalize_timeframe(timeframe),
                 "scope_type": scope_type,
                 "scope_value": scope_value,
             }
@@ -327,11 +351,13 @@ def _record_base_build_scopes(
             f"""
             INSERT INTO {BASE_BUILD_SCOPE_TABLE} (
                 run_id,
+                timeframe,
                 scope_type,
                 scope_value
             )
             SELECT
                 run_id,
+                timeframe,
                 scope_type,
                 scope_value
             FROM {relation_name}
@@ -346,11 +372,17 @@ def _record_base_build_scopes_by_asset(
     *,
     run_id: str,
     asset_type: str,
+    timeframe: str,
     scope_records: tuple[tuple[str, str], ...],
 ) -> None:
     normalized_asset_type = _normalize_asset_type(asset_type)
     if normalized_asset_type == DEFAULT_ASSET_TYPE:
-        _record_base_build_scopes(connection, run_id=run_id, scope_records=scope_records)
+        _record_base_build_scopes(
+            connection,
+            run_id=run_id,
+            timeframe=timeframe,
+            scope_records=scope_records,
+        )
         return
     if not scope_records:
         return
@@ -359,6 +391,7 @@ def _record_base_build_scopes_by_asset(
             {
                 "run_id": run_id,
                 "asset_type": normalized_asset_type,
+                "timeframe": _normalize_timeframe(timeframe),
                 "scope_type": scope_type,
                 "scope_value": scope_value,
             }
@@ -373,12 +406,14 @@ def _record_base_build_scopes_by_asset(
             INSERT INTO {BASE_BUILD_SCOPE_TABLE} (
                 run_id,
                 asset_type,
+                timeframe,
                 scope_type,
                 scope_value
             )
             SELECT
                 run_id,
                 asset_type,
+                timeframe,
                 scope_type,
                 scope_value
             FROM {relation_name}

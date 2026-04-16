@@ -20,10 +20,12 @@ from mlq.data.bootstrap import (
     BASE_DIRTY_INSTRUMENT_TABLE,
     MARKET_BASE_BLOCK_DAILY_TABLE,
     MARKET_BASE_DAILY_TABLE_BY_ASSET_TYPE,
+    MARKET_BASE_TABLE_BY_ASSET_AND_TIMEFRAME,
     MARKET_BASE_INDEX_DAILY_TABLE,
     MARKET_BASE_STOCK_DAILY_TABLE,
     RAW_BLOCK_DAILY_BAR_TABLE,
     RAW_BLOCK_FILE_REGISTRY_TABLE,
+    RAW_BAR_TABLE_BY_ASSET_AND_TIMEFRAME,
     RAW_DAILY_BAR_TABLE_BY_ASSET_TYPE,
     RAW_FILE_REGISTRY_TABLE_BY_ASSET_TYPE,
     RAW_INDEX_DAILY_BAR_TABLE,
@@ -44,6 +46,7 @@ from mlq.data.bootstrap import (
     RAW_TDXQUANT_REQUEST_TABLE,
     RAW_TDXQUANT_RUN_TABLE,
     TDX_ASSET_TYPES,
+    TDX_TIMEFRAMES,
     bootstrap_market_base_ledger,
     bootstrap_raw_market_ledger,
     market_base_ledger_path,
@@ -85,6 +88,7 @@ BASE_BUILD_RUNNER_VERSION: Final[str] = "2026-04-10-card17-slice1"
 class TdxStockRawIngestSummary:
     run_id: str
     asset_type: str
+    timeframe: str
     adjust_method: str
     run_mode: str
     candidate_file_count: int
@@ -106,6 +110,7 @@ class TdxStockRawIngestSummary:
 class MarketBaseBuildSummary:
     run_id: str
     asset_type: str
+    timeframe: str
     adjust_method: str
     build_mode: str
     source_scope_kind: str
@@ -184,6 +189,7 @@ class ObjectiveProfileMaterializationSummary:
 class BaseDirtyInstrumentEntry:
     dirty_nk: str
     asset_type: str
+    timeframe: str
     code: str
     adjust_method: str
     dirty_reason: str
@@ -208,21 +214,45 @@ def _normalize_asset_type(asset_type: str) -> str:
     return normalized
 
 
-def _build_dirty_nk(*, code: str, adjust_method: str) -> str:
-    return "|".join([code, adjust_method])
+def _normalize_timeframe(timeframe: str | None) -> str:
+    normalized = "day" if timeframe is None else str(timeframe).strip().lower()
+    if normalized not in TDX_TIMEFRAMES:
+        raise ValueError(f"Unsupported timeframe: {timeframe}")
+    return normalized
 
 
-def _build_dirty_nk_by_asset(*, asset_type: str, code: str, adjust_method: str) -> str:
+def _build_dirty_nk(*, code: str, adjust_method: str, timeframe: str = "day") -> str:
+    normalized_timeframe = _normalize_timeframe(timeframe)
+    if normalized_timeframe == "day":
+        return "|".join([code, adjust_method])
+    return "|".join([code, adjust_method, normalized_timeframe])
+
+
+def _build_dirty_nk_by_asset(*, asset_type: str, code: str, adjust_method: str, timeframe: str = "day") -> str:
     normalized_asset_type = _normalize_asset_type(asset_type)
+    normalized_timeframe = _normalize_timeframe(timeframe)
     if normalized_asset_type == DEFAULT_ASSET_TYPE:
-        return _build_dirty_nk(code=code, adjust_method=adjust_method)
-    return "|".join([normalized_asset_type, code, adjust_method])
+        return _build_dirty_nk(code=code, adjust_method=adjust_method, timeframe=normalized_timeframe)
+    if normalized_timeframe == "day":
+        return "|".join([normalized_asset_type, code, adjust_method])
+    return "|".join([normalized_asset_type, code, adjust_method, normalized_timeframe])
+
+
+def _resolve_raw_bar_table(*, asset_type: str, timeframe: str) -> str:
+    return RAW_BAR_TABLE_BY_ASSET_AND_TIMEFRAME[_normalize_asset_type(asset_type)][_normalize_timeframe(timeframe)]
+
+
+def _resolve_market_base_table(*, asset_type: str, timeframe: str) -> str:
+    return MARKET_BASE_TABLE_BY_ASSET_AND_TIMEFRAME[_normalize_asset_type(asset_type)][
+        _normalize_timeframe(timeframe)
+    ]
 
 
 def mark_base_instrument_dirty(
     *,
     settings: WorkspaceRoots | None = None,
     code: str,
+    timeframe: str = "day",
     adjust_method: str,
     dirty_reason: str,
     source_run_id: str | None = None,
@@ -236,6 +266,7 @@ def mark_base_instrument_dirty(
     normalized_code = str(code).strip().upper()
     if not normalized_code:
         raise ValueError("code must not be empty")
+    normalized_timeframe = _normalize_timeframe(timeframe)
     normalized_adjust_method = str(adjust_method).strip().lower()
     if normalized_adjust_method not in {"backward", "forward", "none"}:
         raise ValueError(f"Unsupported adjust method: {adjust_method}")
@@ -248,6 +279,7 @@ def mark_base_instrument_dirty(
             connection,
             table_name=BASE_DIRTY_INSTRUMENT_TABLE,
             code=normalized_code,
+            timeframe=normalized_timeframe,
             adjust_method=normalized_adjust_method,
             dirty_reason=normalized_reason,
             source_run_id=source_run_id,
@@ -262,6 +294,7 @@ def _upsert_dirty_instrument_on_connection(
     *,
     table_name: str,
     code: str,
+    timeframe: str,
     adjust_method: str,
     dirty_reason: str,
     source_run_id: str | None,
@@ -272,6 +305,7 @@ def _upsert_dirty_instrument_on_connection(
         table_name=table_name,
         asset_type=DEFAULT_ASSET_TYPE,
         code=code,
+        timeframe=timeframe,
         adjust_method=adjust_method,
         dirty_reason=dirty_reason,
         source_run_id=source_run_id,
@@ -285,6 +319,7 @@ def _upsert_dirty_instrument_by_asset(
     table_name: str,
     asset_type: str,
     code: str,
+    timeframe: str,
     adjust_method: str,
     dirty_reason: str,
     source_run_id: str | None,
@@ -292,12 +327,14 @@ def _upsert_dirty_instrument_by_asset(
 ) -> str:
     normalized_asset_type = _normalize_asset_type(asset_type)
     normalized_code = str(code).strip().upper()
+    normalized_timeframe = _normalize_timeframe(timeframe)
     normalized_adjust_method = str(adjust_method).strip().lower()
     normalized_reason = str(dirty_reason).strip()
     dirty_nk = _build_dirty_nk_by_asset(
         asset_type=normalized_asset_type,
         code=normalized_code,
         adjust_method=normalized_adjust_method,
+        timeframe=normalized_timeframe,
     )
     existing = connection.execute(
         f"SELECT dirty_nk FROM {table_name} WHERE dirty_nk = ?",
@@ -309,6 +346,7 @@ def _upsert_dirty_instrument_by_asset(
             INSERT INTO {table_name} (
                 dirty_nk,
                 asset_type,
+                timeframe,
                 code,
                 adjust_method,
                 dirty_reason,
@@ -317,11 +355,12 @@ def _upsert_dirty_instrument_by_asset(
                 dirty_status,
                 last_consumed_run_id
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NULL)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', NULL)
             """,
             [
                 dirty_nk,
                 normalized_asset_type,
+                normalized_timeframe,
                 normalized_code,
                 normalized_adjust_method,
                 normalized_reason,
@@ -335,6 +374,7 @@ def _upsert_dirty_instrument_by_asset(
         UPDATE {table_name}
         SET
             asset_type = ?,
+            timeframe = ?,
             dirty_reason = ?,
             source_run_id = ?,
             source_file_nk = ?,
@@ -344,6 +384,7 @@ def _upsert_dirty_instrument_by_asset(
         """,
         [
             normalized_asset_type,
+            normalized_timeframe,
             normalized_reason,
             source_run_id,
             source_file_nk,

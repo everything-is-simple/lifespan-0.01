@@ -12,6 +12,7 @@ def insert_base_build_run_start(
     connection: duckdb.DuckDBPyConnection,
     *,
     run_id: str,
+    timeframe: str,
     adjust_method: str,
     build_mode: str,
     source_scope_kind: str,
@@ -23,6 +24,7 @@ def insert_base_build_run_start(
         INSERT INTO {BASE_BUILD_RUN_TABLE} (
             run_id,
             asset_type,
+            timeframe,
             runner_name,
             runner_version,
             adjust_method,
@@ -31,11 +33,12 @@ def insert_base_build_run_start(
             run_status,
             summary_json
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, 'running', NULL)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'running', NULL)
         """,
         [
             run_id,
             DEFAULT_ASSET_TYPE,
+            _normalize_timeframe(timeframe),
             BASE_BUILD_RUNNER_NAME,
             BASE_BUILD_RUNNER_VERSION,
             adjust_method,
@@ -50,6 +53,7 @@ def insert_base_build_run_start_by_asset(
     *,
     run_id: str,
     asset_type: str,
+    timeframe: str,
     adjust_method: str,
     build_mode: str,
     source_scope_kind: str,
@@ -61,6 +65,7 @@ def insert_base_build_run_start_by_asset(
         insert_base_build_run_start(
             connection,
             run_id=run_id,
+            timeframe=timeframe,
             adjust_method=adjust_method,
             build_mode=build_mode,
             source_scope_kind=source_scope_kind,
@@ -71,6 +76,7 @@ def insert_base_build_run_start_by_asset(
         INSERT INTO {BASE_BUILD_RUN_TABLE} (
             run_id,
             asset_type,
+            timeframe,
             runner_name,
             runner_version,
             adjust_method,
@@ -79,11 +85,12 @@ def insert_base_build_run_start_by_asset(
             run_status,
             summary_json
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, 'running', NULL)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'running', NULL)
         """,
         [
             run_id,
             normalized_asset_type,
+            _normalize_timeframe(timeframe),
             BASE_BUILD_RUNNER_NAME,
             BASE_BUILD_RUNNER_VERSION,
             adjust_method,
@@ -132,6 +139,7 @@ def update_base_build_run_failure(
     connection: duckdb.DuckDBPyConnection,
     *,
     run_id: str,
+    timeframe: str,
     error_message: str,
 ) -> None:
     """把股票 build run 标记为 failed。"""
@@ -146,7 +154,11 @@ def update_base_build_run_failure(
         WHERE run_id = ?
         """,
         [
-            json.dumps({"error_message": error_message}, ensure_ascii=False, sort_keys=True),
+            json.dumps(
+                {"timeframe": _normalize_timeframe(timeframe), "error_message": error_message},
+                ensure_ascii=False,
+                sort_keys=True,
+            ),
             run_id,
         ],
     )
@@ -157,19 +169,26 @@ def update_base_build_run_failure_by_asset(
     *,
     run_id: str,
     asset_type: str,
+    timeframe: str,
     error_message: str,
 ) -> None:
     """把资产级 build run 标记为 failed。"""
 
     normalized_asset_type = _normalize_asset_type(asset_type)
     if normalized_asset_type == DEFAULT_ASSET_TYPE:
-        update_base_build_run_failure(connection, run_id=run_id, error_message=error_message)
+        update_base_build_run_failure(
+            connection,
+            run_id=run_id,
+            timeframe=timeframe,
+            error_message=error_message,
+        )
         return
     connection.execute(
         f"""
         UPDATE {BASE_BUILD_RUN_TABLE}
         SET
             asset_type = ?,
+            timeframe = ?,
             run_status = 'failed',
             completed_at = CURRENT_TIMESTAMP,
             summary_json = ?
@@ -177,8 +196,13 @@ def update_base_build_run_failure_by_asset(
         """,
         [
             normalized_asset_type,
+            _normalize_timeframe(timeframe),
             json.dumps(
-                {"asset_type": normalized_asset_type, "error_message": error_message},
+                {
+                    "asset_type": normalized_asset_type,
+                    "timeframe": _normalize_timeframe(timeframe),
+                    "error_message": error_message,
+                },
                 ensure_ascii=False,
                 sort_keys=True,
             ),
@@ -216,13 +240,14 @@ def mark_scope_dirty_entries_consumed(
     connection: duckdb.DuckDBPyConnection,
     *,
     run_id: str,
+    timeframe: str,
     adjust_method: str,
     instruments: tuple[str, ...],
 ) -> int:
     """按股票 scope 批量消费 dirty queue。"""
 
-    parameters: list[object] = [run_id, adjust_method]
-    where_clauses = ["adjust_method = ?", "dirty_status = 'pending'"]
+    parameters: list[object] = [run_id, _normalize_timeframe(timeframe), adjust_method]
+    where_clauses = ["COALESCE(timeframe, 'day') = ?", "adjust_method = ?", "dirty_status = 'pending'"]
     if instruments:
         placeholders = ", ".join("?" for _ in instruments)
         where_clauses.append(f"code IN ({placeholders})")
@@ -247,6 +272,7 @@ def mark_scope_dirty_entries_consumed_by_asset(
     *,
     run_id: str,
     asset_type: str,
+    timeframe: str,
     adjust_method: str,
     instruments: tuple[str, ...],
 ) -> int:
@@ -257,11 +283,23 @@ def mark_scope_dirty_entries_consumed_by_asset(
         return mark_scope_dirty_entries_consumed(
             connection,
             run_id=run_id,
+            timeframe=timeframe,
             adjust_method=adjust_method,
             instruments=instruments,
         )
-    parameters: list[object] = [run_id, DEFAULT_ASSET_TYPE, normalized_asset_type, adjust_method]
-    where_clauses = ["COALESCE(asset_type, ?) = ?", "adjust_method = ?", "dirty_status = 'pending'"]
+    parameters: list[object] = [
+        run_id,
+        DEFAULT_ASSET_TYPE,
+        normalized_asset_type,
+        _normalize_timeframe(timeframe),
+        adjust_method,
+    ]
+    where_clauses = [
+        "COALESCE(asset_type, ?) = ?",
+        "COALESCE(timeframe, 'day') = ?",
+        "adjust_method = ?",
+        "dirty_status = 'pending'",
+    ]
     if instruments:
         placeholders = ", ".join("?" for _ in instruments)
         where_clauses.append(f"code IN ({placeholders})")
