@@ -62,3 +62,26 @@ flowchart LR
 
 - `week/month raw` 当前仍允许从 day txt fallback 聚合；真正的 `day raw -> week/month raw` 派生 runner 还没做。
 - `bootstrap.py` 仍处在 `1000` 行硬上限边缘；helper 已拆出，但 bootstrap 自身 schema 切片还没继续下刀。
+## 2026-04-17 第三刀追加记录
+
+1. 在 `src/mlq/data/data_raw_runner.py` 中新增 `day raw` 派生 helper，把 `week/month raw` 的正式 source 改成 `raw_market_day.duckdb`。
+2. `run_tdx_asset_raw_ingest()` 现在按 timeframe 分流：
+   `day` 继续读离线 txt；`week/month` 直接走 `day raw -> 聚合 -> week/month raw`。
+3. `resolve_tdx_asset_pending_registry_scope()` 与 `run_tdx_asset_raw_ingest_batched()` 已同步改成从 `day raw` 盘点 candidate/pending code，不再依赖 `week/month txt` 目录。
+4. 测试口径同步更新：
+   - `tests/unit/data/test_timeframe_ledger_bootstrap.py`
+   - `tests/unit/data/test_raw_ingest_runner.py`
+   - `tests/unit/data/test_market_base_timeframe_runner.py`
+   现在都显式验证“先建 day raw，再派生 week/month raw”的正式链路。
+5. 串行验证已跑：
+   - `pytest tests/unit/core/test_paths.py tests/unit/data/test_timeframe_ledger_bootstrap.py tests/unit/data/test_raw_ingest_runner.py tests/unit/data/test_market_base_timeframe_runner.py -q`
+   - `python scripts/system/check_doc_first_gating_governance.py`
+   - `python scripts/system/check_development_governance.py`
+   结果均通过。
+
+## 更新后的仍待后续
+
+- 真实官方库的 `stock week/month` rebuild 还没开始。
+- rebuild 后的 parity 校验还没开始。
+- 旧 `day` 官方库中的周月表和周月数据清理还没开始。
+- `bootstrap.py` 的进一步切片仍待后续治理卡或同卡后续刀次继续处理。

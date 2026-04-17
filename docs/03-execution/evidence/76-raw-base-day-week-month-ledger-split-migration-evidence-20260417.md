@@ -98,3 +98,31 @@ python scripts/system/check_development_governance.py
   - `pytest ...` => `16 passed`
   - `check_doc_first_gating_governance.py` => `通过`
   - `check_development_governance.py` => `通过`
+## 2026-04-17 第三刀实现证据
+
+### 命令
+
+```text
+pytest tests/unit/core/test_paths.py tests/unit/data/test_timeframe_ledger_bootstrap.py tests/unit/data/test_raw_ingest_runner.py tests/unit/data/test_market_base_timeframe_runner.py -q
+python scripts/system/check_doc_first_gating_governance.py
+python scripts/system/check_development_governance.py
+```
+
+### 关键结果
+
+- `src/mlq/data/data_raw_runner.py` 已新增 `day raw -> week/month raw` 正式派生路径：
+  - `week/month raw` 不再枚举 `stock-week/month` txt 文件。
+  - `week/month raw` 只从 `raw_market_day.duckdb` 读取对应日线行并做周/月聚合。
+  - `week/month raw` 写入 `raw_market_week/month.duckdb`，并把 dirty 挂到对应 `market_base_week/month.duckdb`。
+- `resolve_tdx_asset_pending_registry_scope()` 与 batched runner 也已切到 `day raw` 盘点口径：
+  - `source_root` 变为 `raw_market_day.duckdb`
+  - `source_timeframe` 变为 `day_raw`
+  - pending scope 改为按 day raw 官方账本中的 code 集合盘点。
+- 回归测试已覆盖：
+  - `week raw` 先建 `day raw` 再写入独立 `week raw` 库。
+  - 直接放置 `stock-week` txt 也不会再被官方 `week raw` 读取。
+  - `month` dirty queue 与 `day` dirty queue 继续按分库隔离消费。
+- 验证结果：
+  - `pytest ...` => `19 passed`
+  - `check_doc_first_gating_governance.py` => `通过`
+  - `check_development_governance.py` => `通过`

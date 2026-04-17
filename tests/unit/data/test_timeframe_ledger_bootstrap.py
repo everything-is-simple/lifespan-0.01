@@ -180,6 +180,16 @@ def test_weekly_raw_runner_routes_to_split_raw_market_ledger(
             ("2026/04/10", 10.90, 11.20, 10.70, 11.00, 300, 3000),
         ],
     )
+    run_tdx_asset_raw_ingest(
+        settings=settings,
+        asset_type="stock",
+        timeframe="day",
+        source_root=source_root,
+        adjust_method="backward",
+        run_mode="full",
+        run_id="raw-stock-day-prep-001",
+        limit=0,
+    )
 
     summary = run_tdx_asset_raw_ingest(
         settings=settings,
@@ -205,10 +215,10 @@ def test_weekly_raw_runner_routes_to_split_raw_market_ledger(
     if settings.databases.raw_market_day.exists():
         day_conn = duckdb.connect(str(settings.databases.raw_market_day), read_only=True)
         try:
-            day_tables = {row[0] for row in day_conn.execute("SHOW TABLES").fetchall()}
+            day_week_count = day_conn.execute("SELECT COUNT(*) FROM stock_weekly_bar").fetchone()[0]
         finally:
             day_conn.close()
-        assert "stock_weekly_bar" not in day_tables
+        assert day_week_count == 0
 
 
 def test_monthly_base_runner_routes_to_split_ledgers(
@@ -232,6 +242,16 @@ def test_monthly_base_runner_routes_to_split_ledgers(
             ("2026/04/01", 10.90, 11.10, 10.70, 11.00, 130, 1300),
             ("2026/04/30", 11.10, 11.80, 10.90, 11.50, 140, 1400),
         ],
+    )
+    run_tdx_asset_raw_ingest(
+        settings=settings,
+        asset_type="stock",
+        timeframe="day",
+        source_root=source_root,
+        adjust_method="backward",
+        run_mode="full",
+        run_id="raw-stock-day-prep-002",
+        limit=0,
     )
     raw_summary = run_tdx_asset_raw_ingest(
         settings=settings,

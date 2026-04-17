@@ -9,8 +9,8 @@ import duckdb
 
 from mlq.core.paths import default_settings
 from mlq.data import (
-    market_base_ledger_path,
-    raw_market_ledger_path,
+    market_base_timeframe_ledger_path,
+    raw_market_timeframe_ledger_path,
     run_asset_market_base_build,
     run_tdx_asset_raw_ingest,
 )
@@ -21,7 +21,7 @@ from tests.unit.data.market_base_test_support import (
 )
 
 
-def test_weekly_raw_ingest_falls_back_to_day_source(tmp_path: Path, monkeypatch) -> None:
+def test_weekly_raw_ingest_derives_from_day_raw_ledger(tmp_path: Path, monkeypatch) -> None:
     _clear_workspace_env(monkeypatch)
     repo_root = _bootstrap_repo_root(tmp_path)
     settings = default_settings(repo_root=repo_root)
@@ -43,6 +43,16 @@ def test_weekly_raw_ingest_falls_back_to_day_source(tmp_path: Path, monkeypatch)
         ],
     )
 
+    run_tdx_asset_raw_ingest(
+        settings=settings,
+        asset_type="stock",
+        timeframe="day",
+        source_root=source_root,
+        adjust_method="backward",
+        run_mode="full",
+        run_id="raw-stock-day-prep-001",
+        limit=0,
+    )
     summary = run_tdx_asset_raw_ingest(
         settings=settings,
         asset_type="stock",
@@ -57,7 +67,7 @@ def test_weekly_raw_ingest_falls_back_to_day_source(tmp_path: Path, monkeypatch)
     assert summary.timeframe == "week"
     assert summary.bar_inserted_count == 2
 
-    conn = duckdb.connect(str(raw_market_ledger_path(settings)), read_only=True)
+    conn = duckdb.connect(str(raw_market_timeframe_ledger_path(settings, timeframe="week")), read_only=True)
     try:
         rows = conn.execute(
             """
@@ -84,7 +94,7 @@ def test_weekly_raw_ingest_falls_back_to_day_source(tmp_path: Path, monkeypatch)
     assert run_row == ("week", 1, 2, "completed")
 
 
-def test_weekly_direct_source_precedes_day_fallback(tmp_path: Path, monkeypatch) -> None:
+def test_weekly_raw_ignores_direct_week_txt_and_keeps_day_raw_as_official_source(tmp_path: Path, monkeypatch) -> None:
     _clear_workspace_env(monkeypatch)
     repo_root = _bootstrap_repo_root(tmp_path)
     settings = default_settings(repo_root=repo_root)
@@ -112,6 +122,16 @@ def test_weekly_direct_source_precedes_day_fallback(tmp_path: Path, monkeypatch)
         rows=[("2026/04/10", 9.50, 11.80, 9.20, 11.30, 999, 9999)],
     )
 
+    run_tdx_asset_raw_ingest(
+        settings=settings,
+        asset_type="stock",
+        timeframe="day",
+        source_root=source_root,
+        adjust_method="backward",
+        run_mode="full",
+        run_id="raw-stock-day-prep-002",
+        limit=0,
+    )
     summary = run_tdx_asset_raw_ingest(
         settings=settings,
         asset_type="stock",
@@ -125,7 +145,7 @@ def test_weekly_direct_source_precedes_day_fallback(tmp_path: Path, monkeypatch)
 
     assert summary.bar_inserted_count == 1
 
-    conn = duckdb.connect(str(raw_market_ledger_path(settings)), read_only=True)
+    conn = duckdb.connect(str(raw_market_timeframe_ledger_path(settings, timeframe="week")), read_only=True)
     try:
         row = conn.execute(
             """
@@ -137,7 +157,7 @@ def test_weekly_direct_source_precedes_day_fallback(tmp_path: Path, monkeypatch)
     finally:
         conn.close()
 
-    assert row == (date(2026, 4, 10), 9.5, 11.8, 9.2, 11.3, 999.0, 9999.0)
+    assert row == (date(2026, 4, 7), 10.0, 10.9, 9.9, 10.8, 300.0, 3000.0)
 
 
 def test_monthly_dirty_queue_is_isolated_by_timeframe(tmp_path: Path, monkeypatch) -> None:
@@ -161,6 +181,16 @@ def test_monthly_dirty_queue_is_isolated_by_timeframe(tmp_path: Path, monkeypatc
         ],
     )
 
+    run_tdx_asset_raw_ingest(
+        settings=settings,
+        asset_type="stock",
+        timeframe="day",
+        source_root=source_root,
+        adjust_method="backward",
+        run_mode="full",
+        run_id="raw-stock-day-prep-003",
+        limit=0,
+    )
     run_tdx_asset_raw_ingest(
         settings=settings,
         asset_type="stock",
@@ -191,20 +221,12 @@ def test_monthly_dirty_queue_is_isolated_by_timeframe(tmp_path: Path, monkeypatc
         run_id="base-stock-month-incremental-001",
     )
 
-    assert day_summary.consumed_dirty_count == 0
+    assert day_summary.consumed_dirty_count == 1
     assert month_summary.consumed_dirty_count == 1
 
-    conn = duckdb.connect(str(market_base_ledger_path(settings)), read_only=True)
+    day_conn = duckdb.connect(str(market_base_timeframe_ledger_path(settings, timeframe="day")), read_only=True)
     try:
-        rows = conn.execute(
-            """
-            SELECT code, timeframe, trade_date, open, high, low, close, volume, amount
-            FROM stock_monthly_adjusted
-            WHERE adjust_method = 'backward'
-            ORDER BY trade_date
-            """
-        ).fetchall()
-        dirty_rows = conn.execute(
+        day_dirty_rows = day_conn.execute(
             """
             SELECT timeframe, dirty_status, last_consumed_run_id
             FROM base_dirty_instrument
@@ -213,10 +235,32 @@ def test_monthly_dirty_queue_is_isolated_by_timeframe(tmp_path: Path, monkeypatc
             """
         ).fetchall()
     finally:
-        conn.close()
+        day_conn.close()
+
+    month_conn = duckdb.connect(str(market_base_timeframe_ledger_path(settings, timeframe="month")), read_only=True)
+    try:
+        rows = month_conn.execute(
+            """
+            SELECT code, timeframe, trade_date, open, high, low, close, volume, amount
+            FROM stock_monthly_adjusted
+            WHERE adjust_method = 'backward'
+            ORDER BY trade_date
+            """
+        ).fetchall()
+        month_dirty_rows = month_conn.execute(
+            """
+            SELECT timeframe, dirty_status, last_consumed_run_id
+            FROM base_dirty_instrument
+            WHERE code = '600000.SH' AND adjust_method = 'backward'
+            ORDER BY timeframe
+            """
+        ).fetchall()
+    finally:
+        month_conn.close()
 
     assert rows == [
         ("600000.SH", "month", date(2026, 3, 31), 10.0, 10.9, 9.9, 10.8, 220.0, 2200.0),
         ("600000.SH", "month", date(2026, 4, 30), 10.9, 11.8, 10.7, 11.5, 270.0, 2700.0),
     ]
-    assert dirty_rows == [("month", "consumed", "base-stock-month-incremental-001")]
+    assert day_dirty_rows == [("day", "consumed", "base-stock-day-incremental-001")]
+    assert month_dirty_rows == [("month", "consumed", "base-stock-month-incremental-001")]

@@ -75,3 +75,27 @@ python scripts/system/check_development_governance.py
 ```
 
 - 结果：`16 passed`，两项治理检查通过。
+## 2026-04-17 第三刀补充裁决
+
+- `76` 已进一步推进到“`week/month raw` 的官方来源从 `day raw` 账本派生”的状态。
+- 当前已经成立的正式口径：
+  - `day raw` 仍是唯一读取 `H:\tdx_offline_Data` 日线 txt 的官方 raw 入口。
+  - `week/month raw` 只允许读取 `raw_market_day.duckdb` 中对应 `asset + adjust_method` 的日线真值，再派生写入 `raw_market_week/month.duckdb`。
+  - `week/month raw` 的 `resume / pending-only` 语义也已经改成基于 `day raw` 官方库盘点，而不是基于 `week/month txt` 目录盘点。
+- 当前不再成立的旧口径：
+  - `week/month raw` 从 `stock-week` / `stock-month` 直接源读取。
+  - `week/month raw` 缺直接源时回退到 `day txt` 重扫聚合。
+- 当前仍未完成：
+  - 真实官方库上的 `stock week/month` rebuild。
+  - rebuild 后的 parity 校验。
+  - 旧 `day` 官方库里遗留周月表和数据的 purge。
+
+## 第三刀验证
+
+```text
+pytest tests/unit/core/test_paths.py tests/unit/data/test_timeframe_ledger_bootstrap.py tests/unit/data/test_raw_ingest_runner.py tests/unit/data/test_market_base_timeframe_runner.py -q
+python scripts/system/check_doc_first_gating_governance.py
+python scripts/system/check_development_governance.py
+```
+
+- 结果：`19 passed`，两项治理检查通过。

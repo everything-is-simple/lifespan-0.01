@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
-from types import SimpleNamespace
-
 from mlq.data.data_common import *
+from mlq.data.data_raw_timeframe_derived import (
+    _fetch_day_raw_candidate_codes,
+    _resample_parsed_rows,
+    _run_day_raw_derived_ingest_for_asset,
+)
 from mlq.data.data_raw_support import *
 from mlq.data.data_shared import *
 
@@ -65,54 +68,6 @@ def _resolve_tdx_source_folder(
     )
 
 
-def _resample_parsed_rows(parsed, *, timeframe: str):
-    """把日线 txt 解析结果聚合成周线或月线。"""
-
-    normalized_timeframe = _normalize_timeframe(timeframe)
-    if normalized_timeframe == "day":
-        return parsed
-    frame = pd.DataFrame.from_records(
-        [
-            {
-                "code": row.code,
-                "name": row.name,
-                "trade_date": row.trade_date,
-                "open": row.open,
-                "high": row.high,
-                "low": row.low,
-                "close": row.close,
-                "volume": row.volume,
-                "amount": row.amount,
-            }
-            for row in parsed.rows
-        ]
-    )
-    if frame.empty:
-        return SimpleNamespace(code=parsed.code, name=parsed.name, header=parsed.header, rows=[])
-    frame["trade_date"] = pd.to_datetime(frame["trade_date"])
-    indexed = frame.sort_values("trade_date").set_index("trade_date")
-    grouped = indexed.groupby(indexed.index.to_period("W-FRI" if normalized_timeframe == "week" else "M"))
-    rows = []
-    for _, group in grouped:
-        clean_group = group.dropna(subset=["open", "high", "low", "close"])
-        if clean_group.empty:
-            continue
-        rows.append(
-            SimpleNamespace(
-                code=str(clean_group["code"].iloc[-1]),
-                name=str(clean_group["name"].iloc[-1]),
-                trade_date=clean_group.index[-1].date(),
-                open=float(clean_group["open"].iloc[0]),
-                high=float(clean_group["high"].max()),
-                low=float(clean_group["low"].min()),
-                close=float(clean_group["close"].iloc[-1]),
-                volume=float(clean_group["volume"].fillna(0.0).sum()),
-                amount=float(clean_group["amount"].fillna(0.0).sum()),
-            )
-        )
-    return SimpleNamespace(code=parsed.code, name=parsed.name, header=parsed.header, rows=rows)
-
-
 def _run_tdx_raw_ingest_for_asset(
     *,
     asset_type: str,
@@ -134,6 +89,19 @@ def _run_tdx_raw_ingest_for_asset(
     normalized_timeframe = _normalize_timeframe(timeframe)
     workspace = settings or default_settings()
     workspace.ensure_directories()
+    if normalized_timeframe != "day":
+        return _run_day_raw_derived_ingest_for_asset(
+            asset_type=normalized_asset_type,
+            timeframe=normalized_timeframe,
+            settings=workspace,
+            adjust_method=adjust_method,
+            run_mode=run_mode,
+            continue_from_last_run=continue_from_last_run,
+            instruments=instruments,
+            limit=limit,
+            run_id=run_id,
+            summary_path=summary_path,
+        )
     bootstrap_raw_market_timeframe_ledger(workspace, timeframe=normalized_timeframe)
     bootstrap_market_base_timeframe_ledger(workspace, timeframe=normalized_timeframe)
     resolved_source_root = Path(source_root or DEFAULT_TDX_SOURCE_ROOT)
@@ -460,27 +428,44 @@ def resolve_tdx_asset_pending_registry_scope(
     normalized_timeframe = _normalize_timeframe(timeframe)
     workspace = settings or default_settings()
     workspace.ensure_directories()
-    bootstrap_raw_market_timeframe_ledger(workspace, timeframe=normalized_timeframe)
-    resolved_source_root = Path(source_root or DEFAULT_TDX_SOURCE_ROOT)
-    folder_path, source_timeframe = _resolve_tdx_source_folder(
-        resolved_source_root,
-        asset_type=normalized_asset_type,
-        timeframe=normalized_timeframe,
-        adjust_method=adjust_method,
-    )
+    if normalized_timeframe == "day":
+        bootstrap_raw_market_timeframe_ledger(workspace, timeframe=normalized_timeframe)
+        resolved_source_root = Path(source_root or DEFAULT_TDX_SOURCE_ROOT)
+        folder_path, source_timeframe = _resolve_tdx_source_folder(
+            resolved_source_root,
+            asset_type=normalized_asset_type,
+            timeframe=normalized_timeframe,
+            adjust_method=adjust_method,
+        )
+        normalized_instruments = _normalize_instruments(instruments)
+        matching_files = [
+            path
+            for path in sorted(folder_path.glob("*.txt"))
+            if _match_instrument_filter(path, normalized_instruments)
+        ]
+        candidate_instruments = tuple(dict.fromkeys(_resolve_code_from_filename(path) for path in matching_files))
+        source_folder = folder_path
+    else:
+        bootstrap_raw_market_ledger(workspace)
+        bootstrap_raw_market_timeframe_ledger(workspace, timeframe=normalized_timeframe)
+        resolved_source_root = raw_market_ledger_path(workspace)
+        source_folder = resolved_source_root
+        source_timeframe = "day_raw"
+        normalized_instruments = _normalize_instruments(instruments)
+        day_connection = duckdb.connect(str(raw_market_ledger_path(workspace)), read_only=True)
+        try:
+            candidate_instruments = _fetch_day_raw_candidate_codes(
+                day_connection,
+                asset_type=normalized_asset_type,
+                adjust_method=adjust_method,
+                instruments=normalized_instruments,
+            )
+        finally:
+            day_connection.close()
     normalized_instruments = _normalize_instruments(instruments)
-    matching_files = [
-        path
-        for path in sorted(folder_path.glob("*.txt"))
-        if _match_instrument_filter(path, normalized_instruments)
-    ]
-    candidate_instruments = tuple(dict.fromkeys(_resolve_code_from_filename(path) for path in matching_files))
     candidate_instrument_set = set(candidate_instruments)
     raw_registry_table = RAW_FILE_REGISTRY_TABLE_BY_ASSET_TYPE[normalized_asset_type]
-    connection = duckdb.connect(
-        str(raw_market_timeframe_ledger_path(workspace, timeframe=normalized_timeframe)),
-        read_only=True,
-    )
+    connection = duckdb.connect(str(raw_market_timeframe_ledger_path(workspace, timeframe=normalized_timeframe)), read_only=True)
     try:
         existing_instrument_set = {
             str(row[0])
@@ -504,7 +489,7 @@ def resolve_tdx_asset_pending_registry_scope(
         "timeframe": normalized_timeframe,
         "adjust_method": adjust_method,
         "source_root": str(resolved_source_root),
-        "source_folder": str(folder_path),
+        "source_folder": str(source_folder),
         "source_timeframe": source_timeframe,
         "raw_market_path": str(raw_market_timeframe_ledger_path(workspace, timeframe=normalized_timeframe)),
         "candidate_instrument_count": len(candidate_instruments),
@@ -541,20 +526,34 @@ def run_tdx_asset_raw_ingest_batched(
     workspace.ensure_directories()
     bootstrap_raw_market_timeframe_ledger(workspace, timeframe=normalized_timeframe)
     bootstrap_market_base_timeframe_ledger(workspace, timeframe=normalized_timeframe)
-    resolved_source_root = Path(source_root or DEFAULT_TDX_SOURCE_ROOT)
-    folder_path, _ = _resolve_tdx_source_folder(
-        resolved_source_root,
-        asset_type=normalized_asset_type,
-        timeframe=normalized_timeframe,
-        adjust_method=adjust_method,
-    )
     normalized_instruments = _normalize_instruments(instruments)
-    matching_files = [
-        path
-        for path in sorted(folder_path.glob("*.txt"))
-        if _match_instrument_filter(path, normalized_instruments)
-    ]
-    candidate_codes = tuple(_resolve_code_from_filename(path) for path in matching_files)
+    if normalized_timeframe == "day":
+        resolved_source_root = Path(source_root or DEFAULT_TDX_SOURCE_ROOT)
+        folder_path, _ = _resolve_tdx_source_folder(
+            resolved_source_root,
+            asset_type=normalized_asset_type,
+            timeframe=normalized_timeframe,
+            adjust_method=adjust_method,
+        )
+        matching_files = [
+            path
+            for path in sorted(folder_path.glob("*.txt"))
+            if _match_instrument_filter(path, normalized_instruments)
+        ]
+        candidate_codes = tuple(_resolve_code_from_filename(path) for path in matching_files)
+    else:
+        bootstrap_raw_market_ledger(workspace)
+        resolved_source_root = raw_market_ledger_path(workspace)
+        day_connection = duckdb.connect(str(raw_market_ledger_path(workspace)), read_only=True)
+        try:
+            candidate_codes = _fetch_day_raw_candidate_codes(
+                day_connection,
+                asset_type=normalized_asset_type,
+                adjust_method=adjust_method,
+                instruments=normalized_instruments,
+            )
+        finally:
+            day_connection.close()
     parent_run_id = run_id or _build_run_id(prefix=f"raw-{normalized_asset_type}-{normalized_timeframe}-ingest-batch")
     child_summaries: list[dict[str, object]] = []
     for batch_number, offset in enumerate(range(0, len(candidate_codes), normalized_batch_size), start=1):

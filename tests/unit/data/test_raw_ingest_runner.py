@@ -448,6 +448,18 @@ def test_resolve_tdx_asset_pending_registry_scope_returns_only_missing_codes(
     run_tdx_asset_raw_ingest(
         settings=settings,
         asset_type="stock",
+        timeframe="day",
+        source_root=source_root,
+        adjust_method="backward",
+        run_mode="full",
+        instruments=("600000.SH", "600001.SH", "000001.SZ"),
+        run_id="raw-stock-day-pending-scope-000",
+        limit=0,
+    )
+
+    run_tdx_asset_raw_ingest(
+        settings=settings,
+        asset_type="stock",
         timeframe="week",
         source_root=source_root,
         adjust_method="backward",
@@ -467,12 +479,12 @@ def test_resolve_tdx_asset_pending_registry_scope_returns_only_missing_codes(
 
     assert scope["asset_type"] == "stock"
     assert scope["timeframe"] == "week"
-    assert scope["source_timeframe"] == "day"
+    assert scope["source_timeframe"] == "day_raw"
     assert scope["candidate_instrument_count"] == 3
     assert scope["existing_instrument_count"] == 1
     assert scope["pending_instrument_count"] == 2
     assert scope["existing_instruments"] == ("600000.SH",)
-    assert scope["pending_instruments"] == ("600001.SH", "000001.SZ")
+    assert scope["pending_instruments"] == ("000001.SZ", "600001.SH")
 
 
 
