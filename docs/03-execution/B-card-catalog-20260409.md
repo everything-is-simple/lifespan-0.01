@@ -1,8 +1,8 @@
 ﻿# 执行卡目录 `日期：2026-04-09`
 `状态：持续更新`
 
-1. 当前下一锚：`75-raw-base-weekly-monthly-timeframe-ledger-bootstrap-card-20260416.md`
-2. 当前待施工卡：`75-raw-base-weekly-monthly-timeframe-ledger-bootstrap-card-20260416.md`
+1. 当前下一锚：`76-raw-base-day-week-month-ledger-split-migration-card-20260417.md`
+2. 当前待施工卡：`76-raw-base-day-week-month-ledger-split-migration-card-20260417.md`
 3. 正式主线剩余卡：`13`
 4. 可选 Sidecar 剩余卡：`0`
 5. 历史治理 backlog：`0`
@@ -97,6 +97,7 @@
 104. `104-mainline-real-data-smoke-regression-card-20260411.md`
 105. `105-system-runtime-orchestration-bootstrap-card-20260411.md`
 106. `75-raw-base-weekly-monthly-timeframe-ledger-bootstrap-card-20260416.md`
+107. `76-raw-base-day-week-month-ledger-split-migration-card-20260417.md`
 ## 当前说明
 
 1. 最新生效结论锚点已推进到 `74-market-base-batched-bootstrap-governance-conclusion-20260416.md`。

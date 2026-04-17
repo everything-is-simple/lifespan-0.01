@@ -15,9 +15,9 @@
 
 1. 历史账本硬约束来自 `docs/01-design/03-historical-ledger-shared-contract-charter-20260409.md`
 2. 全系统统一治理基线来自 `28-system-wide-checkpoint-and-dirty-queue-alignment-conclusion-20260411.md`
-3. 当前最新生效结论锚点为 `74-market-base-batched-bootstrap-governance-conclusion-20260416.md`
-4. 当前待施工卡为 `80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`
-5. 当前连续前置卡组为 `80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86`
+3. 当前最新生效结论锚点为 `75-raw-base-weekly-monthly-timeframe-ledger-bootstrap-conclusion-20260416.md`
+4. 当前待施工卡为 `76-raw-base-day-week-month-ledger-split-migration-card-20260417.md`
+5. 当前连续前置卡组为 `76 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86`
 
 ## 当前正式判断
 
@@ -41,9 +41,9 @@
 
 ### 当前阶段
 
-1. 当前 active 卡：`80`
-2. 当前 active 卡组：`80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`
-3. 当前系统级目标：恢复 `2011-2026 YTD` official middle-ledger 分窗建库与 cutover gate，并在 `86` 后决定是否恢复 `trade -> system`
+1. 当前 active 卡：`76`
+2. 当前 active 卡组：`76 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`
+3. 当前系统级目标：先完成 `raw/base` 日周月分库迁移，再恢复 `2011-2026 YTD` official middle-ledger 分窗建库与 cutover gate，并在 `86` 后决定是否恢复 `trade -> system`
 
 ## 系统当前剖面图
 
@@ -140,7 +140,9 @@ flowchart LR
     G69 --> G7072["70-72 objective historical backfill accepted"]
     G7072 --> G73["73 market_base backward full-history repair accepted"]
     G73 --> G74["74 raw/base batched bootstrap accepted"]
-    G74 --> G8086["80-86 official middle-ledger resume"]
+    G74 --> G75["75 single-db week/month expansion accepted"]
+    G75 --> G76["76 day/week/month split migration"]
+    G76 --> G8086["80-86 official middle-ledger resume"]
     G8086 --> G100105["100-105 trade/system 恢复卡组"]
     G100105 --> C100["100 signal anchor freeze"]
     C100 --> C101["101 T+1 open 参考价修正"]
@@ -441,7 +443,7 @@ flowchart TD
 - 当前状态：
   `已完成`
 - 下一步依赖：
-`74` 已收口；当前进入 `80-86` official middle-ledger resume
+`75` 已收口；当前先进入 `76` raw/base 日周月分库迁移，随后恢复 `80-86` official middle-ledger resume
 
 ### `M3 alpha 解释层收口`
 
