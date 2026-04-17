@@ -29,3 +29,29 @@ flowchart TD
     B --> C[76 迁移卡成为当前施工位]
     C --> D[待六库迁移完成后正式裁决]
 ```
+## 2026-04-17 第一刀实现状态
+
+- 已完成：
+  - 六库路径契约已正式落到代码
+  - day 兼容别名仍保留
+  - raw/base 的 timeframe-aware bootstrap 入口已落地
+  - `week/month` 独立库已经可以被正式 bootstrap 出来
+- 尚未完成：
+  - runner 仍主要落在旧 day 官方库
+  - `day raw -> week/month raw` 派生链路尚未实现
+  - 真实 `stock week/month` rebuild 与旧 day 库 purge 还未开始
+
+## 当前裁决补充
+
+- `76` 现在不再只是设计草稿，而是已经进入“代码第一刀落地、迁移未完成”的进行中状态。
+- 下一刀应直接进入 runner 路由改造，而不是继续在旧单库方案上补跑 `stock week/month`。
+
+## 本次验证
+
+```text
+pytest tests/unit/core/test_paths.py tests/unit/data/test_timeframe_ledger_bootstrap.py tests/unit/data/test_raw_ingest_runner.py -q
+python scripts/system/check_doc_first_gating_governance.py
+python scripts/system/check_development_governance.py
+```
+
+- 结果：`14 passed`，两项治理检查通过。

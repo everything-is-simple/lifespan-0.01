@@ -41,3 +41,33 @@ flowchart LR
     FACT --> DESIGN[76 设计与规格冻结]
     DESIGN --> CARD[当前待施工卡切到 76]
 ```
+## 2026-04-17 第一刀实现证据
+
+### 命令
+
+```text
+pytest tests/unit/core/test_paths.py tests/unit/data/test_timeframe_ledger_bootstrap.py tests/unit/data/test_raw_ingest_runner.py -q
+python scripts/system/check_doc_first_gating_governance.py
+python scripts/system/check_development_governance.py
+```
+
+### 关键结果
+
+- `src/mlq/core/paths.py` 已正式引入六库路径契约：
+  - `raw_market_day / raw_market_week / raw_market_month`
+  - `market_base_day / market_base_week / market_base_month`
+- 旧 day 入口保持兼容：
+  - `settings.databases.raw_market` 仍指向 `raw_market_day`
+  - `settings.databases.market_base` 仍指向 `market_base_day`
+  - `raw_market_ledger_path()` / `market_base_ledger_path()` 仍默认返回 day 库
+- `src/mlq/data/bootstrap.py` 已新增 timeframe-aware 路由与 bootstrap：
+  - `raw_market_timeframe_ledger_path()` / `market_base_timeframe_ledger_path()`
+  - `connect_raw_market_timeframe_ledger()` / `connect_market_base_timeframe_ledger()`
+  - `bootstrap_raw_market_timeframe_ledger()` / `bootstrap_market_base_timeframe_ledger()`
+- `week/month` 独立库的第一刀表族已经落地：
+  - `week raw` 只建 `file_registry + weekly_bar + raw_ingest_*`
+  - `month base` 只建 `monthly_adjusted + base_dirty/build_*`
+- 验证结果：
+  - `pytest ...` => `14 passed`
+  - `check_doc_first_gating_governance.py` => `通过`
+  - `check_development_governance.py` => `通过`

@@ -27,3 +27,23 @@ flowchart LR
     DECIDE --> DOC[新建设计 规格 卡片]
     DOC --> NEXT[等待迁移实施]
 ```
+## 2026-04-17 第一刀实现追加记录
+
+1. 在 `src/mlq/core/paths.py` 中把 `raw/base` 官方库路径正式拆成六个显式字段：
+   `raw_market_day / week / month` 与 `market_base_day / week / month`。
+2. 保留旧 day 别名，确保现有调用方仍可继续使用：
+   `settings.databases.raw_market` 与 `settings.databases.market_base`。
+3. 在 `src/mlq/data/bootstrap.py` 中新增 timeframe-aware path / connect / bootstrap 入口，并把 `week/month` 的 bootstrap 表族先按物理库边界收敛到最小集合。
+4. 在 `src/mlq/data/__init__.py` 中对外导出新入口，供后续 runner 逐步切换。
+5. 新增 `tests/unit/data/test_timeframe_ledger_bootstrap.py`，并更新 `tests/unit/core/test_paths.py`，锁住六库路径契约与 `day` 兼容别名。
+6. 运行：
+   - `pytest tests/unit/core/test_paths.py tests/unit/data/test_timeframe_ledger_bootstrap.py tests/unit/data/test_raw_ingest_runner.py -q`
+   - `python scripts/system/check_doc_first_gating_governance.py`
+   - `python scripts/system/check_development_governance.py`
+   结果全部通过。
+
+## 当前未做
+
+- 还没有把 `run_tdx_asset_raw_ingest.py` / `run_market_base_build.py` 等 runner 切到新 `week/month` 官方库。
+- 还没有实现 `day raw -> week/month raw` 的正式派生 materialization runner。
+- 还没有开始真实官方库的 `stock week/month` rebuild 与 parity 校验。

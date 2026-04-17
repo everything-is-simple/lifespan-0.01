@@ -812,6 +812,44 @@ MARKET_BASE_UNIQUE_INDEXES: Final[dict[str, tuple[tuple[str, tuple[str, ...]], .
     BASE_DIRTY_INSTRUMENT_TABLE: (("ux_base_dirty_instrument_dirty_nk", ("dirty_nk",)),),
 }
 
+
+def _timeframe_table_names(
+    table_mapping: dict[str, dict[str, str]],
+    *,
+    timeframe: str,
+) -> tuple[str, ...]:
+    return tuple(asset_tables[timeframe] for asset_tables in table_mapping.values())
+
+
+def _select_table_definitions(
+    definitions: dict[str, str] | dict[str, dict[str, str]] | dict[str, tuple[str, ...]] | dict[str, tuple[tuple[str, tuple[str, ...]], ...]],
+    *,
+    table_names: tuple[str, ...],
+):
+    return {table_name: definitions[table_name] for table_name in table_names if table_name in definitions}
+
+
+RAW_MARKET_WEEK_TABLE_NAMES: Final[tuple[str, ...]] = (
+    *RAW_FILE_REGISTRY_TABLE_BY_ASSET_TYPE.values(), *_timeframe_table_names(RAW_BAR_TABLE_BY_ASSET_AND_TIMEFRAME, timeframe="week"), RAW_INGEST_RUN_TABLE, RAW_INGEST_FILE_TABLE
+)
+RAW_MARKET_MONTH_TABLE_NAMES: Final[tuple[str, ...]] = (
+    *RAW_FILE_REGISTRY_TABLE_BY_ASSET_TYPE.values(), *_timeframe_table_names(RAW_BAR_TABLE_BY_ASSET_AND_TIMEFRAME, timeframe="month"), RAW_INGEST_RUN_TABLE, RAW_INGEST_FILE_TABLE
+)
+MARKET_BASE_WEEK_TABLE_NAMES: Final[tuple[str, ...]] = (
+    *_timeframe_table_names(MARKET_BASE_TABLE_BY_ASSET_AND_TIMEFRAME, timeframe="week"), BASE_DIRTY_INSTRUMENT_TABLE, BASE_BUILD_RUN_TABLE, BASE_BUILD_SCOPE_TABLE, BASE_BUILD_ACTION_TABLE
+)
+MARKET_BASE_MONTH_TABLE_NAMES: Final[tuple[str, ...]] = (
+    *_timeframe_table_names(MARKET_BASE_TABLE_BY_ASSET_AND_TIMEFRAME, timeframe="month"), BASE_DIRTY_INSTRUMENT_TABLE, BASE_BUILD_RUN_TABLE, BASE_BUILD_SCOPE_TABLE, BASE_BUILD_ACTION_TABLE
+)
+RAW_MARKET_LEDGER_TABLES_BY_TIMEFRAME: Final[dict[str, dict[str, str]]] = {"day": RAW_MARKET_LEDGER_TABLES, "week": _select_table_definitions(RAW_MARKET_LEDGER_TABLES, table_names=RAW_MARKET_WEEK_TABLE_NAMES), "month": _select_table_definitions(RAW_MARKET_LEDGER_TABLES, table_names=RAW_MARKET_MONTH_TABLE_NAMES)}
+RAW_MARKET_REQUIRED_COLUMNS_BY_TIMEFRAME: Final[dict[str, dict[str, dict[str, str]]]] = {"day": RAW_MARKET_REQUIRED_COLUMNS, "week": _select_table_definitions(RAW_MARKET_REQUIRED_COLUMNS, table_names=RAW_MARKET_WEEK_TABLE_NAMES), "month": _select_table_definitions(RAW_MARKET_REQUIRED_COLUMNS, table_names=RAW_MARKET_MONTH_TABLE_NAMES)}
+RAW_MARKET_NOT_NULL_COLUMNS_BY_TIMEFRAME: Final[dict[str, dict[str, tuple[str, ...]]]] = {"day": RAW_MARKET_NOT_NULL_COLUMNS, "week": _select_table_definitions(RAW_MARKET_NOT_NULL_COLUMNS, table_names=RAW_MARKET_WEEK_TABLE_NAMES), "month": _select_table_definitions(RAW_MARKET_NOT_NULL_COLUMNS, table_names=RAW_MARKET_MONTH_TABLE_NAMES)}
+RAW_MARKET_UNIQUE_INDEXES_BY_TIMEFRAME: Final[dict[str, dict[str, tuple[tuple[str, tuple[str, ...]], ...]]]] = {"day": RAW_MARKET_UNIQUE_INDEXES, "week": _select_table_definitions(RAW_MARKET_UNIQUE_INDEXES, table_names=RAW_MARKET_WEEK_TABLE_NAMES), "month": _select_table_definitions(RAW_MARKET_UNIQUE_INDEXES, table_names=RAW_MARKET_MONTH_TABLE_NAMES)}
+MARKET_BASE_LEDGER_TABLES_BY_TIMEFRAME: Final[dict[str, dict[str, str]]] = {"day": MARKET_BASE_LEDGER_TABLES, "week": _select_table_definitions(MARKET_BASE_LEDGER_TABLES, table_names=MARKET_BASE_WEEK_TABLE_NAMES), "month": _select_table_definitions(MARKET_BASE_LEDGER_TABLES, table_names=MARKET_BASE_MONTH_TABLE_NAMES)}
+MARKET_BASE_REQUIRED_COLUMNS_BY_TIMEFRAME: Final[dict[str, dict[str, dict[str, str]]]] = {"day": MARKET_BASE_REQUIRED_COLUMNS, "week": _select_table_definitions(MARKET_BASE_REQUIRED_COLUMNS, table_names=MARKET_BASE_WEEK_TABLE_NAMES), "month": _select_table_definitions(MARKET_BASE_REQUIRED_COLUMNS, table_names=MARKET_BASE_MONTH_TABLE_NAMES)}
+MARKET_BASE_NOT_NULL_COLUMNS_BY_TIMEFRAME: Final[dict[str, dict[str, tuple[str, ...]]]] = {"day": MARKET_BASE_NOT_NULL_COLUMNS, "week": _select_table_definitions(MARKET_BASE_NOT_NULL_COLUMNS, table_names=MARKET_BASE_WEEK_TABLE_NAMES), "month": _select_table_definitions(MARKET_BASE_NOT_NULL_COLUMNS, table_names=MARKET_BASE_MONTH_TABLE_NAMES)}
+MARKET_BASE_UNIQUE_INDEXES_BY_TIMEFRAME: Final[dict[str, dict[str, tuple[tuple[str, tuple[str, ...]], ...]]]] = {"day": MARKET_BASE_UNIQUE_INDEXES, "week": _select_table_definitions(MARKET_BASE_UNIQUE_INDEXES, table_names=MARKET_BASE_WEEK_TABLE_NAMES), "month": _select_table_definitions(MARKET_BASE_UNIQUE_INDEXES, table_names=MARKET_BASE_MONTH_TABLE_NAMES)}
+
 from mlq.data.data_bootstrap_maintenance import (
     cleanup_market_base_ledger,
     cleanup_raw_market_ledger,
@@ -821,97 +859,142 @@ from mlq.data.data_bootstrap_maintenance import (
 )
 
 
+def _normalize_timeframe(timeframe: str) -> str:
+    normalized = timeframe.strip().lower()
+    if normalized not in TDX_TIMEFRAMES:
+        raise ValueError(f"Unsupported timeframe: {timeframe}")
+    return normalized
+
+
+def _raw_market_database_path(workspace: WorkspaceRoots, *, timeframe: str) -> Path:
+    return {"day": workspace.databases.raw_market_day, "week": workspace.databases.raw_market_week, "month": workspace.databases.raw_market_month}[timeframe]
+
+
+def _market_base_database_path(workspace: WorkspaceRoots, *, timeframe: str) -> Path:
+    return {"day": workspace.databases.market_base_day, "week": workspace.databases.market_base_week, "month": workspace.databases.market_base_month}[timeframe]
+
+
+def raw_market_timeframe_ledger_path(
+    settings: WorkspaceRoots | None = None,
+    *,
+    timeframe: str = "day",
+) -> Path:
+    """返回指定 timeframe 对应的正式 `raw_market` 账本路径。"""
+    workspace = settings or default_settings()
+    return _raw_market_database_path(workspace, timeframe=_normalize_timeframe(timeframe))
+
+
+def market_base_timeframe_ledger_path(settings: WorkspaceRoots | None = None, *, timeframe: str = "day") -> Path:
+    """返回指定 timeframe 对应的正式 `market_base` 账本路径。"""
+    workspace = settings or default_settings()
+    return _market_base_database_path(workspace, timeframe=_normalize_timeframe(timeframe))
+
+
+def connect_raw_market_timeframe_ledger(settings: WorkspaceRoots | None = None, *, timeframe: str = "day", read_only: bool = False) -> duckdb.DuckDBPyConnection:
+    """连接指定 timeframe 对应的正式 `raw_market` 历史账本。"""
+    workspace = settings or default_settings()
+    normalized = _normalize_timeframe(timeframe)
+    if not read_only:
+        workspace.ensure_directories()
+    return duckdb.connect(str(_raw_market_database_path(workspace, timeframe=normalized)), read_only=read_only)
+
+def connect_market_base_timeframe_ledger(settings: WorkspaceRoots | None = None, *, timeframe: str = "day", read_only: bool = False) -> duckdb.DuckDBPyConnection:
+    """连接指定 timeframe 对应的正式 `market_base` 历史账本。"""
+    workspace = settings or default_settings()
+    normalized = _normalize_timeframe(timeframe)
+    if not read_only:
+        workspace.ensure_directories()
+    return duckdb.connect(str(_market_base_database_path(workspace, timeframe=normalized)), read_only=read_only)
+
+
 def raw_market_ledger_path(settings: WorkspaceRoots | None = None) -> Path:
     """返回正式 `raw_market` 账本路径。"""
 
-    workspace = settings or default_settings()
-    return workspace.databases.raw_market
+    return raw_market_timeframe_ledger_path(settings, timeframe="day")
 
 
 def market_base_ledger_path(settings: WorkspaceRoots | None = None) -> Path:
     """返回正式 `market_base` 账本路径。"""
 
-    workspace = settings or default_settings()
-    return workspace.databases.market_base
+    return market_base_timeframe_ledger_path(settings, timeframe="day")
 
-
-def connect_raw_market_ledger(
-    settings: WorkspaceRoots | None = None,
-    *,
-    read_only: bool = False,
-) -> duckdb.DuckDBPyConnection:
+def connect_raw_market_ledger(settings: WorkspaceRoots | None = None, *, read_only: bool = False) -> duckdb.DuckDBPyConnection:
     """连接正式 `raw_market` 历史账本。"""
 
-    workspace = settings or default_settings()
-    if not read_only:
-        workspace.ensure_directories()
-    return duckdb.connect(str(raw_market_ledger_path(workspace)), read_only=read_only)
+    return connect_raw_market_timeframe_ledger(settings, timeframe="day", read_only=read_only)
 
 
-def connect_market_base_ledger(
-    settings: WorkspaceRoots | None = None,
-    *,
-    read_only: bool = False,
-) -> duckdb.DuckDBPyConnection:
+def connect_market_base_ledger(settings: WorkspaceRoots | None = None, *, read_only: bool = False) -> duckdb.DuckDBPyConnection:
     """连接正式 `market_base` 历史账本。"""
 
+    return connect_market_base_timeframe_ledger(settings, timeframe="day", read_only=read_only)
+
+
+def bootstrap_raw_market_timeframe_ledger(settings: WorkspaceRoots | None = None, *, timeframe: str = "day", connection: duckdb.DuckDBPyConnection | None = None) -> Path:
+    """创建或补齐指定 timeframe 对应的正式 `raw_market` 表族。"""
     workspace = settings or default_settings()
-    if not read_only:
-        workspace.ensure_directories()
-    return duckdb.connect(str(market_base_ledger_path(workspace)), read_only=read_only)
+    normalized = _normalize_timeframe(timeframe)
+    workspace.ensure_directories()
+    owns_connection = connection is None
+    conn = connection or connect_raw_market_timeframe_ledger(workspace, timeframe=normalized)
+    table_ddls = RAW_MARKET_LEDGER_TABLES_BY_TIMEFRAME[normalized]
+    required_columns_by_table = RAW_MARKET_REQUIRED_COLUMNS_BY_TIMEFRAME[normalized]
+    not_null_columns_by_table = RAW_MARKET_NOT_NULL_COLUMNS_BY_TIMEFRAME[normalized]
+    index_specs_by_table = RAW_MARKET_UNIQUE_INDEXES_BY_TIMEFRAME[normalized]
+    try:
+        for ddl in table_ddls.values():
+            conn.execute(ddl)
+        for table_name, required_columns in required_columns_by_table.items():
+            ensure_columns(conn, table_name=table_name, required_columns=required_columns)
+        if normalized == "day":
+            cleanup_raw_market_ledger(conn)
+        for table_name, columns in not_null_columns_by_table.items():
+            ensure_not_null_columns(conn, table_name=table_name, column_names=columns)
+        for table_name, index_specs in index_specs_by_table.items():
+            for index_name, column_names in index_specs:
+                ensure_unique_index(conn, table_name=table_name, index_name=index_name, column_names=column_names)
+        return raw_market_timeframe_ledger_path(workspace, timeframe=normalized)
+    finally:
+        if owns_connection:
+            conn.close()
 
 
-def bootstrap_raw_market_ledger(
-    settings: WorkspaceRoots | None = None,
-    *,
-    connection: duckdb.DuckDBPyConnection | None = None,
-) -> Path:
+def bootstrap_raw_market_ledger(settings: WorkspaceRoots | None = None, *, connection: duckdb.DuckDBPyConnection | None = None) -> Path:
     """创建或补齐 `raw_market` 最小正式表族。"""
 
+    return bootstrap_raw_market_timeframe_ledger(settings, timeframe="day", connection=connection)
+
+
+def bootstrap_market_base_timeframe_ledger(settings: WorkspaceRoots | None = None, *, timeframe: str = "day", connection: duckdb.DuckDBPyConnection | None = None) -> Path:
+    """创建或补齐指定 timeframe 对应的正式 `market_base` 表族。"""
     workspace = settings or default_settings()
+    normalized = _normalize_timeframe(timeframe)
     workspace.ensure_directories()
     owns_connection = connection is None
-    conn = connection or connect_raw_market_ledger(workspace)
+    conn = connection or connect_market_base_timeframe_ledger(workspace, timeframe=normalized)
+    table_ddls = MARKET_BASE_LEDGER_TABLES_BY_TIMEFRAME[normalized]
+    required_columns_by_table = MARKET_BASE_REQUIRED_COLUMNS_BY_TIMEFRAME[normalized]
+    not_null_columns_by_table = MARKET_BASE_NOT_NULL_COLUMNS_BY_TIMEFRAME[normalized]
+    index_specs_by_table = MARKET_BASE_UNIQUE_INDEXES_BY_TIMEFRAME[normalized]
     try:
-        for ddl in RAW_MARKET_LEDGER_TABLES.values():
+        for ddl in table_ddls.values():
             conn.execute(ddl)
-        for table_name, required_columns in RAW_MARKET_REQUIRED_COLUMNS.items():
+        for table_name, required_columns in required_columns_by_table.items():
             ensure_columns(conn, table_name=table_name, required_columns=required_columns)
-        cleanup_raw_market_ledger(conn)
-        for table_name, columns in RAW_MARKET_NOT_NULL_COLUMNS.items():
+        if normalized == "day":
+            cleanup_market_base_ledger(conn)
+        for table_name, columns in not_null_columns_by_table.items():
             ensure_not_null_columns(conn, table_name=table_name, column_names=columns)
-        for table_name, index_specs in RAW_MARKET_UNIQUE_INDEXES.items():
+        for table_name, index_specs in index_specs_by_table.items():
             for index_name, column_names in index_specs:
                 ensure_unique_index(conn, table_name=table_name, index_name=index_name, column_names=column_names)
-        return raw_market_ledger_path(workspace)
+        return market_base_timeframe_ledger_path(workspace, timeframe=normalized)
     finally:
         if owns_connection:
             conn.close()
 
 
-def bootstrap_market_base_ledger(
-    settings: WorkspaceRoots | None = None,
-    *,
-    connection: duckdb.DuckDBPyConnection | None = None,
-) -> Path:
+def bootstrap_market_base_ledger(settings: WorkspaceRoots | None = None, *, connection: duckdb.DuckDBPyConnection | None = None) -> Path:
     """创建或补齐 `market_base` 最小正式表族。"""
 
-    workspace = settings or default_settings()
-    workspace.ensure_directories()
-    owns_connection = connection is None
-    conn = connection or connect_market_base_ledger(workspace)
-    try:
-        for ddl in MARKET_BASE_LEDGER_TABLES.values():
-            conn.execute(ddl)
-        for table_name, required_columns in MARKET_BASE_REQUIRED_COLUMNS.items():
-            ensure_columns(conn, table_name=table_name, required_columns=required_columns)
-        cleanup_market_base_ledger(conn)
-        for table_name, columns in MARKET_BASE_NOT_NULL_COLUMNS.items():
-            ensure_not_null_columns(conn, table_name=table_name, column_names=columns)
-        for table_name, index_specs in MARKET_BASE_UNIQUE_INDEXES.items():
-            for index_name, column_names in index_specs:
-                ensure_unique_index(conn, table_name=table_name, index_name=index_name, column_names=column_names)
-        return market_base_ledger_path(workspace)
-    finally:
-        if owns_connection:
-            conn.close()
+    return bootstrap_market_base_timeframe_ledger(settings, timeframe="day", connection=connection)

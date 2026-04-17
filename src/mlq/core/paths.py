@@ -39,8 +39,12 @@ def discover_repo_root(start: Path | None = None) -> Path:
 class DatabasePaths:
     """当前重构基线下的正式历史账本数据库路径。"""
 
-    raw_market: Path
-    market_base: Path
+    raw_market_day: Path
+    raw_market_week: Path
+    raw_market_month: Path
+    market_base_day: Path
+    market_base_week: Path
+    market_base_month: Path
     malf: Path
     structure: Path
     filter: Path
@@ -50,10 +54,26 @@ class DatabasePaths:
     trade_runtime: Path
     system: Path
 
+    @property
+    def raw_market(self) -> Path:
+        """兼容旧调用：`raw_market` 默认仍指向 day 官方库。"""
+
+        return self.raw_market_day
+
+    @property
+    def market_base(self) -> Path:
+        """兼容旧调用：`market_base` 默认仍指向 day 官方库。"""
+
+        return self.market_base_day
+
     def as_dict(self) -> dict[str, Path]:
         return {
-            "raw_market": self.raw_market,
-            "market_base": self.market_base,
+            "raw_market_day": self.raw_market_day,
+            "raw_market_week": self.raw_market_week,
+            "raw_market_month": self.raw_market_month,
+            "market_base_day": self.market_base_day,
+            "market_base_week": self.market_base_week,
+            "market_base_month": self.market_base_month,
             "malf": self.malf,
             "structure": self.structure,
             "filter": self.filter,
@@ -78,8 +98,12 @@ class WorkspaceRoots:
     @property
     def databases(self) -> DatabasePaths:
         return DatabasePaths(
-            raw_market=self.data_root / "raw" / "raw_market.duckdb",
-            market_base=self.data_root / "base" / "market_base.duckdb",
+            raw_market_day=self.data_root / "raw" / "raw_market.duckdb",
+            raw_market_week=self.data_root / "raw" / "raw_market_week.duckdb",
+            raw_market_month=self.data_root / "raw" / "raw_market_month.duckdb",
+            market_base_day=self.data_root / "base" / "market_base.duckdb",
+            market_base_week=self.data_root / "base" / "market_base_week.duckdb",
+            market_base_month=self.data_root / "base" / "market_base_month.duckdb",
             malf=self.data_root / "malf" / "malf.duckdb",
             structure=self.data_root / "structure" / "structure.duckdb",
             filter=self.data_root / "filter" / "filter.duckdb",
