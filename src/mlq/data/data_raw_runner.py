@@ -134,8 +134,8 @@ def _run_tdx_raw_ingest_for_asset(
     normalized_timeframe = _normalize_timeframe(timeframe)
     workspace = settings or default_settings()
     workspace.ensure_directories()
-    bootstrap_raw_market_ledger(workspace)
-    bootstrap_market_base_ledger(workspace)
+    bootstrap_raw_market_timeframe_ledger(workspace, timeframe=normalized_timeframe)
+    bootstrap_market_base_timeframe_ledger(workspace, timeframe=normalized_timeframe)
     resolved_source_root = Path(source_root or DEFAULT_TDX_SOURCE_ROOT)
     folder_path, source_timeframe = _resolve_tdx_source_folder(
         resolved_source_root,
@@ -159,7 +159,7 @@ def _run_tdx_raw_ingest_for_asset(
     ]
     limited_candidate_files = matching_files if normalized_limit is None else matching_files[:normalized_limit]
 
-    connection = duckdb.connect(str(raw_market_ledger_path(workspace)))
+    connection = duckdb.connect(str(raw_market_timeframe_ledger_path(workspace, timeframe=normalized_timeframe)))
     base_connection: duckdb.DuckDBPyConnection | None = None
     try:
         candidate_files = _resolve_raw_candidate_files_by_asset(
@@ -311,7 +311,9 @@ def _run_tdx_raw_ingest_for_asset(
                 )
                 if inserted_count > 0 or rematerialized_count > 0:
                     if base_connection is None:
-                        base_connection = duckdb.connect(str(market_base_ledger_path(workspace)))
+                        base_connection = duckdb.connect(
+                            str(market_base_timeframe_ledger_path(workspace, timeframe=normalized_timeframe))
+                        )
                     _upsert_dirty_instrument_by_asset(
                         base_connection,
                         table_name=BASE_DIRTY_INSTRUMENT_TABLE,
@@ -399,7 +401,7 @@ def _run_tdx_raw_ingest_for_asset(
             bar_inserted_count=bar_inserted_count,
             bar_reused_count=bar_reused_count,
             bar_rematerialized_count=bar_rematerialized_count,
-            raw_market_path=str(raw_market_ledger_path(workspace)),
+            raw_market_path=str(raw_market_timeframe_ledger_path(workspace, timeframe=normalized_timeframe)),
             source_root=str(resolved_source_root),
         )
         _update_raw_ingest_run_success(connection, summary=summary)
@@ -458,7 +460,7 @@ def resolve_tdx_asset_pending_registry_scope(
     normalized_timeframe = _normalize_timeframe(timeframe)
     workspace = settings or default_settings()
     workspace.ensure_directories()
-    bootstrap_raw_market_ledger(workspace)
+    bootstrap_raw_market_timeframe_ledger(workspace, timeframe=normalized_timeframe)
     resolved_source_root = Path(source_root or DEFAULT_TDX_SOURCE_ROOT)
     folder_path, source_timeframe = _resolve_tdx_source_folder(
         resolved_source_root,
@@ -475,7 +477,10 @@ def resolve_tdx_asset_pending_registry_scope(
     candidate_instruments = tuple(dict.fromkeys(_resolve_code_from_filename(path) for path in matching_files))
     candidate_instrument_set = set(candidate_instruments)
     raw_registry_table = RAW_FILE_REGISTRY_TABLE_BY_ASSET_TYPE[normalized_asset_type]
-    connection = duckdb.connect(str(raw_market_ledger_path(workspace)), read_only=True)
+    connection = duckdb.connect(
+        str(raw_market_timeframe_ledger_path(workspace, timeframe=normalized_timeframe)),
+        read_only=True,
+    )
     try:
         existing_instrument_set = {
             str(row[0])
@@ -501,7 +506,7 @@ def resolve_tdx_asset_pending_registry_scope(
         "source_root": str(resolved_source_root),
         "source_folder": str(folder_path),
         "source_timeframe": source_timeframe,
-        "raw_market_path": str(raw_market_ledger_path(workspace)),
+        "raw_market_path": str(raw_market_timeframe_ledger_path(workspace, timeframe=normalized_timeframe)),
         "candidate_instrument_count": len(candidate_instruments),
         "existing_instrument_count": len(existing_instruments),
         "pending_instrument_count": len(pending_instruments),
@@ -534,8 +539,8 @@ def run_tdx_asset_raw_ingest_batched(
         raise ValueError("batch_size must be greater than 0")
     workspace = settings or default_settings()
     workspace.ensure_directories()
-    bootstrap_raw_market_ledger(workspace)
-    bootstrap_market_base_ledger(workspace)
+    bootstrap_raw_market_timeframe_ledger(workspace, timeframe=normalized_timeframe)
+    bootstrap_market_base_timeframe_ledger(workspace, timeframe=normalized_timeframe)
     resolved_source_root = Path(source_root or DEFAULT_TDX_SOURCE_ROOT)
     folder_path, _ = _resolve_tdx_source_folder(
         resolved_source_root,
@@ -587,7 +592,7 @@ def run_tdx_asset_raw_ingest_batched(
         "bar_reused_count": sum(int(item["bar_reused_count"]) for item in child_summaries),
         "bar_rematerialized_count": sum(int(item["bar_rematerialized_count"]) for item in child_summaries),
         "child_runs": child_summaries,
-        "raw_market_path": str(raw_market_ledger_path(workspace)),
+        "raw_market_path": str(raw_market_timeframe_ledger_path(workspace, timeframe=normalized_timeframe)),
         "source_root": str(resolved_source_root),
     }
     _write_summary(summary, summary_path)

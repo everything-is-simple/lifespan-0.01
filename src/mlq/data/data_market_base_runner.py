@@ -30,8 +30,8 @@ def _run_market_base_build_for_asset(
     normalized_timeframe = _normalize_timeframe(timeframe)
     workspace = settings or default_settings()
     workspace.ensure_directories()
-    bootstrap_raw_market_ledger(workspace)
-    bootstrap_market_base_ledger(workspace)
+    bootstrap_raw_market_timeframe_ledger(workspace, timeframe=normalized_timeframe)
+    bootstrap_market_base_timeframe_ledger(workspace, timeframe=normalized_timeframe)
     normalized_instruments = tuple(sorted(_normalize_instruments(instruments)))
     normalized_start_date = _coerce_date(start_date)
     normalized_end_date = _coerce_date(end_date)
@@ -47,7 +47,9 @@ def _run_market_base_build_for_asset(
     raw_table = _resolve_raw_bar_table(asset_type=normalized_asset_type, timeframe=normalized_timeframe)
     market_table = _resolve_market_base_table(asset_type=normalized_asset_type, timeframe=normalized_timeframe)
 
-    market_connection = duckdb.connect(str(market_base_ledger_path(workspace)))
+    market_connection = duckdb.connect(
+        str(market_base_timeframe_ledger_path(workspace, timeframe=normalized_timeframe))
+    )
     _insert_base_build_run_start_by_asset(
         market_connection,
         run_id=materialization_run_id,
@@ -66,7 +68,7 @@ def _run_market_base_build_for_asset(
     try:
         _attach_raw_market_ledger(
             market_connection,
-            raw_market_path=raw_market_ledger_path(workspace),
+            raw_market_path=raw_market_timeframe_ledger_path(workspace, timeframe=normalized_timeframe),
         )
         scope_plan = _resolve_base_build_scope_plan_by_asset(
             connection=market_connection,
@@ -159,8 +161,8 @@ def _run_market_base_build_for_asset(
             reused_count=reused_count,
             rematerialized_count=rematerialized_count,
             consumed_dirty_count=consumed_dirty_count,
-            raw_market_path=str(raw_market_ledger_path(workspace)),
-            market_base_path=str(market_base_ledger_path(workspace)),
+            raw_market_path=str(raw_market_timeframe_ledger_path(workspace, timeframe=normalized_timeframe)),
+            market_base_path=str(market_base_timeframe_ledger_path(workspace, timeframe=normalized_timeframe)),
             raw_table=raw_table,
             market_table=market_table,
         )
@@ -257,8 +259,8 @@ def run_asset_market_base_build_batched(
 
     workspace = settings or default_settings()
     workspace.ensure_directories()
-    bootstrap_raw_market_ledger(workspace)
-    bootstrap_market_base_ledger(workspace)
+    bootstrap_raw_market_timeframe_ledger(workspace, timeframe=normalized_timeframe)
+    bootstrap_market_base_timeframe_ledger(workspace, timeframe=normalized_timeframe)
     normalized_instruments = tuple(sorted(_normalize_instruments(instruments)))
     normalized_start_date = _coerce_date(start_date)
     normalized_end_date = _coerce_date(end_date)
@@ -268,6 +270,7 @@ def run_asset_market_base_build_batched(
     )
     candidate_codes = _fetch_market_base_batch_candidate_codes(
         workspace=workspace,
+        timeframe=normalized_timeframe,
         raw_table=raw_table,
         adjust_method=adjust_method,
         instruments=normalized_instruments,
@@ -307,8 +310,8 @@ def run_asset_market_base_build_batched(
         "reused_count": sum(int(item["reused_count"]) for item in child_summaries),
         "rematerialized_count": sum(int(item["rematerialized_count"]) for item in child_summaries),
         "child_runs": child_summaries,
-        "raw_market_path": str(raw_market_ledger_path(workspace)),
-        "market_base_path": str(market_base_ledger_path(workspace)),
+        "raw_market_path": str(raw_market_timeframe_ledger_path(workspace, timeframe=normalized_timeframe)),
+        "market_base_path": str(market_base_timeframe_ledger_path(workspace, timeframe=normalized_timeframe)),
         "raw_table": raw_table,
         "market_table": _resolve_market_base_table(asset_type=normalized_asset_type, timeframe=normalized_timeframe),
     }
@@ -319,6 +322,7 @@ def run_asset_market_base_build_batched(
 def _fetch_market_base_batch_candidate_codes(
     *,
     workspace: WorkspaceRoots,
+    timeframe: str,
     raw_table: str,
     adjust_method: str,
     instruments: tuple[str, ...],
@@ -337,7 +341,10 @@ def _fetch_market_base_batch_candidate_codes(
         placeholders = ", ".join("?" for _ in instruments)
         where_clauses.append(f"code IN ({placeholders})")
         parameters.extend(instruments)
-    connection = duckdb.connect(str(raw_market_ledger_path(workspace)), read_only=True)
+    connection = duckdb.connect(
+        str(raw_market_timeframe_ledger_path(workspace, timeframe=timeframe)),
+        read_only=True,
+    )
     try:
         rows = connection.execute(
             f"""

@@ -48,9 +48,15 @@ from mlq.data.bootstrap import (
     TDX_ASSET_TYPES,
     TDX_TIMEFRAMES,
     bootstrap_market_base_ledger,
+    bootstrap_market_base_timeframe_ledger,
     bootstrap_raw_market_ledger,
+    bootstrap_raw_market_timeframe_ledger,
+)
+from mlq.data.ledger_timeframe import (
     market_base_ledger_path,
+    market_base_timeframe_ledger_path,
     raw_market_ledger_path,
+    raw_market_timeframe_ledger_path,
 )
 from mlq.data.tdx import parse_tdx_stock_file, resolve_adjust_method_folder
 from mlq.data.tdxquant import (
@@ -262,7 +268,7 @@ def mark_base_instrument_dirty(
 
     workspace = settings or default_settings()
     workspace.ensure_directories()
-    bootstrap_market_base_ledger(workspace)
+    bootstrap_market_base_timeframe_ledger(workspace, timeframe=normalized_timeframe)
     normalized_code = str(code).strip().upper()
     if not normalized_code:
         raise ValueError("code must not be empty")
@@ -273,7 +279,7 @@ def mark_base_instrument_dirty(
     normalized_reason = str(dirty_reason).strip()
     if not normalized_reason:
         raise ValueError("dirty_reason must not be empty")
-    connection = duckdb.connect(str(market_base_ledger_path(workspace)))
+    connection = duckdb.connect(str(market_base_timeframe_ledger_path(workspace, timeframe=normalized_timeframe)))
     try:
         return _upsert_dirty_instrument_on_connection(
             connection,

@@ -47,3 +47,18 @@ flowchart LR
 - 还没有把 `run_tdx_asset_raw_ingest.py` / `run_market_base_build.py` 等 runner 切到新 `week/month` 官方库。
 - 还没有实现 `day raw -> week/month raw` 的正式派生 materialization runner。
 - 还没有开始真实官方库的 `stock week/month` rebuild 与 parity 校验。
+
+## 2026-04-17 第二刀追加记录
+
+1. 新增 `src/mlq/data/ledger_timeframe.py`，把 raw/base 日周月官方库的路径与连接 helper 独立出来。
+2. `data_shared.py` 改为通过该 helper 解析 `raw_market` / `market_base` 的 `day/week/month` 物理库路径。
+3. `data_raw_runner.py` 已切到 timeframe-aware 路由：
+   `week/month raw` 现在直接连接对应 `raw_market_week/month.duckdb`，并把 dirty 挂到对应 `market_base_week/month.duckdb`。
+4. `data_market_base_runner.py` 已切到 timeframe-aware 路由：
+   `week/month base` 现在从对应 `raw_market_week/month.duckdb` 读取，并写入 `market_base_week/month.duckdb`。
+5. 扩展 `tests/unit/data/test_timeframe_ledger_bootstrap.py`，补 raw/base runner 新库落点回归。
+
+## 仍待后续
+
+- `week/month raw` 当前仍允许从 day txt fallback 聚合；真正的 `day raw -> week/month raw` 派生 runner 还没做。
+- `bootstrap.py` 仍处在 `1000` 行硬上限边缘；helper 已拆出，但 bootstrap 自身 schema 切片还没继续下刀。

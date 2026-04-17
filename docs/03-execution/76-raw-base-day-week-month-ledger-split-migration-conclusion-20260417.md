@@ -55,3 +55,23 @@ python scripts/system/check_development_governance.py
 ```
 
 - 结果：`14 passed`，两项治理检查通过。
+
+## 2026-04-17 第二刀补充裁决
+
+- `76` 已从“只冻结路径契约”推进到“runner 已开始按 timeframe 写新库”的状态。
+- 当前已成立的正式口径：
+  - `day raw/base` 继续写旧 day 官方库
+  - `week/month raw/base` 已开始写新 `week/month` 官方库
+- 当前尚未成立的正式口径：
+  - `week/month raw` 还不是从 `day raw` 正式派生，仍保留 day txt fallback
+  - 真实官方库的 `stock week/month` rebuild 与旧 day 库 purge 还未执行
+
+## 第二刀验证
+
+```text
+pytest tests/unit/core/test_paths.py tests/unit/data/test_timeframe_ledger_bootstrap.py tests/unit/data/test_raw_ingest_runner.py -q
+python scripts/system/check_doc_first_gating_governance.py
+python scripts/system/check_development_governance.py
+```
+
+- 结果：`16 passed`，两项治理检查通过。

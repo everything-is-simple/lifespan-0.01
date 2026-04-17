@@ -71,3 +71,30 @@ python scripts/system/check_development_governance.py
   - `pytest ...` => `14 passed`
   - `check_doc_first_gating_governance.py` => `通过`
   - `check_development_governance.py` => `通过`
+
+## 2026-04-17 第二刀实现证据
+
+### 命令
+
+```text
+pytest tests/unit/core/test_paths.py tests/unit/data/test_timeframe_ledger_bootstrap.py tests/unit/data/test_raw_ingest_runner.py -q
+python scripts/system/check_doc_first_gating_governance.py
+python scripts/system/check_development_governance.py
+```
+
+### 关键结果
+
+- `src/mlq/data/ledger_timeframe.py` 已新增，正式承接 raw/base 日周月官方库的路径与连接 helper。
+- `src/mlq/data/data_raw_runner.py` 已按 `timeframe` 路由：
+  - `week/month raw` 不再写 day raw 库
+  - dirty 挂账也改为写对应 `week/month base` 官方库
+- `src/mlq/data/data_market_base_runner.py` 已按 `timeframe` 路由：
+  - `week/month base` 改为从对应 `week/month raw` 官方库读取
+  - 物化结果写入对应 `market_base_week/month.duckdb`
+- 新增 runner 路由回归：
+  - `stock week raw` 验证落到 `raw_market_week.duckdb`
+  - `stock month base` 验证读取 `raw_market_month.duckdb` 并写到 `market_base_month.duckdb`
+- 验证结果：
+  - `pytest ...` => `16 passed`
+  - `check_doc_first_gating_governance.py` => `通过`
+  - `check_development_governance.py` => `通过`
