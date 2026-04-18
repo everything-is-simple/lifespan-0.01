@@ -153,7 +153,7 @@ flowchart LR
 - `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 现已把 `60 -> 66` 视为已完成整改卡组，并在恢复 `78 -> 84` 之前依次插入并完成 `67` 历史 file-length 治理债务卡、`68` 执行文档目录治理卡、`69` filter 客观 gate、`70 -> 72` objective 历史回补卡组、`73` market_base backward 全历史修缮卡、`74` raw/base 分批建仓治理卡、`75` 单库周月账本扩展卡，以及 `76-77` 的日周月分库迁移与尾收口。
 - `78` 已完成双主轴范围冻结；当前正式待施工位是 `79`。`79-84` 的现行口径是：
   - `malf` 改成 `day / week / month` 三库
-  - `structure` 保留，但只绑定 `malf_day`，不再拆成 `day/week/month` 三层
+  - `structure` 保留，并拆成 `structure_day / structure_week / structure_month` 三个薄投影层
   - `filter` 保留模块壳，但只拦截客观不可交易与正式宇宙 gate；是否继续保留独立本地库留待 `82` 裁决
   - `alpha` 升格为正式终审主真值层，并按 `BOF / TST / PB / CPB / BPB` 五个 PAS 拆成五个日线官方库
 - `73` 已确认 `stock / index / block` 的 `market_base(backward)` 与 `raw_market(backward)` 覆盖对齐，`stock_daily_adjusted(backward)` 当前覆盖 `1990-12-19 -> 2026-04-10`。

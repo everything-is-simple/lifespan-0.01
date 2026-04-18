@@ -19,7 +19,7 @@
 
 1. 最新生效结论锚点是 `78-malf-alpha-dual-axis-refactor-scope-freeze-conclusion-20260418.md`。
 2. 当前正式主线待施工卡已切到 `79-malf-day-week-month-ledger-split-path-contract-card-20260418.md`。
-3. 当前 active 卡组是 `79-84`，目标是先完成 `malf day/week/month` 三库路径与 source rebind，再完成 `structure` 单库薄投影、`filter` 客观门卫，以及 `alpha` 五个 PAS 日线终审账本切换。
+3. 当前 active 卡组是 `79-84`，目标是先完成 `malf day/week/month` 三库路径与 source rebind，再完成 `structure day/week/month` 三薄层、`filter` 客观门卫，以及 `alpha` 五个 PAS 日线终审账本切换。
 4. 旧 official middle-ledger 恢复范围已删除，当前只保留 `78-84` 新路线。
 5. `100-105` 仍需等待 `84` 放行。
 

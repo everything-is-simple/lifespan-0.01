@@ -5,12 +5,12 @@
 
 ## 做了什么
 
-1. 回读 `18` 设计/规格、`78/79/82/83` 卡，以及执行区索引，确认当前新卡组已经建好但还没把 `alpha` 五个 PAS 分库、`structure` 不拆三层和 `filter` 落库待裁决写死。
-2. 把 `18` 设计章程改成双主轴 + `malf` 三库 + `structure` 单库薄投影 + `filter` 客观门卫 + `alpha` 五个 PAS 日线官方库的正式口径。
+1. 回读 `18` 设计/规格、`78/79/81/82/83/84` 卡，以及执行区索引，确认当前新卡组已经建好但还没把 `alpha` 五个 PAS 分库、`structure` 三薄层与 `filter` day 薄 gate 的边界彻底写死。
+2. 把 `18` 设计章程改成双主轴 + `malf` 三库 + `structure day/week/month` 三薄层 + `filter` 客观门卫 + `alpha` 五个 PAS 日线官方库的正式口径。
 3. 把 `18` 规格改成：
    - `filter` 只冻结职责，不提前冻结独立本地库
    - `alpha` 改成 `alpha_bof / alpha_tst / alpha_pb / alpha_cpb / alpha_bpb`
-4. 回填 `78/79/82/83` 卡面，确保后续切片不会再把 `structure/filter/alpha` 的边界写回旧口径。
+4. 回填 `78/79/81/82/83/84` 卡面，确保后续切片不会再把 `structure/filter/alpha` 的边界写回旧口径。
 5. 更新执行索引，把最新结论锚点推进到 `78`，并把当前待施工位切到 `79`。
 6. 跑 doc-first gating、execution indexes 与 development governance 校验，确认本次只新增正式范围冻结文档，没有引入新的治理违规。
 

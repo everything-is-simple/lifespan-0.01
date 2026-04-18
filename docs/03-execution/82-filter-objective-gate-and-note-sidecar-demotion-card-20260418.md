@@ -18,6 +18,14 @@
 - 设计文档：`docs/01-design/modules/system/18-malf-alpha-dual-axis-and-timeframe-native-refactor-charter-20260418.md`
 - 规格文档：`docs/02-spec/modules/system/18-malf-alpha-dual-axis-and-timeframe-native-refactor-spec-20260418.md`
 
+## 层级归属
+
+- 主层：`filter`
+- 次层：日线 `alpha` 决策入口的 objective gate
+- 上游输入：`structure_day`、客观 profile/universe 事实，以及只读 note sidecar 摘要
+- 下游放行：`83` 的 `alpha` 五 PAS 日线终审库与 `84` 的 gate 审计
+- 本卡职责：把 `filter` 明确冻成一个保留的 `filter_day` 本地薄库，只负责客观 gate 与说明性 note
+
 ## 任务分解
 
 1. 冻结 `filter_day` 为保留的正式本地薄库，不再继续悬置是否存在。
@@ -50,6 +58,37 @@
 - 增量更新：通过 `filter_day` 的 run/checkpoint 续跑。
 - 断点续跑：允许 queue/checkpoint 中断后恢复，不允许退化成一次性全量脚本。
 - 审计账本：保留 `filter_run / run_snapshot / summary_json + objective coverage evidence`。
+
+## 正式设计清单
+
+| 设计项 | 正式口径 | 不接受情形 |
+| --- | --- | --- |
+| 本地薄库形态 | `filter_day` 保留为正式本地 day 级薄 gate 库 | 再把是否保留本地库写成待定 |
+| 默认输入 | 默认只读 `structure_day`、客观 profile/universe 事实与只读 note sidecar | 直接消费 `position/trade` 语义，或强依赖周/月多库 gate |
+| hard block 清单 | 仅五类 objective gate，可稳定映射 `reject_reason_code` | 把研究判断或结构解释写成 hard block |
+| note sidecar | 只作说明/提示，不形成终审 verdict | note 反向控制准入 |
+| 主权边界 | `filter` 不做最终 admitted/blocked 决策，终审仍在 `alpha` | `filter` 再次长成终审层 |
+| bounded replay | `2010-01-01 -> 当前 official market_base 覆盖尾部` 的 `filter_day` replay 成立 | 没有 replay 证据或只给局部示例 |
+
+## 实施清单
+
+| 切片 | 实施内容 | 交付物 |
+| --- | --- | --- |
+| 切片 1 | 冻结 `filter_day` 作为保留的正式本地薄库 | 模块边界裁决 |
+| 切片 2 | 收敛输入边界，明确 `structure_day / objective profile / note sidecar` | 输入合同 |
+| 切片 3 | 固化五类 `reject_reason_code` 与 note-only 边界 | 字段与代码映射 |
+| 切片 4 | 完成 `2010-01-01 -> 当前` 尾部 bounded replay，并摘要被拦样本 | run/evidence |
+| 切片 5 | 回填 `82` execution 闭环 | record / conclusion / indexes |
+
+## A 级判定表
+
+| 判定项 | A 级通过标准 | 阻断条件 | 对下游影响 |
+| --- | --- | --- | --- |
+| 本地薄库存在 | `filter_day` 被明确保留且边界稳定 | 继续悬置保留与否 | `83` 输入摇摆 |
+| objective gate 稳定 | 五类 hard block 全部映射成固定 `reject_reason_code` | reject 原因仍临时拼写 | replay 与审计不可信 |
+| note 边界 | note sidecar 明确只读不拦截 | note 继续变相充当 verdict | `alpha` 主权被侵蚀 |
+| day-only gate | `filter` 不再拆 `D/W/M` 多库 | 再把 `filter` 扩成多 timeframe gate | 模块职责膨胀 |
+| bounded replay | `filter_day` 尾部 replay 与样本摘要成立 | 无 replay 证据 | `84` 无法审计 |
 
 ## 收口标准
 

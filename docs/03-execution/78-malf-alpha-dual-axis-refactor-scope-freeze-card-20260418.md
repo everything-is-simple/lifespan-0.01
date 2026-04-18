@@ -19,6 +19,14 @@
 - 设计文档：`docs/01-design/modules/system/18-malf-alpha-dual-axis-and-timeframe-native-refactor-charter-20260418.md`
 - 规格文档：`docs/02-spec/modules/system/18-malf-alpha-dual-axis-and-timeframe-native-refactor-spec-20260418.md`
 
+## 层级归属
+
+- 主层：`malf -> alpha` 上游 authority framework
+- 次层：`78-84` 执行治理与卡组顺序冻结
+- 上游输入：`18` 设计/规格、`77` 六库收口结果与现行 `Ω` 路线图
+- 下游放行：`79-84` 的单卡施工顺序，以及 `84` 后是否允许恢复 `100-105`
+- 本卡职责：先把双主轴、三库/三薄层/day gate/五 PAS 的正式边界写死，再让后续卡各自只做单一施工事项
+
 ## 任务分解
 
 1. 冻结双主轴口径，确认 `malf` 是市场语义真值层，`alpha` 是决策真值层。
@@ -43,6 +51,38 @@
 - 增量更新：新口径下各模块继续由 queue/checkpoint 负责增量续跑，不允许回退成一次性全量脚本。
 - 断点续跑：`malf` 三库、`structure` 三库、`filter_day` 与 `alpha` 五库都必须各自保留 checkpoint / replay 闭环。
 - 审计账本：执行审计仍通过 `run / checkpoint / work_queue / summary_json + evidence / record / conclusion` 闭环。
+
+## 正式设计清单
+
+| 设计项 | 正式口径 | 不接受情形 |
+| --- | --- | --- |
+| 双主轴主权 | `malf` 负责市场语义真值，`alpha` 负责终审决策真值 | 继续把 `structure/filter` 写成隐性终审层 |
+| `malf` 覆盖口径 | `malf_day / week / month` 必须全覆盖；downstream 才允许 bounded replay | 把 `malf` 也偷换成 `2010-01-01 -> 当前` 尾部 replay |
+| `structure` 分层 | `structure_day / structure_week / structure_month` 三个薄投影层分别绑定对应 `malf_*` | 把 `structure` 写回 `malf_day` 单层出口 |
+| `filter` 边界 | `filter_day` 保留一个 day 级薄 gate 库，只做 objective gate + note sidecar | 把 `filter` 再拆 `D/W/M` 三库，或保留终审权 |
+| `alpha` 形态 | `alpha_bof / alpha_tst / alpha_pb / alpha_cpb / alpha_bpb` 五个 PAS 日线官方库 | 为五个 trigger 再拆 `5 × 3` 套 `D/W/M` 账本 |
+| 卡组顺序 | `79 -> 80 -> 81 -> 82 -> 83 -> 84` 一张卡只做一件事，`84` 后才看 `100-105` | 边做路径边改 authority，或绕过 `84` 先推下游 |
+
+## 实施清单
+
+| 切片 | 实施内容 | 交付物 |
+| --- | --- | --- |
+| 切片 1 | 回读 `18` 设计/规格与 `78-84 / 100-105` 当前卡面，定位旧 authority 残留 | 差异清单 |
+| 切片 2 | 冻结双主轴、`malf` 全覆盖例外与 downstream bounded replay 边界 | 设计/规格与卡面裁决 |
+| 切片 3 | 冻结 `structure D/W/M`、`filter_day`、`alpha` 五 PAS 的模块职责边界 | 模块边界说明 |
+| 切片 4 | 冻结 `79-84` 顺序与 `84 -> 100-105` 的放行关系 | 卡组顺序与 gate 说明 |
+| 切片 5 | 回填 authority 文档、执行索引、evidence 与 record | 文档闭环 |
+
+## A 级判定表
+
+| 判定项 | A 级通过标准 | 阻断条件 | 对下游影响 |
+| --- | --- | --- | --- |
+| 双主轴冻结 | `malf` 与 `alpha` 的主权边界明确且无重叠 | `structure/filter` 仍持有隐性终审权 | `79-84` 无法单卡施工 |
+| `malf` 例外写死 | `malf` 全覆盖与 downstream bounded replay 被分开定义 | 仍把两者混写成一条完成度 | `80/84` 验收失真 |
+| `structure` 三薄层 | `structure_day / week / month` 被写成正式默认口径 | 仍残留 `malf_day` 单层表述 | `81/83` 上下文边界不稳 |
+| `filter_day` 边界 | `filter_day` 明确只做 objective gate + note sidecar | 仍把 `filter` 写成待定层或终审层 | `82/83` 会反复回滚 |
+| `alpha` 五 PAS | 五个 PAS 日线库与“不做 `5 × 3`”写清 | `alpha` 继续单库混写或膨胀成 `5 × 3` | `83` 无法稳定 cutover |
+| 下游放行 | `100-105` 前置条件明确改成 `84` 接受 | 仍残留旧 gate 或旧编号 | `100-105` upstream authority 不可信 |
 
 ## 收口标准
 

@@ -18,9 +18,11 @@
 2. `H:\Lifespan-data\malf\malf_week.duckdb`
 3. `H:\Lifespan-data\malf\malf_month.duckdb`
 
-`structure` 仍保持单库：
+`structure` 正式路径改为三库：
 
-1. `H:\Lifespan-data\structure\structure.duckdb`
+1. `H:\Lifespan-data\structure\structure_day.duckdb`
+2. `H:\Lifespan-data\structure\structure_week.duckdb`
+3. `H:\Lifespan-data\structure\structure_month.duckdb`
 
 `filter` 在 `78` 只冻结职责边界，不冻结最终物理落库方案：
 
@@ -84,10 +86,11 @@
 
 ### 4.1 structure
 
-1. 默认只读 `malf_day.malf_state_snapshot`
-2. 只允许物化薄事实投影
-3. 不允许在 `structure` 层追加 admission verdict
-4. 不允许为了配合 `malf_week / malf_month` 再复制出第二、第三套 `structure` 官方库
+1. `structure_day` 默认只读 `malf_day.malf_state_snapshot`
+2. `structure_week` 默认只读 `malf_week.malf_state_snapshot`
+3. `structure_month` 默认只读 `malf_month.malf_state_snapshot`
+4. 三层都只允许物化薄事实投影，不允许在 `structure` 层追加 admission verdict
+5. 三层都不允许长回厚解释层或终审层
 
 ### 4.2 filter
 
@@ -110,7 +113,7 @@
 
 1. `alpha` 默认按五个日线 PAS 官方库运行：`BOF / TST / PB / CPB / BPB`
 2. 每个 PAS 库各自维护本族 `trigger / family / formal signal` 账本，不再把单 `alpha.duckdb` 作为默认统一真值库
-3. 默认消费 `structure_snapshot + filter_snapshot + malf_day sidecar`
+3. 默认消费 `structure_day / week / month + filter_day + malf_day / week / month sidecar`
 4. 允许把 objective gate 与 note sidecar 汇入 `alpha formal signal`
 5. `admitted / blocked / downgraded / note_only` 主权固定在 `alpha`
 6. 若需要跨 PAS 汇总，只允许在只读汇总层完成，不允许再回写成单库默认真值
@@ -120,14 +123,14 @@
 1. `79-83` 必须围绕 `2010 ~ 当前 official market_base 覆盖尾部` 完成 bounded replay。
 2. `84` 必须裁决：
    - `malf_day / week / month` 是否已成为默认官方库
-   - `structure` 是否已稳定绑定 `malf_day` 单库薄投影
-   - `filter` 是否已完成 objective gate / note sidecar 降格并裁决独立落库方案
+   - `structure_day / week / month` 是否已稳定绑定对应 `malf_*` 薄投影
+   - `filter_day` 是否已完成 objective gate / note sidecar 降格并裁决独立落库方案
    - `alpha` 是否已切到五个 PAS 日线官方库
    - 是否允许恢复 `100-105`
 
 ## 6. 非目标
 
-1. 本轮不把 `structure / filter / alpha` 也拆成 `day/week/month` 三库。
+1. 本轮不把 `filter` 或五个 trigger 再拆成 `day/week/month` 三库；三层 `structure` 是薄投影层，不是新一轮厚解释层。
 2. 本轮不恢复 `trade / system`。
 3. 本轮不物理删除全部 bridge-era 表族，只取消其默认主线地位。
 
@@ -138,9 +141,13 @@ flowchart LR
     BD["market_base_day"] --> MD["malf_day"]
     BW["market_base_week"] --> MW["malf_week"]
     BM["market_base_month"] --> MM["malf_month"]
-    MD --> STR["structure day binding"]
-    STR --> FLT["filter objective gate + note"]
-    MD --> ALP["alpha decision truth"]
+    MD --> SD["structure_day"]
+    MW --> SW["structure_week"]
+    MM --> SM["structure_month"]
+    SD --> FLT["filter_day objective gate + note"]
+    SD --> ALP["alpha decision truth"]
+    SW --> ALP
+    SM --> ALP
     FLT --> ALP
     ALP --> G84["84 cutover gate"]
     G84 --> POST["100-105"]

@@ -105,7 +105,7 @@
 
 1. 最新生效结论锚点已推进到 `78-malf-alpha-dual-axis-refactor-scope-freeze-conclusion-20260418.md`。
 2. `60-78` 已完成并接受，`78` 已完成双主轴范围冻结。
-3. `79-84` 是新的 `malf -> alpha` 双主轴重构后续卡组：`79` 先落 `malf day/week/month` 三库路径，`81` 把 `structure` 收敛为 `malf_day` 单库薄投影，`82` 把 `filter` 收敛为 objective gate + note sidecar 并裁决独立落库，`83` 把 `alpha` 收回终审主权并切到 `BOF / TST / PB / CPB / BPB` 五个 PAS 日线官方库。
+3. `79-84` 是新的 `malf -> alpha` 双主轴重构后续卡组：`79` 先落 `malf day/week/month` 三库路径，`80` 把 `malf` 固化为 timeframe native source 并完成全覆盖，`81` 把 `structure` 收敛为 `day / week / month` 三薄层，`82` 把 `filter` 收敛为 objective gate + note sidecar 并裁决独立落库，`83` 把 `alpha` 收回终审主权并切到 `BOF / TST / PB / CPB / BPB` 五个 PAS 日线官方库。
 4. 旧 official middle-ledger 恢复卡组已删除，不再保留旧路线。
 5. 当前卡组顺序保持为 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55 -> 56 -> 57 -> 58 -> 59 -> 60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 68 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 -> 76 -> 77 -> 78 -> 79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。
 

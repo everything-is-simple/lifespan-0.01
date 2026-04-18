@@ -15,6 +15,14 @@
 - 设计文档：`docs/01-design/modules/system/18-malf-alpha-dual-axis-and-timeframe-native-refactor-charter-20260418.md`
 - 规格文档：`docs/02-spec/modules/system/18-malf-alpha-dual-axis-and-timeframe-native-refactor-spec-20260418.md`
 
+## 层级归属
+
+- 主层：`malf`
+- 次层：`canonical runner / source / materialization`
+- 上游输入：`79` 已冻结的 `malf_day / week / month` 官方路径与 `market_base_day / week / month` 正式账本
+- 下游放行：`81-84` 对 `malf_*` 官方真值层的默认绑定，以及 `84` 的 full coverage 审计
+- 本卡职责：把 `malf_day / week / month` 正式改成 timeframe native source，并把三库全覆盖写成硬收口标准
+
 ## 任务分解
 
 1. 改 `run_malf_canonical_build` 与 `canonical_runner`，按 native timeframe 选择对应 `market_base_*` 和 `malf_*`。
@@ -38,6 +46,37 @@
 - 增量更新：`D/W/M` 各自沿用 queue/checkpoint 增量追平。
 - 断点续跑：任一 timeframe 全覆盖构建中断后必须能从对应库独立恢复。
 - 审计账本：三库都要有 `run / work_queue / checkpoint / summary_json` 摘要。
+
+## 正式设计清单
+
+| 设计项 | 正式口径 | 不接受情形 |
+| --- | --- | --- |
+| source 绑定 | `malf_day / week / month` 分别只读对应 `market_base_day / week / month` | `week/month` 继续从日线内部 resample |
+| 全覆盖标准 | 三库必须完成全历史全覆盖；允许分批执行，不允许降格为尾部 replay | 把 `2010-01-01 -> 当前` tail replay 当成 `malf` 收口 |
+| child run 策略 | 允许用批次、child run、queue/checkpoint 串行推进全覆盖 | 退回一次性全量脚本或手工分段无审计 |
+| 兼容检查 | 仅保留必要的 resample/旧路径兼容检查，不保留默认生产路径 | 兼容逻辑反客为主继续成为默认入口 |
+| 覆盖审计 | 输出 `row/scope/date-range/freshness` 摘要，分别覆盖 `D/W/M` 三库 | 只报“已完成”，不给出范围摘要 |
+| 下游口径 | `81-84` 默认绑定 full coverage 后的三库 `malf` | downstream 提前绑定半成品 `malf` |
+
+## 实施清单
+
+| 切片 | 实施内容 | 交付物 |
+| --- | --- | --- |
+| 切片 1 | 改 runner/source/materialization，按 native timeframe 选 `market_base_*` 与 `malf_*` | 代码与契约 |
+| 切片 2 | 下线 `W/M` 默认日线重采样路径，只保留兼容检查 | source 边界说明 |
+| 切片 3 | 以批次/child run/queue/checkpoint 完成三库全覆盖构建 | run 摘要 |
+| 切片 4 | 输出 `row/scope/date-range/freshness` 全覆盖审计证据 | evidence |
+| 切片 5 | 补单测与 execution 闭环 | tests / record / conclusion |
+
+## A 级判定表
+
+| 判定项 | A 级通过标准 | 阻断条件 | 对下游影响 |
+| --- | --- | --- | --- |
+| native source | `malf_week/month` 默认 source 已切到对应 `market_base_*` | 仍从 `day` resample | `81-84` 上游不可信 |
+| 全覆盖收口 | `malf_day / week / month` 都完成全覆盖 | 任一 timeframe 只有 tail replay | `84` 无法放行 |
+| 增量闭环 | `queue/checkpoint/child run` 语义在三库上都成立 | 只能靠一次性重跑 | 日后不可续跑 |
+| 覆盖审计 | 有明确 `row/scope/date-range/freshness` 证据 | 只有模糊完成描述 | truthfulness 不可审计 |
+| 测试与证据 | source 选择与全覆盖过程有测试/证据 | 只有代码改动无验证 | 卡不可收口 |
 
 ## 收口标准
 

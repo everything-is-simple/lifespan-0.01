@@ -17,7 +17,7 @@
 
 1. 最新生效结论锚点已推进到 `78`。
 2. `78` 已完成双主轴范围冻结，当前正式待施工卡已切到 `79-malf-day-week-month-ledger-split-path-contract-card-20260418.md`。
-3. 当前正式卡组是 `79-84`：它负责先落 `malf day / week / month` 三库，再把 `structure` 收薄到 `malf_day` 单库投影、把 `filter` 收薄到 objective gate + note sidecar，并把 `alpha` 切到五个 PAS 日线终审账本。
+3. 当前正式卡组是 `79-84`：它负责先落 `malf day / week / month` 三库，再把 `structure` 收敛为 `day / week / month` 三薄层、把 `filter` 收薄到 objective gate + note sidecar，并把 `alpha` 切到五个 PAS 日线终审账本。
 4. 旧 middle-ledger 分窗建库卡组已删除，不再保留为现行执行路线。
 5. `100-105` 仍然只在 `84` 放行后恢复。
 

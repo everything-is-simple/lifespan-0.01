@@ -13,8 +13,8 @@ python scripts/system/check_development_governance.py
 
 ## 关键结果
 
-1. `18` 设计/规格与 `78/79/82/83` 卡面已同步冻结新边界：
-   - `structure` 只绑定 `malf_day`，不再扩成 `day/week/month` 三层
+1. `18` 设计/规格与 `78/79/81/82/83/84` 卡面已同步冻结新边界：
+   - `structure` 跟随 `malf` 拆成 `day/week/month` 三个薄投影层
    - `filter` 的 hard block 只保留五类 objective gate，独立落库与否留待 `82`
    - `alpha` 明确改成 `BOF / TST / PB / CPB / BPB` 五个 PAS 日线官方库
 2. 执行索引已切换：
