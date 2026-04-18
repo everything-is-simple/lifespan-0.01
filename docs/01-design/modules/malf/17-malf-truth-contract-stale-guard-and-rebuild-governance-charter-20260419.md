@@ -30,23 +30,28 @@
 
 这组设计只解决四件事：
 
-1. 把 `break / invalidation / confirmation` 的 truth contract 讲清楚。
+1. 把 `new-count / break / invalidation / confirmation` 的 truth contract 讲清楚。
 2. 把 `last_valid_HL / last_valid_LH` 与 stale guard 的治理边界讲清楚。
 3. 在上述合同冻结后，再允许修改 `canonical_materialization` 并决定三库重建。
 4. 用正式验收闸门判断 `malf` 是否真的被扳正，而不是靠感觉恢复 `91-95`。
 
 ## 核心裁决
 
-### 1. `break` 不是 `confirmation`
+### 1. `new-count`、`break` 与 `confirmation` 不是一回事
 
-`malf` 仍然只保留 `HH / HL / LL / LH / break / count` 六个核心原语，但语义必须分层：
+`malf` 仍然只保留 `HH / HL / LL / LH / break / count` 六个核心原语，但语义必须分层；其中 `count` 不能只作为静态字段，它必须在状态机里显式表现为 `new-count` 事件：
 
-1. `break`
+1. `new-count`
+   - 只表示当前方向再次创出新的有效 `HH / LL`，并使本 wave 的 `hh_count / ll_count` 增加。
+   - 它是趋势继续推进的第一驱动力。
+   - 当它发生在过渡态上时，它同时承担“新顺确认”的职责。
+2. `break`
    - 只表示旧结构失效门槛被击穿。
-2. `invalidation`
+3. `invalidation`
    - 是对旧顺结构失效的正式账本解释。
-3. `confirmation`
+4. `confirmation`
    - 只在新一轮 `HH / LL` 推进被确认后成立。
+   - 这个确认在事件层上，必须由“第一笔有效 `new-count`”来承载，而不是靠 `break` 单独完成。
 
 ### 2. `last_valid_HL / last_valid_LH` 必须可审计
 
@@ -83,15 +88,46 @@ flowchart LR
     GATE --> DOWN["91-95 downstream resumes"]
 ```
 
-## 状态语义图
+## 终极版共用总图
+
+这张图与 `malf/15` 共用，代表当前 `malf` 的正式最终状态机口径。
 
 ```mermaid
 stateDiagram-v2
-    [*] --> 旧顺结构
-    旧顺结构 --> 失效触发态: break(last_valid_HL/LH)
-    失效触发态 --> 过渡态: invalidation recorded
-    过渡态 --> 新顺确认态: new HH / LL confirmed
-    新顺确认态 --> 旧顺结构: next lifecycle
+    [*] --> 牛顺
+
+    state "牛顺\nHH 推进 + 守 last_valid_HL" as BullTrend
+    state "牛逆\nbreak_last_HL 后的过渡态" as BullReversal
+    state "熊顺\nLL 推进 + 守 last_valid_LH" as BearTrend
+    state "熊逆\nbreak_last_LH 后的过渡态" as BearReversal
+
+    BullTrend --> BullTrend: new_count_up
+    BullTrend --> BullReversal: break_last_HL
+
+    BullReversal --> BullReversal: no new-count yet
+    BullReversal --> BullTrend: new_count_up
+    BullReversal --> BearTrend: new_count_down
+
+    BearTrend --> BearTrend: new_count_down
+    BearTrend --> BearReversal: break_last_LH
+
+    BearReversal --> BearReversal: no new-count yet
+    BearReversal --> BearTrend: new_count_down
+    BearReversal --> BullTrend: new_count_up
+```
+
+## 状态语义图
+
+```mermaid
+flowchart TD
+    A["HH / LL"] --> B["new-count\n推进事件"]
+    C["HL / LH"] --> D["last_valid anchor"]
+    D --> E["break event"]
+    B --> F["顺结构 continuation"]
+    E --> G["旧结构 invalidation"]
+    G --> H["牛逆 / 熊逆"]
+    H --> I["first opposite new-count"]
+    I --> J["新顺 confirmation"]
 ```
 
 ## 时序图
@@ -106,7 +142,7 @@ sequenceDiagram
     participant A85 as 85 acceptance gate
 
     B->>C: bar arrives
-    C->>A82: break / invalidation / confirmation semantics
+    C->>A82: new-count / break / invalidation / confirmation semantics
     A82-->>C: allowed transition contract
     C->>A83: last_valid anchor source + age
     A83-->>C: stale guard boundary
@@ -130,7 +166,7 @@ flowchart LR
 
 ### `82`
 
-回答：旧结构什么时候算失效，新结构什么时候算成立，中间态如何记账。
+回答：`new-count` 如何驱动推进，旧结构什么时候算失效，新结构什么时候算成立，中间态如何记账。
 
 ### `83`
 

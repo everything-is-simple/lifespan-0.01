@@ -44,6 +44,30 @@
 - `break`
 - `count`
 
+当前终极版 `malf` 不再把 `count` 只当静态字段看待，而是正式收敛为：
+
+1. 四态
+   - `牛顺`
+   - `牛逆`
+   - `熊顺`
+   - `熊逆`
+2. 四事件
+   - `new_count_up`
+     - 语义：产生新的有效 `HH`，并令 `hh_count += 1`
+   - `new_count_down`
+     - 语义：产生新的有效 `LL`，并令 `ll_count += 1`
+   - `break_last_HL`
+     - 语义：击穿最后有效 `HL`
+   - `break_last_LH`
+     - 语义：上破最后有效 `LH`
+
+这四事件正好把 `HH / LL / HL / LH / break / new-count` 全部收进同一张总图里：
+
+1. `HH / LL` 通过 `new_count_up / new_count_down` 进入状态机
+2. `HL / LH` 通过 `break_last_HL / break_last_LH` 进入状态机
+3. `break` 不再悬空，而是明确绑定到 `HL / LH`
+4. `count` 不再悬空，而是明确绑定到 `new-count`
+
 它不负责：
 
 - 高周期背景标签
@@ -115,6 +139,58 @@ flowchart LR
     MD -. readonly .-> AUD["0/1 audit"]
     MW -. readonly .-> AUD
     MM -. readonly .-> AUD
+```
+
+## `malf` 终极版总图
+
+### 四态 + 四事件总状态机
+
+```mermaid
+stateDiagram-v2
+    [*] --> 牛顺
+
+    state "牛顺\nHH 推进 + 守 last_valid_HL" as BullTrend
+    state "牛逆\nbreak_last_HL 后的过渡态" as BullReversal
+    state "熊顺\nLL 推进 + 守 last_valid_LH" as BearTrend
+    state "熊逆\nbreak_last_LH 后的过渡态" as BearReversal
+
+    BullTrend --> BullTrend: new_count_up\n(HH +1)
+    BullTrend --> BullReversal: break_last_HL
+
+    BullReversal --> BullReversal: no new-count yet
+    BullReversal --> BullTrend: new_count_up\n(first confirming HH +1)
+    BullReversal --> BearTrend: new_count_down\n(first confirming LL +1)
+
+    BearTrend --> BearTrend: new_count_down\n(LL +1)
+    BearTrend --> BearReversal: break_last_LH
+
+    BearReversal --> BearReversal: no new-count yet
+    BearReversal --> BearTrend: new_count_down\n(first confirming LL +1)
+    BearReversal --> BullTrend: new_count_up\n(first confirming HH +1)
+```
+
+### 四事件定义图
+
+```mermaid
+flowchart LR
+    HH["new_count_up\nnew HH -> hh_count +1"] --> STATE["state transition / continuation"]
+    LL["new_count_down\nnew LL -> ll_count +1"] --> STATE
+    BHL["break_last_HL\nlow breaks last_valid_HL"] --> STATE
+    BLH["break_last_LH\nhigh breaks last_valid_LH"] --> STATE
+```
+
+### 语义职责图
+
+```mermaid
+flowchart TD
+    A["HH / LL"] --> B["new-count\n推进事件"]
+    C["HL / LH"] --> D["last_valid anchor"]
+    D --> E["break event"]
+    B --> F["顺结构 continuation"]
+    E --> G["旧结构 invalidation"]
+    G --> H["牛逆 / 熊逆"]
+    H --> I["first opposite new-count"]
+    I --> J["新顺 confirmation"]
 ```
 
 ## 实现锚点

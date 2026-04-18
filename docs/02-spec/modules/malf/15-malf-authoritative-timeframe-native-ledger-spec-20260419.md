@@ -108,6 +108,34 @@
 - `break`
 - `count`
 
+### 5.1.1 四态 + 四事件终极版
+
+当前正式规格把 `malf` 总状态机冻结为：
+
+1. 四态
+   - `牛顺`
+   - `牛逆`
+   - `熊顺`
+   - `熊逆`
+2. 四事件
+   - `new_count_up`
+     - 等价于：新的有效 `HH`
+     - 副作用：`hh_count += 1`
+   - `new_count_down`
+     - 等价于：新的有效 `LL`
+     - 副作用：`ll_count += 1`
+   - `break_last_HL`
+     - 等价于：击穿最后有效 `HL`
+   - `break_last_LH`
+     - 等价于：上破最后有效 `LH`
+
+关键冻结：
+
+1. `count` 必须以事件方式进入状态机，而不是只作为静态字段存在。
+2. `break` 必须绑定到 `last_valid_HL / last_valid_LH`，不能抽象成无锚点的“突破”。
+3. `HL / LH` 是结构锚点，不是推进计数。
+4. `HH / LL` 是推进确认来源，不是背景标签。
+
 ### 5.2 state contract
 
 `major_state` 只允许：
@@ -124,11 +152,69 @@
 - `hold`
 - `expand`
 
+### 5.2.1 四态状态机共用图
+
+```mermaid
+stateDiagram-v2
+    [*] --> 牛顺
+
+    state "牛顺\nHH 推进 + 守 last_valid_HL" as BullTrend
+    state "牛逆\nbreak_last_HL 后的过渡态" as BullReversal
+    state "熊顺\nLL 推进 + 守 last_valid_LH" as BearTrend
+    state "熊逆\nbreak_last_LH 后的过渡态" as BearReversal
+
+    BullTrend --> BullTrend: new_count_up
+    BullTrend --> BullReversal: break_last_HL
+
+    BullReversal --> BullReversal: no new-count yet
+    BullReversal --> BullTrend: new_count_up
+    BullReversal --> BearTrend: new_count_down
+
+    BearTrend --> BearTrend: new_count_down
+    BearTrend --> BearReversal: break_last_LH
+
+    BearReversal --> BearReversal: no new-count yet
+    BearReversal --> BearTrend: new_count_down
+    BearReversal --> BullTrend: new_count_up
+```
+
 ### 5.3 break / confirmation 边界
 
 1. `break` 只表示旧结构失效，不代表新顺结构已成立
 2. 新方向仍需新的 `HH` 或 `LL` 推进确认
 3. `pivot_confirmed_break` 只允许作为 `malf` 之外的 readonly mechanism fact
+4. 在总状态机里，真正承载确认职责的是第一笔 opposite-direction `new-count`
+
+### 5.4 四事件语义图
+
+```mermaid
+flowchart LR
+    HH["new_count_up\nnew HH -> hh_count +1"] --> M["malf state machine"]
+    LL["new_count_down\nnew LL -> ll_count +1"] --> M
+    BHL["break_last_HL"] --> M
+    BLH["break_last_LH"] --> M
+```
+
+### 5.5 推进 / 失效 / 确认时序图
+
+```mermaid
+sequenceDiagram
+    participant Bar as current bar
+    participant Core as malf core
+    participant Wave as wave ledger
+
+    alt same-direction continuation
+        Bar->>Core: new_count_up or new_count_down
+        Core->>Wave: record count +1
+        Note over Wave: state stays 牛顺 or 熊顺
+    else old structure broken
+        Bar->>Core: break_last_HL or break_last_LH
+        Core->>Wave: record break / invalidation
+        Note over Wave: state enters 牛逆 or 熊逆
+    end
+    Bar->>Core: first opposite-direction new-count
+    Core->>Wave: record confirmation + count +1
+```
 
 ## 6. readonly sidecar contract
 
