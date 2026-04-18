@@ -216,24 +216,51 @@ def mark_dirty_entries_consumed(
     *,
     run_id: str,
     dirty_entries: tuple[BaseDirtyInstrumentEntry, ...],
-) -> None:
+) -> int:
     """按 dirty entry 集合回写 consumed 状态。"""
 
     if not dirty_entries:
-        return
-    dirty_nks = [entry.dirty_nk for entry in dirty_entries]
-    placeholders = ", ".join("?" for _ in dirty_nks)
-    connection.execute(
-        f"""
-        UPDATE {BASE_DIRTY_INSTRUMENT_TABLE}
-        SET
-            dirty_status = 'consumed',
-            last_consumed_run_id = ?,
-            last_marked_at = CURRENT_TIMESTAMP
-        WHERE dirty_nk IN ({placeholders})
-        """,
-        [run_id, *dirty_nks],
-    )
+        return 0
+    relation_name = "stage_base_dirty_entries_to_consume"
+    frame = pd.DataFrame.from_records(
+        [
+            {
+                "dirty_nk": entry.dirty_nk,
+                "asset_type": _normalize_asset_type(entry.asset_type),
+                "timeframe": _normalize_timeframe(entry.timeframe),
+                "code": entry.code,
+                "adjust_method": entry.adjust_method,
+            }
+            for entry in dirty_entries
+        ]
+    ).drop_duplicates()
+    connection.register(relation_name, frame)
+    try:
+        updated_rows = connection.execute(
+            f"""
+            UPDATE {BASE_DIRTY_INSTRUMENT_TABLE} AS target
+            SET
+                dirty_status = 'consumed',
+                last_consumed_run_id = ?,
+                last_marked_at = CURRENT_TIMESTAMP
+            FROM {relation_name} AS stage
+            WHERE target.dirty_status = 'pending'
+              AND (
+                    target.dirty_nk = stage.dirty_nk
+                    OR (
+                        COALESCE(target.asset_type, ?) = stage.asset_type
+                        AND COALESCE(target.timeframe, 'day') = stage.timeframe
+                        AND target.code = stage.code
+                        AND target.adjust_method = stage.adjust_method
+                    )
+                )
+            RETURNING target.dirty_nk
+            """,
+            [run_id, DEFAULT_ASSET_TYPE],
+        ).fetchall()
+    finally:
+        connection.unregister(relation_name)
+    return len(updated_rows)
 
 
 def mark_scope_dirty_entries_consumed(

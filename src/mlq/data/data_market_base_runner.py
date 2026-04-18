@@ -134,12 +134,19 @@ def _run_market_base_build_for_asset(
         )
         consumed_dirty_count = 0
         if mark_clean_on_success and scope_plan.dirty_entries:
-            _mark_dirty_entries_consumed(
+            consumed_dirty_count = _mark_dirty_entries_consumed(
                 market_connection,
                 run_id=materialization_run_id,
                 dirty_entries=scope_plan.dirty_entries,
             )
-            consumed_dirty_count = len(scope_plan.dirty_entries)
+            expected_dirty_count = len(scope_plan.dirty_entries)
+            if consumed_dirty_count != expected_dirty_count:
+                raise RuntimeError(
+                    "Dirty queue consume count mismatch: "
+                    f"expected={expected_dirty_count}, updated={consumed_dirty_count}, "
+                    f"asset_type={normalized_asset_type}, timeframe={normalized_timeframe}, "
+                    f"adjust_method={adjust_method}, run_id={materialization_run_id}"
+                )
         elif mark_clean_on_success and normalized_build_mode == "full":
             consumed_dirty_count = _mark_scope_dirty_entries_consumed_by_asset(
                 market_connection,

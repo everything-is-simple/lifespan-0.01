@@ -268,11 +268,11 @@ def mark_base_instrument_dirty(
 
     workspace = settings or default_settings()
     workspace.ensure_directories()
-    bootstrap_market_base_timeframe_ledger(workspace, timeframe=normalized_timeframe)
     normalized_code = str(code).strip().upper()
     if not normalized_code:
         raise ValueError("code must not be empty")
     normalized_timeframe = _normalize_timeframe(timeframe)
+    bootstrap_market_base_timeframe_ledger(workspace, timeframe=normalized_timeframe)
     normalized_adjust_method = str(adjust_method).strip().lower()
     if normalized_adjust_method not in {"backward", "forward", "none"}:
         raise ValueError(f"Unsupported adjust method: {adjust_method}")

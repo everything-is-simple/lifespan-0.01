@@ -98,4 +98,28 @@ python scripts/system/check_doc_first_gating_governance.py
 python scripts/system/check_development_governance.py
 ```
 
+## 2026-04-18 绗洓鍒€琛ュ厖瑁佸喅
+
+- `76` 鐜板湪宸叉帹杩涘埌鈥滅湡瀹炲畼鏂瑰簱 stock day/week/month raw/base 鏁版嵁鏈韩鍏ㄩ儴瀵归綈锛宒irty / audit 灏惧反涔熷凡鏀跺彛鈥濈殑鐘舵€併€?
+- 鎵€鏈?stock backward 瀹樻柟琛ㄧ幇鍦ㄥ凡缁忓叏閮ㄥ榻愶細
+  - `raw day` = `5501 code / 16,348,113 rows`
+  - `raw week` = `5501 code / 3,453,967 rows`
+  - `raw month` = `5501 code / 826,336 rows`
+  - `base day` = `5501 code / 16,348,113 rows`
+  - `base week` = `5501 code / 3,453,967 rows`
+  - `base month` = `5501 code / 826,336 rows`
+- `market_base_month.duckdb` 鐨?`base_dirty_instrument(timeframe='month', adjust_method='backward')` 宸茬敱 `5491 consumed + 10 pending` 鏀跺埌 `5501 consumed`銆?
+- `base-stock-month-split-resume2-20260417c-b0001` 浠ュ強 2026-04-18 涓轰簡娓呯悊灏惧反鑰岀敓鎴愮殑涓ゆ潯 `cleanup/debug` run audit 宸插叏閮ㄨˉ鎴?`failed`锛屼笉鍐嶇暀涓?`running` 僵灏俱€?
+- `76` 褰撳墠浠嶆湭姝ｅ紡鎺ュ彈锛屼絾鈥滃叚搴撳垎鏃舵 + day raw 娲剧敓 week/month raw + stock week/month 鐪熷疄瀹樻柟搴撻噸寤?+ parity + dirty/audit 鏀跺彛鈥濊繖鏉¤縼绉婚摼璺凡缁忔墦閫氥€?
+
+## 绗洓鍒€楠岃瘉
+
+```text
+python -m pytest tests/unit/data/test_market_base_runner.py tests/unit/data/test_market_base_timeframe_runner.py tests/unit/data/test_market_base_dirty_consumption.py -q
+python scripts/system/check_doc_first_gating_governance.py
+python scripts/system/check_development_governance.py
+python .codex/skills/lifespan-execution-discipline/scripts/check_execution_indexes.py --include-untracked
+duckdb 鏌ヨ H:\Lifespan-data\raw\raw_market*.duckdb / H:\Lifespan-data\base\market_base*.duckdb 鐨?stock backward day/week/month row_count code_count dirty_count
+```
+
 - 结果：`19 passed`，两项治理检查通过。
