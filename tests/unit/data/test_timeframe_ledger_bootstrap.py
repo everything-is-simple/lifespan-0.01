@@ -215,10 +215,10 @@ def test_weekly_raw_runner_routes_to_split_raw_market_ledger(
     if settings.databases.raw_market_day.exists():
         day_conn = duckdb.connect(str(settings.databases.raw_market_day), read_only=True)
         try:
-            day_week_count = day_conn.execute("SELECT COUNT(*) FROM stock_weekly_bar").fetchone()[0]
+            day_tables = {row[0] for row in day_conn.execute("SHOW TABLES").fetchall()}
         finally:
             day_conn.close()
-        assert day_week_count == 0
+        assert "stock_weekly_bar" not in day_tables
 
 
 def test_monthly_base_runner_routes_to_split_ledgers(

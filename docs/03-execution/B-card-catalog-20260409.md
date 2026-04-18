@@ -1,9 +1,9 @@
 ﻿# 执行卡目录 `日期：2026-04-09`
 `状态：持续更新`
 
-1. 当前下一锚：`77-raw-base-timeframe-split-tail-completion-card-20260418.md`
-2. 当前待施工卡：`77-raw-base-timeframe-split-tail-completion-card-20260418.md`
-3. 正式主线剩余卡：`13`
+1. 当前下一锚：`80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`
+2. 当前待施工卡：`80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`
+3. 正式主线剩余卡：`12`
 4. 可选 Sidecar 剩余卡：`0`
 5. 历史治理 backlog：`0`
 
@@ -101,10 +101,11 @@
 108. `77-raw-base-timeframe-split-tail-completion-card-20260418.md`
 ## 当前说明
 
-1. 最新生效结论锚点已推进到 `74-market-base-batched-bootstrap-governance-conclusion-20260416.md`。
+1. 最新生效结论锚点已推进到 `77-raw-base-timeframe-split-tail-completion-conclusion-20260418.md`。
 2. `60-mainline-rectification-batch-registration-and-scope-freeze-card-20260415.md`、`61-structure-filter-tail-coverage-truthfulness-rectification-card-20260415.md`、`62-filter-pre-trigger-boundary-and-authority-reset-card-20260415.md`、`63-wave-life-official-ledger-truthfulness-and-bootstrap-card-20260415.md`、`64-alpha-stage-percentile-decision-matrix-integration-card-20260415.md`、`65-formal-signal-admission-boundary-reallocation-card-20260415.md` 与 `66-mainline-rectification-resume-gate-card-20260415.md` 已完成并接受。
 3. `67` 已完成历史 file-length 债务治理并接受；`68` 已完成执行文档目录治理回迁与固化并接受；`69` 已完成 filter 客观可交易性与标的宇宙 gate 冻结并接受；`70` 已完成历史 objective source selection 与账本化设计冻结；`71` 已完成 `Tushare objective source / materialization` 最小正式实现；`72` 已完成历史 objective profile 回补执行，并把当前 full-window coverage 收口到 `0 missing`；`73` 已完成 `market_base backward` 全历史修缮；`74` 已完成 `raw/base` 分批建仓 runner 修缮。
-4. 当前卡组顺序保持为 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55 -> 56 -> 57 -> 58 -> 59 -> 60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 68 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。
+4. `75` 已完成单库周月账本扩展，`76` 已完成六库路径契约与 `stock week/month raw/base` 新库迁移，`77` 已完成 `index/block week/month raw/base` 迁移、旧 day 库 week/month purge 与 day-only bootstrap 收口。
+5. 当前卡组顺序保持为 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55 -> 56 -> 57 -> 58 -> 59 -> 60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 68 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 -> 76 -> 77 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。
 
 ## 卡组路线图
 ```mermaid

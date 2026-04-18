@@ -264,3 +264,156 @@ def test_monthly_dirty_queue_is_isolated_by_timeframe(tmp_path: Path, monkeypatc
     ]
     assert day_dirty_rows == [("day", "consumed", "base-stock-day-incremental-001")]
     assert month_dirty_rows == [("month", "consumed", "base-stock-month-incremental-001")]
+
+
+def test_index_weekly_raw_ingest_derives_from_day_raw_ledger(tmp_path: Path, monkeypatch) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+    source_root = tmp_path / "tdx"
+
+    _write_tdx_asset_file(
+        source_root,
+        asset_type="index-day",
+        folder_name="Backward-Adjusted",
+        code="000300",
+        exchange="SH",
+        name="沪深300",
+        rows=[
+            ("2026/04/06", 4000.0, 4020.0, 3980.0, 4010.0, 1000, 10000),
+            ("2026/04/07", 4015.0, 4030.0, 4005.0, 4025.0, 1200, 12000),
+            ("2026/04/10", 4030.0, 4050.0, 4020.0, 4040.0, 1400, 14000),
+            ("2026/04/13", 4045.0, 4060.0, 4035.0, 4055.0, 1500, 15000),
+        ],
+    )
+
+    run_tdx_asset_raw_ingest(
+        settings=settings,
+        asset_type="index",
+        timeframe="day",
+        source_root=source_root,
+        adjust_method="backward",
+        run_mode="full",
+        run_id="raw-index-day-prep-001",
+        limit=0,
+    )
+    summary = run_tdx_asset_raw_ingest(
+        settings=settings,
+        asset_type="index",
+        timeframe="week",
+        source_root=source_root,
+        adjust_method="backward",
+        run_mode="full",
+        run_id="raw-index-week-derived-001",
+        limit=0,
+    )
+
+    assert summary.asset_type == "index"
+    assert summary.timeframe == "week"
+    assert summary.bar_inserted_count == 2
+
+    conn = duckdb.connect(str(raw_market_timeframe_ledger_path(settings, timeframe="week")), read_only=True)
+    try:
+        rows = conn.execute(
+            """
+            SELECT code, timeframe, trade_date, open, high, low, close, volume, amount
+            FROM index_weekly_bar
+            WHERE adjust_method = 'backward'
+            ORDER BY trade_date
+            """
+        ).fetchall()
+    finally:
+        conn.close()
+
+    assert rows == [
+        ("000300.SH", "week", date(2026, 4, 10), 4000.0, 4050.0, 3980.0, 4040.0, 3600.0, 36000.0),
+        ("000300.SH", "week", date(2026, 4, 13), 4045.0, 4060.0, 4035.0, 4055.0, 1500.0, 15000.0),
+    ]
+
+
+def test_block_monthly_base_runner_routes_to_split_ledgers(tmp_path: Path, monkeypatch) -> None:
+    _clear_workspace_env(monkeypatch)
+    repo_root = _bootstrap_repo_root(tmp_path)
+    settings = default_settings(repo_root=repo_root)
+    source_root = tmp_path / "tdx"
+
+    _write_tdx_asset_file(
+        source_root,
+        asset_type="block-day",
+        folder_name="Backward-Adjusted",
+        code="880001",
+        exchange="SH",
+        name="上证A股",
+        rows=[
+            ("2026/03/30", 1000.0, 1010.0, 995.0, 1005.0, 100, 1000),
+            ("2026/03/31", 1006.0, 1015.0, 1002.0, 1010.0, 110, 1100),
+            ("2026/04/01", 1012.0, 1020.0, 1008.0, 1018.0, 120, 1200),
+            ("2026/04/30", 1019.0, 1035.0, 1015.0, 1030.0, 130, 1300),
+        ],
+    )
+
+    run_tdx_asset_raw_ingest(
+        settings=settings,
+        asset_type="block",
+        timeframe="day",
+        source_root=source_root,
+        adjust_method="backward",
+        run_mode="full",
+        run_id="raw-block-day-prep-001",
+        limit=0,
+    )
+    raw_summary = run_tdx_asset_raw_ingest(
+        settings=settings,
+        asset_type="block",
+        timeframe="month",
+        source_root=source_root,
+        adjust_method="backward",
+        run_mode="full",
+        run_id="raw-block-month-derived-001",
+        limit=0,
+    )
+    base_summary = run_asset_market_base_build(
+        settings=settings,
+        asset_type="block",
+        timeframe="month",
+        adjust_method="backward",
+        build_mode="full",
+        limit=0,
+        run_id="base-block-month-derived-001",
+    )
+
+    assert Path(raw_summary.raw_market_path) == settings.databases.raw_market_month
+    assert Path(base_summary.market_base_path) == settings.databases.market_base_month
+
+    raw_month_conn = duckdb.connect(str(settings.databases.raw_market_month), read_only=True)
+    try:
+        raw_rows = raw_month_conn.execute(
+            """
+            SELECT code, timeframe, trade_date, open, high, low, close, volume, amount
+            FROM block_monthly_bar
+            WHERE adjust_method = 'backward'
+            ORDER BY trade_date
+            """
+        ).fetchall()
+    finally:
+        raw_month_conn.close()
+
+    base_month_conn = duckdb.connect(str(settings.databases.market_base_month), read_only=True)
+    try:
+        base_rows = base_month_conn.execute(
+            """
+            SELECT code, timeframe, trade_date, open, high, low, close, volume, amount
+            FROM block_monthly_adjusted
+            WHERE adjust_method = 'backward'
+            ORDER BY trade_date
+            """
+        ).fetchall()
+    finally:
+        base_month_conn.close()
+
+    expected_rows = [
+        ("880001.SH", "month", date(2026, 3, 31), 1000.0, 1015.0, 995.0, 1010.0, 210.0, 2100.0),
+        ("880001.SH", "month", date(2026, 4, 30), 1012.0, 1035.0, 1008.0, 1030.0, 250.0, 2500.0),
+    ]
+    assert raw_rows == expected_rows
+    assert base_rows == expected_rows

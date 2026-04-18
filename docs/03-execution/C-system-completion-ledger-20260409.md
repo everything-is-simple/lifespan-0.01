@@ -2,9 +2,9 @@
 `日期：2026-04-09`
 `状态：持续更新`
 
-1. 当前下一锤：`77-raw-base-timeframe-split-tail-completion-card-20260418.md`
-2. 当前待施工卡：`77-raw-base-timeframe-split-tail-completion-card-20260418.md`
-3. 正式主线剩余卡：`13`
+1. 当前下一锤：`80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`
+2. 当前待施工卡：`80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`
+3. 正式主线剩余卡：`12`
 4. 可选 Sidecar 剩余卡：`0`
 5. 历史治理 backlog：`0`
 
@@ -55,13 +55,14 @@
 43. `historical objective profile backfill execution` 卡 `72`
 44. `market_base backward full-history repair` 卡 `73`
 45. `raw/base batched bootstrap governance` 卡 `74`
+46. `raw/base timeframe split tail completion` 卡 `77`
 
 ## 当前阶段
 
-1. 最新生效结论锚点已推进到 `76-raw-base-day-week-month-ledger-split-migration-conclusion-20260417.md`。
-2. `60`、`61`、`62`、`63`、`64`、`65`、`66`、`69`、`70`、`71`、`72`、`73`、`74`、`75`、`76` 已完成并接受。
-3. 当前正式主线待施工卡已切到 `77-raw-base-timeframe-split-tail-completion-card-20260418.md`。
-4. `76` 已把 `stock week/month raw/base` 迁入新的 `week/month` 官方库，并确认 day 正式事实继续保留在 `raw_market.duckdb / market_base.duckdb`；但当前真实库仍有 `index/block week/month` 留在旧 `day` 库，因此需由 `77` 完成六库尾收口后再恢复 `80 -> 86` official middle-ledger resume 卡组，`100` 仍只有在 `77` 与 `86` 接受后才允许恢复。
+1. 最新生效结论锚点已推进到 `77-raw-base-timeframe-split-tail-completion-conclusion-20260418.md`。
+2. `60`、`61`、`62`、`63`、`64`、`65`、`66`、`69`、`70`、`71`、`72`、`73`、`74`、`75`、`76`、`77` 已完成并接受。
+3. 当前正式主线待施工卡已切回 `80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`。
+4. `77` 已补齐 `index/block week/month raw/base` 新库迁移，purge 旧 `day` 库 `week/month` 价格表与 timeframe audit/dirty 尾巴，并修正 day bootstrap 不再回生空 `week/month` 表；`80 -> 86` 现恢复为 official middle-ledger resume 卡组，`100` 仍只有在 `86` 接受后才允许恢复。
 
 ## 体系图
 

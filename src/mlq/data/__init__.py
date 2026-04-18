@@ -71,6 +71,7 @@ from mlq.data.runner import (
     run_tushare_objective_source_sync,
     run_tdx_stock_raw_ingest,
 )
+from mlq.data.data_timeframe_split_cleanup import purge_day_timeframe_split_tail
 
 __all__ = [
     "BASE_BUILD_ACTION_TABLE",
@@ -129,6 +130,7 @@ __all__ = [
     "run_mainline_local_ledger_standardization_bootstrap",
     "run_asset_market_base_build",
     "run_asset_market_base_build_batched",
+    "purge_day_timeframe_split_tail",
     "run_market_base_build",
     "run_tdx_asset_raw_ingest",
     "run_tdx_asset_raw_ingest_batched",

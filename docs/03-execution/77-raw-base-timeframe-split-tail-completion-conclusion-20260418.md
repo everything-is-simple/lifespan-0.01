@@ -2,30 +2,44 @@
 
 结论编号：`77`
 日期：`2026-04-18`
-状态：`草稿`
+状态：`接受`
 
 ## 裁决
 
 - 接受：
-  暂未接受，待 `index/block week/month` 迁移到新 `week/month` 官方库、旧 `day` 库遗留 `week/month` 表族与审计被 purge，并形成六库完成度与 parity 证据后再正式接受
+  接受 `77` 收口结果：`index/block week/month raw/base` 已补齐到新 `week/month` 官方库，旧 `day` 库遗留 `week/month` 价格表与按 timeframe 挂在 day 库里的 audit / dirty 尾巴已 purge，且 day bootstrap 已收窄为只重建 `day + objective/profile` 表族
 - 拒绝：
-  拒绝把当前 `76` 的 stock-only 完成态误判成“六库迁移已经全部完成”
+  拒绝继续把 `day` 官方库当成可混存 `week/month` 空表或历史尾巴的兼容库
 
 ## 原因
 
-- 当前真实库已经证明 `day` 官方事实完整，且 `stock week/month raw/base` 已完成，但 `index/block week/month` 仍留在旧 `day` 库，说明迁移还停留在部分完成态
-- 旧 `raw_market.duckdb / market_base.duckdb` 仍保留 `6` 张 `week/month` 价格表，且仍承载历史数据；如果不 purge，就无法把“day 只保留 day”冻结成唯一正式库形态
+1. 六库完成度矩阵已闭环：
+   - `raw day`：`stock 16,348,113 / index 377,711 / block 468,542`
+   - `raw week`：`stock 3,453,967 / index 79,398 / block 98,719`
+   - `raw month`：`stock 826,336 / index 18,774 / block 23,260`
+   - `base day`：`stock 16,348,113 / index 377,711 / block 468,542`
+   - `base week`：`stock 3,453,967 / index 79,398 / block 98,719`
+   - `base month`：`stock 826,336 / index 18,774 / block 23,260`
+2. `index/block week/month` 的 pending scope 已归零：
+   - `index week/month = 100 existing / 0 pending`
+   - `block week/month = 127 existing / 0 pending`
+3. 旧 `raw_market.duckdb / market_base.duckdb` 中 `week/month` 价格表已不存在，`raw_ingest_* / *_file_registry / base_*` 只剩 `timeframe='day'` 行。
+4. `77` 额外补了一刀 day bootstrap 边界修缮，避免后续 `bootstrap_raw_market_ledger()` 或 `bootstrap_market_base_ledger()` 再把 `week/month` 空表重建回 day 库。
 
 ## 影响
 
-- 当前 data 前置卡从“六库迁移已能跑通 stock”推进到“六库资产形态彻底收口”的最后一锤
-- `80-86` 继续等待 `77` 收口；只有 `index/block` 迁完并 purge 旧 day 库 week/month 后，mainline 才能在不带双口径歧义的前提下恢复
+1. `76 -> 77` 的 data 前置迁移卡组已正式收口，`80-86` 可以恢复为当前正式主线施工位。
+2. `day -> week/month` 的物理库语义现在可仅凭库名判断：
+   - `raw_market.duckdb / market_base.duckdb` 只承载 `day`
+   - `raw_market_week/month.duckdb / market_base_week/month.duckdb` 只承载对应 timeframe
+3. 后续任何 `week/month` pending scope 盘点都不会再通过 day bootstrap 重建兼容空表污染 day 库。
 
 ## 结论结构图
 
 ```mermaid
 flowchart TD
-    A["76 stock 迁移完成"] --> B["发现 index/block 未迁移"]
-    B --> C["发现 day 库仍残留旧 week/month"]
-    C --> D["77 负责六库尾收口"]
+    A["76 stock 迁移完成"] --> B["77 补齐 index/block week/month raw/base"]
+    B --> C["purge 旧 day 库 week/month 价格表与 audit/dirty"]
+    C --> D["修正 day bootstrap 为 day-only"]
+    D --> E["80-86 恢复为当前正式主线"]
 ```

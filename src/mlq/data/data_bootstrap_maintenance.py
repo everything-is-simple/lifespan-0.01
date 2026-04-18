@@ -175,7 +175,10 @@ def delete_rows_with_nulls(
     if not required_columns:
         return
     predicate = " OR ".join(f"{column_name} IS NULL" for column_name in required_columns)
-    connection.execute(f"DELETE FROM {table_name} WHERE {predicate}")
+    try:
+        connection.execute(f"DELETE FROM {table_name} WHERE {predicate}")
+    except duckdb.CatalogException:
+        return
 
 
 def deduplicate_table(
@@ -191,25 +194,28 @@ def deduplicate_table(
         return
     partition_sql = ", ".join(key_columns)
     order_sql = ", ".join(f"{column_name} DESC NULLS LAST" for column_name in order_columns) or "1"
-    connection.execute(
-        f"""
-        DELETE FROM {table_name}
-        USING (
-            SELECT rowid
-            FROM (
-                SELECT
-                    rowid,
-                    ROW_NUMBER() OVER (
-                        PARTITION BY {partition_sql}
-                        ORDER BY {order_sql}
-                    ) AS duplicate_rank
-                FROM {table_name}
-            )
-            WHERE duplicate_rank > 1
-        ) AS duplicated_rows
-        WHERE {table_name}.rowid = duplicated_rows.rowid
-        """
-    )
+    try:
+        connection.execute(
+            f"""
+            DELETE FROM {table_name}
+            USING (
+                SELECT rowid
+                FROM (
+                    SELECT
+                        rowid,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY {partition_sql}
+                            ORDER BY {order_sql}
+                        ) AS duplicate_rank
+                    FROM {table_name}
+                )
+                WHERE duplicate_rank > 1
+            ) AS duplicated_rows
+            WHERE {table_name}.rowid = duplicated_rows.rowid
+            """
+        )
+    except duckdb.CatalogException:
+        return
 
 
 def ensure_not_null_columns(
