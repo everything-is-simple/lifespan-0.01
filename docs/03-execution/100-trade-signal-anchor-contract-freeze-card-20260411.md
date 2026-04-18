@@ -9,9 +9,9 @@
 - 问题：
   当前 `trade` 运行时虽然已经声明了 `entry_open_minus_signal_low / break_last_higher_low` 等策略标签，但正式账本里没有冻结 `signal_low / last_higher_low` 的跨模块来源与透传合同。
 - 目标结果：
-  在 `55` 通过后，冻结 `signal_low / last_higher_low` 的正式来源层、透传链路与下游消费字段，使 `trade` 不再临时回推业务事实。
+  在 `84` 通过后，冻结 `signal_low / last_higher_low` 的正式来源层、透传链路与下游消费字段，使 `trade` 不再临时回推业务事实。
 - 为什么现在做：
-  `100` 是恢复 `trade/system` 卡组的第一张卡，**必须在 `55-pre-trade-upstream-data-grade-baseline-gate` 接受后才能启动**；否则 `trade` 会建立在未达 A 级的上游之上。
+  `100` 是恢复 `trade/system` 卡组的第一张卡，**必须在 `84-malf-alpha-official-truthfulness-and-cutover-gate` 接受后才能启动**；否则 `trade` 会建立在尚未完成官方 cutover 的 upstream 上游之上。
 
 ## 设计输入
 
@@ -20,6 +20,7 @@
 - 规格文档：
   - `docs/02-spec/modules/system/06-trade-signal-anchor-contract-freeze-spec-20260411.md`
 - 当前锚点结论：
+  - `docs/03-execution/84-malf-alpha-official-truthfulness-and-cutover-gate-conclusion-20260418.md`
   - `docs/03-execution/55-pre-trade-upstream-data-grade-baseline-gate-conclusion-20260413.md`
   - `docs/03-execution/42-alpha-family-role-and-malf-alignment-conclusion-20260413.md`
   - `docs/03-execution/45-alpha-formal-signal-producer-hardening-before-position-conclusion-20260413.md`

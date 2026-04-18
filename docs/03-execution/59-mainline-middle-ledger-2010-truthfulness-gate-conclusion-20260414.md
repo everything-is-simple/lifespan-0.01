@@ -6,10 +6,10 @@
 ## 裁决
 
 - 接受：`2010` pilot truthfulness gate 通过，允许按同一正式模板在整改后推进 `80 -> 85`。
-- 接受：`80-86` 的唯一正式模板锁定为 `57/58/59` 已验证路径经整改收紧后的版本，即 `malf canonical bootstrap + replay`、`structure/filter bounded full-window（历史建库）+ checkpoint_queue（增量续跑）`、`alpha bounded full-window`。
+- 接受：`78-84` 的唯一正式模板锁定为 `57/58/59` 已验证路径经整改收紧后的版本，即 `malf canonical bootstrap + replay`、`structure/filter bounded full-window（历史建库）+ checkpoint_queue（增量续跑）`、`alpha bounded full-window`。
 - 接受：当前待施工卡前移到 `60-mainline-rectification-batch-registration-and-scope-freeze-card-20260415.md`。
 - 拒绝：把 `59` 解读为 middle-ledger 的 completeness gate；`59` 只证明 truthfulness，不证明 `2010` 全年 `structure/filter` admission 覆盖已经完整。
-- 拒绝：把 `59` 解读为 `position / portfolio_plan / trade / system` 的 `2010` 官方落表已完成；`59` 只证明 middle-ledger 分段建库模板成立，但 `80-85` 仍需先经过 `60-66` 整改闸门，`100-105` 仍要等 `86`。
+- 拒绝：把 `59` 解读为 `position / portfolio_plan / trade / system` 的 `2010` 官方落表已完成；`59` 只证明 middle-ledger 分段建库模板成立，但 `90-95` 仍需先经过 `60-66` 整改闸门，`100-105` 仍要等 `96`。
 
 ## 原因
 
@@ -28,23 +28,23 @@
    - `58` 同时暴露出 `structure/filter` 的历史建库不能默认依赖 checkpoint_queue；历史窗口必须走 bounded full-window，checkpoint_queue 只保留为增量续跑路径。
 4. middle-ledger 对执行侧的只读消费前提已经成立。
    - `22` 个 admitted signal 全部能在 `market_base(stock_daily_adjusted, adjust_method='none')` 找到正式参考价；
-   - 这足以证明 `2010` pilot 之后的 `80-85` 不会因为执行价口径缺失而天然失真。
+   - 这足以证明 `2010` pilot 之后的 `90-95` 不会因为执行价口径缺失而天然失真。
 5. 未完成事项已被正确降级为非阻断项。
    - `position / portfolio_plan` 正式库当前仍只有 `2026-04-09` 的 bounded pilot 样本；
    - 这要求 `59` 只能把它们作为只读 acceptance 抽查，而不能把它们写成 `2010` official truth；
-   - 但这不阻断 `80-85`，因为 `56-59` 与 `80-85` 的边界本来就只覆盖 middle-ledger。
+   - 但这不阻断 `90-95`，因为 `56-59` 与 `90-95` 的边界本来就只覆盖 middle-ledger。
 
 ## 影响
 
 1. 当前最新生效结论锚点推进到 `59-mainline-middle-ledger-2010-truthfulness-gate-conclusion-20260414.md`。
 2. 当前待施工卡前移到 `60-mainline-rectification-batch-registration-and-scope-freeze-card-20260415.md`。
-3. `80-86` 必须逐窗复用 `59` 的判据输出，并继承整改后的 downstream 建库口径：
+3. `78-84` 必须逐窗复用 `59` 的判据输出，并继承整改后的 downstream 建库口径：
    - 正式 row-count / scope-count
    - queue/checkpoint 稳定性
    - 全链路自然键 truthfulness
    - `structure/filter` 历史窗口 bounded full-window 完整覆盖
    - `market_base(none)` 只读 acceptance
-4. `86` 之前仍不得恢复 `100-105`。
+4. `96` 之前仍不得恢复 `100-105`。
 
 ## 六条历史账本约束检查
 | 项目 | 当前状态 | 说明 |
@@ -52,7 +52,7 @@
 | 实体锚点 | 已满足 | `asset_type + code + timeframe` 与 downstream `instrument / signal_nk` 继续作为正式主语义，未被 `run_id` 替代。 |
 | 业务自然键 | 已满足 | `snapshot_nk / event_nk / signal_nk` 全链路可回溯，且在 `2010` pilot 上完成 `100%` 引用匹配。 |
 | 批量建仓 | 已满足 | `57/58` 已在真实正式库完成 `2010` bounded bootstrap，并证明可作为后续窗口模板。 |
-| 增量更新 | 已满足 | `80-85` 已被裁定必须沿 `checkpoint_queue + replay` 路径推进，而不是回退到一次性全量默认路径。 |
+| 增量更新 | 已满足 | `90-95` 已被裁定必须沿 `checkpoint_queue + replay` 路径推进，而不是回退到一次性全量默认路径。 |
 | 断点续跑 | 已满足 | `57` replay no-op、`58` queue/checkpoint 真值成立，说明模板具备正式 resume 语义。 |
 | 审计账本 | 已满足 | `run summary + gate report + evidence / record / conclusion` 已形成可追溯审计闭环。 |
 

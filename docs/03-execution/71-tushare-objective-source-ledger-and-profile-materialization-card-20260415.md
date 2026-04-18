@@ -10,7 +10,7 @@
 - 目标结果：
   新增 `Tushare objective source runner/schema`，并把 `tushare_objective_event` 有边界地物化为 `raw_tdxquant_instrument_profile`，打通 `filter` 的历史 objective 上游。
 - 为什么现在做：
-  如果不把 `70` 的合同落实成正式 runner / schema，`69` 暴露出来的 `2010-01-04 -> 2026-04-08` coverage 缺口就无法进入真实治理闭环，`80-86` 也缺少可信 objective 上游。
+  如果不把 `70` 的合同落实成正式 runner / schema，`69` 暴露出来的 `2010-01-04 -> 2026-04-08` coverage 缺口就无法进入真实治理闭环，`78-84` 也缺少可信 objective 上游。
 
 ## 设计输入
 

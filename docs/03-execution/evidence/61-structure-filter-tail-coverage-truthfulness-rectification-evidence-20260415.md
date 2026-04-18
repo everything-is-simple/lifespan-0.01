@@ -9,7 +9,7 @@
 1. `scripts/structure/run_structure_snapshot_build.py`
 2. `scripts/filter/run_filter_snapshot_build.py`
 
-两者在无参调用时都会默认走 checkpoint queue。该行为对“每日增量续跑”是正确的，但对 `80-86` 的历史窗口建库并不安全，因为它会把 `61` 已经裁决的“bounded full-window 才是历史建库主路径”停留在文档层，而没有落到正式脚本入口层。
+两者在无参调用时都会默认走 checkpoint queue。该行为对“每日增量续跑”是正确的，但对 `78-84` 的历史窗口建库并不安全，因为它会把 `61` 已经裁决的“bounded full-window 才是历史建库主路径”停留在文档层，而没有落到正式脚本入口层。
 
 ## 本轮实现与验证命令
 

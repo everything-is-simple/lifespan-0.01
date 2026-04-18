@@ -51,7 +51,7 @@
   `docs/03-execution/76-*`
 - 范围外：
   `malf / structure / filter / alpha` 消费层改造
-  `80 -> 86` mainline middle-ledger 恢复实施
+  `78 -> 84` mainline middle-ledger 恢复实施
   把 objective/profile 再拆成独立数据库
 
 ## 历史账本约束
@@ -74,7 +74,7 @@
 1. 六库路径契约、bootstrap 与 runner 已正式落地。
 2. `stock week raw/base` 与 `stock month raw/base` 已在新库完成全历史物化，并形成 parity 证据。
 3. 旧 `raw_market.duckdb / market_base.duckdb` 中的周月 price 表、周月 run 审计和周月 dirty 数据已清除，day 库只保留 day 事实。
-4. `evidence / record / conclusion` 已回填，当前待施工卡可再切回 `80`。
+4. `evidence / record / conclusion` 已回填，当前待施工卡可再切回 `90`。
 
 ## 卡片结构图
 

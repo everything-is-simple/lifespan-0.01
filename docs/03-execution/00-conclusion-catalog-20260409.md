@@ -1,9 +1,9 @@
-﻿# 结论目录
+# 结论目录
 
 `日期：2026-04-09`
 `状态：生效`
 
-当前最新生效结论锚点：`77-raw-base-timeframe-split-tail-completion-conclusion-20260418.md`
+当前最新生效结论锚点：`78-malf-alpha-dual-axis-refactor-scope-freeze-conclusion-20260418.md`
 
 ## 正式结论目录
 
@@ -90,11 +90,18 @@
 106. `75-raw-base-weekly-monthly-timeframe-ledger-bootstrap-conclusion-20260416.md`
 107. `76-raw-base-day-week-month-ledger-split-migration-conclusion-20260417.md`
 108. `77-raw-base-timeframe-split-tail-completion-conclusion-20260418.md`
+109. `78-malf-alpha-dual-axis-refactor-scope-freeze-conclusion-20260418.md`
+110. `79-malf-day-week-month-ledger-split-path-contract-conclusion-20260418.md`
+111. `80-malf-timeframe-native-base-source-rebind-conclusion-20260418.md`
+112. `81-structure-thin-projection-and-day-binding-conclusion-20260418.md`
+113. `82-filter-objective-gate-and-note-sidecar-demotion-conclusion-20260418.md`
+114. `83-alpha-dual-axis-decision-rebind-and-formal-cutover-conclusion-20260418.md`
+115. `84-malf-alpha-official-truthfulness-and-cutover-gate-conclusion-20260418.md`
 ## 主线状态
-1. `77` 已成为当前最新生效结论锚点。
+1. `78` 已成为当前最新生效结论锚点。
 2. `60` 已完成整改批次登记与施工顺序冻结，`61` 已收紧 `truthfulness ≠ completeness` 的执行口径，`62` 已把 `filter` 重置回 pre-trigger 边界，`63` 已把 `wave_life` 官方空表与 bootstrap/replay 边界正式裁清，`64` 已把 `stage × percentile` 的正式接入层冻结在 `alpha formal signal`，`65` 已把 final admission authority 从 `filter` 正式收回到 `alpha formal signal`，`66` 已正式把这些整改结论统一收口为 resume gate。
 3. `29-66` 已完成 canonical malf downstream、mainline ledger standardization、alpha detector、alpha family、quality gate、official replay hardening、alpha producer hardening、pre-position acceptance、position contract freeze、risk/capacity ledger hardening、batched leg contract、position data-grade runner、pre-portfolio-plan position acceptance gate、portfolio_plan ledger family freeze、capacity/decision hardening、data-grade runner、official middle-ledger pilot freeze、official canonical malf bootstrap、official downstream canonical smoke、`2010` truthfulness gate、整改批次登记、tail coverage rectification、filter authority reset、wave-life truthfulness、stage-percentile decision matrix、formal signal admission authority 与 resume gate 收口。
-4. `67`、`68`、`69`、`70`、`71`、`72`、`73`、`74`、`75`、`76`、`77` 已完成并接受；`72` 已把 `2010-01-04 -> 2026-04-08` 的当前 objective coverage 缺口收口到 `0 missing`，`73` 已把 `market_base.stock_daily_adjusted(backward)` 补齐到 `1990-12-19 -> 2026-04-10` 全历史并确认 `stock / index / block` backward raw/base 覆盖 `0 missing`，`77` 已完成六库尾收口并把 day raw/base bootstrap 修正为 day-only，当前执行顺序恢复为 `80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 100 -> 105`。
+4. `67`、`68`、`69`、`70`、`71`、`72`、`73`、`74`、`75`、`76`、`77`、`78` 已补齐：`72` 已完成 `2010-01-04 -> 2026-04-08` 的 objective coverage 历史回补并达到 `0 missing`；`73` 已完成 `market_base.stock_daily_adjusted(backward)` 的 `1990-12-19 -> 2026-04-10` 全历史覆盖并确认 `stock / index / block` backward raw/base `0 missing`；`77` 已完成六库尾收口与 day raw/base bootstrap 的 day-only 边界修缮；`78` 已把 `structure` 冻结为 `malf_day` 单库薄投影、把 `filter` 冻结为客观门卫并将其独立落库裁决留给 `82`、把 `alpha` 冻结为 `BOF / TST / PB / CPB / BPB` 五个 PAS 日线正式库，当前正式施工位推进到 `79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 100 -> 105`。
 
 ## 图示
 ```mermaid
@@ -128,8 +135,8 @@ flowchart LR
     subgraph MID["56-59 middle-ledger pilot"]
         C56["56-59"]
     end
-    subgraph NEXT["60-66 / 80-86 / 100-105"]
-        C100["60-66 -> 80-86 -> 100-105"]
+    subgraph NEXT["60-66 / 78-84 / 100-105"]
+        C100["60-66 -> 78-84 -> 100-105"]
     end
     GOV --> MAIN --> DATA --> MALF --> DOWN --> C43 --> C44 --> C45 --> C46 --> C47 --> C48 --> C49 --> C56 --> C100
 ```

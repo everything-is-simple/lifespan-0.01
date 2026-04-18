@@ -11,7 +11,7 @@
 - 目标结果：
   把 `filter` 的正式职责落实为“客观可交易性与标的宇宙 gate”：只允许它拦截停牌/未复牌、`ST/*ST` 或其他风险警示排除、退市整理、以及不在正式策略宇宙中的证券类型/市场类型；同时显式拒绝把主观风险、结构美观度、事件解释、`stage_percentile` 之类解释性判断塞回 `filter`。
 - 为什么现在做：
-  如果不先把 `filter` 的实际 gate 内容冻结，后续 `80-86` official middle-ledger 恢复时就会继续沿用“名义有 gate、实现不拦人”的空窗口径；这会让 `alpha`、`position` 和后续真实库 cutover 都建立在一个未冻结的 pre-trigger 输入层上。
+  如果不先把 `filter` 的实际 gate 内容冻结，后续 `78-84` official middle-ledger 恢复时就会继续沿用“名义有 gate、实现不拦人”的空窗口径；这会让 `alpha`、`position` 和后续真实库 cutover 都建立在一个未冻结的 pre-trigger 输入层上。
 
 ## 设计输入
 
@@ -62,7 +62,7 @@
 - 范围外：
   - `alpha` 对主观风险、结构质量、事件解释、`stage_percentile` 的最终 admission authority
   - `position / trade / system` 逻辑
-  - 真实正式库 `80-86` middle-ledger 建库实现本身
+  - 真实正式库 `78-84` middle-ledger 建库实现本身
 
 ## 历史账本约束
 

@@ -25,7 +25,7 @@
 
 - `raw_market.raw_tdxquant_instrument_profile` 现已在 `2010-01-04 -> 2010-12-31` 窗口累计 `392478` 条 profile，覆盖 `1833` 个标的。
 - 当前 `filter_snapshot` 在 `2010-01-04 -> 2026-04-08` 窗口的 objective coverage 已从 `6833 missing / 2 covered` 变为 `0 missing / 6835 covered`。
-- `72` 收口后，当前正式待施工卡应从 `72` 推进到 `80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`。
+- `72` 收口后，当前正式待施工卡应从 `72` 推进到 `78-malf-alpha-dual-axis-refactor-scope-freeze-card-20260418.md`。
 - 后续若再做更大历史 objective 回补，应默认沿用：
   - `source sync`
   - `profile materialization`

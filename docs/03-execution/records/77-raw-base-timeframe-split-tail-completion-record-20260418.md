@@ -21,7 +21,7 @@
 ## 备注
 
 - `77` 不是推翻 `76`，而是承接 `76` 收尾，把“stock 已迁移”推进到“六库全部完成且旧 day 库周月已清”
-- 本次收口后，`80-86` 可恢复为当前正式主线
+- 本次收口后，`78-84` 可恢复为当前正式主线
 - 真实执行 summary 已落到 `H:\Lifespan-temp\77-split-tail\`
 
 ## 记录结构图
@@ -31,5 +31,5 @@ flowchart LR
     A["六库复盘"] --> B["迁移 index/block week/month raw/base"]
     B --> C["purge 旧 day tail"]
     C --> D["修 bootstrap 防止空表回生"]
-    D --> E["77 收口并恢复 80-86"]
+    D --> E["77 收口并恢复 78-84"]
 ```

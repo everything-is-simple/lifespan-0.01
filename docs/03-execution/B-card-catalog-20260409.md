@@ -1,9 +1,10 @@
-﻿# 执行卡目录 `日期：2026-04-09`
-`状态：持续更新`
+# 执行卡目录
+`日期`：`2026-04-09`
+`状态`：`持续更新`
 
-1. 当前下一锚：`80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`
-2. 当前待施工卡：`80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`
-3. 正式主线剩余卡：`12`
+1. 当前下一锤：`79-malf-day-week-month-ledger-split-path-contract-card-20260418.md`
+2. 当前待施工卡：`79-malf-day-week-month-ledger-split-path-contract-card-20260418.md`
+3. 正式主线剩余卡：`11`
 4. 可选 Sidecar 剩余卡：`0`
 5. 历史治理 backlog：`0`
 
@@ -83,31 +84,33 @@
 72. `72-historical-objective-profile-backfill-execution-card-20260415.md`
 73. `73-market-base-backward-full-history-backfill-card-20260416.md`
 74. `74-market-base-batched-bootstrap-governance-card-20260416.md`
-80. `80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`
-81. `81-mainline-middle-ledger-2014-2016-bootstrap-card-20260414.md`
-82. `82-mainline-middle-ledger-2017-2019-bootstrap-card-20260414.md`
-83. `83-mainline-middle-ledger-2020-2022-bootstrap-card-20260414.md`
-84. `84-mainline-middle-ledger-2023-2025-bootstrap-card-20260414.md`
-85. `85-mainline-middle-ledger-2026-ytd-incremental-alignment-card-20260414.md`
-86. `86-pre-trade-middle-ledger-official-cutover-gate-card-20260414.md`
+75. `75-raw-base-weekly-monthly-timeframe-ledger-bootstrap-card-20260416.md`
+76. `76-raw-base-day-week-month-ledger-split-migration-card-20260417.md`
+77. `77-raw-base-timeframe-split-tail-completion-card-20260418.md`
+78. `78-malf-alpha-dual-axis-refactor-scope-freeze-card-20260418.md`
+79. `79-malf-day-week-month-ledger-split-path-contract-card-20260418.md`
+80. `80-malf-timeframe-native-base-source-rebind-card-20260418.md`
+81. `81-structure-thin-projection-and-day-binding-card-20260418.md`
+82. `82-filter-objective-gate-and-note-sidecar-demotion-card-20260418.md`
+83. `83-alpha-dual-axis-decision-rebind-and-formal-cutover-card-20260418.md`
+84. `84-malf-alpha-official-truthfulness-and-cutover-gate-card-20260418.md`
 100. `100-trade-signal-anchor-contract-freeze-card-20260411.md`
 101. `101-position-entry-t-plus-1-open-reference-price-correction-card-20260411.md`
 102. `102-trade-exit-pnl-ledger-bootstrap-card-20260411.md`
 103. `103-trade-backtest-progression-runner-card-20260411.md`
 104. `104-mainline-real-data-smoke-regression-card-20260411.md`
 105. `105-system-runtime-orchestration-bootstrap-card-20260411.md`
-106. `75-raw-base-weekly-monthly-timeframe-ledger-bootstrap-card-20260416.md`
-107. `76-raw-base-day-week-month-ledger-split-migration-card-20260417.md`
-108. `77-raw-base-timeframe-split-tail-completion-card-20260418.md`
+
 ## 当前说明
 
-1. 最新生效结论锚点已推进到 `77-raw-base-timeframe-split-tail-completion-conclusion-20260418.md`。
-2. `60-mainline-rectification-batch-registration-and-scope-freeze-card-20260415.md`、`61-structure-filter-tail-coverage-truthfulness-rectification-card-20260415.md`、`62-filter-pre-trigger-boundary-and-authority-reset-card-20260415.md`、`63-wave-life-official-ledger-truthfulness-and-bootstrap-card-20260415.md`、`64-alpha-stage-percentile-decision-matrix-integration-card-20260415.md`、`65-formal-signal-admission-boundary-reallocation-card-20260415.md` 与 `66-mainline-rectification-resume-gate-card-20260415.md` 已完成并接受。
-3. `67` 已完成历史 file-length 债务治理并接受；`68` 已完成执行文档目录治理回迁与固化并接受；`69` 已完成 filter 客观可交易性与标的宇宙 gate 冻结并接受；`70` 已完成历史 objective source selection 与账本化设计冻结；`71` 已完成 `Tushare objective source / materialization` 最小正式实现；`72` 已完成历史 objective profile 回补执行，并把当前 full-window coverage 收口到 `0 missing`；`73` 已完成 `market_base backward` 全历史修缮；`74` 已完成 `raw/base` 分批建仓 runner 修缮。
-4. `75` 已完成单库周月账本扩展，`76` 已完成六库路径契约与 `stock week/month raw/base` 新库迁移，`77` 已完成 `index/block week/month raw/base` 迁移、旧 day 库 week/month purge 与 day-only bootstrap 收口。
-5. 当前卡组顺序保持为 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55 -> 56 -> 57 -> 58 -> 59 -> 60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 68 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 -> 76 -> 77 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。
+1. 最新生效结论锚点已推进到 `78-malf-alpha-dual-axis-refactor-scope-freeze-conclusion-20260418.md`。
+2. `60-78` 已完成并接受，`78` 已完成双主轴范围冻结。
+3. `79-84` 是新的 `malf -> alpha` 双主轴重构后续卡组：`79` 先落 `malf day/week/month` 三库路径，`81` 把 `structure` 收敛为 `malf_day` 单库薄投影，`82` 把 `filter` 收敛为 objective gate + note sidecar 并裁决独立落库，`83` 把 `alpha` 收回终审主权并切到 `BOF / TST / PB / CPB / BPB` 五个 PAS 日线官方库。
+4. 旧 official middle-ledger 恢复卡组已删除，不再保留旧路线。
+5. 当前卡组顺序保持为 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55 -> 56 -> 57 -> 58 -> 59 -> 60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 68 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 -> 76 -> 77 -> 78 -> 79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。
 
 ## 卡组路线图
+
 ```mermaid
 flowchart LR
     G01["01-06 治理与入口"] --> P07["07-09 position"]
@@ -136,16 +139,7 @@ flowchart LR
     G53 --> G54["54 portfolio_plan data-grade runner"]
     G54 --> G55["55 pre-trade baseline gate"]
     G55 --> G60["60-66 mainline rectification"]
-    G60 --> G67["67 file-length debt cleanup accepted"]
-    G67 --> G68["68 execution doc layout governance accepted"]
-    G68 --> G69["69 filter objective gate freeze"]
-    G69 --> G70["70 historical objective source selection"]
-    G70 --> G71["71 tushare objective source implementation"]
-    G71 --> G72["72 historical objective backfill execution"]
-    G72 --> G73["73 market_base backward full-history repair"]
-    G73 --> G74["74 raw/base batched bootstrap"]
-    G74 --> G80["80-86 official middle-ledger resume"]
-    G80 --> POST["100-105 trade/system 收口"]
+    G60 --> G67["67-77 data/治理收口"]
+    G67 --> G78["78-84 malf-alpha dual-axis refactor"]
+    G78 --> POST["100-105 trade/system 收口"]
 ```
-
-

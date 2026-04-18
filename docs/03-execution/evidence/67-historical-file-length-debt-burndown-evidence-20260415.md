@@ -48,5 +48,5 @@ flowchart LR
     H1 --> T1["target oversize split"]
     T1 --> G1["governance checks pass"]
     G1 --> C1["legacy backlog cleared"]
-    C1 --> R80["resume 80-86"]
+    C1 --> R80["resume 78-84"]
 ```

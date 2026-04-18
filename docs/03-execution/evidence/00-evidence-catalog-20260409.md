@@ -88,6 +88,13 @@
 109. `75-raw-base-weekly-monthly-timeframe-ledger-bootstrap-evidence-20260416.md`
 110. `76-raw-base-day-week-month-ledger-split-migration-evidence-20260417.md`
 111. `77-raw-base-timeframe-split-tail-completion-evidence-20260418.md`
+112. `78-malf-alpha-dual-axis-refactor-scope-freeze-evidence-20260418.md`
+113. `79-malf-day-week-month-ledger-split-path-contract-evidence-20260418.md`
+114. `80-malf-timeframe-native-base-source-rebind-evidence-20260418.md`
+115. `81-structure-thin-projection-and-day-binding-evidence-20260418.md`
+116. `82-filter-objective-gate-and-note-sidecar-demotion-evidence-20260418.md`
+117. `83-alpha-dual-axis-decision-rebind-and-formal-cutover-evidence-20260418.md`
+118. `84-malf-alpha-official-truthfulness-and-cutover-gate-evidence-20260418.md`
 
 ## 证据闭环图
 

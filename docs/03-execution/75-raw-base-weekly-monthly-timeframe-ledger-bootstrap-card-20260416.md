@@ -33,7 +33,7 @@
 3. 切片 3：扩展 market_base build runner，使其支持 `--timeframe`、`dirty_queue` 周期隔离和 batched bootstrap。
 4. 切片 4：补充 data 单测，覆盖周/月 fallback 聚合、周/月 base 落表、dirty queue 周期隔离。
 5. 切片 5：对官方库执行至少一轮 `stock backward week/month` 的 raw + base 正式落表，并形成证据。
-6. 切片 6：回填 evidence / record / conclusion / 索引 / 入口文件，并把当前待施工卡恢复到 `80`。
+6. 切片 6：回填 evidence / record / conclusion / 索引 / 入口文件，并把当前待施工卡恢复到 `90`。
 
 ## 实现边界
 
@@ -74,7 +74,7 @@
 3. 单测覆盖 direct-source/fallback/base/dirty 四类路径并通过
 4. 官方库完成周线、月线真实落表并有 readout 证据
 5. `doc-first gating`、execution indexes、development governance 通过
-6. 结论接受后当前待施工卡恢复到 `80`
+6. 结论接受后当前待施工卡恢复到 `90`
 
 ## 卡片结构图
 

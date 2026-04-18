@@ -6,11 +6,11 @@
 
 ## 需求
 
-- 问题：`raw_market` 与 `market_base` 已经成为正式账本，但 `market_base.stock_daily_adjusted(adjust_method='backward')` 当前仍只落到 `2010-01-04 -> 2010-12-31` 官方 pilot 窗口。`malf -> structure -> filter -> alpha` 默认消费 `backward` 口径；若 `backward` 不补齐全历史，`80 -> 86` 的 official middle-ledger 分窗恢复会被基础价格覆盖不足阻塞。
+- 问题：`raw_market` 与 `market_base` 已经成为正式账本，但 `market_base.stock_daily_adjusted(adjust_method='backward')` 当前仍只落到 `2010-01-04 -> 2010-12-31` 官方 pilot 窗口。`malf -> structure -> filter -> alpha` 默认消费 `backward` 口径；若 `backward` 不补齐全历史，`78 -> 84` 的 official middle-ledger 分窗恢复会被基础价格覆盖不足阻塞。
 
 - 目标结果：从 `H:\tdx_offline_Data` 的官方离线 `Backward-Adjusted` 日线源补齐 `raw_market -> market_base` 的 `backward` 全历史日线数据。至少完成 `stock` 的全历史 `backward` 补齐；如 `index / block` 同源目录可用，则同步完成三类资产的 `backward` raw/base 补齐，并形成可复核的覆盖审计：按 `asset_type + adjust_method` 对比 `raw_market` 与 `market_base` 的行数、标的数、最小日期、最大日期与缺口数。
 
-- 为什么现在做：`72` 已完成 objective profile 覆盖修缮，当前待恢复 `80 -> 86`；但 `80-86` 依赖 `market_base(backward)` 的真实全历史覆盖。若直接推进 `80`，会把“2010 pilot 已通过”误当作“backward 全历史已可用”，导致下游中间账本恢复节奏失真。既有 `market_base full` runner 如果带日期窗或默认 `limit=1000` 执行，存在把同一 `adjust_method` 的非 staging 行删除后只留下局部窗口的风险，必须在本卡冻结全历史补库调用口径。
+- 为什么现在做：`72` 已完成 objective profile 覆盖修缮，当前待恢复 `78 -> 84`；但 `78-84` 依赖 `market_base(backward)` 的真实全历史覆盖。若直接推进 `90`，会把“2010 pilot 已通过”误当作“backward 全历史已可用”，导致下游中间账本恢复节奏失真。既有 `market_base full` runner 如果带日期窗或默认 `limit=1000` 执行，存在把同一 `adjust_method` 的非 staging 行删除后只留下局部窗口的风险，必须在本卡冻结全历史补库调用口径。
 
 ## 设计输入
 
@@ -46,7 +46,7 @@
   - 证据产物必须进入 `H:\Lifespan-temp` 或 `docs/03-execution/evidence/`，不把临时 DB/缓存堆回仓库。
 - 范围外：
   - 不修改 `malf / structure / filter / alpha` 的业务语义。
-  - 不重算 `80 -> 86` middle-ledger；本卡只解除其上游 `market_base(backward)` 覆盖阻塞。
+  - 不重算 `78 -> 84` middle-ledger；本卡只解除其上游 `market_base(backward)` 覆盖阻塞。
   - 不把 `forward` 作为正式执行口径；`forward` 仍仅保留研究/展示用途。
   - 不从下游临时 DataFrame 绕过 `raw_market -> market_base` 正式链路。
 
@@ -64,7 +64,7 @@
 1. `stock_daily_adjusted(adjust_method='backward')` 覆盖到 `raw_market.stock_daily_bar(adjust_method='backward')` 当前可用全历史范围，且缺口为 `0`。
 2. 如 `index / block` 的 `Backward-Adjusted` raw 源可用，对应 `index_daily_adjusted / block_daily_adjusted` 也完成同口径缺口检查。
 3. 若补了 guardrail 或测试，测试命令必须登记到 evidence。
-4. evidence / record / conclusion / catalog / ledger 均完成回填，最新锚点推进到 `73`，当前待施工卡恢复到 `80`。
+4. evidence / record / conclusion / catalog / ledger 均完成回填，最新锚点推进到 `73`，当前待施工卡恢复到 `90`。
 
 ## 卡片结构图
 
@@ -75,5 +75,5 @@ flowchart TD
     C --> D["raw_market backward 全历史"]
     D --> E["market_base backward 全历史"]
     E --> F["覆盖审计 0 missing"]
-    F --> G["恢复 80-86"]
+    F --> G["恢复 78-84"]
 ```

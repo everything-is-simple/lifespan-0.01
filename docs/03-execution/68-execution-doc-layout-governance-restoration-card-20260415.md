@@ -9,7 +9,7 @@
 - 目标结果：
   恢复 `docs/03-execution/` 的正式目录纪律：根目录只保留 `card / conclusion / index / template / README`，`evidence` 全部进入 `docs/03-execution/evidence/`，`record` 全部进入 `docs/03-execution/records/`；并把该约束固化到规则、入口和治理脚本中，避免再次遗忘。
 - 为什么现在做：
-  如果继续在错误目录结构上推进 `80-86`，后续执行闭环虽然表面存在，实际已经脱离仓库自有文档纪律；越晚修复，回迁成本和索引漂移只会更大。
+  如果继续在错误目录结构上推进 `78-84`，后续执行闭环虽然表面存在，实际已经脱离仓库自有文档纪律；越晚修复，回迁成本和索引漂移只会更大。
 
 ## 设计输入
 
@@ -33,7 +33,7 @@
 3. 回迁存量执行文档并收口：
    - 把根目录错放的 `*-evidence-*` / `*-record-*` 回迁到正式子目录
    - 同步 evidence catalog / records 链 / 执行索引
-   - 跑治理检查并回填 `68` evidence / record / conclusion，收口后恢复 `80`
+   - 跑治理检查并回填 `68` evidence / record / conclusion，收口后恢复 `90`
 
 ## 实现边界
 
@@ -52,7 +52,7 @@
   - `.codex/skills/lifespan-execution-discipline/scripts/check_execution_indexes.py`
   - 根目录中错放的 `38-67` evidence / record 文档
 - 范围外：
-  - `80-86` official middle-ledger 业务逻辑
+  - `78-84` official middle-ledger 业务逻辑
   - `src/` 下正式业务代码
   - 新增与本次目录治理无关的文档体系分层改造
 
@@ -77,7 +77,7 @@
 2. `new_execution_bundle.py` 能按当前规则正确生成并回填四件套
 3. `check_execution_indexes.py` 能显式拦截 evidence/record 错放根目录
 4. 文档规则与入口文件已明确写入“永不再忘”的目录纪律
-5. `68` evidence / record / conclusion 补齐并在收口后恢复 `80`
+5. `68` evidence / record / conclusion 补齐并在收口后恢复 `90`
 
 ## 卡片结构图
 ```mermaid

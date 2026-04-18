@@ -8,7 +8,7 @@
 
 - 问题：`73` 虽然完成了 `market_base(backward)` 全历史补齐，但卡片里的批量建仓命令仍表达为一次性 `--build-mode full --limit 0`。对个人 PC 来说，这会把一个资产类别的全历史 raw rows 一次 staging 到 DuckDB 临时表，再做 MERGE；当 stock 行数达到千万级时，内存、临时 IO 与失败重跑成本都不符合长期 data-grade 口径。
 - 目标结果：`scripts/data/run_tdx_asset_raw_ingest.py` 与 `scripts/data/run_market_base_build.py` 必须支持按标的批次执行建仓。批次模式只先读取候选文件/标的清单，再按 `batch_size` 切成多个 child run，每个 child run 只处理本批标的，并分别写入 `raw_ingest_run / raw_ingest_file` 或 `base_build_run / base_build_scope / base_build_action` 审计。
-- 为什么现在做：`80 -> 86` 即将恢复 official middle-ledger 分窗建库。若 `data` 的基础建仓口径仍依赖“一口吃掉全历史”，后续任何 raw/base 修缮或 replay 都会在个人 PC 上变得脆弱；本卡应把 `73` 的一次性补库经验沉淀为正式分批能力。
+- 为什么现在做：`78 -> 84` 即将恢复 official middle-ledger 分窗建库。若 `data` 的基础建仓口径仍依赖“一口吃掉全历史”，后续任何 raw/base 修缮或 replay 都会在个人 PC 上变得脆弱；本卡应把 `73` 的一次性补库经验沉淀为正式分批能力。
 
 ## 设计输入
 
@@ -31,7 +31,7 @@
 3. 切片 3：为两个 CLI 增加 `--batch-size`，批次模式输出 parent summary，并把每个 child run 保留为正式审计 run。
 4. 切片 4：收紧缺失行删除语义，使 instrument/date scoped full 只删除本作用域内缺失行，不能误删范围外历史。
 5. 切片 5：补单元测试验证批次模式不会一次 staging 全资产、child run 可审计、全量结果正确。
-6. 切片 6：回填 evidence / record / conclusion / index，并把当前待施工卡恢复到 `80`。
+6. 切片 6：回填 evidence / record / conclusion / index，并把当前待施工卡恢复到 `90`。
 
 ## 实现边界
 
@@ -63,7 +63,7 @@
 2. 单元测试证明 batch size 为 1 时会产生多个 child run，且 market rows 完整。
 3. instrument/date scoped full 删除只限作用域内，不删除范围外历史。
 4. 执行索引、doc-first gate、development governance 通过。
-5. 结论接受后当前待施工卡恢复到 `80`。
+5. 结论接受后当前待施工卡恢复到 `90`。
 
 ## 卡片结构图
 
@@ -74,5 +74,5 @@ flowchart TD
     C --> D["code batches"]
     D --> E["child base build run"]
     E --> F["parent summary"]
-    F --> G["80-86 resume"]
+    F --> G["78-84 resume"]
 ```

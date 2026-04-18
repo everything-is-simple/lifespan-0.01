@@ -33,7 +33,7 @@
   - `python scripts/data/run_market_base_build.py --asset-type stock --adjust-method backward --build-mode full --limit 0 --batch-size 100`
   - `index / block` 可按实际规模选择 `--batch-size`。
 - `73` 的全历史补库事实不变；`74` 改变的是后续 bootstrap/replay 的正式执行口径。
-- 当前待施工卡恢复到 `80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`。
+- 当前待施工卡恢复到 `78-malf-alpha-dual-axis-refactor-scope-freeze-card-20260418.md`。
 
 ## 结论结构图
 

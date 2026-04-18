@@ -29,7 +29,7 @@
 ## 影响
 
 - `malf -> structure -> filter -> alpha` 默认依赖的 `market_base(backward)` 已具备全历史正式库基础，不再以 `2010` pilot 作为实际覆盖上限。
-- `80 -> 86` official middle-ledger resume 可以恢复推进；当前待施工卡应切回 `80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`。
+- `78 -> 84` official middle-ledger resume 可以恢复推进；当前待施工卡应切回 `78-malf-alpha-dual-axis-refactor-scope-freeze-card-20260418.md`。
 - 后续若需要全历史重物化 `market_base`，必须显式使用无日期窗、无标的窗、`--limit 0` 的真正 full 调用；bounded replay 应使用日期窗/标的窗但不承担全表缺失删除。
 - `H:\tdx_offline_Data` 当前 `*-day` 布局已被 runner 兼容，后续 raw ingest 不再依赖历史 `stock/index/block` 目录名。
 
@@ -41,5 +41,5 @@ flowchart TD
     B --> C["73 full base build --limit 0"]
     C --> D["stock base = 16,348,113 rows"]
     D --> E["stock/index/block coverage 0 missing"]
-    E --> F["恢复 80-86"]
+    E --> F["恢复 78-84"]
 ```

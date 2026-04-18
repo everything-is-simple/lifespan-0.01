@@ -21,7 +21,7 @@
 - 为什么现在做：
   现在如果不把 `index/block` 迁完并 purge 旧 `day` 库里的 `week/month`，系统会长期处于“双口径并存”的危险状态：
   - 查询方无法仅凭物理库名判断正式真值
-  - 后续 `80-86` 恢复时，mainline 可能误读 day 库里的旧 `week/month`
+  - 后续 `78-84` 恢复时，mainline 可能误读 day 库里的旧 `week/month`
   - `76` 虽然在代码与 stock 实库上已经打通，但库资产形态还没有达到可长期维护的终态
 
 ## 设计输入
@@ -61,7 +61,7 @@
   `docs/03-execution/C-system-completion-ledger-20260409.md`
 - 范围外：
   `malf / structure / filter / alpha` 的下游消费逻辑改造
-  `80-86` mainline middle-ledger 恢复实现
+  `78-84` mainline middle-ledger 恢复实现
   `objective/profile` 的独立分库设计
 
 ## 历史账本约束

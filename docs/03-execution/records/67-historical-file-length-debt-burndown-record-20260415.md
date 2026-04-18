@@ -4,7 +4,7 @@
 
 ## 执行过程概述
 
-`67` 先把 `66` 之后重新暴露的 `2` 项 hard oversize 与 `3` 项 target oversize 正式登记回 backlog，再按模块职责把超长文件拆到 helper / support sidecar，最后同步回收历史白名单、补齐执行闭环并把当前施工位恢复到 `80`。
+`67` 先把 `66` 之后重新暴露的 `2` 项 hard oversize 与 `3` 项 target oversize 正式登记回 backlog，再按模块职责把超长文件拆到 helper / support sidecar，最后同步回收历史白名单、补齐执行闭环并把当前施工位恢复到 `90`。
 
 ## 关键记录
 
@@ -30,15 +30,15 @@
 | 更新测试 | `tests/unit/data/test_market_base_runner.py` | 共享 helper 后回落到目标线内 |
 | 新增测试 helper | `tests/unit/data/market_base_test_support.py` | 公共测试支撑 |
 | 更新治理 | `scripts/system/development_governance_legacy_backlog.py` | hard / target backlog 清零 |
-| 更新文档 | `docs/03-execution/67-*`、`00/A/B/C`、`Ω`、`README.md`、`AGENTS.md`、`pyproject.toml` | `67` 收口并恢复 `80` |
+| 更新文档 | `docs/03-execution/67-*`、`00/A/B/C`、`Ω`、`README.md`、`AGENTS.md`、`pyproject.toml` | `67` 收口并恢复 `90` |
 
 ## 收口判断
 
-`67` 的完成标准不是“局部文件低于硬上限”，而是“历史 file-length backlog 与治理扫描结果重新一致，且当前主线可在无白名单债务的前提下恢复 `80-86`”。本次执行后：
+`67` 的完成标准不是“局部文件低于硬上限”，而是“历史 file-length backlog 与治理扫描结果重新一致，且当前主线可在无白名单债务的前提下恢复 `78-84`”。本次执行后：
 
 1. `check_development_governance.py` 不再报告任何 file-length 历史债务。
 2. `67` 对应的 `card / evidence / record / conclusion` 已补齐。
-3. 执行索引、路线图与入口文件已统一恢复到 `67 -> 80 -> 86 -> 100` 的正式口径。
+3. 执行索引、路线图与入口文件已统一恢复到 `67 -> 78 -> 84 -> 100` 的正式口径。
 
 ## 记录结构图
 ```mermaid

@@ -52,7 +52,7 @@
 1. 当前最新生效结论锚点推进到 `65-formal-signal-admission-boundary-reallocation-conclusion-20260415.md`。
 2. 当前待施工卡推进到 `66-mainline-rectification-resume-gate-card-20260415.md`。
 3. `60 -> 65` 已完成主线整改卡组中的 scope、truthfulness、filter boundary、wave_life truth、stage_percentile matrix 与 formal signal admission authority 回收。
-4. `66` 之前仍不允许直接恢复 `80-86`；只有 `66` 接受后，才允许恢复 official middle-ledger resume 卡组。
+4. `66` 之前仍不允许直接恢复 `78-84`；只有 `66` 接受后，才允许恢复 official middle-ledger resume 卡组。
 5. `position` 继续只把 `stage_percentile_*` 当作只读 sidecar 输入，不得把 sizing/trim 动作权回推给 `alpha`。
 
 ## 六条历史账本约束检查

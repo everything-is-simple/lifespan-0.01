@@ -8,21 +8,21 @@
 
 - 接受：`67` 已完成对 `66` 之后重新暴露的 `5` 项历史 file-length 债务的重登记、拆分清理与治理台账回收。
 - 接受：`scripts/system/development_governance_legacy_backlog.py` 已恢复为空 backlog，`python scripts/system/check_development_governance.py` 不再报告 file-length 历史债务。
-- 接受：当前正式待施工卡恢复为 `80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`，`80 -> 86` 重新成为当前 active official middle-ledger resume 卡组。
-- 拒绝：继续以“历史治理债务尚未清零”为理由阻塞 `80-86`。
+- 接受：当前正式待施工卡恢复为 `78-malf-alpha-dual-axis-refactor-scope-freeze-card-20260418.md`，`78 -> 84` 重新成为当前 active official middle-ledger resume 卡组。
+- 拒绝：继续以“历史治理债务尚未清零”为理由阻塞 `78-84`。
 
 ## 原因
 
 1. `67` 的目标不是单纯压缩文件，而是让治理扫描、历史 backlog 台账、执行索引和入口文件重新指向同一套正式事实。
 2. 五项债务均已通过 helper / support 拆分压回目标线内，且对应单测与治理检查已证明外部脚本入口、账本表族与行为语义保持稳定。
-3. 既然 `check_development_governance.py` 已恢复纯通过，`80-86` 前不再存在需要继续保留的 file-length 治理前置卡。
+3. 既然 `check_development_governance.py` 已恢复纯通过，`78-84` 前不再存在需要继续保留的 file-length 治理前置卡。
 
 ## 影响
 
 1. 当前最新生效结论锚点推进到 `67-historical-file-length-debt-burndown-conclusion-20260415.md`。
-2. 当前待施工卡恢复到 `80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`。
+2. 当前待施工卡恢复到 `78-malf-alpha-dual-axis-refactor-scope-freeze-card-20260418.md`。
 3. `67` 之后的正式主线顺序固定为：
-   - `80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86`
+   - `78 -> 79 -> 80 -> 81 -> 82 -> 83 -> 84`
    - `100 -> 101 -> 102 -> 103 -> 104 -> 105`
 4. 后续若再出现新的 file-length 治理债务，必须新开卡登记，不得反向把已清零的 `67` 改写回 backlog 状态。
 

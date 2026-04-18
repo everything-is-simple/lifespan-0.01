@@ -5,7 +5,7 @@
 
 ## 做了什么
 
-1. 开卡 `73`，把本卡定位为 `80 -> 86` 前的 data/raw/base 修缮卡，职责限定为补齐 `market_base(backward)` 全历史覆盖并修复补库执行口径。
+1. 开卡 `73`，把本卡定位为 `78 -> 84` 前的 data/raw/base 修缮卡，职责限定为补齐 `market_base(backward)` 全历史覆盖并修复补库执行口径。
 2. 读取当前正式库后确认：
    - `raw_market.stock_daily_bar(backward)` 已覆盖 `16,348,113` 行、`5,501` 标的、`1990-12-19 -> 2026-04-10`。
    - `market_base.stock_daily_adjusted(backward)` 仅覆盖 `392,478` 行、`1,833` 标的、`2010-01-04 -> 2010-12-31`。

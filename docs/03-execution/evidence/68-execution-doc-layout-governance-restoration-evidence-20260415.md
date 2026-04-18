@@ -6,7 +6,7 @@
 
 1. `python scripts/system/check_doc_first_gating_governance.py`
    - 结果：通过
-   - 说明：`68` 收口后当前待施工卡已恢复为 `80-mainline-middle-ledger-2011-2013-bootstrap-card-20260414.md`，doc-first gating 继续成立。
+   - 说明：`68` 收口后当前待施工卡已恢复为 `78-malf-alpha-dual-axis-refactor-scope-freeze-card-20260418.md`，doc-first gating 继续成立。
 2. `python .codex/skills/lifespan-execution-discipline/scripts/check_execution_indexes.py --include-untracked`
    - 结果：通过
    - 说明：结论目录、证据目录、卡目录、records 链、阅读顺序、完成账本与 execution 根目录布局已全部一致。

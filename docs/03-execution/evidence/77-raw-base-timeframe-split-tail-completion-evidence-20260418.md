@@ -68,5 +68,5 @@ flowchart LR
     B --> C["slice 4 六库矩阵与 pending=0 校验"]
     C --> D["slice 5 purge day week/month tail"]
     D --> E["修正 day bootstrap 避免空表回生"]
-    E --> F["77 接受并恢复 80-86"]
+    E --> F["77 接受并恢复 78-84"]
 ```

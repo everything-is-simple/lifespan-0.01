@@ -11,7 +11,7 @@
 - 目标结果：
   建立 `system` 的最小正式 orchestration bootstrap，使其成为全链“正式审计与冻结入口”，而不是临时汇总器。
 - 为什么现在做：
-  这必须排在 `55`、`100-104` 全部之后，尤其要等 upstream A 级基线、trade progression 与真实官方库 smoke 全部通过。
+  这必须排在 `84`、`100-104` 全部之后，尤其要等 `malf -> alpha` 官方 cutover、trade progression 与真实官方库 smoke 全部通过。
 
 ## 设计输入
 

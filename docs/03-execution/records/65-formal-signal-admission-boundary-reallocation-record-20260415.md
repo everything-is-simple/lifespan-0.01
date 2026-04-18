@@ -52,7 +52,7 @@
 
 ## 残留项
 
-1. `66` 仍需基于 `60-65` 的整改结论，正式判断主线整改卡组是否可以恢复到 `80-86`
+1. `66` 仍需基于 `60-65` 的整改结论，正式判断主线整改卡组是否可以恢复到 `78-84`
 2. 本轮没有恢复 `trade / system`，也没有改变 `position` 对 `stage_percentile_*` 的只读 sidecar 边界
 3. 本轮没有把 `wave_life` 反写回 `malf core`，也没有把 `position` sizing 权回推到 `alpha`
 

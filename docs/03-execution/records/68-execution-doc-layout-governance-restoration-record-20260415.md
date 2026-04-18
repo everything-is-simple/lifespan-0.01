@@ -9,7 +9,7 @@
 3. 修复 `.codex/skills/lifespan-execution-discipline/scripts/new_execution_bundle.py`，让它同时兼容当前 `B-card-catalog-20260409.md` 的 `正式执行卡` 分栏标题。
 4. 强化 `.codex/skills/lifespan-execution-discipline/scripts/check_execution_indexes.py`，新增 `execution-layout` 检查并补上“只检查工作树真实存在文件”的过滤。
 5. 把根目录错放的 `38-42`、`44`、`50-67` evidence / record 回迁到 `docs/03-execution/evidence/` 与 `docs/03-execution/records/`。
-6. 更新 `00-conclusion-catalog`、`A/B/C`、`00-evidence-catalog`、`Ω`、`README.md`、`AGENTS.md`、`pyproject.toml` 与 `docs` 规范，使最新锚点推进到 `68`，当前待施工卡恢复到 `80`。
+6. 更新 `00-conclusion-catalog`、`A/B/C`、`00-evidence-catalog`、`Ω`、`README.md`、`AGENTS.md`、`pyproject.toml` 与 `docs` 规范，使最新锚点推进到 `68`，当前待施工卡恢复到 `90`。
 
 ## 偏离项
 - `44` 在根目录与子目录各有一份 evidence / record，且内容不一致；本次以根目录完整正式稿替换子目录占位稿，而不是简单保留较新的空模板版本。
@@ -18,7 +18,7 @@
 ## 备注
 
 1. 本次治理后，后续新增执行四件套应优先走 bundle 脚本，不再允许手工把 `evidence / record` 落回根目录。
-2. `68` 收口后，当前主线恢复为 `80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 100 -> 105`。
+2. `68` 收口后，当前主线恢复为 `78 -> 79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 100 -> 105`。
 
 ## 记录结构图
 ```mermaid

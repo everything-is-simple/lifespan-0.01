@@ -28,7 +28,7 @@
 
 ## 影响
 
-1. `76 -> 77` 的 data 前置迁移卡组已正式收口，`80-86` 可以恢复为当前正式主线施工位。
+1. `76 -> 77` 的 data 前置迁移卡组已正式收口，`78-84` 可以恢复为当前正式主线施工位。
 2. `day -> week/month` 的物理库语义现在可仅凭库名判断：
    - `raw_market.duckdb / market_base.duckdb` 只承载 `day`
    - `raw_market_week/month.duckdb / market_base_week/month.duckdb` 只承载对应 timeframe
@@ -41,5 +41,5 @@ flowchart TD
     A["76 stock 迁移完成"] --> B["77 补齐 index/block week/month raw/base"]
     B --> C["purge 旧 day 库 week/month 价格表与 audit/dirty"]
     C --> D["修正 day bootstrap 为 day-only"]
-    D --> E["80-86 恢复为当前正式主线"]
+    D --> E["78-84 恢复为当前正式主线"]
 ```
