@@ -152,9 +152,16 @@ flowchart LR
   - `malf -> structure -> filter -> alpha` 默认消费 `adjust_method='backward'`
   - `position -> trade` 默认消费 `adjust_method='none'`
   - `forward` 当前只作研究与展示保留
-- 当前最新生效结论锚点已推进到 `91-malf-timeframe-native-base-source-rebind-conclusion-20260418.md`；当前待施工卡已切到 `92-structure-thin-projection-and-day-binding-card-20260418.md`。
+- 当前最新生效结论锚点已推进到 `91-malf-timeframe-native-base-source-rebind-conclusion-20260418.md`；当前待施工卡已切回 `81-malf-origin-chat-semantic-truth-gap-freeze-card-20260419.md`。
+- 当前 `malf` 的单点权威设计/规格锚点为：
+  - `docs/01-design/modules/malf/15-malf-authoritative-timeframe-native-ledger-charter-20260419.md`
+  - `docs/02-spec/modules/malf/15-malf-authoritative-timeframe-native-ledger-spec-20260419.md`
+- 当前若要追“聊天里成型的 `malf` 与系统现状差多少、接下来先修什么”，正式入口改为：
+  - `docs/01-design/modules/malf/16-malf-origin-chat-semantic-reconciliation-charter-20260419.md`
+  - `docs/02-spec/modules/malf/16-malf-origin-chat-semantic-reconciliation-spec-20260419.md`
+  - `docs/03-execution/81-malf-origin-chat-semantic-truth-gap-freeze-card-20260419.md`
 - `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 现已把 `60 -> 66` 视为已完成整改卡组，并在恢复 `79 -> 80 -> 91 -> 92 -> 93 -> 94 -> 95` 之前依次插入并完成 `67` 历史 file-length 治理债务卡、`68` 执行文档目录治理卡、`69` filter 客观 gate、`70 -> 72` objective 历史回补卡组、`73` market_base backward 全历史修缮卡、`74` raw/base 分批建仓治理卡、`75` 单库周月账本扩展卡，以及 `76-77` 的日周月分库迁移与尾收口。
-- `78-80` 与 `91` 已完成双主轴范围冻结、`0/1` 波段过滤边界、`malf day/week/month` 路径契约与 canonical native full coverage；当前正式待施工位是 `92`。`92-95` 的现行口径是：
+- `78-80` 与 `91` 已完成双主轴范围冻结、`0/1` 波段过滤边界、`malf day/week/month` 路径契约与 canonical native full coverage；当前正式待施工位先回到 `81`，用于冻结 origin-chat `malf` 语义与当前 truth gap；`91-95` 继续作为远置后的 downstream cutover 卡组保留。`92-95` 的现行口径是：
   - `malf` 改成 `day / week / month` 三库
   - `structure` 保留，并拆成 `structure_day / structure_week / structure_month` 三个薄投影层
   - `filter` 保留模块壳，但只拦截客观不可交易与正式宇宙 gate；是否继续保留独立本地库留待 `93` 裁决
@@ -175,6 +182,7 @@ flowchart LR
   - `M -> market_base_month.stock_monthly_adjusted -> malf_month`
 - 自 `79` 起，`WorkspaceRoots.databases` 已正式暴露 `malf_day / malf_week / malf_month` 三库路径；单 `malf.duckdb` 只保留 legacy fallback 位阶。
 - 自 `80` 起，`0/1` 波段过滤已拥有独立治理卡位；自 `91` 起，canonical `malf_day / malf_week / malf_month` 已完成 official native full coverage，三库最新 checkpoint 都追平到 `2026-04-10`，覆盖 `5501` 个官方 scope。
+- 自 `91` 起，若需要查看当前 `malf` 最完整、最权威的设计与实现边界，不再需要从 `modules/malf/01-14` 自行拼图；统一以 `modules/malf/15` 为准。
 - 自 `80` 起，`scripts/malf/run_malf_zero_one_wave_audit.py` 还被固定为 `0/1` 问题的统一只读审计基线：
   - `same_bar_double_switch`：`bar_count=0`，且起始 bar 找不到本 wave 自己的 `state_snapshot`
   - `stale_guard_trigger`：`bar_count=1`，且相关 guard 年龄达到给定阈值

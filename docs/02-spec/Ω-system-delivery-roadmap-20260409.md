@@ -16,8 +16,9 @@
 1. 历史账本硬约束来自 `docs/01-design/03-historical-ledger-shared-contract-charter-20260409.md`
 2. 全系统统一治理基线来自 `28-system-wide-checkpoint-and-dirty-queue-alignment-conclusion-20260411.md`
 3. 当前最新生效结论锚点为 `91-malf-timeframe-native-base-source-rebind-conclusion-20260418.md`
-4. 当前待施工卡为 `92-structure-thin-projection-and-day-binding-card-20260418.md`
-5. 当前连续前置卡组为 `79 -> 80 -> 91 -> 92 -> 93 -> 94 -> 95`
+4. 当前 `malf` 单点权威设计/规格锚点为 `docs/01-design/modules/malf/15-malf-authoritative-timeframe-native-ledger-charter-20260419.md` 与 `docs/02-spec/modules/malf/15-malf-authoritative-timeframe-native-ledger-spec-20260419.md`
+5. 当前待施工卡为 `81-malf-origin-chat-semantic-truth-gap-freeze-card-20260419.md`
+6. 当前连续前置卡组为 `79 -> 80 -> 81 -> 91 -> 92 -> 93 -> 94 -> 95`
 
 ## 当前正式判断
 
@@ -41,9 +42,9 @@
 
 ### 当前阶段
 
-1. 当前 active 卡：`92`
-2. 当前 active 卡组：`92 -> 93 -> 94 -> 95 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`
-3. 当前系统级目标：先完成 `structure day/week/month` 三薄层、`filter_day` 客观 gate、`alpha` 五 PAS 日线终审与 `95` cutover gate，随后才恢复 `100-105`
+1. 当前 active 卡：`81`
+2. 当前 active 卡组：`81 -> 92 -> 93 -> 94 -> 95 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`
+3. 当前系统级目标：先冻结 origin-chat `malf` 纯语义锚点、当前 canonical truth gap 与修订顺序，再恢复 `structure day/week/month` 三薄层、`filter_day` 客观 gate、`alpha` 五 PAS 日线终审与 `95` cutover gate，随后才恢复 `100-105`
 
 ## 系统当前剖面图
 
@@ -94,7 +95,7 @@ flowchart LR
 10. `70 -> 71 -> 72`
 11. `73`
 12. `74`
-13. `78 -> 79 -> 80 -> 91 -> 92 -> 93 -> 94 -> 95`
+13. `78 -> 79 -> 80 -> 81 -> 91 -> 92 -> 93 -> 94 -> 95`
 14. `100 -> 101 -> 102 -> 103 -> 104 -> 105`
 
 其中：
@@ -112,7 +113,7 @@ flowchart LR
 11. `70 -> 72` 是 objective 历史源选择、实现与回补执行卡组
 12. `73` 是 `market_base(backward)` 全历史修缮卡
 13. `74` 是 `raw/base` 分批建仓治理与 runner 修缮卡
-14. `79 -> 80 -> 91 -> 92 -> 93 -> 94 -> 95` 是治理与 data 修缮收口后的 `malf-alpha` 双主轴重构与 cutover gate 卡组：`79` 落三库路径，`80` 单独冻结 `0/1` 波段过滤边界，`91` 完成 `malf` native source 与全覆盖，`92` 收口 `structure day/week/month` 三薄层，`93` 收口 `filter_day objective gate + note sidecar`，`94` 切到五个 PAS 日线终审库，`95` 再做 truthfulness / cutover gate
+14. `79 -> 80 -> 81 -> 91 -> 92 -> 93 -> 94 -> 95` 是治理与 data 修缮收口后的 `malf-alpha` 双主轴重构与 cutover gate 卡组：`79` 落三库路径，`80` 单独冻结 `0/1` 波段过滤边界，`81` 先冻结 origin-chat `malf` 纯语义锚点、当前 truth gap 与修订顺序，`91` 完成 `malf` native source 与全覆盖，`92` 收口 `structure day/week/month` 三薄层，`93` 收口 `filter_day objective gate + note sidecar`，`94` 切到五个 PAS 日线终审库，`95` 再做 truthfulness / cutover gate
 16. `100 -> 105` 是 `trade/system` 恢复卡组
 17. `105` 明确固定为最后一张后置卡
 
@@ -142,7 +143,7 @@ flowchart LR
     G73 --> G74["74 raw/base batched bootstrap accepted"]
     G74 --> G75["75 single-db week/month expansion accepted"]
     G75 --> G76["76 day/week/month split migration"]
-    G76 --> G7885["79-80 / 91-95 malf-alpha dual-axis refactor"]
+    G76 --> G7885["79-81 / 91-95 malf-alpha dual-axis refactor"]
     G7885 --> G100105["100-105 trade/system 恢复卡组"]
     G100105 --> C100["100 signal anchor freeze"]
     C100 --> C101["101 T+1 open 参考价修正"]
@@ -156,11 +157,11 @@ flowchart LR
 
 1. `29-32` 不是“历史已完成就可忽略”的旧卡组，而是后半部一切恢复卡的前置逻辑顺序。
 2. `43-45` 任何一张未通过前，都不允许进入 `46`。
-3. `55` 接受后并不直接恢复 `100`；真实正式库主线已先经过 `60-74` 整改、治理、objective 回补、`market_base(backward)` 全历史修缮与 raw/base 分批建仓治理，随后恢复路径才是 `79-80 / 91-95`。
+3. `55` 接受后并不直接恢复 `100`；真实正式库主线已先经过 `60-74` 整改、治理、objective 回补、`market_base(backward)` 全历史修缮与 raw/base 分批建仓治理，随后恢复路径才是 `79-81 / 91-95`。
 4. `100-105` 当前必须在 `95` 接受后按自然数顺排推进，不允许跳过 `100/101` 直接做 `105`。
 5. `47-51` 属于 `position` 追平 `data -> malf` 事实标准的正式卡组，不允许把 `position` 继续当成 bounded skeleton 直接越过。
 6. `52-54` 属于 `portfolio_plan` 追平 `data -> malf` 事实标准的正式卡组，不允许继续把组合层当成最小桥接层直接越过。
-7. `66` 已正式判断无需继续追加整改前置卡；`67 -> 74` 已完成 file-length、执行文档目录、filter objective gate、objective 历史回补、`market_base(backward)` 全历史修缮与 raw/base 分批建仓治理，当前恢复 `79-80 / 91-95`。
+7. `66` 已正式判断无需继续追加整改前置卡；`67 -> 74` 已完成 file-length、执行文档目录、filter objective gate、objective 历史回补、`market_base(backward)` 全历史修缮与 raw/base 分批建仓治理，当前恢复 `79-81 / 91-95`。
 
 ## 增量更新 / 断点续跑 / 审计依赖图
 
@@ -242,7 +243,7 @@ flowchart TD
 - 当前结论：
   `31 / 35 / 38 / 44 / 61` 已完成 canonical rebind、queue/checkpoint 对齐、legacy `malf` purge、official copy replay/smoke 硬化与历史窗口 CLI guardrail
 - 后续动作：
-  以 `61` 的显式 bounded/queue 入口作为 `79-80 / 91-95` 历史建库模板，禁止无参 queue
+  以 `61` 的显式 bounded/queue 入口作为 `79-81 / 91-95` 历史建库模板，禁止无参 queue
 
 ### `filter`
 
@@ -286,7 +287,7 @@ flowchart TD
 - 当前结论：
   `35 / 41 / 42 / 45 / 64 / 65` 已完成 queue 对齐、PAS detector、family role、formal signal producer hardening、`stage_percentile` matrix 与 alpha-owned admission authority
 - 后续动作：
-  以 `alpha-formal-signal-v5` 作为 `79-80 / 91-95` 的正式 downstream 模板，继续保持 final admission authority 在 `alpha formal signal`
+  以 `alpha-formal-signal-v5` 作为 `79-81 / 91-95` 的正式 downstream 模板，继续保持 final admission authority 在 `alpha formal signal`
 
 ### `position`
 
@@ -308,7 +309,7 @@ flowchart TD
 - 当前结论：
   `47 / 48 / 49 / 50 / 51 / 55` 已完成 MALF context sizing/batch contract、risk/capacity ledger、batched leg contract、data-grade runner、acceptance gate 与 pre-trade baseline gate
 - 后续动作：
-  保持 `adjust_method='none'` 与 alpha-owned verdict 的消费边界；`79-80 / 91-95` 阶段不得回退为 bounded skeleton
+  保持 `adjust_method='none'` 与 alpha-owned verdict 的消费边界；`79-81 / 91-95` 阶段不得回退为 bounded skeleton
 
 ### `portfolio_plan`
 
@@ -330,7 +331,7 @@ flowchart TD
 - 当前结论：
   `52 / 53 / 54 / 55` 已完成官方 ledger family、capacity/decision hardening、data-grade runner 与 pre-trade baseline gate
 - 后续动作：
-  保持 official ledger family 与 freshness contract；`79-80 / 91-95` 阶段不得回退为上游 bounded rematerialize 的附属层
+  保持 official ledger family 与 freshness contract；`79-81 / 91-95` 阶段不得回退为上游 bounded rematerialize 的附属层
 
 ### `trade`
 
@@ -378,12 +379,12 @@ flowchart TD
 
 ## 当前阻塞项
 
-### 阻塞 1：`79-80 / 91-95` malf-alpha 双主轴重构仍未完成
+### 阻塞 1：`79-81 / 91-95` malf-alpha 双主轴重构仍未完成
 
 影响：
 
 1. `67` 已把历史 file-length backlog 清零，`68` 已把执行文档目录治理恢复到正式布局，`69 -> 72` 已完成 objective gate 与历史 profile 覆盖，`73` 已把 `market_base(backward)` 补齐到全历史，`74` 已把后续 raw/base 建仓升级为分批执行，前置治理与 data 覆盖阻塞已解除
-2. 当前主线阻塞重新回到 `79-80 / 91-95` 本身的 `0/1` 波段过滤边界、三库 `malf`、三薄层 `structure`、`filter_day` 与五 PAS `alpha` cutover
+2. 当前主线阻塞重新回到 `79-81 / 91-95` 本身的 `0/1` 波段过滤边界、origin-chat `malf` 语义锚点与 truth gap、三库 `malf`、三薄层 `structure`、`filter_day` 与五 PAS `alpha` cutover
 
 ### 阻塞 2：`100-105` 仍需等待 `95` 放行
 
@@ -411,7 +412,7 @@ flowchart TD
 
 ## 当前不敢写死的点
 
-1. `79-80 / 91-95` 的双主轴重构顺序，是否还会暴露新的真实库治理阻塞
+1. `79-81 / 91-95` 的双主轴重构顺序，是否还会暴露新的真实库治理阻塞
 2. `95` 真正执行后，真实官方库 cutover 是否会暴露新的 `position / trade / system` 合同缺口
 4. `104` 真正执行后，真实官方库 smoke 是否会继续暴露新的执行侧回归问题
 
@@ -442,7 +443,7 @@ flowchart TD
 - 当前状态：
   `已完成`
 - 下一步依赖：
-`78` 已收口；当前进入 `79-80 / 91-95` malf-alpha 双主轴重构与官方 cutover
+`78` 已收口；当前进入 `79-81 / 91-95` malf-alpha 双主轴重构与官方 cutover
 
 ### `M3 alpha 解释层收口`
 
@@ -451,7 +452,7 @@ flowchart TD
 - 当前状态：
   `已完成`
 - 下一步依赖：
-`79-80 / 91-95 -> 100`
+`79-81 / 91-95 -> 100`
 
 ### `M4 执行侧合同与 runtime 收口`
 
@@ -460,7 +461,7 @@ flowchart TD
 - 当前状态：
   `未完成`
 - 下一步依赖：
-  `78 -> 79 -> 80 -> 91 -> 92 -> 93 -> 94 -> 95 -> 100 -> 104`
+  `78 -> 79 -> 80 -> 81 -> 91 -> 92 -> 93 -> 94 -> 95 -> 100 -> 104`
 
 ### `M5 system orchestration 收口`
 
@@ -469,7 +470,7 @@ flowchart TD
 - 当前状态：
   `未完成`
 - 下一步依赖：
-  `78 -> 79 -> 80 -> 91 -> 92 -> 93 -> 94 -> 95 -> 104 -> 105`
+  `78 -> 79 -> 80 -> 81 -> 91 -> 92 -> 93 -> 94 -> 95 -> 104 -> 105`
 
 ## 系统审计依赖图
 

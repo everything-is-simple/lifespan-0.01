@@ -1,35 +1,31 @@
-﻿# malf timeframe native base source 重绑 记录
+# malf 权威设计锚点补齐与 timeframe native base source 重绑收口 记录
 
 `记录编号`：`91`
-`日期`：`2026-04-18`
+`日期`：`2026-04-19`
 
 ## 做了什么
 
-1. 把 `canonical_runner` 从“单 day `market_base` + `_resample_bars_by_timeframe`”改成“按 `D/W/M` 分别绑定 `market_base_day/week/month` 与对应 `stock_daily_adjusted / stock_weekly_adjusted / stock_monthly_adjusted`”。
-2. 把 canonical 写库从 legacy 单库改成 official native 三库：`malf_day / malf_week / malf_month` 分别 bootstrap、分别 enqueue/claim/checkpoint、分别写 `malf_canonical_run.summary_json`。
-3. 在 canonical source 里恢复 `limit=0` 的 full coverage 入口，使 `run_malf_canonical_build --limit 0` 可以覆盖全部 `5501` 个官方 scope，而不是被默认 row limit 截断。
-4. 补 `tests/unit/malf/test_canonical_runner.py`，覆盖 native source 选择、周/月不再走 day resample、三库独立落表与 requeue/checkpoint 行为。
-5. 执行官方 full coverage build，把 `market_base_day/week/month(backward)` 全量物化为 `malf_day/week/month`，并输出审计 JSON。
+1. 保留 `91` 原有的 native source / full coverage 职责，不额外拆卡。
+2. 在 `docs/01-design/modules/malf/` 与 `docs/02-spec/modules/malf/` 下新增 `15-*` 文档，作为当前 `malf` 单点权威设计/规格。
+3. 把 `91` 的设计输入、结论与证据改挂到 `modules/malf/15`，不再只依赖系统级 `18` 去代替 `malf` 本体说明。
+4. 同步刷新 execution reading order、card catalog、README、AGENTS 与路线图引用，让用户能直接从入口文件和执行索引跳到这对权威文档。
 
 ## 偏离项
 
-- 通过桌面 shell 直接执行 full coverage 时，1 小时超时包装器先返回超时，但 child `python scripts/malf/run_malf_canonical_build.py --limit 0 ...` 继续在后台完成 `W/M`。最终按 run 表与落盘审计确认三库都完成 `run_status='completed'`，未做人工中断或手工补写账本。
+- 本次没有新增新的物理“81 文件号”。当前执行体系仍保持“逻辑 `81` 对应物理 `91-*` 文件”的既有编号策略，避免把当前待施工位和后续 `92-95` 整体打乱。
 
 ## 备注
 
-- `malf_day / week / month` 当前都是首次 official native full coverage 建仓；`D/W/M` 最新 checkpoint 都追平到 `2026-04-10`，每库 `checkpoint_count=5501`。
-- `snapshot / mechanism / wave_life` 仍保持 explicit legacy 单库回退位；`91` 只收 canonical native source 与 full coverage，不提前替 `92-95` 做 downstream 重绑。
-- `91` 收口后，当前待施工位推进到 `92`。
+- 这次补的是“权威锚点缺口”，不是新一轮 `malf` 算法修订。
+- `80` 已冻结 `0/1` 问题的统一审计边界；`91` 现在补齐的是“当前 `malf` 到底是什么”的权威总设计/总规格。
+- 当前正式待施工位保持为 `92`。
 
 ## 记录结构图
 
 ```mermaid
 flowchart LR
-    CODE["native source refactor"] --> TEST["pytest + compileall"]
-    TEST --> BUILD["official full coverage build"]
-    BUILD --> AUD["audit json"]
-    AUD --> CON["81 conclusion"]
+    GAP["malf 权威设计缺口"] --> DOC15["modules/malf/15 authority docs"]
+    DOC15 --> CARD91["91 card bundle"]
+    CARD91 --> INDEX["reading order / entry files"]
+    INDEX --> NEXT["92 current active card"]
 ```
-
-
-

@@ -1,4 +1,4 @@
-﻿[build-system]
+[build-system]
 requires = ["hatchling>=1.27.0"]
 build-backend = "hatchling.build"
 
@@ -45,6 +45,8 @@ cache_dir = "H:/Lifespan-temp/pytest-cache"
 # 它只允许读取 `malf_day / malf_week / malf_month`，把完成的 `bar_count in {0,1}` wave
 # 标成 `same_bar_double_switch / stale_guard_trigger / next_bar_reflip`，
 # 供后续 canonical 算法修订或三库重建前后做同口径基线对照。
+# 当前 `malf` 的单点权威设计/规格锚点已补到
+# `docs/01-design/modules/malf/15-*` 与 `docs/02-spec/modules/malf/15-*`。
 execution_index_files = [
     "docs/03-execution/A-execution-reading-order-20260409.md",
     "docs/03-execution/B-card-catalog-20260409.md",
@@ -116,5 +118,3 @@ required_card_ledger_fields = [
     "断点续跑",
     "审计账本",
 ]
-
-

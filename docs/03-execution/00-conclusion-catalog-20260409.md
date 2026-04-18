@@ -102,7 +102,7 @@
 1. `91` 已成为当前最新生效结论锚点。
 2. `60` 已完成整改批次登记与施工顺序冻结，`61` 已收紧 `truthfulness ≠ completeness` 的执行口径，`62` 已把 `filter` 重置回 pre-trigger 边界，`63` 已把 `wave_life` 官方空表与 bootstrap/replay 边界正式裁清，`64` 已把 `stage × percentile` 的正式接入层冻结在 `alpha formal signal`，`65` 已把 final admission authority 从 `filter` 正式收回到 `alpha formal signal`，`66` 已正式把这些整改结论统一收口为 resume gate。
 3. `29-66` 已完成 canonical malf downstream、mainline ledger standardization、alpha detector、alpha family、quality gate、official replay hardening、alpha producer hardening、pre-position acceptance、position contract freeze、risk/capacity ledger hardening、batched leg contract、position data-grade runner、pre-portfolio-plan position acceptance gate、portfolio_plan ledger family freeze、capacity/decision hardening、data-grade runner、official middle-ledger pilot freeze、official canonical malf bootstrap、official downstream canonical smoke、`2010` truthfulness gate、整改批次登记、tail coverage rectification、filter authority reset、wave-life truthfulness、stage-percentile decision matrix、formal signal admission authority 与 resume gate 收口。
-4. `67`、`68`、`69`、`70`、`71`、`72`、`73`、`74`、`75`、`76`、`77`、`78`、`79`、`80`、`91` 已补齐：`72` 已完成 `2010-01-04 -> 2026-04-08` 的 objective coverage 历史回补并达到 `0 missing`；`73` 已完成 `market_base.stock_daily_adjusted(backward)` 的 `1990-12-19 -> 2026-04-10` 全历史覆盖并确认 `stock / index / block` backward raw/base `0 missing`；`77` 已完成六库尾收口与 day raw/base bootstrap 的 day-only 边界修缮；`78` 已把 `structure` 冻结为 `structure_day / structure_week / structure_month` 三薄层、把 `filter` 冻结为客观门卫并将其独立落库裁决留给 `93`、把 `alpha` 冻结为 `BOF / TST / PB / CPB / BPB` 五个 PAS 日线正式库；`79` 已冻结 `malf day / week / month` 路径与 bootstrap 契约；`80` 已完成 `0/1` 波段过滤边界冻结；`91` 已完成 canonical native source rebind 与 `malf_day / malf_week / malf_month` 三库全覆盖，当前正式施工位推进到 `92 -> 93 -> 94 -> 95 -> 100 -> 105`。
+4. `67`、`68`、`69`、`70`、`71`、`72`、`73`、`74`、`75`、`76`、`77`、`78`、`79`、`80`、`91` 已补齐：`72` 已完成 `2010-01-04 -> 2026-04-08` 的 objective coverage 历史回补并达到 `0 missing`；`73` 已完成 `market_base.stock_daily_adjusted(backward)` 的 `1990-12-19 -> 2026-04-10` 全历史覆盖并确认 `stock / index / block` backward raw/base `0 missing`；`77` 已完成六库尾收口与 day raw/base bootstrap 的 day-only 边界修缮；`78` 已把 `structure` 冻结为 `structure_day / structure_week / structure_month` 三薄层、把 `filter` 冻结为客观门卫并将其独立落库裁决留给 `93`、把 `alpha` 冻结为 `BOF / TST / PB / CPB / BPB` 五个 PAS 日线正式库；`79` 已冻结 `malf day / week / month` 路径与 bootstrap 契约；`80` 已完成 `0/1` 波段过滤边界冻结；`91` 已完成 canonical native source rebind 与 `malf_day / malf_week / malf_month` 三库全覆盖。当前正式待施工位已切回 `81-malf-origin-chat-semantic-truth-gap-freeze-card-20260419.md`，`91-95` 继续作为远置后续卡组保留。
 
 ## 图示
 ```mermaid
@@ -136,8 +136,8 @@ flowchart LR
     subgraph MID["56-59 middle-ledger pilot"]
         C56["56-59"]
     end
-    subgraph NEXT["60-66 / 79-80 / 91-95 / 100-105"]
-        C100["60-66 -> 79-80 -> 91-95 -> 100-105"]
+    subgraph NEXT["60-66 / 79-81 / 91-95 / 100-105"]
+        C100["60-66 -> 79-81 -> 91-95 -> 100-105"]
     end
     GOV --> MAIN --> DATA --> MALF --> DOWN --> C43 --> C44 --> C45 --> C46 --> C47 --> C48 --> C49 --> C56 --> C100
 ```
