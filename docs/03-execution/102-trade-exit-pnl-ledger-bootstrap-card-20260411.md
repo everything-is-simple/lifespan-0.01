@@ -9,7 +9,7 @@
 - 问题：
   当前 `trade` 只有 `execution_plan / position_leg / carry_snapshot`，没有正式退出账本与 realized pnl 账本，无法沉淀“最终发生了什么”。
 - 目标结果：
-  建立 `trade_exit_ledger` 与 `trade_realized_pnl_ledger`，作为后续 progression runner 与 system 审计的正式写入目标。
+  建立 `trade_exit_ledger` 与 `trade_realized_pnl_ledger`，作为后续 progression runner 与 system 审计的正式写入目标，并明确这些账本只消费 `position` 已冻结的执行输入合同。
 - 为什么现在做：
   `101` 修正 entry 参考价、`100` 冻结 signal anchor 后，这张卡才能稳定定义 `1R`、部分退出和尾仓退出的正式落账口径。
 
@@ -23,12 +23,20 @@
   - `docs/03-execution/101-position-entry-t-plus-1-open-reference-price-correction-conclusion-20260411.md`
   - `docs/03-execution/100-trade-signal-anchor-contract-freeze-conclusion-20260411.md`
 
+## 层级归属
+
+- 主层：`trade`
+- 上游约束：只读消费 `position` 冻结后的 execution-ready contract
+- 本卡职责：把 exit 与 realized pnl 沉淀成 `trade` 的正式结果账本，而不是策略解释层
+
 ## 任务分解
 
 1. 冻结 `trade_exit_ledger / trade_realized_pnl_ledger` 的正式表族、自然键与字段口径。
-2. 明确 `partial-exit / terminal-exit / fail-fast exit / trailing-stop exit` 如何共同落账。
-3. 明确 `entry reference price + signal anchor` 如何计算 `1R`、已实现盈亏和剩余仓位。
-4. 回填 `102` 文档、索引与后续 `103` 输入合同。
+2. 明确 `trade` 的上游输入只允许来自 `position` 冻结后的 entry reference price、signal anchor 与 execution-ready contract。
+3. 明确 `partial-exit / terminal-exit / fail-fast exit / trailing-stop exit` 如何共同落账。
+4. 明确 `entry reference price + signal anchor` 如何计算 `1R`、已实现盈亏和剩余仓位。
+5. 明确 `trade` 不允许再从 `alpha / structure / malf` 回推退出解释。
+6. 回填 `102` 文档、索引与后续 `103` 输入合同。
 
 ## 退出账本结构图
 
@@ -72,6 +80,7 @@ flowchart LR
 | 退出主账本 | `trade_exit_ledger` 记录每次退出动作、原因、退出腿角色、退出后剩余仓位 | 把退出只写进 `position_leg` 状态或 summary |
 | realized pnl 主账本 | `trade_realized_pnl_ledger` 记录每次退出对应的 realized pnl、成本基准、R multiple | 只在 report 或 system 汇总中临时计算 |
 | 退出类型 | 至少区分 `partial-exit / terminal-exit / fail-fast / trailing-stop / time-stop` | 所有退出都混成单一 `close` |
+| 上游输入 | `trade` 只读 `100/101` 冻结后的 `position` 正式 anchor 与 entry reference price | 重新从 `alpha / structure / malf` 或运行时行情解释回推 |
 | 锚点输入 | 计算 `1R`、快失败、尾仓时只读 `100/101` 冻结后的正式 anchor 与 entry reference price | 重新从行情或结构层回推 |
 | 系统消费 | `system` 只消费正式退出与 realized pnl 账本，不消费 trade 私有中间过程 | system 直接读取 progression 私有状态 |
 

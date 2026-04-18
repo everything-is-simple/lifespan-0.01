@@ -9,7 +9,7 @@
 - 问题：
   当前系统没有把 `open` 状态的正式仓位腿逐日推进到 `partial/closed` 的 data-grade 正式引擎。
 - 目标结果：
-  实现基于日线 OHLC 的 `trade` data-grade progression runner，支持快速失败、`1R` 半仓、`break_last_higher_low` 尾仓退出，以及 `work_queue + checkpoint + replay/resume`。
+  实现基于日线 OHLC 的 `trade` data-grade progression runner，支持快速失败、`1R` 半仓、`break_last_higher_low` 尾仓退出，以及 `work_queue + checkpoint + replay/resume`，并明确 progression 只消费 `position` 已冻结的执行合同。
 - 为什么现在做：
   只有在 `100-102` 把锚点、entry price、退出账本和 realized pnl 都冻结后，这张卡才具备稳定输入；同时它也是 `104` 真实官方库 smoke 的直接前置。
 
@@ -22,12 +22,20 @@
 - 当前锚点结论：
   - `docs/03-execution/102-trade-exit-pnl-ledger-bootstrap-conclusion-20260411.md`
 
+## 层级归属
+
+- 主层：`trade`
+- 上游约束：只读消费 `position` 冻结后的 execution-ready contract 与 `102` 结果账本合同
+- 本卡职责：把 `trade` 升级成执行推进真值层，而不是策略二次判断层
+
 ## 任务分解
 
 1. 冻结 `trade` progression 的正式 dirty 单元、`work_queue / checkpoint / replay` 语义。
 2. 冻结 open leg 逐日推进到 exit/PnL 账本的状态机。
-3. 明确历史建仓、每日增量、局部 replay 三种运行模式。
-4. 回填 `103` 文档，并为 `104` 提供真实官方库 smoke 清单。
+3. 明确 progression 只允许读取 `position` 冻结后的 anchor、entry reference price 与 execution-ready contract。
+4. 明确历史建仓、每日增量、局部 replay 三种运行模式。
+5. 明确 `trade` 不因为 progression runner 存在而重新拥有 trigger/verdict 裁决权。
+6. 回填 `103` 文档，并为 `104` 提供真实官方库 smoke 清单。
 
 ## 流程图
 
@@ -73,11 +81,12 @@ flowchart LR
 | 设计项 | 正式口径 | 不接受情形 |
 | --- | --- | --- |
 | dirty 单元 | 以 `portfolio_id + position_leg_nk + progression_date` 或等价正式单元挂脏 | 只按整组合或整窗口粗粒度重跑 |
+| 上游输入 | progression 只读 `position` 冻结后的 execution-ready contract 与 `102` 正式结果账本合同 | 回读 `alpha` 事件、`structure` 解释或私有中间过程 |
 | queue/checkpoint | 必须有 `trade_work_queue / trade_checkpoint`，可解释“跑到哪一天、哪条腿” | 只有 run，没有 resume 语义 |
 | 逐日推进状态机 | open leg 基于 `market_base(none)` 逐日推进，命中规则后写 `exit / pnl` 正式账本 | 在内存里推进后只改最后状态 |
 | replay/resume | 支持只重放脏腿、脏日期范围，不全量重跑历史 | replay 退化成 full rebuild |
 | freshness | 提供 `trade_freshness_audit` 或等价读数，说明最新推进日期与预期日期 | 无法判断 trade 是否跑齐 |
-| 下游桥接 | `104 / 105` 只消费正式 progression 账本与 readout，不读取私有中间过程 | 真实 smoke/system 依赖内存态 |
+| 下游桥接 | `104 / 105` 只消费正式 progression 账本与 readout，不读取私有中间过程 | 真实 smoke/system 依赖内存态或让 `trade` 重新解释策略 |
 
 ## 实施清单
 
