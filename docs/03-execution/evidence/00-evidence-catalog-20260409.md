@@ -87,6 +87,7 @@
 108. `74-market-base-batched-bootstrap-governance-evidence-20260416.md`
 109. `75-raw-base-weekly-monthly-timeframe-ledger-bootstrap-evidence-20260416.md`
 110. `76-raw-base-day-week-month-ledger-split-migration-evidence-20260417.md`
+111. `77-raw-base-timeframe-split-tail-completion-evidence-20260418.md`
 
 ## 证据闭环图
 

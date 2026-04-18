@@ -2,8 +2,8 @@
 `日期：2026-04-09`
 `状态：持续更新`
 
-1. 当前下一锤：`76-raw-base-day-week-month-ledger-split-migration-card-20260417.md`
-2. 当前待施工卡：`76-raw-base-day-week-month-ledger-split-migration-card-20260417.md`
+1. 当前下一锤：`77-raw-base-timeframe-split-tail-completion-card-20260418.md`
+2. 当前待施工卡：`77-raw-base-timeframe-split-tail-completion-card-20260418.md`
 3. 正式主线剩余卡：`13`
 4. 可选 Sidecar 剩余卡：`0`
 5. 历史治理 backlog：`0`
@@ -58,10 +58,10 @@
 
 ## 当前阶段
 
-1. 最新生效结论锚点已推进到 `74-market-base-batched-bootstrap-governance-conclusion-20260416.md`。
-2. `60`、`61`、`62`、`63`、`64`、`65`、`66`、`69`、`70`、`71`、`72`、`73`、`74` 已完成并接受。
-3. 当前正式主线待施工卡已切回 `80`。
-4. `72` 已把当前 `2010-01-04 -> 2026-04-08` 的 objective coverage 缺口收口到 `0 missing`；`73` 已把 `market_base.stock_daily_adjusted(backward)` 补齐到 `1990-12-19 -> 2026-04-10` 全历史，并确认 `stock / index / block` backward raw/base 覆盖 `0 missing`；`74` 已把后续 raw/base 建仓升级为分批执行；当前恢复 `80 -> 86` official middle-ledger resume 卡组，`100` 仍只有在 `86` 接受后才允许恢复。
+1. 最新生效结论锚点已推进到 `76-raw-base-day-week-month-ledger-split-migration-conclusion-20260417.md`。
+2. `60`、`61`、`62`、`63`、`64`、`65`、`66`、`69`、`70`、`71`、`72`、`73`、`74`、`75`、`76` 已完成并接受。
+3. 当前正式主线待施工卡已切到 `77-raw-base-timeframe-split-tail-completion-card-20260418.md`。
+4. `76` 已把 `stock week/month raw/base` 迁入新的 `week/month` 官方库，并确认 day 正式事实继续保留在 `raw_market.duckdb / market_base.duckdb`；但当前真实库仍有 `index/block week/month` 留在旧 `day` 库，因此需由 `77` 完成六库尾收口后再恢复 `80 -> 86` official middle-ledger resume 卡组，`100` 仍只有在 `77` 与 `86` 接受后才允许恢复。
 
 ## 体系图
 
