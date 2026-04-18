@@ -49,11 +49,20 @@ class MalfCanonicalBuildSummary:
     stats_inserted_count: int
     stats_reused_count: int
     stats_rematerialized_count: int
+    primary_summary_timeframe: str
     market_base_path: str
     malf_ledger_path: str
+    market_base_path_map: dict[str, str]
+    malf_ledger_path_map: dict[str, str]
     source_price_table: str
+    source_price_table_map: dict[str, str]
     source_adjust_method: str
     pivot_confirmation_window: int
+    source_scope_count_by_timeframe: dict[str, int]
+    claimed_scope_count_by_timeframe: dict[str, int]
+    completed_scope_count_by_timeframe: dict[str, int]
+    source_row_count_by_timeframe: dict[str, int]
+    source_date_range_by_timeframe: dict[str, dict[str, str | None]]
 
     def as_dict(self) -> dict[str, object]:
         return asdict(self)

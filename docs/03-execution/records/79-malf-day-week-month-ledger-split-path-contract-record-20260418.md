@@ -1,27 +1,30 @@
-# malf 日周月分库与路径契约冻结 记录
+# malf 日周月分库路径与表族契约冻结 记录
 
-记录编号：`79`
-日期：`2026-04-18`
+`记录编号`：`79`
+`日期`：`2026-04-18`
 
 ## 做了什么
 
-1. 步骤 1
-2. 步骤 2
+1. 扩展 `WorkspaceRoots.databases`，正式暴露 `malf_day / malf_week / malf_month` 三库路径，并保留 `malf_legacy` 兼容回退位。
+2. 在 `bootstrap_malf_ledger` 中引入 official native 与 legacy compat 两种模式，新增 `malf_ledger_contract` 并对 official native 表族施加单值 `timeframe` 约束。
+3. 把仍依赖单库的 `malf snapshot / canonical / mechanism / wave_life` runner 显式改为 `use_legacy=True`，避免继续隐式宣称单库是默认官方库。
+4. 补 `79` 专项单测，并回归 `structure / filter / alpha` 代表性样本。
 
 ## 偏离项
 
-- 无，或说明偏离原因
+- 本卡没有提前实现 `80` 的 timeframe native source rebind，也没有做 `malf_day / week / month` 全覆盖；仍维持 legacy runner 明示回退，等待 `80` 正式切换。
 
 ## 备注
 
-- 备注 1
-- 备注 2
+- `DatabasePaths.malf` 继续保留为 legacy 兼容属性，避免一次性打断仍未切库的 downstream；正式官方路径改由 `malf_day / malf_week / malf_month` 显式承接。
+- `79` 收口后，当前待施工位推进到 `80`。
 
 ## 记录结构图
 
 ```mermaid
 flowchart LR
-    STEP[施工步骤] --> DEV[偏离项说明]
-    DEV --> NOTE[备注]
-    NOTE --> CON[结论引用]
+    P["paths contract"] --> B["bootstrap contract"]
+    B --> L["legacy fallback demotion"]
+    L --> T["tests and replay samples"]
+    T --> N["next card 80"]
 ```

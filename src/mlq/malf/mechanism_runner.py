@@ -67,7 +67,7 @@ def run_malf_mechanism_build(
 
     workspace = settings or default_settings()
     workspace.ensure_directories()
-    resolved_malf_path = Path(malf_path or malf_ledger_path(workspace))
+    resolved_malf_path = Path(malf_path or malf_ledger_path(workspace, use_legacy=True))
     normalized_start_date = _coerce_date(signal_start_date)
     normalized_end_date = _coerce_date(signal_end_date)
     normalized_limit = max(int(limit), 1)
@@ -80,7 +80,7 @@ def run_malf_mechanism_build(
 
     connection = duckdb.connect(str(resolved_malf_path))
     try:
-        bootstrap_malf_ledger(workspace, connection=connection)
+        bootstrap_malf_ledger(workspace, connection=connection, use_legacy=True)
         _insert_run_row(
             connection,
             run_id=materialization_run_id,

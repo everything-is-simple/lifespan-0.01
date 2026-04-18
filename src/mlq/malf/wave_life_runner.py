@@ -170,7 +170,7 @@ def _run_bounded_build(
 ) -> MalfWaveLifeBuildSummary:
     workspace = settings or default_settings()
     workspace.ensure_directories()
-    resolved_malf_path = Path(malf_path or malf_ledger_path(workspace))
+    resolved_malf_path = Path(malf_path or malf_ledger_path(workspace, use_legacy=True))
     materialization_run_id = run_id or _build_run_id(prefix="malf-wave-life")
     normalized_limit = max(int(limit), 1)
 
@@ -179,7 +179,7 @@ def _run_bounded_build(
 
     connection = duckdb.connect(str(resolved_malf_path))
     try:
-        bootstrap_malf_ledger(workspace, connection=connection)
+        bootstrap_malf_ledger(workspace, connection=connection, use_legacy=True)
         scope_rows = _load_bounded_scope_rows(
             connection,
             table_name=source_state_table,
@@ -255,7 +255,7 @@ def _run_queue_build(
 ) -> MalfWaveLifeBuildSummary:
     workspace = settings or default_settings()
     workspace.ensure_directories()
-    resolved_malf_path = Path(malf_path or malf_ledger_path(workspace))
+    resolved_malf_path = Path(malf_path or malf_ledger_path(workspace, use_legacy=True))
     materialization_run_id = run_id or _build_run_id(prefix="malf-wave-life")
     normalized_limit = max(int(limit), 1)
 
@@ -265,7 +265,7 @@ def _run_queue_build(
     connection = duckdb.connect(str(resolved_malf_path))
     claimed_scope_rows: list[dict[str, object]] = []
     try:
-        bootstrap_malf_ledger(workspace, connection=connection)
+        bootstrap_malf_ledger(workspace, connection=connection, use_legacy=True)
         dirty_scopes = _load_wave_life_dirty_scopes(
             connection,
             asset_type=asset_type,

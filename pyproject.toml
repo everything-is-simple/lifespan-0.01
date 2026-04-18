@@ -53,8 +53,8 @@ system_tracker_files = [
     "docs/02-spec/Ω-system-delivery-roadmap-20260409.md",
 ]
 # 当前最新生效结论已推进到
-# `74-market-base-batched-bootstrap-governance-conclusion-20260416.md`；
-# 当前待施工卡已切回 `78-malf-alpha-dual-axis-refactor-scope-freeze-card-20260418.md`。
+# `80-malf-timeframe-native-base-source-rebind-conclusion-20260418.md`；
+# 当前待施工卡已切到 `81-structure-thin-projection-and-day-binding-card-20260418.md`。
 # 系统路线图现以 `28` 为统一 data-grade 基线，`60 -> 66` 已完成主线整改与恢复闸门，
 # 当前已完成 `67` 的历史 file-length 治理债务、`68` 的执行文档目录治理、`69` 的 filter 客观 gate、`70 -> 72` 的 objective 历史回补、`73` 的 market_base backward 全历史修缮与 `74` 的 raw/base 分批建仓治理；之后恢复 `78 -> 84` official middle-ledger 卡组，最后在 96 接受后恢复
 # 原 ??? 号段现预留给新版本架构卡组。

@@ -2,24 +2,26 @@
 
 结论编号：`80`
 日期：`2026-04-18`
-状态：`草稿`
+状态：`接受`
 
-## 预设裁决
+## 裁决
 
-- 接受：
-  当 `malf_day / week / month` 全部直接消费各自 `market_base_*`，且三库都完成全覆盖收口时接受。
-- 拒绝：
-  如果实现仍依赖日线重采样周/月，或仅完成 `2010 ~ 当前` tail replay 就宣称 `malf` 已切库，则拒绝。
+- 接受：`run_malf_canonical_build` 已按 timeframe native 直接绑定 `market_base_day.stock_daily_adjusted / market_base_week.stock_weekly_adjusted / market_base_month.stock_monthly_adjusted`，不再以 day 内重采样充当 `W/M` 默认生产路径。
+- 接受：`malf_day / malf_week / malf_month` 三库已完成官方 full coverage 建仓；三库最新 canonical run 均覆盖 `5501` 个标的 scope，checkpoint 全部追平到 `2026-04-10`。
+- 接受：official native 三库都写入 `malf_ledger_contract(storage_mode='official_native')`，并在落表后保持单 timeframe 隔离。
+- 拒绝：继续把 `W/M` 建在 day 内部 resample 上，或把 `2010 ~ 当前` tail replay 误当成 `malf` 全覆盖收口。
 
-## 预设原因
+## 原因
 
-1. `malf` 是公共语义真值层，必须全覆盖。
-2. `79-83` 的 bounded replay 只适用于 downstream cutover，不适用于 `malf`。
+1. `malf` 是 `structure / filter / alpha` 的公共语义真值层，source 契约如果仍停留在 day resample，`81-84` 就没有稳定上游。
+2. `80` 的职责不是只把代码切成 native path，而是把 `malf_day / week / month` 三库正式建成可审计真值层；full coverage 不完成，`84` 无法判定 downstream cutover 的真伪。
+3. `--limit 0` 已恢复为 canonical runner 的 full coverage 入口，避免 row limit 把 `5501` 个官方 scope 截断成局部样本。
 
-## 预设影响
+## 影响
 
-1. `81-84` 可在稳定的 `malf_day / week / month` 真值层上推进。
-2. `84` 可以明确审计“`malf` 已全覆盖，downstream 已 bounded replay”两类不同完成度。
+1. `81` 现在可以默认绑定 `malf_day / week / month` 的官方真值层，而不是继续依赖 legacy 单库或 day-resample 口径。
+2. `84` 现在可以把“`malf` 已 full coverage”与“downstream 仍在 bounded replay / cutover”两类完成度明确拆开审计。
+3. 当前正式待施工位从 `80` 推进到 `81-structure-thin-projection-and-day-binding-card-20260418.md`。
 
 ## 结论结构图
 

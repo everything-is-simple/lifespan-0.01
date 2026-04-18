@@ -45,7 +45,10 @@ class DatabasePaths:
     market_base_day: Path
     market_base_week: Path
     market_base_month: Path
-    malf: Path
+    malf_day: Path
+    malf_week: Path
+    malf_month: Path
+    malf_legacy: Path
     structure: Path
     filter: Path
     alpha: Path
@@ -66,6 +69,10 @@ class DatabasePaths:
 
         return self.market_base_day
 
+    @property
+    def malf(self) -> Path:
+        return self.malf_legacy
+
     def as_dict(self) -> dict[str, Path]:
         return {
             "raw_market_day": self.raw_market_day,
@@ -74,7 +81,10 @@ class DatabasePaths:
             "market_base_day": self.market_base_day,
             "market_base_week": self.market_base_week,
             "market_base_month": self.market_base_month,
-            "malf": self.malf,
+            "malf_day": self.malf_day,
+            "malf_week": self.malf_week,
+            "malf_month": self.malf_month,
+            "malf_legacy": self.malf_legacy,
             "structure": self.structure,
             "filter": self.filter,
             "alpha": self.alpha,
@@ -104,7 +114,10 @@ class WorkspaceRoots:
             market_base_day=self.data_root / "base" / "market_base.duckdb",
             market_base_week=self.data_root / "base" / "market_base_week.duckdb",
             market_base_month=self.data_root / "base" / "market_base_month.duckdb",
-            malf=self.data_root / "malf" / "malf.duckdb",
+            malf_day=self.data_root / "malf" / "malf_day.duckdb",
+            malf_week=self.data_root / "malf" / "malf_week.duckdb",
+            malf_month=self.data_root / "malf" / "malf_month.duckdb",
+            malf_legacy=self.data_root / "malf" / "malf.duckdb",
             structure=self.data_root / "structure" / "structure.duckdb",
             filter=self.data_root / "filter" / "filter.duckdb",
             alpha=self.data_root / "alpha" / "alpha.duckdb",

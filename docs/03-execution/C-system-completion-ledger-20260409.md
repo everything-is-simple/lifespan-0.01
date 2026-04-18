@@ -2,9 +2,9 @@
 `日期`：`2026-04-09`
 `状态`：`持续更新`
 
-1. 当前下一锤：`79-malf-day-week-month-ledger-split-path-contract-card-20260418.md`
-2. 当前待施工卡：`79-malf-day-week-month-ledger-split-path-contract-card-20260418.md`
-3. 正式主线剩余卡：`11`
+1. 当前下一锤：`81-structure-thin-projection-and-day-binding-card-20260418.md`
+2. 当前待施工卡：`81-structure-thin-projection-and-day-binding-card-20260418.md`
+3. 正式主线剩余卡：`9`
 4. 可选 Sidecar 剩余卡：`0`
 5. 历史治理 backlog：`0`
 
@@ -17,9 +17,9 @@
 
 ## 当前阶段
 
-1. 最新生效结论锚点是 `78-malf-alpha-dual-axis-refactor-scope-freeze-conclusion-20260418.md`。
-2. 当前正式主线待施工卡已切到 `79-malf-day-week-month-ledger-split-path-contract-card-20260418.md`。
-3. 当前 active 卡组是 `79-84`，目标是先完成 `malf day/week/month` 三库路径与 source rebind，再完成 `structure day/week/month` 三薄层、`filter` 客观门卫，以及 `alpha` 五个 PAS 日线终审账本切换。
+1. 最新生效结论锚点是 `80-malf-timeframe-native-base-source-rebind-conclusion-20260418.md`。
+2. 当前正式主线待施工卡已切到 `81-structure-thin-projection-and-day-binding-card-20260418.md`。
+3. 当前 active 卡组是 `81-84`，目标是把 `structure day/week/month` 三薄层、`filter` 客观门卫，以及 `alpha` 五个 PAS 日线终审账本在已 full coverage 的 `malf_day / malf_week / malf_month` 真值层上完成 cutover。
 4. 旧 official middle-ledger 恢复范围已删除，当前只保留 `78-84` 新路线。
 5. `100-105` 仍需等待 `84` 放行。
 

@@ -69,14 +69,14 @@ def run_malf_snapshot_build(
     normalized_instruments = tuple(sorted(_normalize_instruments(instruments)))
     materialization_run_id = run_id or _build_run_id(prefix="malf")
     resolved_market_base_path = Path(market_base_path or market_base_ledger_path(workspace))
-    resolved_malf_path = Path(malf_path or malf_ledger_path(workspace))
+    resolved_malf_path = Path(malf_path or malf_ledger_path(workspace, use_legacy=True))
     if not resolved_market_base_path.exists():
         raise FileNotFoundError(f"Missing market_base database: {resolved_market_base_path}")
 
     market_connection = duckdb.connect(str(resolved_market_base_path), read_only=True)
     malf_connection = duckdb.connect(str(resolved_malf_path))
     try:
-        bootstrap_malf_ledger(workspace, connection=malf_connection)
+        bootstrap_malf_ledger(workspace, connection=malf_connection, use_legacy=True)
         instrument_list = _load_target_instruments(
             market_connection,
             table_name=source_price_table,

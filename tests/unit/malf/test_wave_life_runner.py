@@ -40,7 +40,7 @@ def _seed_wave_life_sources(
     malf_path.parent.mkdir(parents=True, exist_ok=True)
     conn = duckdb.connect(str(malf_path))
     try:
-        bootstrap_malf_ledger(connection=conn)
+        bootstrap_malf_ledger(connection=conn, use_legacy=True)
         for row in wave_rows:
             conn.execute(
                 """
@@ -98,7 +98,7 @@ def test_run_malf_wave_life_build_separates_completed_profile_and_active_snapsho
     repo_root = _bootstrap_repo_root(tmp_path)
     settings = default_settings(repo_root=repo_root)
     _seed_wave_life_sources(
-        settings.databases.malf,
+        settings.databases.malf_legacy,
         wave_rows=[
             ("wave-1", "stock", "000001.SZ", "D", 1, "up", "牛顺", "none", "2026-03-01", "2026-03-10", False, None, None, 2, 0, 10, 12.0, 9.0, 0.25, "seed-a", "seed-a"),
             ("wave-2", "stock", "000001.SZ", "D", 2, "up", "牛顺", "none", "2026-03-11", "2026-03-24", False, None, None, 3, 0, 14, 14.0, 10.0, 0.28, "seed-a", "seed-a"),
@@ -127,7 +127,7 @@ def test_run_malf_wave_life_build_separates_completed_profile_and_active_snapsho
     assert summary.snapshot_row_count == 2
     assert summary.completed_wave_sample_count == 2
 
-    conn = duckdb.connect(str(malf_ledger_path(settings)), read_only=True)
+    conn = duckdb.connect(str(malf_ledger_path(settings, use_legacy=True)), read_only=True)
     try:
         profile_row = conn.execute(
             """
@@ -161,7 +161,7 @@ def test_run_malf_wave_life_build_uses_queue_and_requeues_on_source_fingerprint_
     repo_root = _bootstrap_repo_root(tmp_path)
     settings = default_settings(repo_root=repo_root)
     _seed_wave_life_sources(
-        settings.databases.malf,
+        settings.databases.malf_legacy,
         wave_rows=[
             ("wave-q1", "stock", "000001.SZ", "D", 1, "up", "牛顺", "none", "2026-03-01", "2026-03-08", False, None, None, 2, 0, 8, 11.0, 9.0, 0.18, "seed-q", "seed-q"),
             ("wave-q2", "stock", "000001.SZ", "D", 2, "up", "牛顺", "none", "2026-04-10", None, True, None, None, 1, 0, 2, 12.0, 10.0, 0.16, "seed-q", "seed-q"),
@@ -188,7 +188,7 @@ def test_run_malf_wave_life_build_uses_queue_and_requeues_on_source_fingerprint_
     assert first_summary.queue_claimed_count == 1
     assert first_summary.checkpoint_upserted_count == 1
 
-    conn = duckdb.connect(str(settings.databases.malf))
+    conn = duckdb.connect(str(settings.databases.malf_legacy))
     try:
         conn.execute(
             """
@@ -224,7 +224,7 @@ def test_run_malf_wave_life_build_uses_queue_and_requeues_on_source_fingerprint_
     assert second_summary.snapshot_rematerialized_count == 2
     assert second_summary.fallback_profile_count >= 1
 
-    conn = duckdb.connect(str(malf_ledger_path(settings)), read_only=True)
+    conn = duckdb.connect(str(malf_ledger_path(settings, use_legacy=True)), read_only=True)
     try:
         queue_row = conn.execute(
             """

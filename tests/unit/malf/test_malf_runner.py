@@ -143,7 +143,7 @@ def test_run_malf_snapshot_build_outputs_rows_consumable_by_structure(tmp_path: 
     assert second_summary.context_reused_count == 3
 
     _seed_canonical_malf_state_rows(
-        settings.databases.malf,
+        settings.databases.malf_legacy,
         [
             ("state-d-001", "600000.SH", "D", "2026-03-20", "牛顺", "up", "none", 7, 2, 0),
             ("state-d-002", "600000.SH", "D", "2026-03-21", "牛顺", "up", "none", 7, 2, 0),
@@ -162,7 +162,7 @@ def test_run_malf_snapshot_build_outputs_rows_consumable_by_structure(tmp_path: 
     assert structure_summary.source_context_table == "malf_state_snapshot"
     assert structure_summary.source_structure_input_table == "malf_state_snapshot"
 
-    malf_conn = duckdb.connect(str(malf_ledger_path(settings)), read_only=True)
+    malf_conn = duckdb.connect(str(malf_ledger_path(settings, use_legacy=True)), read_only=True)
     structure_conn = duckdb.connect(str(structure_ledger_path(settings)), read_only=True)
     try:
         context_rows = malf_conn.execute(

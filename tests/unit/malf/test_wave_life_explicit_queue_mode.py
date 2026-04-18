@@ -37,7 +37,7 @@ def test_run_malf_wave_life_build_allows_explicit_checkpoint_queue_when_required
     _clear_workspace_env(monkeypatch)
     settings = default_settings(repo_root=_bootstrap_repo_root(tmp_path))
     _seed_wave_life_sources(
-        settings.databases.malf,
+        settings.databases.malf_legacy,
         wave_rows=[
             (
                 "wave-explicit-1",

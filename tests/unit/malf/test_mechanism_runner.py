@@ -37,7 +37,7 @@ def _seed_bridge_inputs(malf_path: Path) -> None:
     malf_path.parent.mkdir(parents=True, exist_ok=True)
     conn = duckdb.connect(str(malf_path))
     try:
-        bootstrap_malf_ledger(connection=conn)
+        bootstrap_malf_ledger(connection=conn, use_legacy=True)
         context_rows = [
             ("ctx-001", "000001.SZ", "样本一", "2026-04-01", "2026-04-01", "ctx-001", "BULL_MAINSTREAM", 1, 4),
             ("ctx-002", "000001.SZ", "样本一", "2026-04-02", "2026-04-02", "ctx-002", "BULL_MAINSTREAM", 1, 4),
@@ -81,7 +81,7 @@ def test_run_malf_mechanism_build_materializes_break_stats_and_checkpoint(tmp_pa
     _clear_workspace_env(monkeypatch)
     repo_root = _bootstrap_repo_root(tmp_path)
     settings = default_settings(repo_root=repo_root)
-    _seed_bridge_inputs(settings.databases.malf)
+    _seed_bridge_inputs(settings.databases.malf_legacy)
 
     summary = run_malf_mechanism_build(
         settings=settings,
@@ -97,7 +97,7 @@ def test_run_malf_mechanism_build_materializes_break_stats_and_checkpoint(tmp_pa
     assert summary.stats_snapshot_count == 4
     assert summary.checkpoint_upserted_count == 1
 
-    conn = duckdb.connect(str(malf_ledger_path(settings)), read_only=True)
+    conn = duckdb.connect(str(malf_ledger_path(settings, use_legacy=True)), read_only=True)
     try:
         break_row = conn.execute(
             """
@@ -132,7 +132,7 @@ def test_run_malf_mechanism_build_uses_checkpoint_for_incremental_rerun(tmp_path
     _clear_workspace_env(monkeypatch)
     repo_root = _bootstrap_repo_root(tmp_path)
     settings = default_settings(repo_root=repo_root)
-    _seed_bridge_inputs(settings.databases.malf)
+    _seed_bridge_inputs(settings.databases.malf_legacy)
 
     first_summary = run_malf_mechanism_build(settings=settings, run_id="malf-mechanism-test-002a")
     second_summary = run_malf_mechanism_build(settings=settings, run_id="malf-mechanism-test-002b")

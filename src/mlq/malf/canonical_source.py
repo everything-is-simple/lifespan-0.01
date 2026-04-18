@@ -20,7 +20,7 @@ def _load_source_scope_rows(
     signal_start_date: date | None,
     signal_end_date: date | None,
     instruments: tuple[str, ...],
-    limit: int,
+    limit: int | None,
     to_python_date,
 ) -> list[dict[str, object]]:
     available_columns = _load_table_columns(connection, table_name)
@@ -38,17 +38,17 @@ def _load_source_scope_rows(
         placeholders = ", ".join("?" for _ in instruments)
         where_clauses.append(f"{code_column} IN ({placeholders})")
         parameters.extend(instruments)
-    rows = connection.execute(
-        f"""
+    sql = f"""
         SELECT {code_column} AS code, MAX({date_column}) AS last_trade_date
         FROM {table_name}
         WHERE {' AND '.join(where_clauses)}
         GROUP BY {code_column}
         ORDER BY {code_column}
-        LIMIT ?
-        """,
-        [*parameters, limit],
-    ).fetchall()
+    """
+    if limit is not None:
+        sql = f"{sql}\nLIMIT ?"
+        parameters.append(limit)
+    rows = connection.execute(sql, parameters).fetchall()
     return [
         {
             "asset_type": asset_type,

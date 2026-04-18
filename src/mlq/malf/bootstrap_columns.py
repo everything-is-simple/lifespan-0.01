@@ -9,6 +9,7 @@ from mlq.malf.bootstrap_tables import (
     MALF_CANONICAL_RUN_TABLE,
     MALF_CANONICAL_WORK_QUEUE_TABLE,
     MALF_EXTREME_PROGRESS_LEDGER_TABLE,
+    MALF_LEDGER_CONTRACT_TABLE,
     MALF_MECHANISM_CHECKPOINT_TABLE,
     MALF_MECHANISM_RUN_TABLE,
     MALF_PIVOT_LEDGER_TABLE,
@@ -32,6 +33,14 @@ from mlq.malf.bootstrap_tables import (
 
 
 MALF_REQUIRED_COLUMNS: Final[dict[str, dict[str, str]]] = {
+    MALF_LEDGER_CONTRACT_TABLE: {
+        "contract_key": "TEXT",
+        "storage_mode": "TEXT",
+        "native_timeframe": "TEXT",
+        "contract_version": "TEXT",
+        "declared_at": "TIMESTAMP",
+        "updated_at": "TIMESTAMP",
+    },
     MALF_RUN_TABLE: {
         "run_id": "TEXT",
         "runner_name": "TEXT",

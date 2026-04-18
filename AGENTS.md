@@ -37,7 +37,7 @@
 
 - `α / β / Ω` 三份路线图文档不只负责阶段进度，也负责说明各模块主要继承自哪些老仓来源、当前继承方式与置信度是什么。
 - 当前 `Ω` 文档还承担后半部施工指挥蓝图职责：它以 `28` 的 `checkpoint + dirty/work queue + replay/resume` 为统一基线，先做 `43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55` 的 pre-trade upstream 前置卡组，再完成 `56 -> 57 -> 58 -> 59` 的 `2010` pilot truthfulness gate，随后插入 `60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66` 主线整改卡组，并在恢复 `78 -> 79 -> 80 -> 81 -> 82 -> 83 -> 84` 前依次插入并完成 `67` 历史 file-length 治理债务卡、`68` 执行文档目录治理卡、`69` filter 客观 gate、`70 -> 72` objective 历史回补卡组、`73` market_base backward 全历史修缮卡与 `74` market_base 分批建仓治理卡，最后才进入 `100 -> 105`。
-  - `78` 已完成范围冻结；当前待施工位是 `79`。
+  - `78-80` 已完成；当前待施工位是 `81`。
   - `79-84` 的冻结边界是：`structure` 跟随 `malf` 拆成 `day / week / month` 三个薄投影层，但不得长回厚解释层或终审层；`filter` 只允许拦截停牌/未复牌、风险警示/ST、退市整理、证券类型不在正式宇宙、市场类型不在正式宇宙这几类客观 gate，并保留一个 day 级薄库；`alpha` 则按 `BOF / TST / PB / CPB / BPB` 五个 PAS 拆成五个日线官方库并持有终审主权，五个 trigger 不再各拆独立 `D/W/M` 三套账本。
 
 ## 3. 五根目录纪律
@@ -111,7 +111,7 @@ flowchart LR
    - 当前 `malf` 的 `牛逆 / 熊逆` 只允许表示旧顺结构失效后、到新顺结构确认前的本级别过渡状态，不允许被解释成背景标签。
    - 当前 `pivot-confirmed break` 只允许作为 `malf` 之外的只读机制层 break 确认事实存在，不新增 `malf core` 原语，也不替代新的 `HH / LL` 推进确认。
    - 当前 `same-timeframe stats sidecar` 只允许由同级别 `pivot / wave / state / progress` 派生，并以只读 sidecar 方式供 `structure / filter` 消费，不得反向参与 `state / wave / break / count` 计算。
-  - 当前 `malf` 的正式 canonical bounded runner 入口为 `scripts/malf/run_malf_canonical_build.py`，只允许消费官方 `market_base.stock_daily_adjusted(adjust_method='backward')`，并物化 `malf_canonical_run / malf_canonical_work_queue / malf_canonical_checkpoint / malf_pivot_ledger / malf_wave_ledger / malf_extreme_progress_ledger / malf_state_snapshot / malf_same_level_stats`；其中 `D / W / M` 必须独立计算，且 queue/checkpoint 只允许用于续跑，不允许反写结构语义。
+  - 当前 `malf` 的正式 canonical bounded runner 入口为 `scripts/malf/run_malf_canonical_build.py`，只允许按 timeframe native 直接消费官方 `market_base_day.stock_daily_adjusted(adjust_method='backward')`、`market_base_week.stock_weekly_adjusted(adjust_method='backward')` 与 `market_base_month.stock_monthly_adjusted(adjust_method='backward')`，并分别物化 `malf_day / malf_week / malf_month` 上的 `malf_canonical_run / malf_canonical_work_queue / malf_canonical_checkpoint / malf_pivot_ledger / malf_wave_ledger / malf_extreme_progress_ledger / malf_state_snapshot / malf_same_level_stats`；其中 `D / W / M` 必须独立计算，且 queue/checkpoint 只允许用于续跑，不允许反写结构语义。
   - 当前 `malf` 的 `scripts/malf/run_malf_snapshot_build.py` 只保留 bridge v1 兼容输出职责：它可以继续物化 `malf_run / pas_context_snapshot / structure_candidate_snapshot / malf_run_context_snapshot / malf_run_structure_snapshot` 供 `31` 之前的下游过渡消费，但不再代表 `malf` 正式真值，也不允许回读离线文本或 `raw_market`。
   - `malf snapshot` 的实现允许拆分为 `src/mlq/malf/runner.py` 与同目录 helper 模块 `snapshot_shared.py / snapshot_source.py / snapshot_materialization.py`；拆分只服务治理文件长度与职责收敛，外部正式脚本入口、bridge v1 表族契约与兼容输出语义不得变化。
   - `malf bootstrap` 的实现允许拆分为 `src/mlq/malf/bootstrap.py` 与同目录 helper 模块 `bootstrap_tables.py / bootstrap_columns.py`；拆分只服务 DDL/补列映射的职责收敛与治理文件长度控制，对外导出的表名常量、bootstrap/连接/path 入口与表族语义不得变化。
@@ -154,7 +154,7 @@ flowchart LR
 1. `malf -> structure -> filter -> alpha` 默认使用 `adjust_method = backward`
 2. `position -> trade` 默认使用 `adjust_method = none`
 3. `adjust_method = forward` 当前只作为研究与展示保留，不作为正式执行口径
-4. 当前最新生效结论锚点已推进到 `78-malf-alpha-dual-axis-refactor-scope-freeze-conclusion-20260418.md`；`72` 已完成 objective profile 历史覆盖收口，`73` 已完成 `market_base.stock_daily_adjusted(backward)` 全历史补齐，`74` 已完成 `raw/base` 分批建仓治理，`75` 已完成单库周月账本扩展，`76-77` 已完成 `raw/base day/week/month` 六库迁移与尾收口；当前待施工卡已切到 `79-malf-day-week-month-ledger-split-path-contract-card-20260418.md`，继续要求 `84` 通过后才恢复 `100`。
+4. 当前最新生效结论锚点已推进到 `80-malf-timeframe-native-base-source-rebind-conclusion-20260418.md`；`72` 已完成 objective profile 历史覆盖收口，`73` 已完成 `market_base.stock_daily_adjusted(backward)` 全历史补齐，`74` 已完成 `raw/base` 分批建仓治理，`75` 已完成单库周月账本扩展，`76-77` 已完成 `raw/base day/week/month` 六库迁移与尾收口，`79` 已完成 `malf day/week/month` 路径与 bootstrap 契约冻结，`80` 已完成 canonical timeframe native source rebind 与 `malf_day / malf_week / malf_month` 全覆盖；当前待施工卡已切到 `81-structure-thin-projection-and-day-binding-card-20260418.md`，继续要求 `84` 通过后才恢复 `100`。
 5. 当前主线系统级路线图必须以 `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 为准；该文档现在把 `60 -> 66` 固定为 `78-84` 前的主线整改卡组，把 `67`、`68`、`69`、`70`、`71`、`72`、`73`、`74`、`75`、`76`、`77` 固定为已完成的治理与 data 修缮前置卡，把 `78` 固定为 `79-84` 前的双主轴范围冻结卡，把 `79 -> 84` 固定为 `78` 收口后的正式重构卡组，不允许再把“代码已切 canonical”误当成“官方库已切到双主轴新真值层”，也不允许绕过 `79-84` 直接续推 `100-105`。
 
 ## 5. 历史账本原则
@@ -214,7 +214,7 @@ flowchart LR
 只要治理规则、环境脚手架、路径契约、测试入口、执行入口发生变化，就必须同步刷新这三个入口文件。
 其中 `docs/01-design/`、`docs/02-spec/` 与 `src/mlq/core/paths.py` 的正式口径变化，也视为入口变化。
 全仓 `python scripts/system/check_development_governance.py` 盘点允许通过 `scripts/system/development_governance_legacy_backlog.py` 显式登记历史债务；但按改动路径触发的严格治理检查，不得豁免新增违规。
-当前 `66`、`67`、`68`、`69`、`70`、`71`、`72`、`73`、`74` 与 `75` 均已接受；历史 file-length backlog 已清零，执行文档目录治理也已恢复，objective profile、market_base backward 全历史覆盖与 raw/base 分批建仓治理均已收口。`76` 已正式登记为新的 data 前置迁移卡，用于把 `raw/base` 从单库多 timeframe 迁到日周月分库；当前正式施工位已切到 `76`，只有 `76` 与 `84` 先后收口后才恢复 `100-105`。`67` 已完成的清债包括 `src/mlq/data/data_mainline_incremental_sync.py`、`src/mlq/portfolio_plan/runner.py`、`src/mlq/data/data_market_base_materialization.py`、`src/mlq/data/data_tdxquant.py` 与 `tests/unit/data/test_market_base_runner.py`；`68` 已把 `docs/03-execution/` 目录纪律重新冻结为 `root/card-conclusion-index-template-README + evidence/ + records/`。本仓 `pytest` 证据仍统一按串行口径执行，避免多个进程争用 `H:\Lifespan-temp\pytest-tmp`。
+当前 `66`、`67`、`68`、`69`、`70`、`71`、`72`、`73`、`74`、`75`、`76`、`77`、`78`、`79` 与 `80` 均已接受；历史 file-length backlog 已清零，执行文档目录治理也已恢复，objective profile、market_base backward 全历史覆盖、raw/base 分批建仓治理、`malf day/week/month` 路径契约与 canonical native full coverage 均已收口。当前正式施工位已切到 `81`，只有 `84` 再完成 truthfulness / cutover gate 后才恢复 `100-105`。`67` 已完成的清债包括 `src/mlq/data/data_mainline_incremental_sync.py`、`src/mlq/portfolio_plan/runner.py`、`src/mlq/data/data_market_base_materialization.py`、`src/mlq/data/data_tdxquant.py` 与 `tests/unit/data/test_market_base_runner.py`；`68` 已把 `docs/03-execution/` 目录纪律重新冻结为 `root/card-conclusion-index-template-README + evidence/ + records/`。本仓 `pytest` 证据仍统一按串行口径执行，避免多个进程争用 `H:\Lifespan-temp\pytest-tmp`。
 
 ## 8. 文档规则
 

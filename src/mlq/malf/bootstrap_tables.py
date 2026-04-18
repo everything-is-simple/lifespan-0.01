@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Final
 
 
+MALF_LEDGER_CONTRACT_TABLE: Final[str] = "malf_ledger_contract"
 MALF_RUN_TABLE: Final[str] = "malf_run"
 PAS_CONTEXT_SNAPSHOT_TABLE: Final[str] = "pas_context_snapshot"
 STRUCTURE_CANDIDATE_SNAPSHOT_TABLE: Final[str] = "structure_candidate_snapshot"

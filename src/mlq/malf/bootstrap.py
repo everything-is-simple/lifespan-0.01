@@ -14,6 +14,7 @@ from mlq.malf.bootstrap_tables import (
     MALF_CANONICAL_RUN_TABLE,
     MALF_CANONICAL_WORK_QUEUE_TABLE,
     MALF_EXTREME_PROGRESS_LEDGER_TABLE,
+    MALF_LEDGER_CONTRACT_TABLE,
     MALF_MECHANISM_CHECKPOINT_TABLE,
     MALF_MECHANISM_RUN_TABLE,
     MALF_PIVOT_LEDGER_TABLE,
@@ -36,7 +37,27 @@ from mlq.malf.bootstrap_tables import (
 )
 
 
+MALF_NATIVE_TIMEFRAME_MAP: Final[dict[str, str]] = {
+    "D": "malf_day",
+    "W": "malf_week",
+    "M": "malf_month",
+}
+MALF_LEDGER_CONTRACT_VERSION: Final[str] = "malf-ledger-path-v1"
+MALF_LEDGER_STORAGE_MODE_NATIVE: Final[str] = "official_native"
+MALF_LEDGER_STORAGE_MODE_LEGACY: Final[str] = "legacy_compat"
+
+
 MALF_LEDGER_TABLES: Final[dict[str, str]] = {
+    MALF_LEDGER_CONTRACT_TABLE: """
+        CREATE TABLE IF NOT EXISTS malf_ledger_contract (
+            contract_key TEXT PRIMARY KEY,
+            storage_mode TEXT NOT NULL,
+            native_timeframe TEXT,
+            contract_version TEXT NOT NULL,
+            declared_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """,
     MALF_RUN_TABLE: """
         CREATE TABLE IF NOT EXISTS malf_run (
             run_id TEXT,
@@ -489,46 +510,165 @@ MALF_LEDGER_TABLES: Final[dict[str, str]] = {
 }
 
 
-def malf_ledger_path(settings: WorkspaceRoots | None = None) -> Path:
+def malf_ledger_path(
+    settings: WorkspaceRoots | None = None,
+    *,
+    timeframe: str | None = None,
+    use_legacy: bool = False,
+) -> Path:
     """返回正式 `malf` 历史账本路径。"""
 
     workspace = settings or default_settings()
-    return workspace.databases.malf
+    if use_legacy:
+        if timeframe is not None:
+            raise ValueError("Legacy malf ledger path cannot be combined with a native timeframe.")
+        return workspace.databases.malf_legacy
+    if timeframe is None:
+        return workspace.databases.malf_legacy
+    normalized_timeframe = _normalize_native_timeframe(timeframe)
+    return getattr(workspace.databases, MALF_NATIVE_TIMEFRAME_MAP[normalized_timeframe])
 
 
 def connect_malf_ledger(
     settings: WorkspaceRoots | None = None,
     *,
     read_only: bool = False,
+    timeframe: str | None = None,
+    use_legacy: bool = False,
 ) -> duckdb.DuckDBPyConnection:
     """连接正式 `malf` 历史账本。"""
 
     workspace = settings or default_settings()
     if not read_only:
         workspace.ensure_directories()
-    return duckdb.connect(str(malf_ledger_path(workspace)), read_only=read_only)
+    return duckdb.connect(
+        str(malf_ledger_path(workspace, timeframe=timeframe, use_legacy=use_legacy)),
+        read_only=read_only,
+    )
 
 
 def bootstrap_malf_ledger(
     settings: WorkspaceRoots | None = None,
     *,
     connection: duckdb.DuckDBPyConnection | None = None,
+    timeframe: str | None = None,
+    use_legacy: bool = False,
 ) -> Path:
     """创建或补齐 `malf` 最小正式表族。"""
 
     workspace = settings or default_settings()
     workspace.ensure_directories()
+    native_timeframe = None if use_legacy or timeframe is None else _normalize_native_timeframe(timeframe)
     owns_connection = connection is None
-    conn = connection or connect_malf_ledger(workspace)
+    ledger_path = malf_ledger_path(workspace, timeframe=native_timeframe, use_legacy=use_legacy)
+    conn = connection or connect_malf_ledger(
+        workspace,
+        timeframe=native_timeframe,
+        use_legacy=use_legacy,
+    )
     try:
-        for ddl in MALF_LEDGER_TABLES.values():
+        for ddl in _render_malf_ledger_ddls(native_timeframe=native_timeframe):
             conn.execute(ddl)
         for table_name, required_columns in MALF_REQUIRED_COLUMNS.items():
             _ensure_columns(conn, table_name=table_name, required_columns=required_columns)
-        return malf_ledger_path(workspace)
+        _upsert_ledger_contract(
+            conn,
+            storage_mode=(
+                MALF_LEDGER_STORAGE_MODE_LEGACY
+                if native_timeframe is None
+                else MALF_LEDGER_STORAGE_MODE_NATIVE
+            ),
+            native_timeframe=native_timeframe,
+        )
+        if native_timeframe is not None:
+            _validate_native_timeframe_rows(conn, native_timeframe=native_timeframe)
+        return ledger_path
     finally:
         if owns_connection:
             conn.close()
+
+
+def _normalize_native_timeframe(timeframe: str | None) -> str:
+    if timeframe is None:
+        raise ValueError("Native malf ledger requires an explicit timeframe in {'D', 'W', 'M'}.")
+    normalized_timeframe = str(timeframe).strip().upper()
+    if normalized_timeframe not in MALF_NATIVE_TIMEFRAME_MAP:
+        raise ValueError(f"Unsupported malf native timeframe: {timeframe}")
+    return normalized_timeframe
+
+
+def _render_malf_ledger_ddls(*, native_timeframe: str | None) -> tuple[str, ...]:
+    timeframe_sql = "timeframe TEXT NOT NULL"
+    if native_timeframe is not None:
+        timeframe_sql = f"timeframe TEXT NOT NULL CHECK (timeframe = '{native_timeframe}')"
+    return tuple(
+        ddl.replace("timeframe TEXT NOT NULL", timeframe_sql) for ddl in MALF_LEDGER_TABLES.values()
+    )
+
+
+def _upsert_ledger_contract(
+    connection: duckdb.DuckDBPyConnection,
+    *,
+    storage_mode: str,
+    native_timeframe: str | None,
+) -> None:
+    existing_row = connection.execute(
+        f"""
+        SELECT storage_mode, native_timeframe, contract_version
+        FROM {MALF_LEDGER_CONTRACT_TABLE}
+        WHERE contract_key = 'malf'
+        """
+    ).fetchone()
+    expected_row = (storage_mode, native_timeframe, MALF_LEDGER_CONTRACT_VERSION)
+    if existing_row is None:
+        connection.execute(
+            f"""
+            INSERT INTO {MALF_LEDGER_CONTRACT_TABLE} (
+                contract_key,
+                storage_mode,
+                native_timeframe,
+                contract_version
+            )
+            VALUES ('malf', ?, ?, ?)
+            """,
+            [storage_mode, native_timeframe, MALF_LEDGER_CONTRACT_VERSION],
+        )
+        return
+    if tuple(existing_row) != expected_row:
+        raise ValueError("Existing malf ledger contract does not match the requested bootstrap mode.")
+    connection.execute(
+        f"""
+        UPDATE {MALF_LEDGER_CONTRACT_TABLE}
+        SET updated_at = CURRENT_TIMESTAMP
+        WHERE contract_key = 'malf'
+        """
+    )
+
+
+def _validate_native_timeframe_rows(
+    connection: duckdb.DuckDBPyConnection,
+    *,
+    native_timeframe: str,
+) -> None:
+    timeframe_tables = [
+        table_name
+        for table_name, required_columns in MALF_REQUIRED_COLUMNS.items()
+        if "timeframe" in required_columns and table_name != MALF_LEDGER_CONTRACT_TABLE
+    ]
+    for table_name in timeframe_tables:
+        mismatch_row = connection.execute(
+            f"""
+            SELECT timeframe
+            FROM {table_name}
+            WHERE timeframe <> ?
+            LIMIT 1
+            """,
+            [native_timeframe],
+        ).fetchone()
+        if mismatch_row is not None:
+            raise ValueError(
+                f"{table_name} contains timeframe={mismatch_row[0]!r}, expected only {native_timeframe!r}."
+            )
 
 
 def _ensure_columns(
