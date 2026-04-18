@@ -11,6 +11,7 @@
 
 - 当前 `malf` 的单点权威总设计不再需要从 `01-14` 自行拼图；统一锚点已经补到 `malf/15-malf-authoritative-timeframe-native-ledger-charter-20260419.md`。
 - 当前若要追“聊天里成型的 `malf` 与系统现状差多少、后续怎么修”，则继续读 `malf/16-malf-origin-chat-semantic-reconciliation-charter-20260419.md`。
+- 当前若要追“`81` 之后怎样把 `malf` 扳正、为什么必须先做 `82-85` 再恢复 `91-95`”，则继续读 `malf/17-malf-truth-contract-stale-guard-and-rebuild-governance-charter-20260419.md`。
 
 ## 当前来源
 

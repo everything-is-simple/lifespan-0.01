@@ -18,7 +18,7 @@
 3. 当前最新生效结论锚点为 `91-malf-timeframe-native-base-source-rebind-conclusion-20260418.md`
 4. 当前 `malf` 单点权威设计/规格锚点为 `docs/01-design/modules/malf/15-malf-authoritative-timeframe-native-ledger-charter-20260419.md` 与 `docs/02-spec/modules/malf/15-malf-authoritative-timeframe-native-ledger-spec-20260419.md`
 5. 当前待施工卡为 `81-malf-origin-chat-semantic-truth-gap-freeze-card-20260419.md`
-6. 当前连续前置卡组为 `79 -> 80 -> 81 -> 91 -> 92 -> 93 -> 94 -> 95`
+6. 当前连续前置卡组为 `79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 91 -> 92 -> 93 -> 94 -> 95`
 
 ## 当前正式判断
 
@@ -43,8 +43,8 @@
 ### 当前阶段
 
 1. 当前 active 卡：`81`
-2. 当前 active 卡组：`81 -> 92 -> 93 -> 94 -> 95 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`
-3. 当前系统级目标：先冻结 origin-chat `malf` 纯语义锚点、当前 canonical truth gap 与修订顺序，再恢复 `structure day/week/month` 三薄层、`filter_day` 客观 gate、`alpha` 五 PAS 日线终审与 `95` cutover gate，随后才恢复 `100-105`
+2. 当前 active 卡组：`81 -> 82 -> 83 -> 84 -> 85 -> 91 -> 92 -> 93 -> 94 -> 95 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`
+3. 当前系统级目标：先冻结 origin-chat `malf` 纯语义锚点、当前 canonical truth gap、`break / invalidation / confirmation` truth contract 与 stale guard 治理边界，再正式修改 canonical truth 并视需要重建三库，完成 `85` 验收后才恢复 `91-95` 与 `100-105`
 
 ## 系统当前剖面图
 
@@ -95,7 +95,7 @@ flowchart LR
 10. `70 -> 71 -> 72`
 11. `73`
 12. `74`
-13. `78 -> 79 -> 80 -> 81 -> 91 -> 92 -> 93 -> 94 -> 95`
+13. `78 -> 79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 91 -> 92 -> 93 -> 94 -> 95`
 14. `100 -> 101 -> 102 -> 103 -> 104 -> 105`
 
 其中：
@@ -113,7 +113,7 @@ flowchart LR
 11. `70 -> 72` 是 objective 历史源选择、实现与回补执行卡组
 12. `73` 是 `market_base(backward)` 全历史修缮卡
 13. `74` 是 `raw/base` 分批建仓治理与 runner 修缮卡
-14. `79 -> 80 -> 81 -> 91 -> 92 -> 93 -> 94 -> 95` 是治理与 data 修缮收口后的 `malf-alpha` 双主轴重构与 cutover gate 卡组：`79` 落三库路径，`80` 单独冻结 `0/1` 波段过滤边界，`81` 先冻结 origin-chat `malf` 纯语义锚点、当前 truth gap 与修订顺序，`91` 完成 `malf` native source 与全覆盖，`92` 收口 `structure day/week/month` 三薄层，`93` 收口 `filter_day objective gate + note sidecar`，`94` 切到五个 PAS 日线终审库，`95` 再做 truthfulness / cutover gate
+14. `79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 91 -> 92 -> 93 -> 94 -> 95` 是治理与 data 修缮收口后的 `malf-alpha` 双主轴重构与 cutover gate 卡组：`79` 落三库路径，`80` 单独冻结 `0/1` 波段过滤边界，`81` 先冻结 origin-chat `malf` 纯语义锚点、当前 truth gap 与修订顺序，`82` 再冻结 `break / invalidation / confirmation` truth contract，`83` 冻结 `last_valid_HL / last_valid_LH` 与 stale guard 治理边界，`84` 正式修改 `canonical_materialization` 并决定三库重建，`85` 先做 `malf` 自身的 truthfulness / audit acceptance gate，随后才恢复 `91-95` downstream cutover；其中 `91` 完成 `malf` native source 与全覆盖，`92` 收口 `structure day/week/month` 三薄层，`93` 收口 `filter_day objective gate + note sidecar`，`94` 切到五个 PAS 日线终审库，`95` 再做 downstream truthfulness / cutover gate
 16. `100 -> 105` 是 `trade/system` 恢复卡组
 17. `105` 明确固定为最后一张后置卡
 
@@ -143,7 +143,7 @@ flowchart LR
     G73 --> G74["74 raw/base batched bootstrap accepted"]
     G74 --> G75["75 single-db week/month expansion accepted"]
     G75 --> G76["76 day/week/month split migration"]
-    G76 --> G7885["79-81 / 91-95 malf-alpha dual-axis refactor"]
+    G76 --> G7885["79-85 / 91-95 malf-alpha dual-axis refactor"]
     G7885 --> G100105["100-105 trade/system 恢复卡组"]
     G100105 --> C100["100 signal anchor freeze"]
     C100 --> C101["101 T+1 open 参考价修正"]
@@ -157,11 +157,11 @@ flowchart LR
 
 1. `29-32` 不是“历史已完成就可忽略”的旧卡组，而是后半部一切恢复卡的前置逻辑顺序。
 2. `43-45` 任何一张未通过前，都不允许进入 `46`。
-3. `55` 接受后并不直接恢复 `100`；真实正式库主线已先经过 `60-74` 整改、治理、objective 回补、`market_base(backward)` 全历史修缮与 raw/base 分批建仓治理，随后恢复路径才是 `79-81 / 91-95`。
+3. `55` 接受后并不直接恢复 `100`；真实正式库主线已先经过 `60-74` 整改、治理、objective 回补、`market_base(backward)` 全历史修缮与 raw/base 分批建仓治理，随后恢复路径才是 `79-85 / 91-95`。
 4. `100-105` 当前必须在 `95` 接受后按自然数顺排推进，不允许跳过 `100/101` 直接做 `105`。
 5. `47-51` 属于 `position` 追平 `data -> malf` 事实标准的正式卡组，不允许把 `position` 继续当成 bounded skeleton 直接越过。
 6. `52-54` 属于 `portfolio_plan` 追平 `data -> malf` 事实标准的正式卡组，不允许继续把组合层当成最小桥接层直接越过。
-7. `66` 已正式判断无需继续追加整改前置卡；`67 -> 74` 已完成 file-length、执行文档目录、filter objective gate、objective 历史回补、`market_base(backward)` 全历史修缮与 raw/base 分批建仓治理，当前恢复 `79-81 / 91-95`。
+7. `66` 已正式判断无需继续追加整改前置卡；`67 -> 74` 已完成 file-length、执行文档目录、filter objective gate、objective 历史回补、`market_base(backward)` 全历史修缮与 raw/base 分批建仓治理，当前恢复 `79-85 / 91-95`。
 
 ## 增量更新 / 断点续跑 / 审计依赖图
 

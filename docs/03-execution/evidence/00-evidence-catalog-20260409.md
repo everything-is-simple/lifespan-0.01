@@ -91,11 +91,15 @@
 112. `78-malf-alpha-dual-axis-refactor-scope-freeze-evidence-20260418.md`
 113. `79-malf-day-week-month-ledger-split-path-contract-evidence-20260418.md`
 114. `80-malf-zero-one-wave-filter-boundary-freeze-evidence-20260418.md`
-115. `91-malf-timeframe-native-base-source-rebind-evidence-20260418.md`
-116. `92-structure-thin-projection-and-day-binding-evidence-20260418.md`
-117. `93-filter-objective-gate-and-note-sidecar-demotion-evidence-20260418.md`
-118. `94-alpha-dual-axis-decision-rebind-and-formal-cutover-evidence-20260418.md`
-119. `95-malf-alpha-official-truthfulness-and-cutover-gate-evidence-20260418.md`
+115. `82-malf-break-invalidation-confirmation-contract-freeze-evidence-20260419.md`
+116. `83-malf-last-valid-structure-anchor-and-stale-guard-governance-evidence-20260419.md`
+117. `84-malf-canonical-materialization-repair-and-three-ledger-rebuild-evidence-20260419.md`
+118. `85-malf-post-rebuild-truthfulness-and-audit-acceptance-gate-evidence-20260419.md`
+119. `91-malf-timeframe-native-base-source-rebind-evidence-20260418.md`
+120. `92-structure-thin-projection-and-day-binding-evidence-20260418.md`
+121. `93-filter-objective-gate-and-note-sidecar-demotion-evidence-20260418.md`
+122. `94-alpha-dual-axis-decision-rebind-and-formal-cutover-evidence-20260418.md`
+123. `95-malf-alpha-official-truthfulness-and-cutover-gate-evidence-20260418.md`
 
 ## 证据闭环图
 

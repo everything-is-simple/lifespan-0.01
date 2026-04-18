@@ -160,8 +160,15 @@ flowchart LR
   - `docs/01-design/modules/malf/16-malf-origin-chat-semantic-reconciliation-charter-20260419.md`
   - `docs/02-spec/modules/malf/16-malf-origin-chat-semantic-reconciliation-spec-20260419.md`
   - `docs/03-execution/81-malf-origin-chat-semantic-truth-gap-freeze-card-20260419.md`
-- `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 现已把 `60 -> 66` 视为已完成整改卡组，并在恢复 `79 -> 80 -> 91 -> 92 -> 93 -> 94 -> 95` 之前依次插入并完成 `67` 历史 file-length 治理债务卡、`68` 执行文档目录治理卡、`69` filter 客观 gate、`70 -> 72` objective 历史回补卡组、`73` market_base backward 全历史修缮卡、`74` raw/base 分批建仓治理卡、`75` 单库周月账本扩展卡，以及 `76-77` 的日周月分库迁移与尾收口。
-- `78-80` 与 `91` 已完成双主轴范围冻结、`0/1` 波段过滤边界、`malf day/week/month` 路径契约与 canonical native full coverage；当前正式待施工位先回到 `81`，用于冻结 origin-chat `malf` 语义与当前 truth gap；`91-95` 继续作为远置后的 downstream cutover 卡组保留。`92-95` 的现行口径是：
+- 当前若要追“`81` 之后怎样把 `malf` 扳正、为什么必须先做 `82-85` 再恢复 `91-95`”，正式入口继续补成：
+  - `docs/01-design/modules/malf/17-malf-truth-contract-stale-guard-and-rebuild-governance-charter-20260419.md`
+  - `docs/02-spec/modules/malf/17-malf-truth-contract-stale-guard-and-rebuild-governance-spec-20260419.md`
+  - `docs/03-execution/82-malf-break-invalidation-confirmation-contract-freeze-card-20260419.md`
+  - `docs/03-execution/83-malf-last-valid-structure-anchor-and-stale-guard-governance-card-20260419.md`
+  - `docs/03-execution/84-malf-canonical-materialization-repair-and-three-ledger-rebuild-card-20260419.md`
+  - `docs/03-execution/85-malf-post-rebuild-truthfulness-and-audit-acceptance-gate-card-20260419.md`
+- `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 现已把 `60 -> 66` 视为已完成整改卡组，并在恢复 `79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 91 -> 92 -> 93 -> 94 -> 95` 之前依次插入并完成 `67` 历史 file-length 治理债务卡、`68` 执行文档目录治理卡、`69` filter 客观 gate、`70 -> 72` objective 历史回补卡组、`73` market_base backward 全历史修缮卡、`74` raw/base 分批建仓治理卡、`75` 单库周月账本扩展卡，以及 `76-77` 的日周月分库迁移与尾收口。
+- `78-80` 与 `91` 已完成双主轴范围冻结、`0/1` 波段过滤边界、`malf day/week/month` 路径契约与 canonical native full coverage；当前正式待施工位先回到 `81`，并已开出 `82-85` 作为近端 `malf` 扳正卡组；`91-95` 继续作为远置后的 downstream cutover 卡组保留。`92-95` 的现行口径是：
   - `malf` 改成 `day / week / month` 三库
   - `structure` 保留，并拆成 `structure_day / structure_week / structure_month` 三个薄投影层
   - `filter` 保留模块壳，但只拦截客观不可交易与正式宇宙 gate；是否继续保留独立本地库留待 `93` 裁决

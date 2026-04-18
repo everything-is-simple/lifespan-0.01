@@ -47,12 +47,18 @@ cache_dir = "H:/Lifespan-temp/pytest-cache"
 # 供后续 canonical 算法修订或三库重建前后做同口径基线对照。
 # 当前 `malf` 的单点权威设计/规格锚点已补到
 # `docs/01-design/modules/malf/15-*` 与 `docs/02-spec/modules/malf/15-*`。
+# 当前执行索引必须同步反映：
+# 1. 最新生效结论锚点仍为 `91`
+# 2. 当前待施工位为 `81`
+# 3. `82-85` 已开出为近端 `malf` 扳正卡组
 execution_index_files = [
     "docs/03-execution/A-execution-reading-order-20260409.md",
     "docs/03-execution/B-card-catalog-20260409.md",
     "docs/03-execution/C-system-completion-ledger-20260409.md",
 ]
 # 系统路线图文件既承担阶段追踪，也承担模块继承方式、实现深度与后半部施工蓝图口径。
+# 当前系统路线图固定顺序为：
+# `79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 91 -> 92 -> 93 -> 94 -> 95 -> 100 -> 105`
 system_tracker_files = [
     "docs/01-design/α-system-roadmap-and-progress-tracker-charter-20260409.md",
     "docs/02-spec/β-system-roadmap-and-progress-tracker-spec-20260409.md",
@@ -75,6 +81,9 @@ system_tracker_files = [
 # 正式 `evidence / record` 必须分别位于 `docs/03-execution/evidence/` 与
 # `docs/03-execution/records/`。
 # `37` 卡后的 pytest 证据统一按串行命令执行，避免多个进程争用 `H:/Lifespan-temp/pytest-tmp`。
+# 当前 `malf` 治理补充口径：
+# `scripts/malf/run_malf_zero_one_wave_audit.py` 继续是 `80` 冻结的只读审计入口，
+# 后续 canonical 修订或三库重建必须保留变更前/后的同口径对照。
 formal_runner_scripts = [
     "scripts/data/run_tdx_asset_raw_ingest.py",
     "scripts/data/run_tdx_stock_raw_ingest.py",
