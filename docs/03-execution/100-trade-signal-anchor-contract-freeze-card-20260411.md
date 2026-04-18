@@ -1,4 +1,4 @@
-# trade signal anchor contract freeze
+﻿# trade signal anchor contract freeze
 
 卡片编号：`100`
 日期：`2026-04-11`
@@ -9,9 +9,9 @@
 - 问题：
   当前 `trade` 运行时虽然已经声明了 `entry_open_minus_signal_low / break_last_higher_low` 等策略标签，但正式账本里没有冻结 `signal_low / last_higher_low` 的跨模块来源与透传合同；同时 `position` 作为 `alpha -> trade` 的唯一正式桥接层也没有被写透。
 - 目标结果：
-  在 `84` 通过后，冻结 `alpha -> position -> trade` 的信号锚点透传合同：`alpha` 提供正式终审输入，`position` 冻结 execution-ready contract，`trade` 只读消费，不再临时回推业务事实。
+  在 `95` 通过后，冻结 `alpha -> position -> trade` 的信号锚点透传合同：`alpha` 提供正式终审输入，`position` 冻结 execution-ready contract，`trade` 只读消费，不再临时回推业务事实。
 - 为什么现在做：
-  `100` 是恢复 `trade/system` 卡组的第一张卡，**必须在 `84-malf-alpha-official-truthfulness-and-cutover-gate` 接受后才能启动**；否则 `trade` 会建立在尚未完成官方 cutover 的 upstream 上游之上。
+  `100` 是恢复 `trade/system` 卡组的第一张卡，**必须在 `85-malf-alpha-official-truthfulness-and-cutover-gate` 接受后才能启动**；否则 `trade` 会建立在尚未完成官方 cutover 的 upstream 上游之上。
 
 ## 设计输入
 
@@ -20,7 +20,7 @@
 - 规格文档：
   - `docs/02-spec/modules/system/06-trade-signal-anchor-contract-freeze-spec-20260411.md`
 - 当前锚点结论：
-  - `docs/03-execution/84-malf-alpha-official-truthfulness-and-cutover-gate-conclusion-20260418.md`
+  - `docs/03-execution/95-malf-alpha-official-truthfulness-and-cutover-gate-conclusion-20260418.md`
   - `docs/03-execution/55-pre-trade-upstream-data-grade-baseline-gate-conclusion-20260413.md`
   - `docs/03-execution/42-alpha-family-role-and-malf-alignment-conclusion-20260413.md`
   - `docs/03-execution/45-alpha-formal-signal-producer-hardening-before-position-conclusion-20260413.md`
@@ -122,3 +122,5 @@ flowchart LR
 2. `position` 被明确写成唯一桥接层。
 3. `101-103` 的正式输入成立。
 4. `trade` 明确不再回推业务事实。
+
+

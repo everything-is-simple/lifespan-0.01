@@ -1,4 +1,4 @@
-# mainline rectification batch registration and scope freeze 证据
+﻿# mainline rectification batch registration and scope freeze 证据
 `证据编号`：`60`
 `日期`：`2026-04-15`
 
@@ -21,7 +21,7 @@
 
 1. `60 -> 66` 七张整改卡已全部注册到执行目录。
 2. `78 -> 84` 已整体后移为整改后的 official middle-ledger 恢复卡组。
-3. `100 -> 105` 仍保持在 `96` 之后，不允许越级恢复。
+3. `100 -> 105` 仍保持在 `95` 之后，不允许越级恢复。
 4. 执行入口、执行索引与系统级路线图已统一改写为：
    - `60 -> 66 -> 78 -> 84 -> 100 -> 105`
 
@@ -38,3 +38,4 @@
 
 1. `60` 的职责仅限于登记批次、冻结顺序、前移施工位和收紧索引口径。
 2. `60` 不直接裁决 `structure / filter / alpha / wave_life` 的实现问题；这些问题由 `61 -> 65` 分卡收口。
+

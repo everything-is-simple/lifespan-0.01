@@ -1,4 +1,4 @@
-# system runtime / orchestration bootstrap 结论
+﻿# system runtime / orchestration bootstrap 结论
 
 结论编号：`105`
 日期：`2026-04-11`
@@ -7,7 +7,7 @@
 ## 预设裁决
 
 - 接受：
-  当 `system` 已基于 `84` 后新 upstream contract 建立正式 orchestration / acceptance / freeze 入口，且 child-run fingerprint 能追溯到五 PAS `alpha`、正式 `position` 与正式 `trade` 时接受。
+  当 `system` 已基于 `85` 后新 upstream contract 建立正式 orchestration / acceptance / freeze 入口，且 child-run fingerprint 能追溯到五 PAS `alpha`、正式 `position` 与正式 `trade` 时接受。
 - 拒绝：
   如果 `system` 仍只是 bounded readout，或 orchestration 无法说明冻结结果到底建立在哪套官方上游之上，则拒绝。
 
@@ -32,3 +32,5 @@ flowchart LR
     T["trade official ledgers"] --> S
     S --> F["system_mainline_snapshot / acceptance"]
 ```
+
+

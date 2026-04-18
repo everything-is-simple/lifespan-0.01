@@ -1,6 +1,6 @@
-# malf timeframe native base source 重绑 证据
+﻿# malf timeframe native base source 重绑 证据
 
-`证据编号`：`80`
+`证据编号`：`91`
 `日期`：`2026-04-18`
 
 ## 命令
@@ -16,7 +16,7 @@ python - (DuckDB 审计脚本，输出 H:\Lifespan-report\malf\80-malf-timeframe
 
 ## 关键结果
 
-- doc-first gating 通过，当前待施工卡 `80-malf-timeframe-native-base-source-rebind-card-20260418.md` 已具备正式前置文档。
+- doc-first gating 通过，当前待施工卡 `91-malf-timeframe-native-base-source-rebind-card-20260418.md` 已具备正式前置文档。
 - `canonical_runner` 已改成 timeframe native source：`D -> market_base_day.stock_daily_adjusted`、`W -> market_base_week.stock_weekly_adjusted`、`M -> market_base_month.stock_monthly_adjusted`，不再默认从 day 内部重采样周月。
 - `limit=0` 已恢复为 canonical full coverage 入口；专项 `malf` 回归 `14 passed`，代表性 downstream 回归 `20 passed`。
 - 官方 full coverage 已落盘：
@@ -43,5 +43,8 @@ flowchart LR
     SRC["market_base_day/week/month"] --> RUN["canonical native build --limit 0"]
     RUN --> LEDGER["malf_day/week/month full coverage"]
     LEDGER --> AUD["audit json + pytest + compileall"]
-    AUD --> REF["80 conclusion"]
+    AUD --> REF["81 conclusion"]
 ```
+
+
+

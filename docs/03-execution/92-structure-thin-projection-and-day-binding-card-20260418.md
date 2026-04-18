@@ -1,6 +1,6 @@
-# structure 日周月薄投影分层与绑定收敛
+﻿# structure 日周月薄投影分层与绑定收敛
 
-`卡号`：`81`
+`卡号`：`92`
 `日期`：`2026-04-18`
 `状态`：`草稿`
 
@@ -19,8 +19,8 @@
 
 - 主层：`structure`
 - 次层：`alpha` 的高低周期结构上下文
-- 上游输入：`80` 全覆盖后的 `malf_day / week / month`
-- 下游放行：`82` 的 `filter_day`、`83` 的五 PAS 日线终审库，以及 `84` 的 bounded replay 审计
+- 上游输入：`91` 全覆盖后的 `malf_day / week / month`
+- 下游放行：`93` 的 `filter_day`、`94` 的五 PAS 日线终审库，以及 `95` 的 bounded replay 审计
 - 本卡职责：把 `structure` 收敛成 `D/W/M` 三个薄投影层，既跟上 `malf` 分层，又不长回厚解释层
 
 ## 任务分解
@@ -72,10 +72,10 @@
 
 | 判定项 | A 级通过标准 | 阻断条件 | 对下游影响 |
 | --- | --- | --- | --- |
-| 三层绑定 | `structure_day / week / month` 与对应 `malf_*` 绑定稳定 | 任一层缺失或混读 | `82/83` 输入不稳 |
+| 三层绑定 | `structure_day / week / month` 与对应 `malf_*` 绑定稳定 | 任一层缺失或混读 | `83/84` 输入不稳 |
 | 薄投影边界 | `structure` 不再承载终审或预裁决 | 仍带 verdict/过滤语义 | `alpha` 主权被侵蚀 |
 | 下游消费关系 | `filter_day` 与 `alpha` 的消费边界写清 | `filter/alpha` 继续绕过或误读 `structure` | 卡组 authority 漂移 |
-| bounded replay | `D/W/M` 三层尾部 replay 全部完成 | 只完成 day 或无证据 | `84` 无法审计 |
+| bounded replay | `D/W/M` 三层尾部 replay 全部完成 | 只完成 day 或无证据 | `95` 无法审计 |
 | truthfulness 说明 | 有新旧口径差异与回退边界说明 | 只有结果无解释 | cutover 不可追溯 |
 
 ## 收口标准
@@ -97,3 +97,7 @@ flowchart LR
     SW --> ALP
     SM --> ALP
 ```
+
+
+
+

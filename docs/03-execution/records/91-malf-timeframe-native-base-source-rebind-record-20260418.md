@@ -1,6 +1,6 @@
-# malf timeframe native base source 重绑 记录
+﻿# malf timeframe native base source 重绑 记录
 
-`记录编号`：`80`
+`记录编号`：`91`
 `日期`：`2026-04-18`
 
 ## 做了什么
@@ -18,8 +18,8 @@
 ## 备注
 
 - `malf_day / week / month` 当前都是首次 official native full coverage 建仓；`D/W/M` 最新 checkpoint 都追平到 `2026-04-10`，每库 `checkpoint_count=5501`。
-- `snapshot / mechanism / wave_life` 仍保持 explicit legacy 单库回退位；`80` 只收 canonical native source 与 full coverage，不提前替 `81-84` 做 downstream 重绑。
-- `80` 收口后，当前待施工位推进到 `81`。
+- `snapshot / mechanism / wave_life` 仍保持 explicit legacy 单库回退位；`91` 只收 canonical native source 与 full coverage，不提前替 `92-95` 做 downstream 重绑。
+- `91` 收口后，当前待施工位推进到 `92`。
 
 ## 记录结构图
 
@@ -28,5 +28,8 @@ flowchart LR
     CODE["native source refactor"] --> TEST["pytest + compileall"]
     TEST --> BUILD["official full coverage build"]
     BUILD --> AUD["audit json"]
-    AUD --> CON["80 conclusion"]
+    AUD --> CON["81 conclusion"]
 ```
+
+
+

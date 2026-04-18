@@ -1,4 +1,4 @@
-# 证据目录
+﻿# 证据目录
 
 日期：`2026-04-09`
 状态：`持续更新`
@@ -90,11 +90,12 @@
 111. `77-raw-base-timeframe-split-tail-completion-evidence-20260418.md`
 112. `78-malf-alpha-dual-axis-refactor-scope-freeze-evidence-20260418.md`
 113. `79-malf-day-week-month-ledger-split-path-contract-evidence-20260418.md`
-114. `80-malf-timeframe-native-base-source-rebind-evidence-20260418.md`
-115. `81-structure-thin-projection-and-day-binding-evidence-20260418.md`
-116. `82-filter-objective-gate-and-note-sidecar-demotion-evidence-20260418.md`
-117. `83-alpha-dual-axis-decision-rebind-and-formal-cutover-evidence-20260418.md`
-118. `84-malf-alpha-official-truthfulness-and-cutover-gate-evidence-20260418.md`
+114. `80-malf-zero-one-wave-filter-boundary-freeze-evidence-20260418.md`
+115. `91-malf-timeframe-native-base-source-rebind-evidence-20260418.md`
+116. `92-structure-thin-projection-and-day-binding-evidence-20260418.md`
+117. `93-filter-objective-gate-and-note-sidecar-demotion-evidence-20260418.md`
+118. `94-alpha-dual-axis-decision-rebind-and-formal-cutover-evidence-20260418.md`
+119. `95-malf-alpha-official-truthfulness-and-cutover-gate-evidence-20260418.md`
 
 ## 证据闭环图
 
@@ -105,3 +106,7 @@ flowchart LR
     RESULT --> ART[产物落地]
     ART --> CON[结论引用]
 ```
+
+
+
+

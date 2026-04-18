@@ -1,14 +1,14 @@
-# malf 日周月分库路径与表族契约冻结
+﻿# malf 日周月分库路径与表族契约冻结
 
 `卡号`：`79`
 `日期`：`2026-04-18`
-`状态`：`草稿`
+`状态`：`接受`
 
 ## 需求
 
 - 问题：`src/mlq/core/paths.py` 与 `malf bootstrap` 仍以单 `malf.duckdb` 为默认形态，无法承接 `malf_day / malf_week / malf_month` 的正式库契约。
 - 目标结果：冻结 `malf_day / malf_week / malf_month` 三库的官方路径、bootstrap 契约与 canonical 表族边界。
-- 为什么现在做：路径与表族不先冻住，`80` 的 source rebind 与全覆盖就没有稳定落点。
+- 为什么现在做：路径与表族不先冻住，`80` 的 `0/1` 波段过滤边界与 `81` 的 source rebind / 全覆盖就都没有稳定落点。
 
 ## 设计输入
 
@@ -20,8 +20,8 @@
 - 主层：`malf`
 - 次层：`core.paths / bootstrap / canonical DDL`
 - 上游输入：`78` 已冻结的双主轴边界与 `market_base_day / week / month` 既有官方路径口径
-- 下游放行：`80` 的 timeframe native source rebind，以及后续 `structure / filter / alpha` 对 `malf_*` 正式路径的绑定
-- 本卡职责：把 `malf_day / malf_week / malf_month` 的物理路径、bootstrap 入口与 canonical 表族先冻结成稳定落点
+- 下游放行：`80` 的 `0/1` 波段过滤边界、`81` 的 timeframe native source rebind，以及后续 `structure / filter / alpha` 对 `malf_*` 正式路径的绑定
+- 本卡职责：把 `malf_day / malf_week / malf_month` 的物理路径、bootstrap 入口与 canonical 表族先冻结成稳定落点，并明确后续任何 `malf` 重建都必须围绕这三库执行
 
 ## 任务分解
 
@@ -30,6 +30,7 @@
 3. 冻结三库 canonical 表族与每库单一 native timeframe 约束。
 4. 明确单 `malf.duckdb` 不再是默认官方库，只保留兼容回退地位。
 5. 补充路径解析与 bootstrap 单测。
+6. 明确 `80` 的 `0/1` 只读审计与后续 potential rebuild 只能围绕 `malf_day / malf_week / malf_month` 执行，不允许再回到单库混跑。
 
 ## 实现边界
 
@@ -57,7 +58,8 @@
 | canonical 表族 | 三库共享 canonical 表族语义，但各自只承载单一 native timeframe | 单库继续混 `D/W/M`，或三库表族语义不一致 |
 | timeframe 单值约束 | 每个库必须有明确单值 timeframe 约束 | 同一库继续落混合 timeframe 数据 |
 | 兼容回退 | 单 `malf.duckdb` 仅保留兼容/回退角色，不再是默认官方库 | 文档或代码仍把单库视为主真值落点 |
-| 下游交接 | `80-84` 默认只接 `malf_day / week / month` 官方路径 | downstream 继续从旧单库或 bridge 路径取数 |
+| 下游交接 | `80-85` 默认只接 `malf_day / week / month` 官方路径 | downstream 继续从旧单库或 bridge 路径取数 |
+| 重建边界 | 任何后续 canonical 重建或 `0/1` 审计都只允许围绕 `malf_day / week / month` 三库展开 | 重新回退到单库混跑或跨库串账 |
 
 ## 实施清单
 
@@ -86,6 +88,7 @@
 3. 三库 canonical 表族、native timeframe 单值约束与兼容回退边界写清。
 4. 单库 `malf.duckdb` 不再被描述为默认官方库。
 5. 测试覆盖路径解析与 bootstrap。
+6. 后续 `0/1` 审计、算法修订与可能的 `malf` 三库重建都默认以 `malf_day / malf_week / malf_month` 为唯一官方落点。
 
 ## 卡片结构图
 
@@ -95,3 +98,4 @@ flowchart LR
     P79 --> W79["malf_week"]
     P79 --> M79["malf_month"]
 ```
+

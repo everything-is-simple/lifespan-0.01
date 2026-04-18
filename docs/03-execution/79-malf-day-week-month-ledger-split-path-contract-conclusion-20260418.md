@@ -1,4 +1,4 @@
-# malf 日周月分库路径与表族契约冻结 结论
+﻿# malf 日周月分库路径与表族契约冻结 结论
 
 `结论编号`：`79`
 `日期`：`2026-04-18`
@@ -13,15 +13,17 @@
 
 ## 原因
 
-1. `80` 的 timeframe native source rebind 需要先有稳定的三库落点，否则 source 绑定和表族边界会一起漂移。
-2. `79` 的职责是先冻结路径、bootstrap 与 native timeframe 约束，不提前偷做 `80` 的 source rebind 或全覆盖收口。
-3. 把 legacy 单库显式标成兼容回退位，后续 `81-83` 才不会误把旧路径当成正式真值层。
+1. 新 `80` 的 `0/1` 波段过滤边界与新 `81` 的 timeframe native source rebind，都需要先有稳定的三库落点，否则过滤语义、source 绑定和表族边界会一起漂移。
+2. `79` 的职责是先冻结路径、bootstrap 与 native timeframe 约束，不提前偷做 `80` 的过滤裁决，也不提前偷做 `81` 的 source rebind 或全覆盖收口。
+3. 把 legacy 单库显式标成兼容回退位，后续 `82-84` 才不会误把旧路径当成正式真值层。
+4. 既然官方真值层已经固定为 `malf_day / malf_week / malf_month`，那后续 `0/1` 审计、算法修订与可能的三库重建，也都必须围绕这三库执行，不能再退回单库混跑。
 
 ## 影响
 
-1. `80` 现在可以直接围绕 `malf_day / malf_week / malf_month` 做 source rebind 与全覆盖。
-2. `81-83` 现在有稳定的 official path contract，可直接按三库契约绑定 downstream。
-3. 当前正式待施工卡从 `79` 推进到 `80-malf-timeframe-native-base-source-rebind-card-20260418.md`。
+1. 新 `80` 现在可以围绕 `malf_day / malf_week / malf_month` 冻结 `0/1` 波段过滤边界，新 `81` 再围绕同一组三库做 source rebind 与全覆盖。
+2. `82-84` 现在有稳定的 official path contract，可直接按三库契约绑定 downstream。
+3. `scripts/malf/run_malf_zero_one_wave_audit.py` 这类只读审计脚本，也必须以 `malf_day / malf_week / malf_month` 为唯一官方输入，不得再从 legacy 单库拼接基线。
+4. 当前正式待施工卡从 `79` 推进到 `80-malf-zero-one-wave-filter-boundary-freeze-card-20260418.md`。
 
 ## 证据
 
@@ -37,3 +39,4 @@ flowchart TD
     C --> D["legacy 单库降级为 fallback"]
     D --> E["放行 80"]
 ```
+

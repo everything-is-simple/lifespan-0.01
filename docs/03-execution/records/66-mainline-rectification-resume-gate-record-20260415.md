@@ -1,4 +1,4 @@
-# mainline rectification resume gate 记录
+﻿# mainline rectification resume gate 记录
 `记录编号`：`66`
 `日期`：`2026-04-15`
 
@@ -21,7 +21,7 @@
    - `64` 冻结 `stage × percentile` 的正式接入层
    - `65` 把 final admission authority 正式收回到 `alpha formal signal`
 3. 复核后剩余未完成事项已不再属于“整改前置条件”，而是恢复卡组自身的工作：
-   - `90-95` 分窗建库
+   - `91-95` 分窗建库
    - `84` official cutover gate
    - `100-105` trade / system 后置恢复
 4. `Ω` 路线图中的旧阻塞项已同步纠偏：
@@ -53,3 +53,4 @@ flowchart LR
     C80 --> C86["86 cutover gate"]
     C86 --> C100["100-105 reopen later"]
 ```
+

@@ -1,4 +1,4 @@
-[build-system]
+﻿[build-system]
 requires = ["hatchling>=1.27.0"]
 build-backend = "hatchling.build"
 
@@ -41,6 +41,10 @@ cache_dir = "H:/Lifespan-temp/pytest-cache"
 # `runner.py` 与同目录 readout helper 模块。
 # 当前 malf 口径：`pivot-confirmed break` 与 `same-timeframe stats sidecar` 只属于只读机制层 sidecar，
 # 不得回写 `malf core`。
+# `scripts/malf/run_malf_zero_one_wave_audit.py` 是 `80` 冻结的只读审计入口：
+# 它只允许读取 `malf_day / malf_week / malf_month`，把完成的 `bar_count in {0,1}` wave
+# 标成 `same_bar_double_switch / stale_guard_trigger / next_bar_reflip`，
+# 供后续 canonical 算法修订或三库重建前后做同口径基线对照。
 execution_index_files = [
     "docs/03-execution/A-execution-reading-order-20260409.md",
     "docs/03-execution/B-card-catalog-20260409.md",
@@ -53,15 +57,18 @@ system_tracker_files = [
     "docs/02-spec/Ω-system-delivery-roadmap-20260409.md",
 ]
 # 当前最新生效结论已推进到
-# `80-malf-timeframe-native-base-source-rebind-conclusion-20260418.md`；
-# 当前待施工卡已切到 `81-structure-thin-projection-and-day-binding-card-20260418.md`。
+# `91-malf-timeframe-native-base-source-rebind-conclusion-20260418.md`；
+# 当前待施工卡已切到 `92-structure-thin-projection-and-day-binding-card-20260418.md`。
 # 系统路线图现以 `28` 为统一 data-grade 基线，`60 -> 66` 已完成主线整改与恢复闸门，
-# 当前已完成 `67` 的历史 file-length 治理债务、`68` 的执行文档目录治理、`69` 的 filter 客观 gate、`70 -> 72` 的 objective 历史回补、`73` 的 market_base backward 全历史修缮与 `74` 的 raw/base 分批建仓治理；之后恢复 `78 -> 84` official middle-ledger 卡组，最后在 96 接受后恢复
+# 当前已完成 `67` 的历史 file-length 治理债务、`68` 的执行文档目录治理、`69` 的 filter 客观 gate、
+# `70 -> 72` 的 objective 历史回补、`73` 的 market_base backward 全历史修缮与 `74` 的 raw/base 分批建仓治理；
+# 之后恢复 `79 -> 80 -> 91 -> 92 -> 93 -> 94 -> 95` official dual-axis refactor 卡组，最后在 95 接受后恢复
 # 原 ??? 号段现预留给新版本架构卡组。
 # `100 -> 105` trade/system 卡组；其中 `position / trade` 的正式执行口径继续固定为
 # `adjust_method='none'`。
 # `TDX -> raw_market` 兼容 `{asset_type}` 与 `{asset_type}-day` 离线源布局；`market_base`
-# raw/base 正式批量建仓优先使用 `--batch-size N`，按标的批次串行生成 child run；base scoped full 只允许删除当前作用域内缺失行。
+# raw/base 正式批量建仓优先使用 `--batch-size N`，按标的批次串行生成 child run；base scoped full
+# 只允许删除当前作用域内缺失行。
 # `docs/03-execution/` 根目录只允许保留 `card / conclusion / index / template / README`；
 # 正式 `evidence / record` 必须分别位于 `docs/03-execution/evidence/` 与
 # `docs/03-execution/records/`。
@@ -92,6 +99,7 @@ formal_runner_scripts = [
 ]
 formal_readonly_audit_scripts = [
     "scripts/filter/run_filter_objective_coverage_audit.py",
+    "scripts/malf/run_malf_zero_one_wave_audit.py",
 ]
 document_diagram_required = true
 diagram_preferred_doc_types = ["design", "spec", "execution-card", "conclusion"]
@@ -108,3 +116,5 @@ required_card_ledger_fields = [
     "断点续跑",
     "审计账本",
 ]
+
+

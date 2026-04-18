@@ -1,6 +1,6 @@
-# structure 薄投影与 day 绑定收敛 证据
+﻿# alpha 双主轴决策重绑与 formal cutover 证据
 
-证据编号：`81`
+证据编号：`94`
 日期：`2026-04-18`
 
 ## 命令
@@ -27,3 +27,5 @@ flowchart LR
     OUT --> ART[产物落地]
     ART --> REF[结论引用]
 ```
+
+

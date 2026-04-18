@@ -1,4 +1,4 @@
-# lifespan-0.01
+﻿# lifespan-0.01
 
 `lifespan-0.01` 是面向个人 PC 的、本地优先的历史账本系统。目标不是“单次跑通”，而是让市场数据、研究语义、执行账本都能长期沉淀为可续跑、可复算、可审计的正式资产。
 
@@ -112,6 +112,9 @@ flowchart LR
 - `scripts/malf/run_malf_mechanism_build.py`
 - `scripts/malf/run_malf_wave_life_build.py`
   - 正式脚本入口保持不变；实现允许拆分到 `src/mlq/malf/wave_life_runner.py` 与同目录 helper 模块 `wave_life_shared.py / wave_life_source.py / wave_life_materialization.py`，用于满足治理文件长度约束而不改变外部契约。
+- `scripts/malf/run_malf_zero_one_wave_audit.py`
+  - `80` 冻结的正式只读审计入口；只允许读取 `malf_day / malf_week / malf_month`，把完成的 `bar_count in {0,1}` wave 标成 `same_bar_double_switch / stale_guard_trigger / next_bar_reflip`。
+  - 任何 `canonical_materialization` 行为改写、`0/1` 消费合同调整或 `malf_day / malf_week / malf_month` 重建，都必须先跑一版变更前基线，再跑一版变更后对照。
 - `scripts/structure/run_structure_snapshot_build.py`
   - 正式 CLI 必须显式选择执行模式：传入 `signal_start_date / signal_end_date` 走 bounded full-window，或显式传入 `--use-checkpoint-queue` 走 checkpoint queue；无参调用不再静默进入 queue。
 - `scripts/filter/run_filter_snapshot_build.py`
@@ -149,15 +152,15 @@ flowchart LR
   - `malf -> structure -> filter -> alpha` 默认消费 `adjust_method='backward'`
   - `position -> trade` 默认消费 `adjust_method='none'`
   - `forward` 当前只作研究与展示保留
-- 当前最新生效结论锚点已推进到 `80-malf-timeframe-native-base-source-rebind-conclusion-20260418.md`；当前待施工卡已切到 `81-structure-thin-projection-and-day-binding-card-20260418.md`。
-- `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 现已把 `60 -> 66` 视为已完成整改卡组，并在恢复 `78 -> 84` 之前依次插入并完成 `67` 历史 file-length 治理债务卡、`68` 执行文档目录治理卡、`69` filter 客观 gate、`70 -> 72` objective 历史回补卡组、`73` market_base backward 全历史修缮卡、`74` raw/base 分批建仓治理卡、`75` 单库周月账本扩展卡，以及 `76-77` 的日周月分库迁移与尾收口。
-- `78-80` 已完成双主轴范围冻结、`malf day/week/month` 路径契约与 canonical native full coverage；当前正式待施工位是 `81`。`81-84` 的现行口径是：
+- 当前最新生效结论锚点已推进到 `91-malf-timeframe-native-base-source-rebind-conclusion-20260418.md`；当前待施工卡已切到 `92-structure-thin-projection-and-day-binding-card-20260418.md`。
+- `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 现已把 `60 -> 66` 视为已完成整改卡组，并在恢复 `79 -> 80 -> 91 -> 92 -> 93 -> 94 -> 95` 之前依次插入并完成 `67` 历史 file-length 治理债务卡、`68` 执行文档目录治理卡、`69` filter 客观 gate、`70 -> 72` objective 历史回补卡组、`73` market_base backward 全历史修缮卡、`74` raw/base 分批建仓治理卡、`75` 单库周月账本扩展卡，以及 `76-77` 的日周月分库迁移与尾收口。
+- `78-80` 与 `91` 已完成双主轴范围冻结、`0/1` 波段过滤边界、`malf day/week/month` 路径契约与 canonical native full coverage；当前正式待施工位是 `92`。`92-95` 的现行口径是：
   - `malf` 改成 `day / week / month` 三库
   - `structure` 保留，并拆成 `structure_day / structure_week / structure_month` 三个薄投影层
-  - `filter` 保留模块壳，但只拦截客观不可交易与正式宇宙 gate；是否继续保留独立本地库留待 `82` 裁决
+  - `filter` 保留模块壳，但只拦截客观不可交易与正式宇宙 gate；是否继续保留独立本地库留待 `93` 裁决
   - `alpha` 升格为正式终审主真值层，并按 `BOF / TST / PB / CPB / BPB` 五个 PAS 拆成五个日线官方库
 - `73` 已确认 `stock / index / block` 的 `market_base(backward)` 与 `raw_market(backward)` 覆盖对齐，`stock_daily_adjusted(backward)` 当前覆盖 `1990-12-19 -> 2026-04-10`。
-- `100 -> 105` 仍然保留为 `trade/system` 恢复卡组，但只有 `76-raw-base-day-week-month-ledger-split-migration-card-20260417.md` 与 `84-malf-alpha-official-truthfulness-and-cutover-gate-card-20260418.md` 先后接受后才允许恢复。
+- `100 -> 105` 仍然保留为 `trade/system` 恢复卡组，但只有 `76-raw-base-day-week-month-ledger-split-migration-card-20260417.md` 与 `95-malf-alpha-official-truthfulness-and-cutover-gate-card-20260418.md` 先后接受后才允许恢复。
 - `txt -> raw_market -> market_base` 继续保留为正式 fallback
 
 ## 当前 malf 正式口径
@@ -171,8 +174,13 @@ flowchart LR
   - `W -> market_base_week.stock_weekly_adjusted -> malf_week`
   - `M -> market_base_month.stock_monthly_adjusted -> malf_month`
 - 自 `79` 起，`WorkspaceRoots.databases` 已正式暴露 `malf_day / malf_week / malf_month` 三库路径；单 `malf.duckdb` 只保留 legacy fallback 位阶。
-- 自 `80` 起，canonical `malf_day / malf_week / malf_month` 已完成 official native full coverage，三库最新 checkpoint 都追平到 `2026-04-10`，覆盖 `5501` 个官方 scope。
-- 当前 `malf snapshot / mechanism / wave_life` runner 仍显式走 legacy 单库；`80` 只完成 canonical native source 与三库真值层，不提前替 `81-84` 做 downstream 重绑。
+- 自 `80` 起，`0/1` 波段过滤已拥有独立治理卡位；自 `91` 起，canonical `malf_day / malf_week / malf_month` 已完成 official native full coverage，三库最新 checkpoint 都追平到 `2026-04-10`，覆盖 `5501` 个官方 scope。
+- 自 `80` 起，`scripts/malf/run_malf_zero_one_wave_audit.py` 还被固定为 `0/1` 问题的统一只读审计基线：
+  - `same_bar_double_switch`：`bar_count=0`，且起始 bar 找不到本 wave 自己的 `state_snapshot`
+  - `stale_guard_trigger`：`bar_count=1`，且相关 guard 年龄达到给定阈值
+  - `next_bar_reflip`：其余 `bar_count=1` wave
+- 后续若要修改 `switch_mode` 时序、`bar_count` 归属或 stale guard 合同，或者决定重建 `malf_day / malf_week / malf_month`，都必须保留这份审计脚本的变更前/后结果，不能只凭下游样本感觉裁决。
+- 当前 `malf snapshot / mechanism / wave_life` runner 仍显式走 legacy 单库；`91` 只完成 canonical native source 与三库真值层，不提前替 `92-95` 做 downstream 重绑。
 - 当前 `scripts/malf/run_malf_snapshot_build.py` 仍保留 bridge v1 兼容职责：
   - 消费 `market_base.stock_daily_adjusted(adjust_method='backward')`
   - 物化 `pas_context_snapshot / structure_candidate_snapshot`
@@ -222,7 +230,7 @@ flowchart LR
 6. 正式文档默认多用图：涉及模块边界、数据流、状态机、账本表族或施工顺序时，至少提供一张与正文一致的图，优先使用 Mermaid。
 7. 全仓 `python scripts/system/check_development_governance.py` 盘点允许通过 `scripts/system/development_governance_legacy_backlog.py` 登记历史债务；按改动路径触发的严格治理检查仍直接拦截新增违规。
 8. `37` 卡收口时，每解决一项历史债务，都必须同步更新 `development_governance_legacy_backlog.py` 与 `37` 对应的 card / evidence / record / conclusion。
-9. 当前已完成的清债包括 `src/mlq/system/runner.py`、`src/mlq/trade/runner.py`、`src/mlq/alpha/trigger_runner.py`、`src/mlq/filter/runner.py`、`src/mlq/malf/mechanism_runner.py`、`src/mlq/malf/canonical_runner.py`、`src/mlq/structure/runner.py`、`src/mlq/alpha/runner.py`、`src/mlq/data/runner.py`、`tests/unit/data/test_data_runner.py`、`src/mlq/data/bootstrap.py`、`src/mlq/malf/runner.py`、`src/mlq/malf/bootstrap.py`、`src/mlq/alpha/family_runner.py`、`src/mlq/position/bootstrap.py`、`src/mlq/data/data_mainline_incremental_sync.py`、`src/mlq/portfolio_plan/runner.py`、`src/mlq/data/data_market_base_materialization.py`、`src/mlq/data/data_tdxquant.py` 与 `tests/unit/data/test_market_base_runner.py`；当前历史 file-length backlog 已由 `67` 正式清零，`68` 已把执行文档目录纪律恢复到 `root/card-conclusion-index-template + evidence/ + records/`，`56-59` 已作为真实正式库 middle-ledger `2010` pilot 卡组完成；当前正式施工位已切到 `81`，只有 `84` 再完成 truthfulness / cutover gate 后才恢复 `100-105` trade/system 卡组，本仓 `pytest` 证据仍统一按串行命令登记，避免多个进程争用 `H:\Lifespan-temp\pytest-tmp`。
+9. 当前已完成的清债包括 `src/mlq/system/runner.py`、`src/mlq/trade/runner.py`、`src/mlq/alpha/trigger_runner.py`、`src/mlq/filter/runner.py`、`src/mlq/malf/mechanism_runner.py`、`src/mlq/malf/canonical_runner.py`、`src/mlq/structure/runner.py`、`src/mlq/alpha/runner.py`、`src/mlq/data/runner.py`、`tests/unit/data/test_data_runner.py`、`src/mlq/data/bootstrap.py`、`src/mlq/malf/runner.py`、`src/mlq/malf/bootstrap.py`、`src/mlq/alpha/family_runner.py`、`src/mlq/position/bootstrap.py`、`src/mlq/data/data_mainline_incremental_sync.py`、`src/mlq/portfolio_plan/runner.py`、`src/mlq/data/data_market_base_materialization.py`、`src/mlq/data/data_tdxquant.py` 与 `tests/unit/data/test_market_base_runner.py`；当前历史 file-length backlog 已由 `67` 正式清零，`68` 已把执行文档目录纪律恢复到 `root/card-conclusion-index-template + evidence/ + records/`，`56-59` 已作为真实正式库 middle-ledger `2010` pilot 卡组完成；当前正式施工位已切到 `92`，只有 `95` 再完成 truthfulness / cutover gate 后才恢复 `100-105` trade/system 卡组，本仓 `pytest` 证据仍统一按串行命令登记，避免多个进程争用 `H:\Lifespan-temp\pytest-tmp`。
 10. `docs/03-execution/` 根目录只允许保留 `card / conclusion / index / template / README`；正式 `evidence` 与 `record` 必须分别落在 `docs/03-execution/evidence/` 与 `docs/03-execution/records/`，不得再回根目录漂移。
 
 ## 建议阅读顺序
@@ -239,3 +247,7 @@ flowchart LR
 10. `docs/03-execution/README.md`
 
 如果只追当前正式口径，优先看 `docs/03-execution/*conclusion*`。
+
+
+
+

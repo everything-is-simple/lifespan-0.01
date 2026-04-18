@@ -1,4 +1,4 @@
-# mainline rectification resume gate 结论
+﻿# mainline rectification resume gate 结论
 `结论编号`：`66`
 `日期`：`2026-04-15`
 `状态`：`已完成`
@@ -13,8 +13,8 @@
   - `wave_life` 首跑必须显式 bounded bootstrap
   - `stage × percentile` 只允许在 `alpha formal signal` 融合
   - final admission authority 只属于 `alpha formal signal`
-- 接受：`100-105` 继续保持冻结，只有 `96` 接受后才允许恢复。
-- 拒绝：把 `66` 解读为 `78-84` 已自动通过、`96` 已提前成立，或 `trade / system` 可以直接恢复。
+- 接受：`100-105` 继续保持冻结，只有 `95` 接受后才允许恢复。
+- 拒绝：把 `66` 解读为 `78-84` 已自动通过、`95` 已提前成立，或 `trade / system` 可以直接恢复。
 - 拒绝：在 `66` 之后继续把 `filter`、隐式 queue 首跑或 `wave_life` explanation-only 口径带回 `78-84`。
 
 ## 原因
@@ -45,7 +45,7 @@
 
 `66` 复核后仍未完成的事项是：
 
-1. `90-95` 分窗 official middle-ledger 建库
+1. `91-95` 分窗 official middle-ledger 建库
 2. `84` official cutover gate
 3. `100-105` trade / system 恢复
 
@@ -86,3 +86,4 @@ flowchart LR
     C80 --> C86["86 cutover gate"]
     C86 --> C100["100-105 trade/system reopen"]
 ```
+

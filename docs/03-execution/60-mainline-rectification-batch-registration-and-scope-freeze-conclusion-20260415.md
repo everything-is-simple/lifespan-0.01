@@ -1,4 +1,4 @@
-# mainline rectification batch registration and scope freeze 结论
+﻿# mainline rectification batch registration and scope freeze 结论
 `结论编号`：`60`
 `日期`：`2026-04-15`
 `状态`：`已完成`
@@ -7,7 +7,7 @@
 
 - 接受：`60 -> 66` 被正式登记为 `59` 之后、`78 -> 84` 之前的主线整改卡组。
 - 接受：`78 -> 84` 被正式保留为整改后的 official middle-ledger 恢复卡组，不再作为当前默认续推卡组。
-- 接受：`100 -> 105` 继续保持冻结，只有 `96` 接受后才允许恢复。
+- 接受：`100 -> 105` 继续保持冻结，只有 `95` 接受后才允许恢复。
 - 接受：当前待施工卡从 `60` 前移到 `61-structure-filter-tail-coverage-truthfulness-rectification-card-20260415.md`。
 - 拒绝：在未登记整改批次的前提下，直接把 `59` 当作 `78-84` 或 `100-105` 的默认放行依据。
 
@@ -46,3 +46,4 @@ flowchart LR
     C66 --> C80["78-84 official middle-ledger 恢复"]
     C80 --> C100["100-105 trade/system"]
 ```
+

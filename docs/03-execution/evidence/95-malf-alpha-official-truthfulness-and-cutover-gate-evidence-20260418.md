@@ -1,6 +1,6 @@
-# malf alpha 官方真值与 cutover gate 证据
+﻿# malf alpha 官方真值与 cutover gate 证据
 
-证据编号：`84`
+证据编号：`95`
 日期：`2026-04-18`
 
 ## 命令
@@ -27,3 +27,5 @@ flowchart LR
     OUT --> ART[产物落地]
     ART --> REF[结论引用]
 ```
+
+

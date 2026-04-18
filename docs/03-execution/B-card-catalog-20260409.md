@@ -1,9 +1,9 @@
-# 执行卡目录
+﻿# 执行卡目录
 `日期`：`2026-04-09`
 `状态`：`持续更新`
 
-1. 当前下一锤：`81-structure-thin-projection-and-day-binding-card-20260418.md`
-2. 当前待施工卡：`81-structure-thin-projection-and-day-binding-card-20260418.md`
+1. 当前下一锤：`92-structure-thin-projection-and-day-binding-card-20260418.md`
+2. 当前待施工卡：`92-structure-thin-projection-and-day-binding-card-20260418.md`
 3. 正式主线剩余卡：`9`
 4. 可选 Sidecar 剩余卡：`0`
 5. 历史治理 backlog：`0`
@@ -89,11 +89,12 @@
 77. `77-raw-base-timeframe-split-tail-completion-card-20260418.md`
 78. `78-malf-alpha-dual-axis-refactor-scope-freeze-card-20260418.md`
 79. `79-malf-day-week-month-ledger-split-path-contract-card-20260418.md`
-80. `80-malf-timeframe-native-base-source-rebind-card-20260418.md`
-81. `81-structure-thin-projection-and-day-binding-card-20260418.md`
-82. `82-filter-objective-gate-and-note-sidecar-demotion-card-20260418.md`
-83. `83-alpha-dual-axis-decision-rebind-and-formal-cutover-card-20260418.md`
-84. `84-malf-alpha-official-truthfulness-and-cutover-gate-card-20260418.md`
+80. `80-malf-zero-one-wave-filter-boundary-freeze-card-20260418.md`
+81. `91-malf-timeframe-native-base-source-rebind-card-20260418.md`
+82. `92-structure-thin-projection-and-day-binding-card-20260418.md`
+83. `93-filter-objective-gate-and-note-sidecar-demotion-card-20260418.md`
+84. `94-alpha-dual-axis-decision-rebind-and-formal-cutover-card-20260418.md`
+85. `95-malf-alpha-official-truthfulness-and-cutover-gate-card-20260418.md`
 100. `100-trade-signal-anchor-contract-freeze-card-20260411.md`
 101. `101-position-entry-t-plus-1-open-reference-price-correction-card-20260411.md`
 102. `102-trade-exit-pnl-ledger-bootstrap-card-20260411.md`
@@ -103,11 +104,11 @@
 
 ## 当前说明
 
-1. 最新生效结论锚点已推进到 `80-malf-timeframe-native-base-source-rebind-conclusion-20260418.md`。
+1. 最新生效结论锚点已推进到 `91-malf-timeframe-native-base-source-rebind-conclusion-20260418.md`。
 2. `60-79` 已完成并接受；`79` 已完成 `malf day/week/month` 三库路径、bootstrap 与 native timeframe 契约冻结。
-3. `81-84` 是当前新的 `malf -> alpha` 双主轴重构后续卡组：`81` 把 `structure` 收敛为 `day / week / month` 三薄层，`82` 把 `filter` 收敛为 objective gate + note sidecar 并裁决独立落库，`83` 把 `alpha` 收回终审主权并切到 `BOF / TST / PB / CPB / BPB` 五个 PAS 日线官方库，`84` 再做 truthfulness / cutover gate。
+3. `92-95` 是当前新的 `malf -> alpha` 双主轴重构后续卡组：`92` 把 `structure` 收敛为 `day / week / month` 三薄层，`93` 把 `filter` 收敛为 objective gate + note sidecar 并裁决独立落库，`94` 把 `alpha` 收回终审主权并切到 `BOF / TST / PB / CPB / BPB` 五个 PAS 日线官方库，`95` 再做 truthfulness / cutover gate。
 4. 旧 official middle-ledger 恢复卡组已删除，不再保留旧路线。
-5. 当前卡组顺序保持为 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55 -> 56 -> 57 -> 58 -> 59 -> 60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 68 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 -> 76 -> 77 -> 78 -> 79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。
+5. 当前卡组顺序保持为 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55 -> 56 -> 57 -> 58 -> 59 -> 60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 68 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 -> 76 -> 77 -> 78 -> 79 -> 80 -> 91 -> 92 -> 93 -> 94 -> 95 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。
 
 ## 卡组路线图
 
@@ -140,6 +141,11 @@ flowchart LR
     G54 --> G55["55 pre-trade baseline gate"]
     G55 --> G60["60-66 mainline rectification"]
     G60 --> G67["67-77 data/治理收口"]
-    G67 --> G78["78-84 malf-alpha dual-axis refactor"]
+    G67 --> G78["78-80 / 91-95 malf-alpha dual-axis refactor"]
     G78 --> POST["100-105 trade/system 收口"]
 ```
+
+
+
+
+

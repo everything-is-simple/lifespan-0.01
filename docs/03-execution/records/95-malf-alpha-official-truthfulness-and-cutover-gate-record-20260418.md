@@ -1,6 +1,6 @@
-# malf alpha 官方真值与 cutover gate 记录
+﻿# malf alpha 官方真值与 cutover gate 记录
 
-记录编号：`84`
+记录编号：`95`
 日期：`2026-04-18`
 
 ## 做了什么
@@ -25,3 +25,5 @@ flowchart LR
     DEV --> NOTE[备注]
     NOTE --> CON[结论引用]
 ```
+
+

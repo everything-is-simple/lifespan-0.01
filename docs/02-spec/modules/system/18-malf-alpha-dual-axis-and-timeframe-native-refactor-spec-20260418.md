@@ -1,14 +1,15 @@
-# malf alpha 双主轴与 timeframe native 重构规格
+﻿# malf alpha 双主轴与 timeframe native 重构规格
 
 适用执行卡：
 
 - `78-malf-alpha-dual-axis-refactor-scope-freeze-card-20260418.md`
 - `79-malf-day-week-month-ledger-split-path-contract-card-20260418.md`
-- `80-malf-timeframe-native-base-source-rebind-card-20260418.md`
-- `81-structure-thin-projection-and-day-binding-card-20260418.md`
-- `82-filter-objective-gate-and-note-sidecar-demotion-card-20260418.md`
-- `83-alpha-dual-axis-decision-rebind-and-formal-cutover-card-20260418.md`
-- `84-malf-alpha-official-truthfulness-and-cutover-gate-card-20260418.md`
+- `80-malf-zero-one-wave-filter-boundary-freeze-card-20260418.md`
+- `91-malf-timeframe-native-base-source-rebind-card-20260418.md`
+- `92-structure-thin-projection-and-day-binding-card-20260418.md`
+- `93-filter-objective-gate-and-note-sidecar-demotion-card-20260418.md`
+- `94-alpha-dual-axis-decision-rebind-and-formal-cutover-card-20260418.md`
+- `95-malf-alpha-official-truthfulness-and-cutover-gate-card-20260418.md`
 
 ## 1. 官方数据库路径
 
@@ -27,8 +28,8 @@
 `filter` 在 `78` 只冻结职责边界，不冻结最终物理落库方案：
 
 1. 语义上仍保留 `filter` 模块壳
-2. `82` 必须显式裁决是否继续使用 `H:\Lifespan-data\filter\filter.duckdb`
-3. 在 `82` 裁决前，任何实现都不得假定“`filter` 一定保留独立永久官方库”已经成立
+2. `93` 必须显式裁决是否继续使用 `H:\Lifespan-data\filter\filter.duckdb`
+3. 在 `93` 裁决前，任何实现都不得假定“`filter` 一定保留独立永久官方库”已经成立
 
 `alpha` 正式路径改为五个日线 PAS 官方库：
 
@@ -65,6 +66,15 @@
 3. 不允许继续把单 `malf.duckdb` 声明为默认官方库。
 
 ## 3. malf 三库表族
+
+### 3.1 0/1 wave filter boundary
+
+1. `80` 必须先冻结 `bar_count in {0,1}` 的已完成波段如何被 downstream 消费。
+2. official canonical `malf_wave_ledger / malf_state_snapshot` 在 dedicated 过滤方案落地前仍保留原始事实，不允许静默删改。
+3. 若后续需要过滤口径，只能以只读派生层、sidecar 或 filtered projection 提供，并必须可回指原始 `wave_id`。
+4. `91-95` 不得各自私带 `0/1` 过滤规则。
+5. `scripts/malf/run_malf_zero_one_wave_audit.py` 是 `80` 冻结的正式只读审计入口；它只允许读取 `malf_day / malf_week / malf_month`，并把完成的短 wave 标成 `same_bar_double_switch / stale_guard_trigger / next_bar_reflip` 三类。
+6. 任何 `canonical_materialization` 行为改写、`0/1` 消费合同调整或 `malf_day / malf_week / malf_month` 重建，都必须保留 `run_malf_zero_one_wave_audit.py` 的变更前基线与变更后对照。
 
 三库都保留正式 canonical 表族：
 
@@ -107,7 +117,7 @@
    - objective reject reason
    - note / risk flag
 5. `structure_progress_failed / reversal_stage_pending` 只允许进入 `note / risk flag`，不允许形成结构性 hard block
-6. `82` 必须给出 `filter` 是否保留独立本地库的正式裁决
+6. `93` 必须给出 `filter` 是否保留独立本地库的正式裁决
 
 ### 4.3 alpha
 
@@ -120,8 +130,8 @@
 
 ## 5. replay 与 cutover
 
-1. `79-83` 必须围绕 `2010 ~ 当前 official market_base 覆盖尾部` 完成 bounded replay。
-2. `84` 必须裁决：
+1. `92-94` 必须围绕 `2010 ~ 当前 official market_base 覆盖尾部` 完成 bounded replay；其中 `80` 先冻结 `0/1` 过滤边界，`91` 负责 `malf` full coverage。
+2. `95` 必须裁决：
    - `malf_day / week / month` 是否已成为默认官方库
    - `structure_day / week / month` 是否已稳定绑定对应 `malf_*` 薄投影
    - `filter_day` 是否已完成 objective gate / note sidecar 降格并裁决独立落库方案
@@ -149,6 +159,13 @@ flowchart LR
     SW --> ALP
     SM --> ALP
     FLT --> ALP
-    ALP --> G84["84 cutover gate"]
-    G84 --> POST["100-105"]
+    ALP --> G95["95 cutover gate"]
+    G95 --> POST["100-105"]
 ```
+
+
+
+
+
+
+

@@ -1,6 +1,6 @@
-# malf timeframe native base source 重绑与全覆盖收口
+﻿# malf timeframe native base source 重绑与全覆盖收口
 
-`卡号`：`80`
+`卡号`：`91`
 `日期`：`2026-04-18`
 `状态`：`草稿`
 
@@ -8,7 +8,7 @@
 
 - 问题：当前 `malf` 的 `W/M` 仍在内部从日线重采样，而不是直接消费 `market_base_week/month`；同时旧口径把 `malf` 也塞进 `2010 ~ 当前` bounded replay，和它作为公共真值层的职责冲突。
 - 目标结果：`malf_day / week / month` 分别直接从 `market_base_day / week / month` 构建 canonical 账本，并完成三库全覆盖收口。
-- 为什么现在做：如果 `80` 不把 `malf` 全覆盖做完，后面的 `81-84` 无论 replay 多漂亮，基座仍然不是正式真值层。
+- 为什么现在做：如果 `91` 不把 `malf` 全覆盖做完，后面的 `92-95` 无论 replay 多漂亮，基座仍然不是正式真值层。
 
 ## 设计输入
 
@@ -19,8 +19,8 @@
 
 - 主层：`malf`
 - 次层：`canonical runner / source / materialization`
-- 上游输入：`79` 已冻结的 `malf_day / week / month` 官方路径与 `market_base_day / week / month` 正式账本
-- 下游放行：`81-84` 对 `malf_*` 官方真值层的默认绑定，以及 `84` 的 full coverage 审计
+- 上游输入：`79` 已冻结的 `malf_day / week / month` 官方路径与 `80` 已冻结的 `0/1` 波段过滤边界
+- 下游放行：`92-95` 对 `malf_*` 官方真值层的默认绑定，以及 `95` 的 full coverage 审计
 - 本卡职责：把 `malf_day / week / month` 正式改成 timeframe native source，并把三库全覆盖写成硬收口标准
 
 ## 任务分解
@@ -56,7 +56,7 @@
 | child run 策略 | 允许用批次、child run、queue/checkpoint 串行推进全覆盖 | 退回一次性全量脚本或手工分段无审计 |
 | 兼容检查 | 仅保留必要的 resample/旧路径兼容检查，不保留默认生产路径 | 兼容逻辑反客为主继续成为默认入口 |
 | 覆盖审计 | 输出 `row/scope/date-range/freshness` 摘要，分别覆盖 `D/W/M` 三库 | 只报“已完成”，不给出范围摘要 |
-| 下游口径 | `81-84` 默认绑定 full coverage 后的三库 `malf` | downstream 提前绑定半成品 `malf` |
+| 下游口径 | `92-95` 默认绑定 full coverage 后的三库 `malf` | downstream 提前绑定半成品 `malf` |
 
 ## 实施清单
 
@@ -72,8 +72,8 @@
 
 | 判定项 | A 级通过标准 | 阻断条件 | 对下游影响 |
 | --- | --- | --- | --- |
-| native source | `malf_week/month` 默认 source 已切到对应 `market_base_*` | 仍从 `day` resample | `81-84` 上游不可信 |
-| 全覆盖收口 | `malf_day / week / month` 都完成全覆盖 | 任一 timeframe 只有 tail replay | `84` 无法放行 |
+| native source | `malf_week/month` 默认 source 已切到对应 `market_base_*` | 仍从 `day` resample | `92-95` 上游不可信 |
+| 全覆盖收口 | `malf_day / week / month` 都完成全覆盖 | 任一 timeframe 只有 tail replay | `95` 无法放行 |
 | 增量闭环 | `queue/checkpoint/child run` 语义在三库上都成立 | 只能靠一次性重跑 | 日后不可续跑 |
 | 覆盖审计 | 有明确 `row/scope/date-range/freshness` 证据 | 只有模糊完成描述 | truthfulness 不可审计 |
 | 测试与证据 | source 选择与全覆盖过程有测试/证据 | 只有代码改动无验证 | 卡不可收口 |
@@ -96,3 +96,7 @@ flowchart LR
     MW --> AUD
     MM --> AUD
 ```
+
+
+
+

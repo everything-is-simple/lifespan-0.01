@@ -1,6 +1,6 @@
-# filter_day 客观 gate 与 note sidecar 冻结
+﻿# filter_day 客观 gate 与 note sidecar 冻结
 
-`卡号`：`82`
+`卡号`：`93`
 `日期`：`2026-04-18`
 `状态`：`草稿`
 
@@ -11,7 +11,7 @@
   - 保留一个 day 薄 gate 库
   - 只做 objective gate + note sidecar
   - 只服务日线 `alpha` 决策入口
-- 为什么现在做：这件事不定清楚，`82` 以后所有讨论都会在“到底保不保留 `filter` 本地库”上反复回滚。
+- 为什么现在做：这件事不定清楚，`93` 以后所有讨论都会在“到底保不保留 `filter` 本地库”上反复回滚。
 
 ## 设计输入
 
@@ -23,7 +23,7 @@
 - 主层：`filter`
 - 次层：日线 `alpha` 决策入口的 objective gate
 - 上游输入：`structure_day`、客观 profile/universe 事实，以及只读 note sidecar 摘要
-- 下游放行：`83` 的 `alpha` 五 PAS 日线终审库与 `84` 的 gate 审计
+- 下游放行：`94` 的 `alpha` 五 PAS 日线终审库与 `95` 的 gate 审计
 - 本卡职责：把 `filter` 明确冻成一个保留的 `filter_day` 本地薄库，只负责客观 gate 与说明性 note
 
 ## 任务分解
@@ -78,17 +78,17 @@
 | 切片 2 | 收敛输入边界，明确 `structure_day / objective profile / note sidecar` | 输入合同 |
 | 切片 3 | 固化五类 `reject_reason_code` 与 note-only 边界 | 字段与代码映射 |
 | 切片 4 | 完成 `2010-01-01 -> 当前` 尾部 bounded replay，并摘要被拦样本 | run/evidence |
-| 切片 5 | 回填 `82` execution 闭环 | record / conclusion / indexes |
+| 切片 5 | 回填 `93` execution 闭环 | record / conclusion / indexes |
 
 ## A 级判定表
 
 | 判定项 | A 级通过标准 | 阻断条件 | 对下游影响 |
 | --- | --- | --- | --- |
-| 本地薄库存在 | `filter_day` 被明确保留且边界稳定 | 继续悬置保留与否 | `83` 输入摇摆 |
+| 本地薄库存在 | `filter_day` 被明确保留且边界稳定 | 继续悬置保留与否 | `94` 输入摇摆 |
 | objective gate 稳定 | 五类 hard block 全部映射成固定 `reject_reason_code` | reject 原因仍临时拼写 | replay 与审计不可信 |
 | note 边界 | note sidecar 明确只读不拦截 | note 继续变相充当 verdict | `alpha` 主权被侵蚀 |
 | day-only gate | `filter` 不再拆 `D/W/M` 多库 | 再把 `filter` 扩成多 timeframe gate | 模块职责膨胀 |
-| bounded replay | `filter_day` 尾部 replay 与样本摘要成立 | 无 replay 证据 | `84` 无法审计 |
+| bounded replay | `filter_day` 尾部 replay 与样本摘要成立 | 无 replay 证据 | `95` 无法审计 |
 
 ## 收口标准
 
@@ -107,3 +107,7 @@ flowchart LR
     NOTE["note sidecar"] --> FD
     FD --> ALP["alpha day decision"]
 ```
+
+
+
+

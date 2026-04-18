@@ -1,6 +1,6 @@
-# alpha 五 PAS 日线终审重绑与 formal cutover
+﻿# alpha 五 PAS 日线终审重绑与 formal cutover
 
-`卡号`：`83`
+`卡号`：`94`
 `日期`：`2026-04-18`
 `状态`：`草稿`
 
@@ -24,7 +24,7 @@
 - 主层：`alpha`
 - 次层：`position` 之前的最终 admitted/blocked formal signal 冻结层
 - 上游输入：`malf_day / week / month`、`structure_day / week / month` 与 `filter_day`
-- 下游放行：`84` 的 cutover gate，以及 `84` 通过后 `100-105` 对正式 `alpha` 上游的承接
+- 下游放行：`95` 的 cutover gate，以及 `95` 通过后 `100-105` 对正式 `alpha` 上游的承接
 - 本卡职责：把 `alpha` 明确重绑成五个 PAS 日线终审库，同时写死“读取周/月上下文，但不做 `5 × 3` 套 trigger 真值库”
 
 ## 任务分解
@@ -63,7 +63,7 @@
 | 决策层级 | 五个 PAS 仍是日线终审账本，读取周/月上下文但不物化成 trigger-level `D/W/M` 三套真值库 | 膨胀成 `5 × 3` 独立账本 |
 | 主权归属 | `admitted / blocked / downgraded / note_only` 与 `owner / reason / audit_note` 固定在 `alpha` | `filter/structure` 继续代持 verdict |
 | bounded replay | 五 PAS `trigger / family / formal_signal` 都完成 `2010-01-01 -> 当前` 尾部 replay | 只做局部 PAS 或只有单层 replay |
-| downstream 交接 | `84` 与 `100-105` 默认只承认五 PAS 日线正式库 | 继续允许下游回读 `alpha` 私有过程或单库混写 |
+| downstream 交接 | `95` 与 `100-105` 默认只承认五 PAS 日线正式库 | 继续允许下游回读 `alpha` 私有过程或单库混写 |
 
 ## 实施清单
 
@@ -79,11 +79,11 @@
 
 | 判定项 | A 级通过标准 | 阻断条件 | 对下游影响 |
 | --- | --- | --- | --- |
-| 五 PAS 落点 | 五个 PAS 日线官方库成为默认真值库 | 仍默认单库或混库 | `84/100` 上游不稳 |
+| 五 PAS 落点 | 五个 PAS 日线官方库成为默认真值库 | 仍默认单库或混库 | `85/100` 上游不稳 |
 | 上下文消费 | 五库默认读取 `malf/structure` 的 `D/W/M` 上下文与 `filter_day` gate | 缺失周/月上下文或继续读 bridge 输入 | formal signal 语义不完整 |
 | 终审主权 | `alpha` 成为唯一 admitted/blocked 主权层 | `filter/structure` 继续预裁决 | downstream authority 混乱 |
 | 不做 `5 × 3` | 明确只保留五个日线 PAS 库 | trigger-level `D/W/M` 继续膨胀 | 库形态失控 |
-| bounded replay | 五 PAS replay 全部完成并有证据 | 缺 PAS、缺层或缺证据 | `84` 无法放行 |
+| bounded replay | 五 PAS replay 全部完成并有证据 | 缺 PAS、缺层或缺证据 | `95` 无法放行 |
 
 ## 收口标准
 
@@ -103,3 +103,6 @@ flowchart LR
     FD["filter_day"] --> ALP
     ALP --> SIG["formal signal"]
 ```
+
+
+

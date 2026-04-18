@@ -1,6 +1,6 @@
-# malf alpha 官方真值与 cutover gate 结论
+﻿# malf alpha 官方真值与 cutover gate 结论
 
-结论编号：`84`
+结论编号：`95`
 日期：`2026-04-18`
 状态：`草稿`
 
@@ -19,13 +19,15 @@
 ## 预设影响
 
 1. 接受后才能恢复 `100-105`。
-2. 拒绝时应明确回退到 `80/81/82/83` 中哪一张卡继续补齐。
+2. 拒绝时应明确回退到 `80/91/92/93/94` 中哪一张卡继续补齐。
 
 ## 结论结构图
 
 ```mermaid
 flowchart TD
-    A["84 cutover gate"] --> B["审计 malf 全覆盖"]
+    A["95 cutover gate"] --> B["审计 malf 全覆盖"]
     B --> C["审计 downstream bounded replay"]
     C --> D["裁决是否放行 100-105"]
 ```
+
+

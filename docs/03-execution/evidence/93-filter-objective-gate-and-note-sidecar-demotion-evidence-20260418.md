@@ -1,6 +1,6 @@
-# alpha 双主轴决策重绑与 formal cutover 证据
+﻿# filter 客观 gate 与 note sidecar 降格 证据
 
-证据编号：`83`
+证据编号：`93`
 日期：`2026-04-18`
 
 ## 命令
@@ -27,3 +27,5 @@ flowchart LR
     OUT --> ART[产物落地]
     ART --> REF[结论引用]
 ```
+
+

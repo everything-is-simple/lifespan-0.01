@@ -53,6 +53,14 @@ from mlq.malf.wave_life_runner import (
     MalfWaveLifeBuildSummary,
     run_malf_wave_life_build,
 )
+from mlq.malf.zero_one_wave_audit import (
+    DEFAULT_ZERO_ONE_GUARD_STALE_DAYS,
+    DEFAULT_ZERO_ONE_SAMPLE_LIMIT,
+    MalfZeroOneWaveAuditSample,
+    MalfZeroOneWaveAuditSummary,
+    MalfZeroOneWaveAuditTimeframeSummary,
+    run_malf_zero_one_wave_audit,
+)
 from mlq.malf.runner import (
     DEFAULT_MALF_ADJUST_METHOD,
     DEFAULT_MALF_CONTRACT_VERSION,
@@ -77,6 +85,8 @@ __all__ = [
     "DEFAULT_TIMEFRAMES",
     "DEFAULT_WAVE_LIFE_CONTRACT_VERSION",
     "DEFAULT_WAVE_LIFE_SAMPLE_VERSION",
+    "DEFAULT_ZERO_ONE_GUARD_STALE_DAYS",
+    "DEFAULT_ZERO_ONE_SAMPLE_LIMIT",
     "MALF_CANONICAL_CHECKPOINT_TABLE",
     "MALF_CANONICAL_RUN_TABLE",
     "MALF_CANONICAL_WORK_QUEUE_TABLE",
@@ -105,6 +115,9 @@ __all__ = [
     "MalfMechanismBuildSummary",
     "MalfSnapshotBuildSummary",
     "MalfWaveLifeBuildSummary",
+    "MalfZeroOneWaveAuditSample",
+    "MalfZeroOneWaveAuditSummary",
+    "MalfZeroOneWaveAuditTimeframeSummary",
     "bootstrap_malf_ledger",
     "connect_malf_ledger",
     "malf_ledger_path",
@@ -112,4 +125,5 @@ __all__ = [
     "run_malf_mechanism_build",
     "run_malf_snapshot_build",
     "run_malf_wave_life_build",
+    "run_malf_zero_one_wave_audit",
 ]

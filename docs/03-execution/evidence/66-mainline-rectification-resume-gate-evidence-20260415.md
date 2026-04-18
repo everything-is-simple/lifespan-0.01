@@ -1,4 +1,4 @@
-# mainline rectification resume gate 证据
+﻿# mainline rectification resume gate 证据
 `证据编号`：`66`
 `日期`：`2026-04-15`
 
@@ -36,7 +36,7 @@
 2. `docs/03-execution/00 / A / B / C` 已统一表达：
    - `60-66` 为已完成整改卡组
    - `78-84` 为当前 active 的 official middle-ledger resume 卡组
-   - `100-105` 仍只能位于 `96` 之后
+   - `100-105` 仍只能位于 `95` 之后
 3. `docs/02-spec/Ω-system-delivery-roadmap-20260409.md` 已不再把 `alpha` 信号锚点或 `position / portfolio_plan` data-grade 语义记为当前整改阻塞，而是把系统焦点前移到 `78-84 -> 100-105`。
 
 ## 证据要点
@@ -51,7 +51,7 @@
 2. `66` 复核后未发现仍必须留在整改批次内的新阻断项；剩余工作已全部属于：
    - `78-84` 的 official middle-ledger 恢复与 cutover
    - `100-105` 的 trade / system 恢复卡组
-3. `66` 放行的是“恢复 `78-84` 的施工权限”，不是“`78-84` 已自动通过”或“`96` 已提前成立”。
+3. `66` 放行的是“恢复 `78-84` 的施工权限”，不是“`78-84` 已自动通过”或“`95` 已提前成立”。
 
 ## 证据结构图
 
@@ -66,3 +66,4 @@ flowchart LR
     G66 --> C80["78-84 reopened"]
     C80 --> C100["100-105 still frozen until 86"]
 ```
+

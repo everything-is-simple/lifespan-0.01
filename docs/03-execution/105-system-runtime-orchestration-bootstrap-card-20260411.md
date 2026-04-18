@@ -1,4 +1,4 @@
-# system runtime / orchestration bootstrap 卡
+﻿# system runtime / orchestration bootstrap 卡
 
 卡片编号：`105`
 日期：`2026-04-11`
@@ -9,9 +9,9 @@
 - 问题：
   `27` 已建立最小 `readout / audit`，但 `system` 仍停留在 bounded acceptance；它还没有以统一 checkpoint/queue 语义编排全链并沉淀正式 orchestration 审计。
 - 目标结果：
-  建立 `system` 的最小正式 orchestration bootstrap，使其成为全链“正式审计与冻结入口”，而不是临时汇总器；并把它明确绑定到 `84` 之后的新官方 upstream contract。
+  建立 `system` 的最小正式 orchestration bootstrap，使其成为全链“正式审计与冻结入口”，而不是临时汇总器；并把它明确绑定到 `85` 之后的新官方 upstream contract。
 - 为什么现在做：
-  这必须排在 `84`、`100-104` 全部之后，尤其要等 `malf -> alpha` 官方 cutover、trade progression 与真实官方库 smoke 全部通过。
+  这必须排在 `85`、`100-104` 全部之后，尤其要等 `malf -> alpha` 官方 cutover、trade progression 与真实官方库 smoke 全部通过。
 
 ## 设计输入
 
@@ -31,7 +31,7 @@
 ## 任务分解
 
 1. 冻结 `system` orchestration 的 step ledger、checkpoint、resume/retry 与 acceptance/freeze 边界。
-2. 明确 `system` 只消费 `84` 之后的官方 `alpha / position / portfolio_plan / trade` 正式账本，不回读任何模块私有过程。
+2. 明确 `system` 只消费 `85` 之后的官方 `alpha / position / portfolio_plan / trade` 正式账本，不回读任何模块私有过程。
 3. 明确 orchestration run 与 `system_child_run_readout / system_mainline_snapshot` 的正式关联方式。
 4. 明确 child-run fingerprint 如何绑定五 PAS `alpha`、正式 `position` 与正式 `trade` 的 run/readout。
 5. 回填 `105` 文档与索引，完成 `trade/system` 卡组收口。
@@ -77,7 +77,7 @@ flowchart LR
 
 | 设计项 | 正式口径 | 不接受情形 |
 | --- | --- | --- |
-| 消费边界 | `system` 只读取 `84` 后官方 `alpha / position / portfolio_plan / trade` 账本及必要上游 readout，不回读私有过程 | 回读模块私有过程、helper 表或临时文件 |
+| 消费边界 | `system` 只读取 `85` 后官方 `alpha / position / portfolio_plan / trade` 账本及必要上游 readout，不回读私有过程 | 回读模块私有过程、helper 表或临时文件 |
 | orchestration 主账本 | 需有 step 级 ledger，记录计划、执行、reuse、失败、resume/retry | 只有最终汇总，没有 step 审计 |
 | checkpoint/resume | 必须能从 step 级 checkpoint 恢复，不重跑全部子步骤 | 失败后只能从头再跑 |
 | freeze 入口 | orchestration run 最终写 `system_mainline_snapshot` 与 acceptance/freeze 读数 | orchestration 只生成日志，不落正式冻结事实 |
@@ -101,7 +101,9 @@ flowchart LR
 | --- | --- | --- | --- |
 | 正式审计入口 | `system` 成为全链正式审计与冻结入口 | 仍只是 bounded readout | 全链无法系统级复算 |
 | step/checkpoint | orchestration 具备 step ledger、checkpoint、resume/retry | 失败后只能重头执行 | 不可称为可续跑系统 |
-| 只读消费边界 | 只消费官方上游账本，且显式承接 `84` 后新 upstream contract | 回读私有过程 | 系统越界污染主链 |
+| 只读消费边界 | 只消费官方上游账本，且显式承接 `85` 后新 upstream contract | 回读私有过程 | 系统越界污染主链 |
 | freeze/readout 关联 | orchestration 结果可稳定关联 `system_mainline_snapshot` 与 child readout | 只有日志、无冻结事实 | 系统 acceptance 不成立 |
 | upstream 可追溯 | child-run fingerprint 能明确追溯到五 PAS `alpha`、正式 `position` 与正式 `trade` | 无法知道冻结基于哪套官方上游 | `system` 读数不可信 |
 | 审计闭环 | tests、smoke、record、conclusion 完整 | 只有设计没有证据 | 卡不可收口 |
+
+

@@ -1,4 +1,4 @@
-# mainline rectification resume gate card
+﻿# mainline rectification resume gate card
 
 `卡号`：`66`
 `日期`：`2026-04-15`
@@ -33,7 +33,7 @@
 
 - 本卡只负责恢复闸门裁决，不直接实现 `78-84` 内容。
 - 本卡不绕过 `60-65` 已接受的逐卡结论。
-- 本卡保持 `100-105` 仍只能位于 `96` 之后。
+- 本卡保持 `100-105` 仍只能位于 `95` 之后。
 
 ## 历史账本约束
 
@@ -57,3 +57,4 @@ flowchart LR
     G66 -->|恢复| C80["78-84"]
     G66 -->|继续补卡| FIX["new rectification cards"]
 ```
+
