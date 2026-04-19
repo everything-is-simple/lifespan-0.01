@@ -44,3 +44,13 @@
 2. 证据写完
 3. 记录写完
 4. 结论写完
+
+## 工具架构图
+
+```mermaid
+flowchart TD
+    IDX[执行索引账本骨架] --> SCRIPT[治理脚本 .codex/scripts]
+    SCRIPT --> ENV[环境重建 scripts/setup]
+    ENV --> CHECK[治理检查 scripts/system]
+    CHECK --> TEST[最小单元测试]
+```

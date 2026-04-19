@@ -31,3 +31,13 @@
 
 1. 老系统总表 `battle-tested-lessons-all-modules-and-mainline-bridging-20260408.md`
 2. 老系统 `position` 章程与 `system 120/121/122` 系列章程
+
+## 流程图
+
+```mermaid
+flowchart LR
+    SIG[alpha_formal_signal] --> POS[position 资金管理/风险门控]
+    POS --> ALLOW[final_allowed_position_weight]
+    POS --> BLOCK[blocked_candidate 审计]
+    ALLOW --> PP[portfolio_plan]
+```

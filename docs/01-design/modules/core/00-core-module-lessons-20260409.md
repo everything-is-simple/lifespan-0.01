@@ -31,3 +31,13 @@
 
 1. 老系统总表 `battle-tested-lessons-all-modules-and-mainline-bridging-20260408.md`
 2. 老系统 `core` 章程与合同集中化文档
+
+## 流程图
+
+```mermaid
+flowchart LR
+    CFG[default_settings 冻结路径] --> OWN[ownership manifest]
+    OWN --> CP[checkpoint + fingerprint]
+    CP --> RESUME[断点续跑]
+    RESUME --> DS[各模块 runner]
+```

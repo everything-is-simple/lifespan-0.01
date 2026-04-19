@@ -16,3 +16,12 @@
 
 - 备注 1
 - 备注 2
+
+## 记录结构图
+
+```mermaid
+flowchart LR
+    STEP[施工步骤] --> DEV[偏离项说明]
+    DEV --> NOTE[备注]
+    NOTE --> CON[结论引用]
+```

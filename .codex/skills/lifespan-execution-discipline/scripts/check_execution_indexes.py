@@ -103,6 +103,8 @@ def collect_actual_files(
         name = rel_path[len(root_prefix):]
         if "/" in name:
             continue
+        if not (repo_root / rel_path).exists():
+            continue
         lower_name = name.lower()
         if any(keyword in lower_name for keyword in exclude_keywords):
             continue
@@ -122,6 +124,8 @@ def _collect_names_under_root(repo_root: Path, files_root: Path, glob_pattern: s
             continue
         name = rel_path[len(root_prefix):]
         if "/" in name:
+            continue
+        if not (repo_root / rel_path).exists():
             continue
         if fnmatch.fnmatch(name, glob_pattern):
             names.add(name)
@@ -223,6 +227,37 @@ def check_records(repo_root: Path, *, include_untracked: bool) -> tuple[list[str
     return lines, ok
 
 
+def check_execution_layout(repo_root: Path, *, include_untracked: bool) -> tuple[list[str], bool]:
+    """检查 execution 根目录是否错误放置 evidence / record。"""
+
+    execution_root = repo_root / EXECUTION_ROOT.relative_to(REPO_ROOT)
+    misplaced_evidence = sorted(
+        name
+        for name in _collect_names_under_root(repo_root, execution_root, "*-evidence-*.md", include_untracked=include_untracked)
+        if "template" not in name.lower() and "catalog" not in name.lower()
+    )
+    misplaced_records = sorted(
+        name
+        for name in _collect_names_under_root(repo_root, execution_root, "*-record-*.md", include_untracked=include_untracked)
+        if "template" not in name.lower() and "catalog" not in name.lower()
+    )
+
+    lines = ["[execution-layout]"]
+    ok = True
+    if not misplaced_evidence and not misplaced_records:
+        lines.append("  - 通过：execution 根目录未错误放置 evidence / record。")
+        return lines, ok
+
+    ok = False
+    if misplaced_evidence:
+        lines.append("  - 根目录错误放置 evidence：")
+        lines.extend(f"    - {name}" for name in misplaced_evidence)
+    if misplaced_records:
+        lines.append("  - 根目录错误放置 record：")
+        lines.extend(f"    - {name}" for name in misplaced_records)
+    return lines, ok
+
+
 def check_reading_order(repo_root: Path) -> tuple[list[str], bool]:
     """检查阅读顺序文档是否与当前施工卡一致。"""
 
@@ -294,6 +329,10 @@ def main() -> int:
         overall_ok = overall_ok and ok
 
     lines, ok = check_records(repo_root, include_untracked=args.include_untracked)
+    all_lines.extend(lines)
+    overall_ok = overall_ok and ok
+
+    lines, ok = check_execution_layout(repo_root, include_untracked=args.include_untracked)
     all_lines.extend(lines)
     overall_ok = overall_ok and ok
 

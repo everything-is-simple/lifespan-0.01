@@ -1,15 +1,14 @@
-# 卡片目录
+﻿# 执行卡目录
+`日期`：`2026-04-09`
+`状态`：`持续更新`
 
-日期：`2026-04-09`
-状态：`生效中`
-
-1. 当前下一锤：`06-roadmap-legacy-module-absorption-card-20260409.md`
-2. 当前待施工卡：`06-roadmap-legacy-module-absorption-card-20260409.md`
-3. 正式主线剩余卡：`0`
+1. 当前下一锤：`81-malf-origin-chat-semantic-truth-gap-freeze-card-20260419.md`
+2. 当前待施工卡：`81-malf-origin-chat-semantic-truth-gap-freeze-card-20260419.md`
+3. 正式主线剩余卡：`15`
 4. 可选 Sidecar 剩余卡：`0`
-5. 后置修复剩余卡：`0`
+5. 历史治理 backlog：`0`
 
-## 卡片总表
+## 正式执行卡
 
 1. `01-governance-tooling-and-environment-bootstrap-card-20260409.md`
 2. `02-shared-ledger-contract-and-pytest-path-fix-card-20260409.md`
@@ -17,3 +16,143 @@
 4. `04-module-lessons-and-execution-index-rename-card-20260409.md`
 5. `05-system-roadmap-and-progress-tracker-card-20260409.md`
 6. `06-roadmap-legacy-module-absorption-card-20260409.md`
+7. `07-position-funding-management-and-exit-contract-card-20260409.md`
+8. `08-position-ledger-table-family-bootstrap-card-20260409.md`
+9. `09-position-formal-signal-runner-and-bounded-validation-card-20260409.md`
+10. `10-alpha-formal-signal-contract-and-producer-card-20260409.md`
+11. `11-structure-filter-formal-contract-and-minimal-snapshot-card-20260409.md`
+12. `12-alpha-trigger-ledger-and-five-table-family-minimal-materialization-card-20260409.md`
+13. `13-alpha-five-table-family-shared-contract-and-family-ledger-bootstrap-card-20260409.md`
+14. `14-portfolio-plan-minimal-ledger-and-position-bridge-card-20260409.md`
+15. `15-trade-minimal-runtime-ledger-and-portfolio-plan-bridge-card-20260409.md`
+16. `16-data-malf-minimal-official-mainline-bridge-card-20260410.md`
+17. `17-raw-base-strong-checkpoint-and-dirty-materialization-card-20260410.md`
+18. `18-daily-raw-base-fq-incremental-update-source-selection-card-20260410.md`
+19. `19-tdxquant-daily-raw-source-ledger-bridge-card-20260410.md`
+20. `20-index-block-raw-base-incremental-bridge-card-20260410.md`
+21. `21-system-ledger-incremental-governance-hardening-card-20260410.md`
+22. `22-data-daily-source-governance-sealing-card-20260411.md`
+23. `23-malf-pure-semantic-ledger-boundary-freeze-card-20260411.md`
+24. `24-malf-mechanism-layer-break-confirmation-and-stats-sidecar-card-20260411.md`
+25. `25-malf-mechanism-ledger-bootstrap-and-downstream-sidecar-integration-card-20260411.md`
+26. `26-mainline-truthfulness-revalidation-after-malf-sidecar-bootstrap-card-20260411.md`
+27. `27-system-mainline-bounded-acceptance-readout-and-audit-bootstrap-card-20260411.md`
+28. `28-system-wide-checkpoint-and-dirty-queue-alignment-card-20260411.md`
+29. `29-malf-semantic-canonical-contract-freeze-card-20260411.md`
+30. `30-malf-canonical-ledger-and-data-grade-runner-bootstrap-card-20260411.md`
+31. `31-structure-filter-alpha-rebind-to-canonical-malf-card-20260411.md`
+32. `32-downstream-truthfulness-revalidation-after-malf-canonicalization-card-20260411.md`
+33. `33-malf-downstream-canonical-contract-purge-card-20260411.md`
+34. `34-malf-multi-timeframe-downstream-consumption-card-20260411.md`
+35. `35-downstream-data-grade-checkpoint-alignment-after-malf-card-20260411.md`
+36. `36-malf-wave-life-probability-sidecar-bootstrap-card-20260411.md`
+37. `37-system-governance-historical-debt-backlog-burndown-card-20260412.md`
+38. `38-structure-filter-mainline-legacy-malf-semantic-purge-card-20260413.md`
+39. `39-mainline-local-ledger-standardization-bootstrap-card-20260413.md`
+40. `40-mainline-local-ledger-incremental-sync-and-resume-card-20260413.md`
+41. `41-alpha-pas-five-trigger-canonical-detector-card-20260413.md`
+42. `42-alpha-family-role-and-malf-alignment-card-20260413.md`
+43. `43-structure-filter-alpha-data-grade-quality-gate-before-position-card-20260413.md`
+44. `44-structure-filter-official-ledger-replay-smoke-hardening-card-20260413.md`
+45. `45-alpha-formal-signal-producer-hardening-before-position-card-20260413.md`
+46. `46-pre-position-upstream-acceptance-gate-card-20260413.md`
+47. `47-position-malf-context-driven-sizing-and-batch-contract-card-20260413.md`
+48. `48-position-risk-budget-and-capacity-ledger-hardening-card-20260413.md`
+49. `49-position-batched-entry-trim-and-partial-exit-contract-card-20260413.md`
+50. `50-position-data-grade-checkpoint-and-replay-runner-card-20260413.md`
+51. `51-pre-portfolio-plan-position-acceptance-gate-card-20260413.md`
+52. `52-portfolio-plan-official-ledger-family-and-natural-key-freeze-card-20260413.md`
+53. `53-portfolio-plan-capacity-decision-ledger-hardening-card-20260413.md`
+54. `54-portfolio-plan-data-grade-checkpoint-replay-and-freshness-card-20260413.md`
+55. `55-pre-trade-upstream-data-grade-baseline-gate-card-20260413.md`
+56. `56-mainline-official-middle-ledger-2010-pilot-scope-freeze-card-20260414.md`
+57. `57-malf-canonical-official-2010-bootstrap-and-replay-card-20260414.md`
+58. `58-structure-filter-alpha-official-2010-canonical-smoke-card-20260414.md`
+59. `59-mainline-middle-ledger-2010-truthfulness-gate-card-20260414.md`
+60. `60-mainline-rectification-batch-registration-and-scope-freeze-card-20260415.md`
+61. `61-structure-filter-tail-coverage-truthfulness-rectification-card-20260415.md`
+62. `62-filter-pre-trigger-boundary-and-authority-reset-card-20260415.md`
+63. `63-wave-life-official-ledger-truthfulness-and-bootstrap-card-20260415.md`
+64. `64-alpha-stage-percentile-decision-matrix-integration-card-20260415.md`
+65. `65-formal-signal-admission-boundary-reallocation-card-20260415.md`
+66. `66-mainline-rectification-resume-gate-card-20260415.md`
+67. `67-historical-file-length-debt-burndown-card-20260415.md`
+68. `68-execution-doc-layout-governance-restoration-card-20260415.md`
+69. `69-filter-objective-tradability-and-universe-gate-freeze-card-20260415.md`
+70. `70-historical-objective-profile-backfill-source-selection-and-governance-card-20260415.md`
+71. `71-tushare-objective-source-ledger-and-profile-materialization-card-20260415.md`
+72. `72-historical-objective-profile-backfill-execution-card-20260415.md`
+73. `73-market-base-backward-full-history-backfill-card-20260416.md`
+74. `74-market-base-batched-bootstrap-governance-card-20260416.md`
+75. `75-raw-base-weekly-monthly-timeframe-ledger-bootstrap-card-20260416.md`
+76. `76-raw-base-day-week-month-ledger-split-migration-card-20260417.md`
+77. `77-raw-base-timeframe-split-tail-completion-card-20260418.md`
+78. `78-malf-alpha-dual-axis-refactor-scope-freeze-card-20260418.md`
+79. `79-malf-day-week-month-ledger-split-path-contract-card-20260418.md`
+80. `80-malf-zero-one-wave-filter-boundary-freeze-card-20260418.md`
+81. `81-malf-origin-chat-semantic-truth-gap-freeze-card-20260419.md`
+82. `82-malf-break-invalidation-confirmation-contract-freeze-card-20260419.md`
+83. `83-malf-last-valid-structure-anchor-and-stale-guard-governance-card-20260419.md`
+84. `84-malf-canonical-materialization-repair-and-three-ledger-rebuild-card-20260419.md`
+85. `85-malf-post-rebuild-truthfulness-and-audit-acceptance-gate-card-20260419.md`
+86. `91-malf-timeframe-native-base-source-rebind-card-20260418.md`
+87. `92-structure-thin-projection-and-day-binding-card-20260418.md`
+88. `93-filter-objective-gate-and-note-sidecar-demotion-card-20260418.md`
+89. `94-alpha-dual-axis-decision-rebind-and-formal-cutover-card-20260418.md`
+90. `95-malf-alpha-official-truthfulness-and-cutover-gate-card-20260418.md`
+100. `100-trade-signal-anchor-contract-freeze-card-20260411.md`
+101. `101-position-entry-t-plus-1-open-reference-price-correction-card-20260411.md`
+102. `102-trade-exit-pnl-ledger-bootstrap-card-20260411.md`
+103. `103-trade-backtest-progression-runner-card-20260411.md`
+104. `104-mainline-real-data-smoke-regression-card-20260411.md`
+105. `105-system-runtime-orchestration-bootstrap-card-20260411.md`
+
+## 当前说明
+
+1. 最新生效结论锚点已推进到 `91-malf-timeframe-native-base-source-rebind-conclusion-20260418.md`。
+2. `91` 已同时补齐 `docs/01-design/modules/malf/15-malf-authoritative-timeframe-native-ledger-charter-20260419.md` 与 `docs/02-spec/modules/malf/15-malf-authoritative-timeframe-native-ledger-spec-20260419.md`，它们是当前 `malf` 单点权威设计/规格锚点。
+3. `81-85` 是当前新增的 `malf` 前置卡组：`81` 负责回溯 origin-chat 纯语义 `malf`、冻结当前 canonical truth gap 并决定修订顺序；`82` 冻结 `break / invalidation / confirmation` truth contract；`83` 冻结 `last_valid_HL / last_valid_LH` 与 stale guard 治理边界；`84` 再正式修改 `canonical_materialization` 并视需要重建 `malf_day / malf_week / malf_month`；`85` 最后做 `malf` 自身的 truthfulness / audit acceptance gate。
+4. `60-79` 已完成并接受；`79` 已完成 `malf day/week/month` 三库路径、bootstrap 与 native timeframe 契约冻结。
+5. `91-95` 现在保留为远置后的 `malf -> alpha` downstream cutover 卡组：只有 `81-85` 收口后才允许恢复。`91` 已完成 canonical native source/full coverage，`92` 把 `structure` 收敛为 `day / week / month` 三薄层，`93` 把 `filter` 收敛为 objective gate + note sidecar 并裁决独立落库，`94` 把 `alpha` 收回终审主权并切到 `BOF / TST / PB / CPB / BPB` 五个 PAS 日线官方库，`95` 再做 downstream truthfulness / cutover gate。
+6. 旧 official middle-ledger 恢复卡组已删除，不再保留旧路线。
+7. 当前卡组顺序保持为 `29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45 -> 46 -> 47 -> 48 -> 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55 -> 56 -> 57 -> 58 -> 59 -> 60 -> 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 68 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 -> 76 -> 77 -> 78 -> 79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 91 -> 92 -> 93 -> 94 -> 95 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105`。
+
+## 卡组路线图
+
+```mermaid
+flowchart LR
+    G01["01-06 治理与入口"] --> P07["07-09 position"]
+    P07 --> A10["10-13 alpha/structure/filter"]
+    A10 --> T14["14-15 portfolio_plan/trade"]
+    T14 --> D16["16-25 data/malf/system"]
+    D16 --> M29["29-35 malf canonical downstream"]
+    M29 --> M36["36 wave life sidecar"]
+    M36 --> G37["37 system governance"]
+    G37 --> P38["38 structure/filter purge"]
+    P38 --> D39["39 ledger standardization"]
+    D39 --> D40["40 incremental sync/resume"]
+    D40 --> A41["41 alpha PAS detector"]
+    A41 --> A42["42 alpha family role"]
+    A42 --> G43["43 quality gate"]
+    G43 --> G44["44 structure/filter hardening"]
+    G44 --> G45["45 alpha producer hardening"]
+    G45 --> G46["46 pre-position acceptance"]
+    G46 --> G47["47 position MALF sizing/batch contract"]
+    G47 --> G48["48 position risk/capacity hardening"]
+    G48 --> G49["49 position batched entry/exit"]
+    G49 --> G50["50 position data-grade runner"]
+    G50 --> G51["51 position acceptance"]
+    G51 --> G52["52 portfolio_plan ledger family"]
+    G52 --> G53["53 portfolio_plan decision/capacity"]
+    G53 --> G54["54 portfolio_plan data-grade runner"]
+    G54 --> G55["55 pre-trade baseline gate"]
+    G55 --> G60["60-66 mainline rectification"]
+    G60 --> G67["67-77 data/治理收口"]
+    G67 --> G78["78-85 / 91-95 malf-alpha dual-axis refactor"]
+    G78 --> POST["100-105 trade/system 收口"]
+```
+
+
+
+
+

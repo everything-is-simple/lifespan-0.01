@@ -30,3 +30,14 @@
 - `tests/unit/system/test_doc_first_gating_governance.py`
 - `scripts/system/check_development_governance.py`
 - `scripts/system/check_entry_freshness_governance.py`
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    GATE[check_doc_first_gating] --> G2[需求/设计/规格确认]
+    DEV[check_development_governance] --> G3[全仓治理通过]
+    PT[pytest 6 passed] --> G4[测试绿色]
+    G2 --> DOC[门禁文档落地]
+    G3 --> DOC
+```

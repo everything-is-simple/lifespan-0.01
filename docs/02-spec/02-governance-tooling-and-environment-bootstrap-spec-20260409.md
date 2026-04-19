@@ -51,3 +51,14 @@
 2. `python scripts/system/check_development_governance.py` 可运行
 3. `powershell -File scripts/setup/rebuild_windows_env.ps1` 可完成环境安装
 4. `python -m pytest tests/unit/core/test_paths.py -q` 通过
+
+## 流程图
+
+```mermaid
+flowchart LR
+    ENV[rebuild_windows_env.ps1] --> VENV[.venv 安装]
+    VENV --> CHK1[check_execution_indexes]
+    VENV --> CHK2[check_development_governance]
+    CHK1 --> GATE[治理检查通过]
+    CHK2 --> GATE
+```

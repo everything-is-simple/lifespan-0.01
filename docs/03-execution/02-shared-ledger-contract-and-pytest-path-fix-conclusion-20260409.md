@@ -20,3 +20,12 @@
 1. 后续 `position / alpha / portfolio_plan / trade` 新增正式表时，有了统一的共享账本门槛。
 2. `pytest` 临时目录不再因为运行目录不同而漂移。
 3. 下一步可以在这份共享契约之上实现真正的 `doc-first gating` 检查器。
+
+## 共享契约图
+
+```mermaid
+flowchart TD
+    NK[稳定自然键优先] --> AUDIT[审计字段分离]
+    AUDIT --> LAYER[账本与快照分层]
+    LAYER --> DIR[五根目录来源优先级]
+```

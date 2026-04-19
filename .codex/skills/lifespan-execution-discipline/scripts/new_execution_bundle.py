@@ -63,14 +63,9 @@ def render_template(template_key: str, args: argparse.Namespace) -> str:
     """按仓库模板渲染最小元信息。"""
 
     text = load_template(template_key)
-    label_map = {
-        "card": "卡片编号",
-        "evidence": "证据编号",
-        "record": "记录编号",
-        "conclusion": "结论编号",
-    }
     formatted_date = f"{args.date[:4]}-{args.date[4:6]}-{args.date[6:8]}"
     text = text.replace("<待填写>", args.number)
+    text = text.replace("<待填编号>", args.number)
     text = text.replace("<yyyy-mm-dd>", formatted_date)
     text = text.replace("状态：`草稿`", f"状态：`{args.status}`")
     if template_key == "card":
@@ -81,8 +76,6 @@ def render_template(template_key: str, args: argparse.Namespace) -> str:
         text = text.replace("# 记录模板", f"# {args.title} 记录")
     if template_key == "conclusion":
         text = text.replace("# 结论模板", f"# {args.title} 结论")
-    if f"{label_map[template_key]}：`{args.number}`" not in text:
-        text = f"{label_map[template_key]}：`{args.number}`\n" + text
     return text
 
 
@@ -115,7 +108,12 @@ def find_section_bounds(lines: list[str], section_title: str) -> tuple[int, int]
     return heading_index, section_end
 
 
-def insert_numbered_entry(catalog_path: Path, section_title: str, entry_name: str, dry_run: bool) -> None:
+def insert_numbered_entry(
+    catalog_path: Path,
+    section_title: str | tuple[str, ...],
+    entry_name: str,
+    dry_run: bool,
+) -> None:
     """向目录分栏插入新的编号项。"""
 
     text = catalog_path.read_text(encoding="utf-8")
@@ -124,7 +122,17 @@ def insert_numbered_entry(catalog_path: Path, section_title: str, entry_name: st
         return
 
     lines = text.splitlines()
-    _, section_end = find_section_bounds(lines, section_title)
+    titles = (section_title,) if isinstance(section_title, str) else section_title
+    last_error: ValueError | None = None
+    section_end = -1
+    for title in titles:
+        try:
+            _, section_end = find_section_bounds(lines, title)
+            break
+        except ValueError as exc:
+            last_error = exc
+    if section_end == -1:
+        raise last_error or ValueError("未找到可用分栏标题")
 
     last_number = 0
     insert_index = section_end
@@ -140,7 +148,7 @@ def insert_numbered_entry(catalog_path: Path, section_title: str, entry_name: st
             break
 
     new_line = f"{last_number + 1}. `{entry_name}`"
-    print(f"- 预填索引：{catalog_path.name} [{section_title}] += {entry_name}")
+    print(f"- 预填索引：{catalog_path.name} [{titles[0]}] += {entry_name}")
     if dry_run:
         return
 
@@ -164,7 +172,7 @@ def sync_current_card(card_name: str, dry_run: bool) -> None:
         (
             CARD_CATALOG,
             [
-                (r"(^1\.\s当前下一锤：)`[^`]+`", rf"\1`{card_name}`"),
+                (r"(^1\.\s当前下一(?:锚|锤)：)`[^`]+`", rf"\1`{card_name}`"),
                 (r"(^2\.\s当前待施工卡：)`[^`]+`", rf"\1`{card_name}`"),
             ],
         ),
@@ -172,6 +180,7 @@ def sync_current_card(card_name: str, dry_run: bool) -> None:
             COMPLETION_LEDGER,
             [
                 (r"(^1\.\s当前下一锤：)`[^`]+`", rf"\1`{card_name}`"),
+                (r"(^2\.\s当前待施工卡：)`[^`]+`", rf"\1`{card_name}`"),
             ],
         ),
     ]
@@ -190,9 +199,9 @@ def register_indexes(targets: dict[str, Path], dry_run: bool, *, set_current_car
     """回填结论目录、证据目录、卡目录与当前卡。"""
 
     print("开始回填索引：")
-    insert_numbered_entry(CONCLUSION_CATALOG, "当前正式结论", targets["conclusion"].name, dry_run)
-    insert_numbered_entry(EVIDENCE_CATALOG, "当前证据目录", targets["evidence"].name, dry_run)
-    insert_numbered_entry(CARD_CATALOG, "卡片总表", targets["card"].name, dry_run)
+    insert_numbered_entry(CONCLUSION_CATALOG, "正式结论目录", targets["conclusion"].name, dry_run)
+    insert_numbered_entry(EVIDENCE_CATALOG, "正式证据目录", targets["evidence"].name, dry_run)
+    insert_numbered_entry(CARD_CATALOG, ("正式执行卡", "正式卡目录"), targets["card"].name, dry_run)
     if set_current_card:
         sync_current_card(targets["card"].name, dry_run)
 

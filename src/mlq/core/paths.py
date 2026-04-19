@@ -39,9 +39,16 @@ def discover_repo_root(start: Path | None = None) -> Path:
 class DatabasePaths:
     """当前重构基线下的正式历史账本数据库路径。"""
 
-    raw_market: Path
-    market_base: Path
-    malf: Path
+    raw_market_day: Path
+    raw_market_week: Path
+    raw_market_month: Path
+    market_base_day: Path
+    market_base_week: Path
+    market_base_month: Path
+    malf_day: Path
+    malf_week: Path
+    malf_month: Path
+    malf_legacy: Path
     structure: Path
     filter: Path
     alpha: Path
@@ -50,11 +57,34 @@ class DatabasePaths:
     trade_runtime: Path
     system: Path
 
+    @property
+    def raw_market(self) -> Path:
+        """兼容旧调用：`raw_market` 默认仍指向 day 官方库。"""
+
+        return self.raw_market_day
+
+    @property
+    def market_base(self) -> Path:
+        """兼容旧调用：`market_base` 默认仍指向 day 官方库。"""
+
+        return self.market_base_day
+
+    @property
+    def malf(self) -> Path:
+        return self.malf_legacy
+
     def as_dict(self) -> dict[str, Path]:
         return {
-            "raw_market": self.raw_market,
-            "market_base": self.market_base,
-            "malf": self.malf,
+            "raw_market_day": self.raw_market_day,
+            "raw_market_week": self.raw_market_week,
+            "raw_market_month": self.raw_market_month,
+            "market_base_day": self.market_base_day,
+            "market_base_week": self.market_base_week,
+            "market_base_month": self.market_base_month,
+            "malf_day": self.malf_day,
+            "malf_week": self.malf_week,
+            "malf_month": self.malf_month,
+            "malf_legacy": self.malf_legacy,
             "structure": self.structure,
             "filter": self.filter,
             "alpha": self.alpha,
@@ -78,9 +108,16 @@ class WorkspaceRoots:
     @property
     def databases(self) -> DatabasePaths:
         return DatabasePaths(
-            raw_market=self.data_root / "raw" / "raw_market.duckdb",
-            market_base=self.data_root / "base" / "market_base.duckdb",
-            malf=self.data_root / "malf" / "malf.duckdb",
+            raw_market_day=self.data_root / "raw" / "raw_market.duckdb",
+            raw_market_week=self.data_root / "raw" / "raw_market_week.duckdb",
+            raw_market_month=self.data_root / "raw" / "raw_market_month.duckdb",
+            market_base_day=self.data_root / "base" / "market_base.duckdb",
+            market_base_week=self.data_root / "base" / "market_base_week.duckdb",
+            market_base_month=self.data_root / "base" / "market_base_month.duckdb",
+            malf_day=self.data_root / "malf" / "malf_day.duckdb",
+            malf_week=self.data_root / "malf" / "malf_week.duckdb",
+            malf_month=self.data_root / "malf" / "malf_month.duckdb",
+            malf_legacy=self.data_root / "malf" / "malf.duckdb",
             structure=self.data_root / "structure" / "structure.duckdb",
             filter=self.data_root / "filter" / "filter.duckdb",
             alpha=self.data_root / "alpha" / "alpha.duckdb",

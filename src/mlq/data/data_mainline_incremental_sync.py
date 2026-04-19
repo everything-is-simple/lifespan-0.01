@@ -1,0 +1,737 @@
+"""主线本地正式库增量同步、断点续跑与 freshness audit。"""
+
+from __future__ import annotations
+
+import json
+import shutil
+from dataclasses import dataclass
+from datetime import date, datetime, timezone
+from pathlib import Path
+
+import duckdb
+
+from mlq.core.paths import WorkspaceRoots, default_settings
+from mlq.data.data_mainline_standardization import (
+    MAINLINE_LEDGER_SPEC_BY_NAME,
+    _load_table_row_counts,
+    _normalize_selected_ledgers,
+    _normalize_source_map,
+    _path_size_bytes,
+)
+from mlq.data.data_mainline_sync_support import (
+    derive_dirty_reason,
+    dump_date,
+    load_checkpoint,
+    normalize_date_map,
+    resolve_source_state,
+    resolve_tail_dates,
+    to_date,
+    upsert_checkpoint,
+    write_reports,
+)
+
+
+MAINLINE_LOCAL_LEDGER_SYNC_RUN_TABLE = "mainline_local_ledger_sync_run"
+MAINLINE_LOCAL_LEDGER_SYNC_CHECKPOINT_TABLE = "mainline_local_ledger_sync_checkpoint"
+MAINLINE_LOCAL_LEDGER_SYNC_DIRTY_QUEUE_TABLE = "mainline_local_ledger_sync_dirty_queue"
+MAINLINE_LOCAL_LEDGER_FRESHNESS_READOUT_TABLE = "mainline_local_ledger_freshness_readout"
+MAINLINE_LOCAL_LEDGER_SYNC_CONTROL_FILENAME = "mainline_local_ledger_sync.duckdb"
+
+CONTROL_DDL: dict[str, str] = {
+    MAINLINE_LOCAL_LEDGER_SYNC_RUN_TABLE: """
+        CREATE TABLE IF NOT EXISTS mainline_local_ledger_sync_run (
+            run_id TEXT PRIMARY KEY,
+            runner_name TEXT NOT NULL,
+            runner_version TEXT NOT NULL,
+            run_status TEXT NOT NULL,
+            selected_ledger_count BIGINT NOT NULL DEFAULT 0,
+            queue_enqueued_count BIGINT NOT NULL DEFAULT 0,
+            queue_claimed_count BIGINT NOT NULL DEFAULT 0,
+            synced_ledger_count BIGINT NOT NULL DEFAULT 0,
+            missing_source_count BIGINT NOT NULL DEFAULT 0,
+            replay_requested_count BIGINT NOT NULL DEFAULT 0,
+            started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            completed_at TIMESTAMP,
+            summary_json TEXT
+        )
+    """,
+    MAINLINE_LOCAL_LEDGER_SYNC_CHECKPOINT_TABLE: """
+        CREATE TABLE IF NOT EXISTS mainline_local_ledger_sync_checkpoint (
+            ledger_name TEXT PRIMARY KEY,
+            module_name TEXT NOT NULL,
+            source_path TEXT NOT NULL,
+            target_path TEXT NOT NULL,
+            last_completed_bar_dt DATE,
+            tail_start_bar_dt DATE,
+            tail_confirm_until_dt DATE,
+            source_fingerprint TEXT NOT NULL,
+            last_run_id TEXT,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """,
+    MAINLINE_LOCAL_LEDGER_SYNC_DIRTY_QUEUE_TABLE: """
+        CREATE TABLE IF NOT EXISTS mainline_local_ledger_sync_dirty_queue (
+            queue_nk TEXT PRIMARY KEY,
+            scope_nk TEXT NOT NULL,
+            ledger_name TEXT NOT NULL,
+            module_name TEXT NOT NULL,
+            source_path TEXT NOT NULL,
+            target_path TEXT NOT NULL,
+            dirty_reason TEXT NOT NULL,
+            source_latest_bar_dt DATE,
+            replay_start_bar_dt DATE,
+            replay_confirm_until_dt DATE,
+            source_fingerprint TEXT NOT NULL,
+            queue_status TEXT NOT NULL,
+            enqueued_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            claimed_at TIMESTAMP,
+            completed_at TIMESTAMP,
+            first_seen_run_id TEXT,
+            last_claimed_run_id TEXT,
+            last_materialized_run_id TEXT,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """,
+    MAINLINE_LOCAL_LEDGER_FRESHNESS_READOUT_TABLE: """
+        CREATE TABLE IF NOT EXISTS mainline_local_ledger_freshness_readout (
+            ledger_name TEXT PRIMARY KEY,
+            module_name TEXT NOT NULL,
+            source_path TEXT NOT NULL,
+            target_path TEXT NOT NULL,
+            source_exists BOOLEAN NOT NULL,
+            target_exists BOOLEAN NOT NULL,
+            source_latest_bar_dt DATE,
+            last_completed_bar_dt DATE,
+            freshness_lag_days BIGINT,
+            freshness_status TEXT NOT NULL,
+            last_dirty_reason TEXT,
+            source_fingerprint TEXT NOT NULL,
+            last_run_id TEXT,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """,
+}
+
+
+@dataclass(frozen=True)
+class MainlineLocalLedgerSyncResult:
+    ledger_name: str
+    module_name: str
+    dirty_reason: str
+    sync_action: str
+    source_path: Path
+    target_path: Path
+    source_latest_bar_dt: date | None
+    last_completed_bar_dt: date | None
+    tail_start_bar_dt: date | None
+    tail_confirm_until_dt: date | None
+    source_fingerprint: str
+    table_count_after: int
+    total_row_count_after: int
+
+    def as_dict(self) -> dict[str, object]:
+        return {
+            "ledger_name": self.ledger_name,
+            "module_name": self.module_name,
+            "dirty_reason": self.dirty_reason,
+            "sync_action": self.sync_action,
+            "source_path": str(self.source_path),
+            "target_path": str(self.target_path),
+            "source_latest_bar_dt": dump_date(self.source_latest_bar_dt),
+            "last_completed_bar_dt": dump_date(self.last_completed_bar_dt),
+            "tail_start_bar_dt": dump_date(self.tail_start_bar_dt),
+            "tail_confirm_until_dt": dump_date(self.tail_confirm_until_dt),
+            "source_fingerprint": self.source_fingerprint,
+            "table_count_after": self.table_count_after,
+            "total_row_count_after": self.total_row_count_after,
+        }
+
+
+@dataclass(frozen=True)
+class MainlineLocalLedgerFreshnessRow:
+    ledger_name: str
+    module_name: str
+    source_path: Path
+    target_path: Path
+    source_exists: bool
+    target_exists: bool
+    source_latest_bar_dt: date | None
+    last_completed_bar_dt: date | None
+    freshness_lag_days: int | None
+    freshness_status: str
+    last_dirty_reason: str | None
+    source_fingerprint: str
+
+    def as_dict(self) -> dict[str, object]:
+        return {
+            "ledger_name": self.ledger_name,
+            "module_name": self.module_name,
+            "source_path": str(self.source_path),
+            "target_path": str(self.target_path),
+            "source_exists": self.source_exists,
+            "target_exists": self.target_exists,
+            "source_latest_bar_dt": dump_date(self.source_latest_bar_dt),
+            "last_completed_bar_dt": dump_date(self.last_completed_bar_dt),
+            "freshness_lag_days": self.freshness_lag_days,
+            "freshness_status": self.freshness_status,
+            "last_dirty_reason": self.last_dirty_reason,
+            "source_fingerprint": self.source_fingerprint,
+        }
+
+
+@dataclass(frozen=True)
+class MainlineLocalLedgerIncrementalSyncSummary:
+    run_id: str
+    selected_ledger_count: int
+    queue_enqueued_count: int
+    queue_claimed_count: int
+    synced_ledger_count: int
+    copied_from_source_count: int
+    observed_in_place_count: int
+    bootstrapped_empty_target_count: int
+    checkpoint_upserted_count: int
+    freshness_upserted_count: int
+    missing_source_count: int
+    replay_requested_count: int
+    fresh_count: int
+    stale_count: int
+    unknown_freshness_count: int
+    missing_target_count: int
+    sync_results: tuple[MainlineLocalLedgerSyncResult, ...]
+    freshness_rows: tuple[MainlineLocalLedgerFreshnessRow, ...]
+    report_json_path: Path
+    report_markdown_path: Path
+
+    def as_dict(self) -> dict[str, object]:
+        return {
+            "run_id": self.run_id,
+            "selected_ledger_count": self.selected_ledger_count,
+            "queue_enqueued_count": self.queue_enqueued_count,
+            "queue_claimed_count": self.queue_claimed_count,
+            "synced_ledger_count": self.synced_ledger_count,
+            "copied_from_source_count": self.copied_from_source_count,
+            "observed_in_place_count": self.observed_in_place_count,
+            "bootstrapped_empty_target_count": self.bootstrapped_empty_target_count,
+            "checkpoint_upserted_count": self.checkpoint_upserted_count,
+            "freshness_upserted_count": self.freshness_upserted_count,
+            "missing_source_count": self.missing_source_count,
+            "replay_requested_count": self.replay_requested_count,
+            "fresh_count": self.fresh_count,
+            "stale_count": self.stale_count,
+            "unknown_freshness_count": self.unknown_freshness_count,
+            "missing_target_count": self.missing_target_count,
+            "sync_results": [row.as_dict() for row in self.sync_results],
+            "freshness_rows": [row.as_dict() for row in self.freshness_rows],
+            "report_json_path": str(self.report_json_path),
+            "report_markdown_path": str(self.report_markdown_path),
+        }
+
+
+def mainline_local_ledger_sync_control_path(settings: WorkspaceRoots | None = None) -> Path:
+    workspace = settings or default_settings()
+    return (workspace.data_root / "data" / MAINLINE_LOCAL_LEDGER_SYNC_CONTROL_FILENAME).resolve()
+
+
+def connect_mainline_local_ledger_sync_control(
+    settings: WorkspaceRoots | None = None,
+    *,
+    read_only: bool = False,
+) -> duckdb.DuckDBPyConnection:
+    workspace = settings or default_settings()
+    if not read_only:
+        workspace.ensure_directories()
+        mainline_local_ledger_sync_control_path(workspace).parent.mkdir(parents=True, exist_ok=True)
+    return duckdb.connect(str(mainline_local_ledger_sync_control_path(workspace)), read_only=read_only)
+
+
+def bootstrap_mainline_local_ledger_sync_control(
+    settings: WorkspaceRoots | None = None,
+    *,
+    connection: duckdb.DuckDBPyConnection | None = None,
+) -> tuple[str, ...]:
+    workspace = settings or default_settings()
+    owns_connection = connection is None
+    conn = connection or connect_mainline_local_ledger_sync_control(workspace)
+    try:
+        for ddl in CONTROL_DDL.values():
+            conn.execute(ddl)
+        return tuple(CONTROL_DDL.keys())
+    finally:
+        if owns_connection:
+            conn.close()
+
+
+def run_mainline_local_ledger_incremental_sync(
+    *,
+    settings: WorkspaceRoots | None = None,
+    ledgers: list[str] | tuple[str, ...] | None = None,
+    source_ledger_paths: dict[str, str | Path] | None = None,
+    source_latest_bar_dates: dict[str, str | date] | None = None,
+    replay_start_dates: dict[str, str | date] | None = None,
+    replay_confirm_until_dates: dict[str, str | date] | None = None,
+    run_id: str | None = None,
+    summary_path: Path | None = None,
+    runner_name: str = "mainline_local_ledger_incremental_sync",
+    runner_version: str = "v1",
+) -> MainlineLocalLedgerIncrementalSyncSummary:
+    workspace = settings or default_settings()
+    workspace.ensure_directories()
+    selected_ledgers = _normalize_selected_ledgers(ledgers)
+    source_map = _normalize_source_map(source_ledger_paths)
+    source_latest_map = normalize_date_map(source_latest_bar_dates)
+    replay_start_map = normalize_date_map(replay_start_dates)
+    replay_confirm_map = normalize_date_map(replay_confirm_until_dates)
+    effective_run_id = run_id or f"mainline-local-ledger-sync-{datetime.now(timezone.utc):%Y%m%d%H%M%S}"
+    replay_requested_count = sum(
+        1
+        for ledger_name in selected_ledgers
+        if ledger_name in replay_start_map or ledger_name in replay_confirm_map
+    )
+
+    connection = connect_mainline_local_ledger_sync_control(workspace)
+    try:
+        bootstrap_mainline_local_ledger_sync_control(workspace, connection=connection)
+        connection.execute(
+            f"""
+            INSERT INTO {MAINLINE_LOCAL_LEDGER_SYNC_RUN_TABLE} (
+                run_id, runner_name, runner_version, run_status, selected_ledger_count, replay_requested_count
+            )
+            VALUES (?, ?, ?, 'running', ?, ?)
+            """,
+            [effective_run_id, runner_name, runner_version, len(selected_ledgers), replay_requested_count],
+        )
+        scope_rows = _collect_scope_rows(
+            connection=connection,
+            settings=workspace,
+            selected_ledgers=selected_ledgers,
+            source_map=source_map,
+            source_latest_map=source_latest_map,
+            replay_start_map=replay_start_map,
+            replay_confirm_map=replay_confirm_map,
+        )
+        queue_enqueued_count = _enqueue_dirty_scopes(connection=connection, scope_rows=scope_rows, run_id=effective_run_id)
+        claimed_scope_rows = _claim_scopes(connection=connection, selected_ledgers=selected_ledgers, run_id=effective_run_id)
+        sync_results: list[MainlineLocalLedgerSyncResult] = []
+        copied_from_source_count = 0
+        observed_in_place_count = 0
+        bootstrapped_empty_target_count = 0
+        checkpoint_upserted_count = 0
+        for scope_row in claimed_scope_rows:
+            try:
+                spec = MAINLINE_LEDGER_SPEC_BY_NAME[str(scope_row["ledger_name"])]
+                action = _sync_one_ledger(
+                    spec=spec,
+                    settings=workspace,
+                    source_path=Path(str(scope_row["source_path"])),
+                    target_path=Path(str(scope_row["target_path"])),
+                )
+                state = resolve_source_state(
+                    ledger_name=str(scope_row["ledger_name"]),
+                    source_path=Path(str(scope_row["source_path"])),
+                    explicit_latest_bar_dt=source_latest_map.get(str(scope_row["ledger_name"])),
+                )
+                last_completed_bar_dt, tail_start_bar_dt, tail_confirm_until_dt = resolve_tail_dates(
+                    source_latest_bar_dt=state["source_latest_bar_dt"],
+                    replay_start_bar_dt=to_date(scope_row["replay_start_bar_dt"]),
+                    replay_confirm_until_dt=to_date(scope_row["replay_confirm_until_dt"]),
+                )
+                upsert_checkpoint(
+                    connection=connection,
+                    checkpoint_table=MAINLINE_LOCAL_LEDGER_SYNC_CHECKPOINT_TABLE,
+                    ledger_name=str(scope_row["ledger_name"]),
+                    module_name=str(scope_row["module_name"]),
+                    source_path=Path(str(scope_row["source_path"])),
+                    target_path=Path(str(scope_row["target_path"])),
+                    last_completed_bar_dt=last_completed_bar_dt,
+                    tail_start_bar_dt=tail_start_bar_dt,
+                    tail_confirm_until_dt=tail_confirm_until_dt,
+                    source_fingerprint=str(state["source_fingerprint"]),
+                    last_run_id=effective_run_id,
+                )
+                connection.execute(
+                    f"""
+                    UPDATE {MAINLINE_LOCAL_LEDGER_SYNC_DIRTY_QUEUE_TABLE}
+                    SET queue_status = 'completed',
+                        completed_at = CURRENT_TIMESTAMP,
+                        last_materialized_run_id = ?,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE queue_nk = ?
+                    """,
+                    [effective_run_id, str(scope_row["queue_nk"])],
+                )
+                row_counts = _load_table_row_counts(Path(str(scope_row["target_path"])))
+                sync_results.append(
+                    MainlineLocalLedgerSyncResult(
+                        ledger_name=str(scope_row["ledger_name"]),
+                        module_name=str(scope_row["module_name"]),
+                        dirty_reason=str(scope_row["dirty_reason"]),
+                        sync_action=action,
+                        source_path=Path(str(scope_row["source_path"])),
+                        target_path=Path(str(scope_row["target_path"])),
+                        source_latest_bar_dt=state["source_latest_bar_dt"],
+                        last_completed_bar_dt=last_completed_bar_dt,
+                        tail_start_bar_dt=tail_start_bar_dt,
+                        tail_confirm_until_dt=tail_confirm_until_dt,
+                        source_fingerprint=str(state["source_fingerprint"]),
+                        table_count_after=len(row_counts),
+                        total_row_count_after=sum(row_counts.values()),
+                    )
+                )
+                checkpoint_upserted_count += 1
+                if action == "copied_from_source":
+                    copied_from_source_count += 1
+                elif action == "observed_in_place":
+                    observed_in_place_count += 1
+                else:
+                    bootstrapped_empty_target_count += 1
+            except Exception:
+                connection.execute(
+                    f"""
+                    UPDATE {MAINLINE_LOCAL_LEDGER_SYNC_DIRTY_QUEUE_TABLE}
+                    SET queue_status = 'failed',
+                        last_claimed_run_id = ?,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE queue_nk = ?
+                    """,
+                    [effective_run_id, str(scope_row["queue_nk"])],
+                )
+                raise
+
+        freshness_rows = _write_freshness_readout(
+            connection=connection,
+            settings=workspace,
+            selected_ledgers=selected_ledgers,
+            source_map=source_map,
+            source_latest_map=source_latest_map,
+            dirty_reason_map={str(row["ledger_name"]): row["dirty_reason"] for row in scope_rows},
+            run_id=effective_run_id,
+        )
+        report_json_path, report_markdown_path = write_reports(
+            settings=workspace,
+            run_id=effective_run_id,
+            sync_results=sync_results,
+            freshness_rows=freshness_rows,
+            summary_path=summary_path,
+        )
+        summary = MainlineLocalLedgerIncrementalSyncSummary(
+            run_id=effective_run_id,
+            selected_ledger_count=len(selected_ledgers),
+            queue_enqueued_count=queue_enqueued_count,
+            queue_claimed_count=len(claimed_scope_rows),
+            synced_ledger_count=len(sync_results),
+            copied_from_source_count=copied_from_source_count,
+            observed_in_place_count=observed_in_place_count,
+            bootstrapped_empty_target_count=bootstrapped_empty_target_count,
+            checkpoint_upserted_count=checkpoint_upserted_count,
+            freshness_upserted_count=len(freshness_rows),
+            missing_source_count=sum(1 for row in freshness_rows if row.freshness_status == "missing_source"),
+            replay_requested_count=replay_requested_count,
+            fresh_count=sum(1 for row in freshness_rows if row.freshness_status == "fresh"),
+            stale_count=sum(1 for row in freshness_rows if row.freshness_status == "stale"),
+            unknown_freshness_count=sum(1 for row in freshness_rows if row.freshness_status == "unknown"),
+            missing_target_count=sum(1 for row in freshness_rows if row.freshness_status == "missing_target"),
+            sync_results=tuple(sync_results),
+            freshness_rows=tuple(freshness_rows),
+            report_json_path=report_json_path,
+            report_markdown_path=report_markdown_path,
+        )
+        connection.execute(
+            f"""
+            UPDATE {MAINLINE_LOCAL_LEDGER_SYNC_RUN_TABLE}
+            SET run_status = 'completed',
+                queue_enqueued_count = ?,
+                queue_claimed_count = ?,
+                synced_ledger_count = ?,
+                missing_source_count = ?,
+                completed_at = CURRENT_TIMESTAMP,
+                summary_json = ?
+            WHERE run_id = ?
+            """,
+            [
+                summary.queue_enqueued_count,
+                summary.queue_claimed_count,
+                summary.synced_ledger_count,
+                summary.missing_source_count,
+                json.dumps(summary.as_dict(), ensure_ascii=False, sort_keys=True),
+                effective_run_id,
+            ],
+        )
+        return summary
+    except Exception:
+        connection.execute(
+            f"""
+            UPDATE {MAINLINE_LOCAL_LEDGER_SYNC_RUN_TABLE}
+            SET run_status = 'failed',
+                completed_at = CURRENT_TIMESTAMP,
+                summary_json = ?
+            WHERE run_id = ?
+            """,
+            [json.dumps({"run_status": "failed"}, ensure_ascii=False), effective_run_id],
+        )
+        raise
+    finally:
+        connection.close()
+
+
+def _collect_scope_rows(
+    *,
+    connection: duckdb.DuckDBPyConnection,
+    settings: WorkspaceRoots,
+    selected_ledgers: tuple[str, ...],
+    source_map: dict[str, Path],
+    source_latest_map: dict[str, date],
+    replay_start_map: dict[str, date],
+    replay_confirm_map: dict[str, date],
+) -> list[dict[str, object]]:
+    rows: list[dict[str, object]] = []
+    for ledger_name in selected_ledgers:
+        spec = MAINLINE_LEDGER_SPEC_BY_NAME[ledger_name]
+        target_path = spec.target_path(settings)
+        source_path = source_map.get(ledger_name, target_path)
+        state = resolve_source_state(
+            ledger_name=ledger_name,
+            source_path=source_path,
+            explicit_latest_bar_dt=source_latest_map.get(ledger_name),
+        )
+        checkpoint = load_checkpoint(
+            connection=connection,
+            checkpoint_table=MAINLINE_LOCAL_LEDGER_SYNC_CHECKPOINT_TABLE,
+            ledger_name=ledger_name,
+        )
+        dirty_reason = derive_dirty_reason(
+            checkpoint=checkpoint,
+            same_path=source_path.resolve() == target_path.resolve(),
+            source_exists=bool(state["source_exists"]),
+            target_exists=target_path.exists(),
+            source_latest_bar_dt=state["source_latest_bar_dt"],
+            replay_start_bar_dt=replay_start_map.get(ledger_name),
+            replay_confirm_until_dt=replay_confirm_map.get(ledger_name),
+            source_fingerprint=str(state["source_fingerprint"]),
+        )
+        rows.append(
+            {
+                "queue_nk": f"mainline-ledger::{ledger_name}::{dirty_reason}",
+                "ledger_name": ledger_name,
+                "module_name": spec.module_name,
+                "source_path": source_path,
+                "target_path": target_path,
+                "dirty_reason": dirty_reason,
+                "source_latest_bar_dt": state["source_latest_bar_dt"],
+                "replay_start_bar_dt": replay_start_map.get(ledger_name),
+                "replay_confirm_until_dt": replay_confirm_map.get(ledger_name),
+                "source_fingerprint": state["source_fingerprint"],
+            }
+        )
+    return rows
+
+
+def _enqueue_dirty_scopes(
+    *,
+    connection: duckdb.DuckDBPyConnection,
+    scope_rows: list[dict[str, object]],
+    run_id: str,
+) -> int:
+    count = 0
+    for row in scope_rows:
+        if row["dirty_reason"] is None:
+            continue
+        existing = connection.execute(
+            f"SELECT queue_nk FROM {MAINLINE_LOCAL_LEDGER_SYNC_DIRTY_QUEUE_TABLE} WHERE queue_nk = ?",
+            [str(row["queue_nk"])],
+        ).fetchone()
+        if existing is None:
+            connection.execute(
+                f"""
+                INSERT INTO {MAINLINE_LOCAL_LEDGER_SYNC_DIRTY_QUEUE_TABLE} (
+                    queue_nk, scope_nk, ledger_name, module_name, source_path, target_path,
+                    dirty_reason, source_latest_bar_dt, replay_start_bar_dt, replay_confirm_until_dt,
+                    source_fingerprint, queue_status, first_seen_run_id, last_materialized_run_id
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
+                """,
+                [
+                    str(row["queue_nk"]),
+                    f"mainline-ledger::{row['ledger_name']}",
+                    str(row["ledger_name"]),
+                    str(row["module_name"]),
+                    str(row["source_path"]),
+                    str(row["target_path"]),
+                    str(row["dirty_reason"]),
+                    to_date(row["source_latest_bar_dt"]),
+                    to_date(row["replay_start_bar_dt"]),
+                    to_date(row["replay_confirm_until_dt"]),
+                    str(row["source_fingerprint"]),
+                    run_id,
+                    run_id,
+                ],
+            )
+            count += 1
+            continue
+        connection.execute(
+            f"""
+            UPDATE {MAINLINE_LOCAL_LEDGER_SYNC_DIRTY_QUEUE_TABLE}
+            SET source_path = ?,
+                target_path = ?,
+                source_latest_bar_dt = ?,
+                replay_start_bar_dt = ?,
+                replay_confirm_until_dt = ?,
+                source_fingerprint = ?,
+                queue_status = 'pending',
+                updated_at = CURRENT_TIMESTAMP
+            WHERE queue_nk = ?
+            """,
+            [
+                str(row["source_path"]),
+                str(row["target_path"]),
+                    to_date(row["source_latest_bar_dt"]),
+                    to_date(row["replay_start_bar_dt"]),
+                    to_date(row["replay_confirm_until_dt"]),
+                str(row["source_fingerprint"]),
+                str(row["queue_nk"]),
+            ],
+        )
+    return count
+
+
+def _claim_scopes(
+    *,
+    connection: duckdb.DuckDBPyConnection,
+    selected_ledgers: tuple[str, ...],
+    run_id: str,
+) -> list[dict[str, object]]:
+    if not selected_ledgers:
+        return []
+    placeholders = ", ".join("?" for _ in selected_ledgers)
+    rows = connection.execute(
+        f"""
+        SELECT queue_nk, ledger_name, module_name, source_path, target_path, dirty_reason,
+               source_latest_bar_dt, replay_start_bar_dt, replay_confirm_until_dt, source_fingerprint
+        FROM {MAINLINE_LOCAL_LEDGER_SYNC_DIRTY_QUEUE_TABLE}
+        WHERE queue_status IN ('pending', 'claimed', 'failed')
+          AND ledger_name IN ({placeholders})
+        ORDER BY ledger_name, enqueued_at
+        """,
+        list(selected_ledgers),
+    ).fetchall()
+    claimed: list[dict[str, object]] = []
+    for row in rows:
+        connection.execute(
+            f"""
+            UPDATE {MAINLINE_LOCAL_LEDGER_SYNC_DIRTY_QUEUE_TABLE}
+            SET queue_status = 'claimed',
+                claimed_at = CURRENT_TIMESTAMP,
+                last_claimed_run_id = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE queue_nk = ?
+            """,
+            [run_id, str(row[0])],
+        )
+        claimed.append(
+            {
+                "queue_nk": str(row[0]),
+                "ledger_name": str(row[1]),
+                "module_name": str(row[2]),
+                "source_path": Path(str(row[3])).resolve(),
+                "target_path": Path(str(row[4])).resolve(),
+                "dirty_reason": str(row[5]),
+                "source_latest_bar_dt": to_date(row[6]),
+                "replay_start_bar_dt": to_date(row[7]),
+                "replay_confirm_until_dt": to_date(row[8]),
+                "source_fingerprint": str(row[9]),
+            }
+        )
+    return claimed
+
+
+def _sync_one_ledger(*, spec, settings: WorkspaceRoots, source_path: Path, target_path: Path) -> str:
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    if source_path.resolve() == target_path.resolve():
+        existed_before = target_path.exists()
+        spec.bootstrap(settings)
+        return "observed_in_place" if existed_before else "bootstrapped_empty_target"
+    shutil.copy2(source_path, target_path)
+    spec.bootstrap(settings)
+    return "copied_from_source"
+
+
+def _write_freshness_readout(
+    *,
+    connection: duckdb.DuckDBPyConnection,
+    settings: WorkspaceRoots,
+    selected_ledgers: tuple[str, ...],
+    source_map: dict[str, Path],
+    source_latest_map: dict[str, date],
+    dirty_reason_map: dict[str, str | None],
+    run_id: str,
+) -> list[MainlineLocalLedgerFreshnessRow]:
+    rows: list[MainlineLocalLedgerFreshnessRow] = []
+    for ledger_name in selected_ledgers:
+        spec = MAINLINE_LEDGER_SPEC_BY_NAME[ledger_name]
+        target_path = spec.target_path(settings)
+        source_path = source_map.get(ledger_name, target_path)
+        state = resolve_source_state(
+            ledger_name=ledger_name,
+            source_path=source_path,
+            explicit_latest_bar_dt=source_latest_map.get(ledger_name),
+        )
+        checkpoint = load_checkpoint(
+            connection=connection,
+            checkpoint_table=MAINLINE_LOCAL_LEDGER_SYNC_CHECKPOINT_TABLE,
+            ledger_name=ledger_name,
+        )
+        last_completed_bar_dt = None if checkpoint is None else checkpoint["last_completed_bar_dt"]
+        lag_days = None
+        if state["source_latest_bar_dt"] is not None and last_completed_bar_dt is not None:
+            lag_days = int((state["source_latest_bar_dt"] - last_completed_bar_dt).days)
+        same_path = source_path.resolve() == target_path.resolve()
+        if not state["source_exists"] and not same_path:
+            status = "missing_source"
+        elif not target_path.exists():
+            status = "missing_target"
+        elif lag_days is None:
+            status = "unknown"
+        elif lag_days <= 0:
+            status = "fresh"
+        else:
+            status = "stale"
+        freshness_row = MainlineLocalLedgerFreshnessRow(
+            ledger_name=ledger_name,
+            module_name=spec.module_name,
+            source_path=source_path,
+            target_path=target_path,
+            source_exists=bool(state["source_exists"]),
+            target_exists=target_path.exists(),
+            source_latest_bar_dt=state["source_latest_bar_dt"],
+            last_completed_bar_dt=last_completed_bar_dt,
+            freshness_lag_days=lag_days,
+            freshness_status=status,
+            last_dirty_reason=None if dirty_reason_map.get(ledger_name) is None else str(dirty_reason_map[ledger_name]),
+            source_fingerprint=str(state["source_fingerprint"]),
+        )
+        connection.execute(
+            f"""
+            INSERT OR REPLACE INTO {MAINLINE_LOCAL_LEDGER_FRESHNESS_READOUT_TABLE} (
+                ledger_name, module_name, source_path, target_path, source_exists, target_exists,
+                source_latest_bar_dt, last_completed_bar_dt, freshness_lag_days, freshness_status,
+                last_dirty_reason, source_fingerprint, last_run_id, updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            """,
+            [
+                freshness_row.ledger_name,
+                freshness_row.module_name,
+                str(freshness_row.source_path),
+                str(freshness_row.target_path),
+                freshness_row.source_exists,
+                freshness_row.target_exists,
+                freshness_row.source_latest_bar_dt,
+                freshness_row.last_completed_bar_dt,
+                freshness_row.freshness_lag_days,
+                freshness_row.freshness_status,
+                freshness_row.last_dirty_reason,
+                freshness_row.source_fingerprint,
+                run_id,
+            ],
+        )
+        rows.append(freshness_row)
+    return rows

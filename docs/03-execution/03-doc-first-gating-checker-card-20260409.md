@@ -45,3 +45,13 @@
 3. 入口新鲜度规则已覆盖新增正式口径入口
 4. 测试写完并通过
 5. 证据、记录、结论写完
+
+## 门禁流程图
+
+```mermaid
+flowchart TD
+    SRC[src/ scripts/ .codex/ 改动] --> GATE{doc-first gating}
+    GATE -->|通过| IMPL[正式实现]
+    GATE -->|拦截| DOC[补需求/设计/规格/任务分解]
+    DOC --> GATE
+```

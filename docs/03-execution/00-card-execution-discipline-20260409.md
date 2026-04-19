@@ -30,3 +30,15 @@
 2. 没有设计说明的 Schema 变更
 3. 没有任务分解的大型重写
 4. 没有证据或结论就宣称任务完成
+
+## 执行闭环流程图
+
+```mermaid
+flowchart TD
+    R[需求/设计/规格] --> C[开卡 card]
+    C --> I[实现 implementation]
+    I --> E[证据 evidence]
+    E --> REC[记录 record]
+    REC --> CON[结论 conclusion]
+    CON --> IDX[执行索引归档]
+``` 

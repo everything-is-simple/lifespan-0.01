@@ -1,23 +1,43 @@
-"""检查当前待施工卡是否满足文档先行硬门禁。"""
+"""检查当前待施工卡是否满足文档先行与历史账本增量治理硬门禁。"""
 
 from __future__ import annotations
 
 import argparse
-from pathlib import Path
 import re
+from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-CARD_CATALOG_PATH = REPO_ROOT / "docs" / "03-execution" / "B-card-catalog-20260409.md"
-CURRENT_CARD_PATTERN = re.compile(r"当前待施工卡：`([^`]+)`")
+CARD_CATALOG_RELATIVE_PATH = Path("docs/03-execution/B-card-catalog-20260409.md")
 TRIGGER_PREFIXES = ("src/", "scripts/", ".codex/")
-PLACEHOLDER_TOKENS = ("<", "切片 1", "切片 2", "切片 3", "问题：", "目标结果：", "为什么现在做：")
+
+CURRENT_CARD_PATTERNS = (
+    re.compile(r"当前待施工卡[：:]\s*`([^`]+)`"),
+    re.compile(r"当前下一锤[：:]\s*`([^`]+)`"),
+)
+PLACEHOLDER_TOKENS = (
+    "<待填编号>",
+    "<yyyy-mm-dd>",
+    "问题：",
+    "目标结果：",
+    "为什么现在做：",
+    "切片 1：",
+    "切片 2：",
+    "切片 3：",
+    "实体锚点：",
+    "业务自然键：",
+    "批量建仓：",
+    "增量更新：",
+    "断点续跑：",
+    "审计账本：",
+    "待回填",
+)
+REQUIREMENT_LABELS = ("问题", "目标结果", "为什么现在做")
+LEDGER_LABELS = ("实体锚点", "业务自然键", "批量建仓", "增量更新", "断点续跑", "审计账本")
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """构造命令行参数。"""
-
-    parser = argparse.ArgumentParser(description="检查当前待施工卡是否满足文档先行硬门禁。")
+    parser = argparse.ArgumentParser(description="检查当前待施工卡是否满足文档先行与历史账本增量治理硬门禁。")
     parser.add_argument("--repo-root", default=str(REPO_ROOT), help="仓库根目录。")
     parser.add_argument("--report-path", help="可选，把检查结果写入 Markdown 报告。")
     parser.add_argument("paths", nargs="*", help="可选，只检查本次新增或改动文件。")
@@ -25,8 +45,6 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _normalize_path(repo_root: Path, raw_path: str) -> str | None:
-    """把输入路径转换成仓库相对路径。"""
-
     candidate = Path(raw_path)
     resolved = candidate.resolve(strict=False) if candidate.is_absolute() else (repo_root / candidate).resolve(strict=False)
     try:
@@ -36,16 +54,12 @@ def _normalize_path(repo_root: Path, raw_path: str) -> str | None:
 
 
 def _find_section(text: str, heading: str) -> str:
-    """提取指定二级标题下的正文。"""
-
     pattern = re.compile(rf"^## {re.escape(heading)}\n(?P<body>.*?)(?=^## |\Z)", re.MULTILINE | re.DOTALL)
     match = pattern.search(text)
     return match.group("body").strip() if match else ""
 
 
 def _collect_bullet_blocks(section_text: str) -> list[str]:
-    """收集 bullet 及其续行文本。"""
-
     blocks: list[str] = []
     current: list[str] = []
     for raw_line in section_text.splitlines():
@@ -63,45 +77,70 @@ def _collect_bullet_blocks(section_text: str) -> list[str]:
 
 
 def _collect_backtick_links(section_text: str) -> list[str]:
-    """抽取 Markdown 中的反引号文档链接。"""
-
     return re.findall(r"`([^`]+\.md)`", section_text)
 
 
 def _collect_task_items(section_text: str) -> list[str]:
-    """提取编号任务项。"""
-
     return [match.group(1).strip() for match in re.finditer(r"^\d+\.\s+(.*\S)\s*$", section_text, re.MULTILINE)]
 
 
 def _current_card_path(repo_root: Path) -> Path | None:
-    """定位当前待施工卡。"""
-
-    catalog_path = repo_root / CARD_CATALOG_PATH.relative_to(REPO_ROOT)
+    catalog_path = repo_root / CARD_CATALOG_RELATIVE_PATH
     if not catalog_path.exists():
         return None
-
     text = catalog_path.read_text(encoding="utf-8")
-    match = CURRENT_CARD_PATTERN.search(text)
-    if not match:
-        return None
-    return repo_root / "docs" / "03-execution" / match.group(1)
+    for pattern in CURRENT_CARD_PATTERNS:
+        match = pattern.search(text)
+        if match:
+            return repo_root / "docs" / "03-execution" / match.group(1)
+    return None
 
 
 def _is_placeholder(text: str) -> bool:
-    """判断一段内容是否仍是模板或占位。"""
-
     stripped = text.strip()
     if not stripped:
         return True
     if stripped.startswith("<") and stripped.endswith(">"):
         return True
-    return any(token == stripped or token in stripped for token in PLACEHOLDER_TOKENS)
+    if stripped == "待回填" or stripped.startswith("待回填："):
+        return True
+    return any(token == stripped for token in PLACEHOLDER_TOKENS)
+
+
+def _extract_labeled_value(blocks: list[str], label: str) -> str | None:
+    prefixes = (f"{label}：", f"{label}:")
+    for item in blocks:
+        for prefix in prefixes:
+            if item.startswith(prefix):
+                return item[len(prefix) :].strip()
+    return None
+
+
+def _validate_labeled_section(
+    *,
+    lines: list[str],
+    section_name: str,
+    section_text: str,
+    labels: tuple[str, ...],
+) -> bool:
+    ok = True
+    if not section_text:
+        lines.append(f"  - 缺少 `## {section_name}` 章节。")
+        return False
+    blocks = _collect_bullet_blocks(section_text)
+    for label in labels:
+        value = _extract_labeled_value(blocks, label)
+        if value is None:
+            lines.append(f"  - `## {section_name}` 章节缺少 `{label}` 条目。")
+            ok = False
+            continue
+        if _is_placeholder(value):
+            lines.append(f"  - `## {section_name}` 章节中的 `{label}` 仍是占位内容。")
+            ok = False
+    return ok
 
 
 def _validate_current_card(card_path: Path, repo_root: Path) -> tuple[list[str], bool]:
-    """验证当前待施工卡是否满足门禁。"""
-
     lines: list[str] = []
     if not card_path.exists():
         lines.append(f"  - 当前待施工卡不存在：`{card_path.relative_to(repo_root).as_posix()}`")
@@ -110,22 +149,13 @@ def _validate_current_card(card_path: Path, repo_root: Path) -> tuple[list[str],
     text = card_path.read_text(encoding="utf-8")
     ok = True
 
-    requirement_section = _find_section(text, "需求")
-    if not requirement_section:
-        lines.append("  - 缺少 `## 需求` 章节。")
+    if not _validate_labeled_section(
+        lines=lines,
+        section_name="需求",
+        section_text=_find_section(text, "需求"),
+        labels=REQUIREMENT_LABELS,
+    ):
         ok = False
-    else:
-        bullet_blocks = _collect_bullet_blocks(requirement_section)
-        for label in ("问题", "目标结果", "为什么现在做"):
-            matched = next((item for item in bullet_blocks if item.startswith(f"{label}：")), None)
-            if matched is None:
-                lines.append(f"  - `需求` 章节缺少 `{label}` 条目。")
-                ok = False
-                continue
-            value = matched.split("：", 1)[1].strip() if "：" in matched else ""
-            if _is_placeholder(value):
-                lines.append(f"  - `需求` 章节中的 `{label}` 仍是占位内容。")
-                ok = False
 
     design_section = _find_section(text, "设计输入")
     if not design_section:
@@ -136,14 +166,14 @@ def _validate_current_card(card_path: Path, repo_root: Path) -> tuple[list[str],
         design_links = [link for link in links if link.startswith("docs/01-design/")]
         spec_links = [link for link in links if link.startswith("docs/02-spec/")]
         if not design_links:
-            lines.append("  - `设计输入` 章节缺少 `docs/01-design/` 设计文档链接。")
+            lines.append("  - `## 设计输入` 章节缺少 `docs/01-design/` 设计文档链接。")
             ok = False
         if not spec_links:
-            lines.append("  - `设计输入` 章节缺少 `docs/02-spec/` 规格文档链接。")
+            lines.append("  - `## 设计输入` 章节缺少 `docs/02-spec/` 规格文档链接。")
             ok = False
         for rel_path in design_links + spec_links:
             if not (repo_root / rel_path).exists():
-                lines.append(f"  - `设计输入` 链接不存在：`{rel_path}`")
+                lines.append(f"  - `## 设计输入` 链接不存在：`{rel_path}`")
                 ok = False
 
     task_section = _find_section(text, "任务分解")
@@ -153,17 +183,25 @@ def _validate_current_card(card_path: Path, repo_root: Path) -> tuple[list[str],
     else:
         task_items = [item for item in _collect_task_items(task_section) if not _is_placeholder(item)]
         if not task_items:
-            lines.append("  - `任务分解` 章节仍是占位内容，缺少正式任务项。")
+            lines.append("  - `## 任务分解` 章节仍是占位内容，缺少正式任务项。")
             ok = False
 
+    if not _validate_labeled_section(
+        lines=lines,
+        section_name="历史账本约束",
+        section_text=_find_section(text, "历史账本约束"),
+        labels=LEDGER_LABELS,
+    ):
+        ok = False
+
     if ok:
-        lines.append(f"  - 通过：当前待施工卡 `docs/03-execution/{card_path.name}` 已具备需求、设计、规格与任务分解。")
+        lines.append(
+            f"  - 通过：当前待施工卡 `docs/03-execution/{card_path.name}` 已具备需求、设计、规格、任务分解与历史账本约束。"
+        )
     return lines, ok
 
 
 def run_check(repo_root: Path, paths: list[str] | None = None) -> tuple[list[str], bool]:
-    """执行文档先行硬门禁检查。"""
-
     lines = ["[doc-first-gating]"]
     card_path = _current_card_path(repo_root)
     if card_path is None:
@@ -171,7 +209,7 @@ def run_check(repo_root: Path, paths: list[str] | None = None) -> tuple[list[str
         return lines, False
 
     if not paths:
-        lines.append("  - 当前口径：全仓扫描时验证当前待施工卡是否已脱离模板态。")
+        lines.append("  - 当前口径：全仓扫描时验证当前待施工卡是否已脱离模板态并补齐历史账本约束。")
         detail_lines, ok = _validate_current_card(card_path, repo_root)
         lines.extend(detail_lines)
         return lines, ok
@@ -182,15 +220,13 @@ def run_check(repo_root: Path, paths: list[str] | None = None) -> tuple[list[str
         lines.append("  - 本次改动未命中 `src/`、`scripts/`、`.codex/`，不触发严格文档先行门禁。")
         return lines, True
 
-    lines.append("  - 本次改动命中正式实现前缀，执行严格文档先行门禁。")
+    lines.append("  - 本次改动命中正式实现前缀，执行严格文档先行与历史账本约束门禁。")
     detail_lines, ok = _validate_current_card(card_path, repo_root)
     lines.extend(detail_lines)
     return lines, ok
 
 
 def main() -> int:
-    """程序入口。"""
-
     parser = build_parser()
     args = parser.parse_args()
     repo_root = Path(args.repo_root).resolve()
@@ -202,7 +238,10 @@ def main() -> int:
     if args.report_path:
         report_path = Path(args.report_path)
         report_path.parent.mkdir(parents=True, exist_ok=True)
-        report_path.write_text("\n".join(["# doc-first gating governance report", "", "```text", output_text, "```", ""]), encoding="utf-8")
+        report_path.write_text(
+            "\n".join(["# doc-first gating governance report", "", "```text", output_text, "```", ""]),
+            encoding="utf-8",
+        )
 
     return 0 if ok else 1
 

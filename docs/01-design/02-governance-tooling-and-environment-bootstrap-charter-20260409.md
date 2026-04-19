@@ -40,3 +40,13 @@
 2. 环境脚本必须允许在个人 PC 上重复执行。
 3. `.venv` 只作为仓内运行环境，不保存正式数据产物。
 4. 治理脚本本身也必须满足中文化与仓库卫生规则。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    OLD[老系统治理闭环] --> MIGRATE[最小迁入新仓]
+    MIGRATE --> SCRIPTS[治理脚本 check_*]
+    MIGRATE --> ENV[环境重建 rebuild_windows_env]
+    MIGRATE --> IDX[执行索引账本骨架]
+```

@@ -31,3 +31,13 @@
 
 1. 老系统 `malf 30` structure 事实层外提章程
 2. 老系统总表中对结构语义与下游桥接的总结
+
+## 流程图
+
+```mermaid
+flowchart LR
+    MALF[malf_state_snapshot canonical] --> STR[structure_snapshot]
+    STR --> FLT[filter pre-trigger准入]
+    STR --> ALPHA[alpha trigger检测]
+    STR -. 不越界 .-> TRD[trade/position]
+```

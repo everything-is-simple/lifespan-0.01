@@ -27,3 +27,13 @@ if (Test-Path -LiteralPath H:\Lifespan-temp\pytest-tmp) { Remove-Item -LiteralPa
 - `pyproject.toml`
 - `H:\Lifespan-temp\pytest-cache`
 - `H:\Lifespan-temp\pytest-tmp`
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    PT[pytest 根目录+子目录] --> PASS[4 passed 两路均通过]
+    PASS --> TEMP[临时目录沉入 H:/Lifespan-temp]
+    CHK[开发治理+索引检查] --> OK[治理通过]
+    DOC[共享账本 design/spec] --> ART[正式设计文档落地]
+```

@@ -1,0 +1,29 @@
+# trade signal anchor contract freeze 证据
+
+证据编号：`100`
+日期：`2026-04-11`
+
+## 命令
+
+```text
+<commands here>
+```
+
+## 关键结果
+
+- 结果 1
+- 结果 2
+
+## 产物
+
+- 产物路径 1
+- 产物路径 2
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    ALPHA[alpha formal signal] --> ANCHOR[trade signal anchor 合同冻结]
+    ANCHOR --> TRADE[trade runner 信号锚点绑定]
+    TRADE --> OK[100卡收口]
+```

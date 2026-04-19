@@ -41,9 +41,19 @@ def test_default_settings_use_expected_sibling_roots(
     assert _normalized_path_string(settings.temp_root) == _normalized_path_string(tmp_path / "Lifespan-temp")
     assert _normalized_path_string(settings.report_root) == _normalized_path_string(tmp_path / "Lifespan-report")
     assert _normalized_path_string(settings.validated_root) == _normalized_path_string(tmp_path / "Lifespan-Validated")
+    assert _normalized_path_string(settings.databases.raw_market) == _normalized_path_string(
+        tmp_path / "Lifespan-data" / "raw" / "raw_market.duckdb"
+    )
+    assert _normalized_path_string(settings.databases.market_base) == _normalized_path_string(
+        tmp_path / "Lifespan-data" / "base" / "market_base.duckdb"
+    )
     assert set(settings.databases.as_dict()) == {
-        "raw_market",
-        "market_base",
+        "raw_market_day",
+        "raw_market_week",
+        "raw_market_month",
+        "market_base_day",
+        "market_base_week",
+        "market_base_month",
         "malf",
         "structure",
         "filter",

@@ -1,130 +1,106 @@
-# 历史账本共享契约规格
+# 历史账本共享合同规格
 
 日期：`2026-04-09`
-状态：`生效中`
+状态：`生效`
 
 ## 适用范围
 
-本规格适用于新仓全部正式账本、正式表族、正式快照和正式审计表。
+本规格适用于全仓正式账本、正式快照、正式审计表，以及所有正式 runner。
 
-## 一、五根目录来源优先级
+## 一、稳定自然键规格
 
-### 正式运行
+### 1. 实体锚点
 
-正式运行时，五根目录来源优先级如下：
+所有正式表必须先声明实体锚点。
 
-1. 显式传入的正式运行参数
-2. 环境变量
-3. `scripts/setup/enter_repo.ps1` 预设值
+默认要求：
 
-### 测试与开发兜底
+1. 标的类实体：`asset_type + code`
+2. 组合/账户类实体：模块内稳定业务编号
+3. `name` 只能是属性、快照或审计辅助字段
 
-当未提供正式环境来源时，允许使用 `repo_root.parent / Lifespan-*` 作为开发与测试兜底。
-该行为不得被文档误写为正式环境默认值。
+### 2. 业务自然键
 
-## 二、共享键契约
+正式表必须在实体锚点之上继续声明业务自然键。至少应包含以下之一：
 
-### 实体锚点
+1. 时间键
+2. 窗口键
+3. 家族/场景键
+4. 状态键
+5. 组合/账户维度键
 
-所有以证券、指数、行业、组合、账户为中心的正式表，必须先具备实体锚点。
-默认实体锚点至少包括：
+### 3. 禁止项
 
-1. `entity_code`
-2. `entity_name`
+以下内容不得单独充当正式主语义：
 
-如果历史兼容需要，也可以在模块内命名为 `stock_code / stock_name`、`index_code / index_name`，但必须能映射回共享语义。
+1. `run_id`
+2. 自增整数
+3. `name`
 
-### 业务自然键
+## 二、两阶段更新规格
 
-在实体锚点之上，正式表必须再叠加至少一种业务键：
+每个正式账本都必须显式声明：
 
-1. 时间键：如 `trade_date / asof_date / effective_date`
-2. 窗口键：如 `window_start / window_end / holding_days`
-3. 策略键：如 `alpha_family / trigger_family / sizing_method`
-4. 场景键：如 `scene_id / regime_id / filter_profile`
-5. 状态键：如 `position_state / order_state / execution_state`
+1. 一次性批量建仓策略
+2. 后续增量更新策略
 
-禁止只用 `run_id` 或自增整数充当正式主语义。
+允许不同模块用不同术语表达，但必须能映射到这两层语义。
 
-## 三、审计字段契约
+## 三、断点续跑规格
 
-所有正式表应预留或等价表达以下审计字段：
+每个正式实现都必须说明：
 
-1. `build_batch_id` 或等价字段
-2. `run_id` 或等价字段
-3. `written_at`
-4. `source_provider`
-5. `source_version` 或 `source_digest`
+1. checkpoint / cursor / progress 存放位置
+2. 中断后如何续跑
+3. unchanged replay 如何 no-op
+4. dirty queue 是否存在；若存在，如何挂账与消费
 
-这些字段属于审计层，不得取代业务自然键。
+## 四、审计账本规格
 
-## 四、写入语义契约
+正式实现必须保留以下审计语义之一或等价字段：
 
-### 追加写入表
+1. `run_id`
+2. `written_at / recorded_at / updated_at`
+3. `source_provider / source_path / source_digest / source_file_nk`
+4. `status / action / summary_json`
 
-以下表族默认只允许追加：
+## 五、执行卡硬门禁规格
 
-1. `ledger`
-2. `fact`
-3. `event`
-4. `journal`
-5. `manifest`
+当前待施工卡若要进入 `src/`、`scripts/`、`.codex/` 下的正式实现，必须包含：
 
-追加写入表需要支持断点续跑、分批处理和增量补写。
+## 历史账本约束
 
-### 可覆盖快照表
+- 实体锚点：
+- 业务自然键：
+- 批量建仓：
+- 增量更新：
+- 断点续跑：
+- 审计账本：
 
-以下表族允许按自然键重算覆盖：
+判定规则：
 
-1. `snapshot`
-2. `latest_state`
-3. `surface`
-4. `materialized_view`
+1. 缺少该段，失败
+2. 任一条为空，失败
+3. 任一条仍是模板占位，失败
 
-但它们必须满足：
+## 六、runner 共享要求
 
-1. 可从正式账本或事实层重新生成
-2. 携带最近一次构建批次信息
-3. 不得成为唯一事实来源
+正式 runner 至少应具备以下之一：
 
-## 五、增量更新契约
+1. full bootstrap / backfill 入口
+2. incremental / replay 入口
+3. checkpoint / dirty queue / request ledger 等续跑锚点
+4. summary / audit 输出
 
-正式模块在设计增量更新时，至少要回答：
+若某模块暂时只实现 full bootstrap，也必须在卡片与合同中明确“后续 incremental 方案是什么，当前为何尚未落地”。
 
-1. 以什么自然键判断“已存在”
-2. 以什么时间键判断“需要补写”
-3. 分批粒度是什么
-4. checkpoint 写在哪里
-5. 中断后如何从上次位置续跑
+## 流程图
 
-如果回答不清楚，就不能进入正式 runner。
-
-## 六、物理账本命名契约
-
-当前正式账本物理名冻结为：
-
-1. `raw_market.duckdb`
-2. `market_base.duckdb`
-3. `malf.duckdb`
-4. `structure.duckdb`
-5. `filter.duckdb`
-6. `alpha.duckdb`
-7. `position.duckdb`
-8. `portfolio_plan.duckdb`
-9. `trade_runtime.duckdb`
-10. `system.duckdb`
-
-其中文档边界名与物理名的特殊映射是：
-
-1. 模块名 `trade`
-2. 物理账本名 `trade_runtime.duckdb`
-
-## 七、后续模块门槛
-
-`position / alpha / portfolio_plan / trade` 在新增正式表前，必须先声明：
-
-1. 表属于 `ledger` 还是 `snapshot`
-2. 自然键是什么
-3. 审计字段是什么
-4. 写入语义是追加还是覆盖
-5. 增量更新和断点续跑如何实现
+```mermaid
+flowchart LR
+    NK[稳定自然键] --> BOOT[full bootstrap]
+    BOOT --> INC[incremental/replay]
+    INC --> CP[checkpoint/dirty queue]
+    CP --> AUD[summary/audit 输出]
+    AUD --> GATE[合同合法]
+```

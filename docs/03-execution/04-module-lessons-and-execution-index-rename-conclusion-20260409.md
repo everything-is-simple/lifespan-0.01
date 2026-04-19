@@ -20,3 +20,12 @@
 1. 后续开 `position / portfolio_plan / trade` 正式卡时，可以直接在新仓模块文档里读取边界与踩坑经验。
 2. 执行区入口更容易一眼识别，不会和普通序号卡片混在一起。
 3. 新仓对老系统实战教训的继承更完整，继续接主线时重复踩坑的概率会下降。
+
+## 经验继承图
+
+```mermaid
+flowchart LR
+    OLD[老仓实战教训] --> NEW[docs/01-design/modules/]
+    NEW --> ENTRY[执行区 A/B/C 入口]
+    ENTRY --> NEXT[后续模块施工]
+```

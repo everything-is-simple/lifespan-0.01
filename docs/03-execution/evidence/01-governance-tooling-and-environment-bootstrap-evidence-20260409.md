@@ -30,3 +30,14 @@ powershell -ExecutionPolicy Bypass -File scripts/setup/rebuild_windows_env.ps1
 - `.venv/`
 - `H:\Lifespan-temp\pytest-cache`
 - `H:\Lifespan-temp\pytest-tmp`
+
+## 证据流图
+
+```mermaid
+flowchart LR
+    CHK[check_execution_indexes] --> PASS1[索引检查通过]
+    DEV[check_development_governance] --> PASS2[开发治理通过]
+    PT[pytest test_paths] --> PASS3[4 passed]
+    ENV[rebuild_windows_env.ps1] --> VENV[.venv 重建]
+    VENV --> TEMP[H:/Lifespan-temp 外置]
+```

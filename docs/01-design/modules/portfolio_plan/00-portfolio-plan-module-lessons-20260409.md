@@ -31,3 +31,12 @@
 
 1. 由老系统 position / system 主线经验外推形成
 2. 新系统对组合层正式模块化的当前裁决
+
+## 流程图
+
+```mermaid
+flowchart LR
+    POS[position_candidate] --> PP[portfolio_plan 容量/配额/协调]
+    PP --> ADM[admitted/blocked/trimmed 审计]
+    ADM --> TRADE[trade 执行]
+```

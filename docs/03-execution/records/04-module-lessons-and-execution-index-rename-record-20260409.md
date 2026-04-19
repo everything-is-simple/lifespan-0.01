@@ -23,3 +23,13 @@
 
 - Windows 下固定 `pytest` basetemp` 仍存在偶发目录回收抖动；本轮沿用仓库既有做法，先清理 `H:\Lifespan-temp\pytest-tmp` 再跑测试。
 - `portfolio_plan` 文档目前属于根据老系统 position/system 主线经验外推形成的正式边界草底，后续还需要专门执行卡继续细化正式表结构。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    LESSON[模块经验文档沉淀] --> RENAME[执行入口字母化 A/B/C]
+    RENAME --> FIX[旧引用修复]
+    FIX --> CHECK[治理+索引+测试通过]
+    CHECK --> OK[04卡收口]
+```

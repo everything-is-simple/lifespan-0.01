@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "lifespan-0.01"
 version = "0.1.0"
-description = "Refactored local-first A-share research system."
+description = "Local-first historical ledger system with full-history market_base backward ledgers, official filter objective-gate inputs, MALF-driven position planning, and execution readout audit ledgers."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -30,14 +30,100 @@ addopts = "--basetemp=H:/Lifespan-temp/pytest-tmp"
 cache_dir = "H:/Lifespan-temp/pytest-cache"
 
 [tool.mlq.governance]
+# 全仓治理盘点允许通过 `scripts/system/development_governance_legacy_backlog.py` 显式登记历史债务，
+# 但按改动路径触发的严格检查不得豁免新增违规。
+# `scripts/malf/run_malf_wave_life_build.py` 的外部正式入口保持不变；实现可拆分为
+# `wave_life_runner.py` 与同目录 helper 模块；正式 CLI 必须显式二选一：
+# bounded bootstrap 或 `--use-checkpoint-queue`。
+# `scripts/alpha/run_alpha_formal_signal_build.py` 现可只读接入 `malf_wave_life_snapshot`；
+# `stage_percentile_*` 仅代表解释性 sidecar，不在 `64` 内直接改写 admission authority。
+# `scripts/system/run_system_mainline_readout_build.py` 的外部正式入口保持不变；实现可拆分为
+# `runner.py` 与同目录 readout helper 模块。
+# 当前 malf 口径：`pivot-confirmed break` 与 `same-timeframe stats sidecar` 只属于只读机制层 sidecar，
+# 不得回写 `malf core`。
+# `scripts/malf/run_malf_zero_one_wave_audit.py` 是 `80` 冻结的只读审计入口：
+# 它只允许读取 `malf_day / malf_week / malf_month`，把完成的 `bar_count in {0,1}` wave
+# 标成 `same_bar_double_switch / stale_guard_trigger / next_bar_reflip`，
+# 供后续 canonical 算法修订或三库重建前后做同口径基线对照。
+# 当前 `malf` 的单点权威设计/规格锚点已补到
+# `docs/01-design/modules/malf/15-*` 与 `docs/02-spec/modules/malf/15-*`。
+# 当前执行索引必须同步反映：
+# 1. 最新生效结论锚点仍为 `91`
+# 2. 当前待施工位为 `81`
+# 3. `82-85` 已开出为近端 `malf` 扳正卡组
 execution_index_files = [
     "docs/03-execution/A-execution-reading-order-20260409.md",
     "docs/03-execution/B-card-catalog-20260409.md",
     "docs/03-execution/C-system-completion-ledger-20260409.md",
 ]
-# 系统路线图文件不仅追踪阶段进度，也承担老仓来源分层、模块继承方式与置信度口径。
+# 系统路线图文件既承担阶段追踪，也承担模块继承方式、实现深度与后半部施工蓝图口径。
+# 当前系统路线图固定顺序为：
+# `79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 91 -> 92 -> 93 -> 94 -> 95 -> 100 -> 105`
 system_tracker_files = [
     "docs/01-design/α-system-roadmap-and-progress-tracker-charter-20260409.md",
     "docs/02-spec/β-system-roadmap-and-progress-tracker-spec-20260409.md",
     "docs/02-spec/Ω-system-delivery-roadmap-20260409.md",
+]
+# 当前最新生效结论已推进到
+# `91-malf-timeframe-native-base-source-rebind-conclusion-20260418.md`；
+# 当前待施工卡已切到 `92-structure-thin-projection-and-day-binding-card-20260418.md`。
+# 系统路线图现以 `28` 为统一 data-grade 基线，`60 -> 66` 已完成主线整改与恢复闸门，
+# 当前已完成 `67` 的历史 file-length 治理债务、`68` 的执行文档目录治理、`69` 的 filter 客观 gate、
+# `70 -> 72` 的 objective 历史回补、`73` 的 market_base backward 全历史修缮与 `74` 的 raw/base 分批建仓治理；
+# 之后恢复 `79 -> 80 -> 91 -> 92 -> 93 -> 94 -> 95` official dual-axis refactor 卡组，最后在 95 接受后恢复
+# 原 ??? 号段现预留给新版本架构卡组。
+# `100 -> 105` trade/system 卡组；其中 `position / trade` 的正式执行口径继续固定为
+# `adjust_method='none'`。
+# `TDX -> raw_market` 兼容 `{asset_type}` 与 `{asset_type}-day` 离线源布局；`market_base`
+# raw/base 正式批量建仓优先使用 `--batch-size N`，按标的批次串行生成 child run；base scoped full
+# 只允许删除当前作用域内缺失行。
+# `docs/03-execution/` 根目录只允许保留 `card / conclusion / index / template / README`；
+# 正式 `evidence / record` 必须分别位于 `docs/03-execution/evidence/` 与
+# `docs/03-execution/records/`。
+# `37` 卡后的 pytest 证据统一按串行命令执行，避免多个进程争用 `H:/Lifespan-temp/pytest-tmp`。
+# 当前 `malf` 治理补充口径：
+# `scripts/malf/run_malf_zero_one_wave_audit.py` 继续是 `80` 冻结的只读审计入口，
+# 后续 canonical 修订或三库重建必须保留变更前/后的同口径对照。
+formal_runner_scripts = [
+    "scripts/data/run_tdx_asset_raw_ingest.py",
+    "scripts/data/run_tdx_stock_raw_ingest.py",
+    "scripts/data/run_tdxquant_daily_raw_sync.py",
+    "scripts/data/run_tushare_objective_source_sync.py",
+    "scripts/data/run_tushare_objective_profile_materialization.py",
+    "scripts/data/run_market_base_build.py",
+    "scripts/data/run_mainline_local_ledger_standardization_bootstrap.py",
+    "scripts/data/run_mainline_local_ledger_incremental_sync.py",
+    "scripts/malf/run_malf_canonical_build.py",
+    "scripts/malf/run_malf_snapshot_build.py",
+    "scripts/malf/run_malf_mechanism_build.py",
+    "scripts/malf/run_malf_wave_life_build.py",
+    "scripts/alpha/run_alpha_pas_five_trigger_build.py",
+    "scripts/alpha/run_alpha_trigger_ledger_build.py",
+    "scripts/alpha/run_alpha_family_build.py",
+    "scripts/structure/run_structure_snapshot_build.py",
+    "scripts/filter/run_filter_snapshot_build.py",
+    "scripts/alpha/run_alpha_formal_signal_build.py",
+    "scripts/position/run_position_formal_signal_materialization.py",
+    "scripts/portfolio_plan/run_portfolio_plan_build.py",
+    "scripts/trade/run_trade_runtime_build.py",
+    "scripts/system/run_system_mainline_readout_build.py",
+]
+formal_readonly_audit_scripts = [
+    "scripts/filter/run_filter_objective_coverage_audit.py",
+    "scripts/malf/run_malf_zero_one_wave_audit.py",
+]
+document_diagram_required = true
+diagram_preferred_doc_types = ["design", "spec", "execution-card", "conclusion"]
+
+[tool.mlq.ledger_governance]
+stable_entity_anchor = "asset_type+code"
+name_is_not_primary_key = true
+run_id_is_audit_only = true
+required_card_ledger_fields = [
+    "实体锚点",
+    "业务自然键",
+    "批量建仓",
+    "增量更新",
+    "断点续跑",
+    "审计账本",
 ]

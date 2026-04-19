@@ -102,3 +102,13 @@
 ## 一句话结论
 
 这份旧复查意见抓对了问题方向，但它对“当前仓库事实”的判断已经落后于主仓现状。
+
+## 流程图
+
+```mermaid
+flowchart LR
+    OLD[旧复查意见] --> ACC[可接受: 问题意识保留]
+    OLD --> STALE[已过时: 事实判断落后]
+    ACC --> AUDIT[持续复查维度]
+    STALE -. 不再采信 .-> CURR[当前正式 design/spec/conclusion]
+```
